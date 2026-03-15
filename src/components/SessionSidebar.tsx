@@ -15,12 +15,21 @@ export function SessionSidebar({
   const sessions = useQuery(api.sessions.list);
   const createSession = useMutation(api.sessions.create);
   const removeSession = useMutation(api.sessions.remove);
+  const updateTitle = useMutation(api.sessions.updateTitle);
   const [openMenuId, setOpenMenuId] = useState<Id<"sessions"> | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const handleNewChat = async () => {
     const id = await createSession();
     onSelectSession(id);
+  };
+
+  const handleRename = async (id: Id<"sessions">, currentTitle: string) => {
+    const title = window.prompt("Rename chat", currentTitle);
+    if (title?.trim()) {
+      await updateTitle({ id, title: title.trim() });
+    }
+    setOpenMenuId(null);
   };
 
   const handleDelete = async (id: Id<"sessions">) => {
@@ -91,12 +100,30 @@ export function SessionSidebar({
                 </svg>
               </button>
               {openMenuId === session._id && (
-                <div className="absolute right-0 top-full mt-1 py-1 min-w-[120px] rounded-lg bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 shadow-lg z-10">
+                <div className="absolute left-1/2 top-full mt-1 -translate-x-1/2 py-1.5 min-w-[180px] rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 shadow-xl z-10">
                   <button
                     type="button"
-                    className="w-full px-3 py-2 text-left text-sm text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-700"
+                    className="w-full px-3 py-2 flex items-center gap-3 text-left text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700/80"
+                    onClick={() => handleRename(session._id, session.title)}
+                  >
+                    <svg className="shrink-0 w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                      <path d="m15 5 4 4" />
+                    </svg>
+                    Rename
+                  </button>
+                  <button
+                    type="button"
+                    className="w-full px-3 py-2 flex items-center gap-3 text-left text-sm text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/80"
                     onClick={() => handleDelete(session._id)}
                   >
+                    <svg className="shrink-0 w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 6h18" />
+                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                      <line x1="10" x2="10" y1="11" y2="17" />
+                      <line x1="14" x2="14" y1="11" y2="17" />
+                    </svg>
                     Delete
                   </button>
                 </div>
