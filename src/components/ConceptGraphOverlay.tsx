@@ -283,7 +283,7 @@ export function ConceptGraphOverlay({
             const isInMain = portalTarget !== document.body;
             return createPortal(
               <div
-                className={`${isInMain ? "absolute" : "fixed"} left-[48%] top-[49%] z-[9999] w-full max-w-lg max-h-[80vh] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded bg-white dark:bg-zinc-800 shadow-2xl p-6 border border-zinc-200 dark:border-zinc-700 mx-6`}
+                className={`${isInMain ? "absolute" : "fixed"} left-[48%] top-[52%] z-[9999] w-[468px] max-w-lg max-h-[80vh] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded bg-white dark:bg-zinc-800 shadow-2xl p-6 border border-zinc-200 dark:border-zinc-700 mx-6`}
                 onMouseEnter={clearHideModalTimeout}
                 onMouseLeave={() => setBatchModalIndex(null)}
               >
