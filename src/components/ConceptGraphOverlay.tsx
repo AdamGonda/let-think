@@ -76,7 +76,7 @@ export function ConceptGraphOverlay({
   };
   const scheduleHideModal = () => {
     clearHideModalTimeout();
-    hideModalTimeoutRef.current = setTimeout(() => setBatchModalIndex(null), 150);
+    hideModalTimeoutRef.current = setTimeout(() => setBatchModalIndex(null), 75);
   };
 
   // When modal opens, the overlay covers the trigger—green box gets mouseLeave and schedules hide.
