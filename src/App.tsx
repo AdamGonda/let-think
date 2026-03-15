@@ -18,6 +18,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
   const sessions = useQuery(api.sessions.list);
+  const projectsWithSessions = useQuery(api.projects.listWithSessions);
   const messages = useQuery(
     api.sessions.getMessages,
     activeSessionId ? { sessionId: activeSessionId } : "skip"
@@ -34,6 +35,19 @@ function App() {
       if (first.projectId) setActiveProjectId(first.projectId);
     }
   }, [sessions, activeSessionId]);
+
+  // Select inbox by default when empty (no projects, inbox empty) so the user
+  // understands they're viewing the inbox and can create a new chat
+  useEffect(() => {
+    if (!projectsWithSessions) return;
+    const hasProjects = projectsWithSessions.some((g) => g.project != null);
+    const inboxGroup = projectsWithSessions.find((g) => g.project == null);
+    const inboxEmpty = !inboxGroup || inboxGroup.sessions.length === 0;
+    if (!hasProjects && inboxEmpty) {
+      setActiveProjectId(null);
+      setActiveSessionId(null);
+    }
+  }, [projectsWithSessions]);
 
   // Reset selected nodes when switching sessions
   useEffect(() => {

@@ -77,6 +77,8 @@ export function SessionSidebar({
   }, [isCollapsed]);
 
   const allSessions = data?.flatMap((g: ProjectWithSessions) => g.sessions) ?? [];
+  const hasProjects = (data?.some((g) => g.project != null) ?? false);
+  const isInboxSelected = activeProjectId === null && hasProjects;
 
   const handleNewChat = async (projectId?: Id<"projects">) => {
     const targetProjectId = projectId ?? activeProjectId ?? undefined;
@@ -244,6 +246,9 @@ export function SessionSidebar({
               ? expandedProjectIds.has(projectId)
               : true;
 
+            // Hide inbox when it has no sessions
+            if (!project && sessions.length === 0) return null;
+
             return (
               <div key={projectId ?? "inbox"} className="flex flex-col gap-1">
                 {project ? (
@@ -376,7 +381,7 @@ export function SessionSidebar({
                 ) : (
                   <div
                     className={`flex items-center gap-1 rounded-lg border transition-colors py-1.5 px-3 ${
-                      activeProjectId === null
+                      isInboxSelected
                         ? "bg-violet-500/20 dark:bg-violet-400/25 border-violet-500/50 dark:border-violet-400/50 hover:bg-violet-500/30 dark:hover:bg-violet-400/35"
                         : "border-transparent hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
                     } ${dragOverProjectId === "inbox" ? "ring-2 ring-violet-500 dark:ring-violet-400 ring-inset" : ""}`}
@@ -399,7 +404,7 @@ export function SessionSidebar({
                       type="button"
                       onClick={() => onSelectProject(null)}
                       className={`flex-1 min-w-0 py-1 px-2 text-left rounded text-sm font-medium truncate ${
-                        activeProjectId === null
+                        isInboxSelected
                           ? "text-violet-700 dark:text-violet-300"
                           : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
                       }`}
