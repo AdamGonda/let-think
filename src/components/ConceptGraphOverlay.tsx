@@ -271,21 +271,25 @@ export function ConceptGraphOverlay({
                   className={`${isInMain ? "absolute" : "fixed"} left-1/2 top-[42%] z-[9999] w-full max-w-lg max-h-[80vh] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl bg-white dark:bg-zinc-800 shadow-2xl p-6 border border-zinc-200 dark:border-zinc-700 mx-6`}
                   onClick={(e) => e.stopPropagation()}
                 >
-                <p
-                  className="text-zinc-800 dark:text-white/95 whitespace-pre-wrap text-left leading-relaxed"
-                  style={{
-                    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                  }}
-                >
-                  {batches[batchModalIndex]!.description}
-                </p>
                 <button
                   type="button"
                   onClick={() => setBatchModalIndex(null)}
-                  className="mt-4 w-full py-2 rounded-lg bg-zinc-200 dark:bg-zinc-600 hover:bg-zinc-300 dark:hover:bg-zinc-500 text-zinc-800 dark:text-white/90 text-sm font-medium transition-colors"
+                  className="mb-4 w-full py-2 rounded-lg bg-zinc-200 dark:bg-zinc-600 hover:bg-zinc-300 dark:hover:bg-zinc-500 text-zinc-800 dark:text-white/90 text-sm font-medium transition-colors"
                 >
                   Close
                 </button>
+                <div className="text-left" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+                  {batches[batchModalIndex]!.promptSummary && (
+                    <h3 className="text-xl font-semibold text-zinc-800 dark:text-white/95 mb-3">
+                      {batches[batchModalIndex]!.promptSummary}
+                    </h3>
+                  )}
+                  <p
+                    className="text-zinc-800 dark:text-white/95 whitespace-pre-wrap leading-relaxed"
+                  >
+                    {batches[batchModalIndex]!.description}
+                  </p>
+                </div>
               </div>
             </>,
             portalTarget
