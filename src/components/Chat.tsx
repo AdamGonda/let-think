@@ -52,15 +52,19 @@ export function Chat({ sessionId, messageHistory }: ChatProps) {
   };
 
   return (
-    <div className="chat-bar">
-      <div className="chat-branching">
-        <span className="chat-branching__label">Branching spectrum</span>
-        <div className="chat-branching__buttons" role="group" aria-label="Branching level">
+    <div className="flex flex-col gap-2 py-3 px-6 pb-4 border-t border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#16171d] shrink-0">
+      <div className="flex items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400">
+        <span className="whitespace-nowrap">Branching spectrum</span>
+        <div className="flex gap-1" role="group" aria-label="Branching level">
           {([1, 2, 3] as const).map((n) => (
             <button
               key={n}
               type="button"
-              className={`chat-branching__btn ${branching === n ? "active" : ""}`}
+              className={`w-9 h-8 rounded-md border font-medium text-sm cursor-pointer transition-colors duration-150 ${
+                branching === n
+                  ? "bg-violet-600 dark:bg-violet-500 border-violet-600 dark:border-violet-500 text-white"
+                  : "bg-white dark:bg-[#16171d] border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:border-violet-500/50 dark:hover:border-violet-400/50"
+              }`}
               onClick={() => setBranching(n)}
               aria-pressed={branching === n}
             >
@@ -69,22 +73,22 @@ export function Chat({ sessionId, messageHistory }: ChatProps) {
           ))}
         </div>
       </div>
-      <form className="chat-form" onSubmit={handleSubmit}>
+      <form className="flex gap-2" onSubmit={handleSubmit}>
         <input
-          className="chat-input"
+          className="flex-1 py-3 px-4 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-[#16171d] text-zinc-950 dark:text-zinc-100 font-inherit text-[0.95rem] placeholder:text-zinc-500 dark:placeholder:text-zinc-500 placeholder:opacity-70 focus:outline-none focus:border-violet-500 dark:focus:border-violet-400 disabled:opacity-60 disabled:cursor-not-allowed"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder={sessionId ? "Type a message..." : "Select a chat to start"}
           disabled={isLoading || !sessionId}
         />
-      <button
-        type="submit"
-        className="chat-submit"
-        disabled={isLoading || !sessionId}
-      >
-        {isLoading ? "..." : "Send"}
-      </button>
-    </form>
+        <button
+          type="submit"
+          className="py-3 px-5 border-none rounded-lg bg-violet-600 dark:bg-violet-500 text-white font-inherit font-medium cursor-pointer transition-opacity duration-150 hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:opacity-60"
+          disabled={isLoading || !sessionId}
+        >
+          {isLoading ? "..." : "Send"}
+        </button>
+      </form>
     </div>
   );
 }

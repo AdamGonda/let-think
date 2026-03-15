@@ -91,9 +91,11 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
   );
 
   return (
-    <div ref={containerRef} className={className ?? "concept-graph"} style={{ width: "100%", height: "100%" }}>
+    <div ref={containerRef} className={className ?? "flex flex-1 min-w-0 min-h-0"} style={{ width: "100%", height: "100%" }}>
       {isEmpty ? (
-        <div className="concept-graph-empty">Type a message to build your concept graph</div>
+        <div className="flex flex-1 items-center justify-center text-zinc-600 dark:text-zinc-400 text-base py-6 px-6">
+          Type a message to build your concept graph
+        </div>
       ) : (
         <ForceGraph2D
           ref={fgRef}

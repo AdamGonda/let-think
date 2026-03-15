@@ -5,7 +5,6 @@ import type { Id } from "../convex/_generated/dataModel";
 import { SessionSidebar } from "./components/SessionSidebar";
 import { Chat } from "./components/Chat";
 import { ConceptGraphOverlay } from "./components/ConceptGraphOverlay";
-import "./App.css";
 
 function App() {
   const [activeSessionId, setActiveSessionId] = useState<Id<"sessions"> | null>(
@@ -28,17 +27,17 @@ function App() {
   }, [sessions, activeSessionId]);
 
   return (
-    <div className="app">
+    <div className="flex h-screen bg-white dark:bg-[#16171d]">
       <SessionSidebar
         activeSessionId={activeSessionId}
         onSelectSession={setActiveSessionId}
       />
-      <main className="main-content">
-        <div className="graph-area">
+      <main className="flex flex-1 flex-col min-w-0">
+        <div className="flex flex-1 min-h-0 items-stretch justify-stretch">
           {activeSessionId ? (
             <ConceptGraphOverlay graph={conceptGraph ?? null} />
           ) : (
-            <div className="graph-empty-state">
+            <div className="flex flex-1 items-center justify-center text-zinc-600 dark:text-zinc-400 text-base py-6 px-6">
               Select a chat or create a new one to get started
             </div>
           )}
