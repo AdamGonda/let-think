@@ -274,20 +274,6 @@ export function SessionSidebar({
                       {project.name}
                     </button>
                     <div className="flex items-center gap-0.5 opacity-0 group-hover/project:opacity-100">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleNewChat(project._id);
-                        }}
-                        className="p-1 rounded text-zinc-500 hover:bg-violet-500/20 dark:hover:bg-violet-400/25 hover:text-violet-700 dark:hover:text-violet-300"
-                        aria-label={`New chat in ${project.name}`}
-                      >
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M12 5v14" />
-                          <path d="M5 12h14" />
-                        </svg>
-                      </button>
                       <div className="relative" ref={projectMenuId === project._id ? projectMenuRef : undefined}>
                         <button
                           type="button"
@@ -354,20 +340,6 @@ export function SessionSidebar({
                       }`}
                     >
                       Inbox
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleNewChat(undefined);
-                      }}
-                      className="p-1 shrink-0 rounded text-zinc-500 hover:bg-violet-500/20 dark:hover:bg-violet-400/25 hover:text-violet-700 dark:hover:text-violet-300"
-                      aria-label="New chat in Inbox"
-                    >
-                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M12 5v14" />
-                        <path d="M5 12h14" />
-                      </svg>
                     </button>
                   </div>
                 )}
