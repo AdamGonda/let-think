@@ -3,6 +3,9 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 
+const SIDEBAR_WIDTH = 260;
+const COLLAPSED_WIDTH = 72;
+
 interface SessionSidebarProps {
   activeSessionId: Id<"sessions"> | null;
   onSelectSession: (id: Id<"sessions"> | null) => void;
@@ -22,6 +25,21 @@ export function SessionSidebar({
   const updateTitle = useMutation(api.sessions.updateTitle);
   const [openMenuId, setOpenMenuId] = useState<Id<"sessions"> | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem("sidebar-collapsed") === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("sidebar-collapsed", String(isCollapsed));
+    } catch {
+      // ignore
+    }
+  }, [isCollapsed]);
 
   const handleNewChat = async () => {
     const id = await createSession();
@@ -57,20 +75,25 @@ export function SessionSidebar({
   }, []);
 
   return (
-    <aside className="w-[260px] shrink-0 flex flex-col h-screen bg-zinc-50 dark:bg-[#1a1b22] border-r border-zinc-200 dark:border-zinc-700">
-      <div className="flex gap-2 m-3">
-        <button
-          type="button"
-          className="flex-1 py-2.5 px-4 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-[#16171d] text-zinc-950 dark:text-zinc-100 font-inherit cursor-pointer hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:border-violet-500/50 dark:hover:border-violet-400/50"
-          onClick={handleNewChat}
-        >
-          + New chat
-        </button>
+    <aside
+      className="shrink-0 flex flex-col h-screen bg-zinc-50 dark:bg-[#1a1b22] border-r border-zinc-200 dark:border-zinc-700 transition-[width] duration-200 ease-in-out"
+      style={{ width: isCollapsed ? COLLAPSED_WIDTH : SIDEBAR_WIDTH }}
+    >
+      <div className={`flex m-3 gap-2 ${isCollapsed ? "flex-col items-center" : ""}`}>
+        {!isCollapsed && (
+          <button
+            type="button"
+            className="flex-1 py-2.5 px-4 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-[#16171d] text-zinc-950 dark:text-zinc-100 font-inherit cursor-pointer hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:border-violet-500/50 dark:hover:border-violet-400/50"
+            onClick={handleNewChat}
+          >
+            + New chat
+          </button>
+        )}
         <button
           type="button"
           onClick={onToggleTheme}
           aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-          className="p-2.5 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-[#16171d] text-zinc-600 dark:text-zinc-400 hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:border-violet-500/50 dark:hover:border-violet-400/50 cursor-pointer"
+          className="p-2.5 min-w-[40px] min-h-[40px] flex items-center justify-center border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-[#16171d] text-zinc-600 dark:text-zinc-400 hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:border-violet-500/50 dark:hover:border-violet-400/50 cursor-pointer shrink-0"
         >
           {isDark ? (
             <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -90,7 +113,30 @@ export function SessionSidebar({
             </svg>
           )}
         </button>
+        <button
+          type="button"
+          onClick={() => {
+            setIsCollapsed((c) => !c);
+            setOpenMenuId(null);
+          }}
+          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="p-2.5 min-w-[40px] min-h-[40px] flex items-center justify-center border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-[#16171d] text-zinc-600 dark:text-zinc-400 hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:border-violet-500/50 dark:hover:border-violet-400/50 cursor-pointer shrink-0"
+        >
+          <svg
+            className={`w-5 h-5 transition-transform ${isCollapsed ? "rotate-180" : ""}`}
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden
+          >
+            <path d="m15 18-6-6 6-6" />
+          </svg>
+        </button>
       </div>
+      {!isCollapsed && (
       <nav className="flex-1 overflow-y-auto py-3 px-3 flex flex-col gap-2">
         {sessions?.map((session) => (
           <div
@@ -162,6 +208,7 @@ export function SessionSidebar({
           </div>
         ))}
       </nav>
+      )}
     </aside>
   );
 }
