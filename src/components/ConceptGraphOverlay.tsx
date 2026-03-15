@@ -268,7 +268,7 @@ export function ConceptGraphOverlay({
                   onClick={() => setBatchModalIndex(null)}
                 />
                 <div
-                  className={`${isInMain ? "absolute" : "fixed"} left-1/2 top-1/2 z-[9999] w-full max-w-lg max-h-[80vh] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl bg-white dark:bg-zinc-800 shadow-2xl p-6 border border-zinc-200 dark:border-zinc-700 mx-6`}
+                  className={`${isInMain ? "absolute" : "fixed"} left-1/2 top-[42%] z-[9999] w-full max-w-lg max-h-[80vh] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl bg-white dark:bg-zinc-800 shadow-2xl p-6 border border-zinc-200 dark:border-zinc-700 mx-6`}
                   onClick={(e) => e.stopPropagation()}
                 >
                 <p
