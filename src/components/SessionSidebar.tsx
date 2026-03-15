@@ -387,30 +387,17 @@ export function SessionSidebar({
                   sessions.map((session: Doc<"sessions">) => (
                     <div
                       key={session._id}
-                      className={`group flex items-center gap-1 py-1.5 px-3 ml-4 rounded-lg border transition-colors ${
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData("text/plain", session._id);
+                        e.dataTransfer.effectAllowed = "move";
+                      }}
+                      className={`group flex items-center gap-1 py-1.5 px-3 ml-4 rounded-lg border transition-colors cursor-grab active:cursor-grabbing ${
                         activeSessionId === session._id
                           ? "bg-violet-500/20 dark:bg-violet-400/25 border-violet-500/50 dark:border-violet-400/50 hover:bg-violet-500/30 dark:hover:bg-violet-400/35"
                           : "border-transparent hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
                       }`}
                     >
-                      <div
-                        draggable
-                        onDragStart={(e) => {
-                          e.dataTransfer.setData("text/plain", session._id);
-                          e.dataTransfer.effectAllowed = "move";
-                        }}
-                        className="shrink-0 p-1 -m-1 rounded cursor-grab active:cursor-grabbing text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 touch-none opacity-40 group-hover:opacity-100"
-                        aria-label="Drag to move"
-                      >
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
-                          <circle cx="9" cy="6" r="1.5" />
-                          <circle cx="9" cy="12" r="1.5" />
-                          <circle cx="9" cy="18" r="1.5" />
-                          <circle cx="15" cy="6" r="1.5" />
-                          <circle cx="15" cy="12" r="1.5" />
-                          <circle cx="15" cy="18" r="1.5" />
-                        </svg>
-                      </div>
                       <button
                         type="button"
                         className={`flex-1 min-w-0 text-left truncate font-inherit cursor-pointer text-sm ${
