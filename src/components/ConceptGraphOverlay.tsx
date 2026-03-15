@@ -39,6 +39,7 @@ interface ConceptGraphOverlayProps {
   selectedNodeIds?: Set<string>;
   onToggleNodeSelection?: (nodeId: string) => void;
   modalContainerRef?: RefObject<HTMLDivElement | null>;
+  isLoading?: boolean;
 }
 
 function measureText(text: string, font: string): { width: number; height: number } {
@@ -60,6 +61,7 @@ export function ConceptGraphOverlay({
   selectedNodeIds = new Set(),
   onToggleNodeSelection,
   modalContainerRef,
+  isLoading = false,
 }: ConceptGraphOverlayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphViewportRef = useRef<HTMLDivElement>(null);
@@ -367,7 +369,13 @@ export function ConceptGraphOverlay({
           })()}
         <div
           ref={graphViewportRef}
-          className="flex flex-1 min-h-0 min-w-0 overflow-hidden relative py-4 touch-none"
+          className={`flex flex-1 min-h-0 min-w-0 overflow-hidden relative py-4 touch-none transition-colors duration-200 ${
+            isLoading
+              ? "outline-2 outline-violet-600 dark:outline-violet-500 -outline-offset-2"
+              : ""
+          }`}
+          aria-busy={isLoading}
+          aria-live={isLoading ? "polite" : "off"}
         >
           <div
             className="inline-block"
