@@ -70,10 +70,17 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
     return m;
   }, [graph?.nodes]);
 
-  // Sync selectedBatchIndex when batches change
+  // When a new batch arrives, jump to it to show the most up-to-date batch
+  const prevBatchesLengthRef = useRef(0);
   useEffect(() => {
     if (batches.length === 0) return;
-    setSelectedBatchIndex((i) => Math.min(i, batches.length - 1));
+    const prevLen = prevBatchesLengthRef.current;
+    prevBatchesLengthRef.current = batches.length;
+    if (batches.length > prevLen) {
+      setSelectedBatchIndex(batches.length - 1);
+    } else {
+      setSelectedBatchIndex((i) => Math.min(i, batches.length - 1));
+    }
   }, [batches.length]);
 
   const hasBatches = batches.length > 0;
