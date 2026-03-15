@@ -273,22 +273,24 @@ export function SessionSidebar({
                       setDragOverProjectId(null);
                     }}
                   >
-                    <button
-                      type="button"
-                      onClick={() => toggleProjectExpanded(projectId!)}
-                      className="p-1 shrink-0 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-                      aria-label={isExpanded ? "Collapse" : "Expand"}
-                    >
-                      <svg
-                        className={`w-4 h-4 transition-transform ${isExpanded ? "" : "-rotate-90"}`}
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="2"
+                    {sessions.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => toggleProjectExpanded(projectId!)}
+                        className="p-1 shrink-0 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                        aria-label={isExpanded ? "Collapse" : "Expand"}
                       >
-                        <path d="m6 9 6 6 6-6" />
-                      </svg>
-                    </button>
+                        <svg
+                          className={`w-4 h-4 transition-transform ${isExpanded ? "" : "-rotate-90"}`}
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        >
+                          <path d="m6 9 6 6 6-6" />
+                        </svg>
+                      </button>
+                    )}
                     {editingProjectId === project._id ? (
                       <input
                         ref={projectInputRef}
