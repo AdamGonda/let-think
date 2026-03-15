@@ -66,26 +66,6 @@ export function ConceptGraphOverlay({
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [batchModalIndex, setBatchModalIndex] = useState<number | null>(null);
   const [selectedBatchIndex, setSelectedBatchIndex] = useState<number>(0);
-  const hideModalTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  const clearHideModalTimeout = () => {
-    if (hideModalTimeoutRef.current) {
-      clearTimeout(hideModalTimeoutRef.current);
-      hideModalTimeoutRef.current = null;
-    }
-  };
-  const scheduleHideModal = () => {
-    clearHideModalTimeout();
-    hideModalTimeoutRef.current = setTimeout(() => setBatchModalIndex(null), 150);
-  };
-
-  // When modal opens, the overlay covers the trigger—green box gets mouseLeave and schedules hide.
-  // Clear that after a tick so the modal stays open when the user is effectively "in" the modal area.
-  useEffect(() => {
-    if (batchModalIndex == null) return;
-    const id = setTimeout(clearHideModalTimeout, 100);
-    return () => clearTimeout(id);
-  }, [batchModalIndex]);
 
   // Align modal x with graph viewport center (fixes offset when portaled to main content)
   const [modalLeft, setModalLeft] = useState<number | null>(null);
@@ -308,24 +288,50 @@ export function ConceptGraphOverlay({
             const portalTarget = modalContainerRef?.current ?? document.body;
             const isInMain = portalTarget !== document.body;
             return createPortal(
-              <div
-                className={`${isInMain ? "absolute" : "fixed"} top-[52%] z-[9999] w-[468px] max-w-lg max-h-[80vh] -translate-x-1/2 -translate-y-1/2`}
-                style={{ left: modalLeft != null ? `${modalLeft}px` : "50%" }}
-                onMouseEnter={clearHideModalTimeout}
-                onMouseLeave={() => setBatchModalIndex(null)}
-              >
+              <>
                 <div
-                  className="overflow-y-auto rounded bg-white dark:bg-zinc-800 shadow-2xl p-6 border-2 border-zinc-300 dark:border-zinc-600 animate-modal-in"
+                  className={`${isInMain ? "absolute" : "fixed"} inset-0 z-[9998] bg-black/40`}
+                  onClick={() => setBatchModalIndex(null)}
+                  aria-hidden
+                />
+                <div
+                  className={`${isInMain ? "absolute" : "fixed"} top-[52%] z-[9999] w-[960px] max-w-[95vw] max-h-[80vh] -translate-x-1/2 -translate-y-1/2`}
+                  style={{ left: modalLeft != null ? `${modalLeft}px` : "50%" }}
+                  role="dialog"
+                  aria-modal
+                  aria-labelledby="batch-modal-title"
                 >
-                  <div className="text-left" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
-                    <p
-                      className="text-zinc-800 dark:text-white/95 whitespace-pre-wrap leading-relaxed"
+                  <div
+                    className="flex flex-col max-h-[80vh] rounded bg-white dark:bg-zinc-800 shadow-2xl border-2 border-zinc-300 dark:border-zinc-600 animate-modal-in"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="flex items-center justify-between shrink-0 px-6 py-4 border-b border-zinc-200 dark:border-zinc-600">
+                      <h2 id="batch-modal-title" className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
+                        Batch details
+                      </h2>
+                      <button
+                        type="button"
+                        onClick={() => setBatchModalIndex(null)}
+                        className="p-1.5 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                        aria-label="Close"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M18 6 6 18" />
+                          <path d="m6 6 12 12" />
+                        </svg>
+                      </button>
+                    </div>
+                    <div
+                      className="overflow-y-auto overscroll-contain p-6 min-h-0"
+                      style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}
                     >
-                      {batches[batchModalIndex]!.description}
-                    </p>
+                      <pre className="text-left text-zinc-800 dark:text-white/95 whitespace-pre-wrap leading-relaxed text-sm font-mono">
+                        {batches[batchModalIndex]!.description}
+                      </pre>
+                    </div>
                   </div>
                 </div>
-              </div>,
+              </>,
             portalTarget
           );
           })()}
@@ -415,15 +421,12 @@ export function ConceptGraphOverlay({
                     const cy = cluster.y + 30;
                     return (
                       <g
-                        onMouseEnter={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           if (batch?.description) {
-                            clearHideModalTimeout();
                             setBatchModalIndex(cluster.batchIndex);
                             if (isDimmed) setSelectedBatchIndex(cluster.batchIndex);
                           }
-                        }}
-                        onMouseLeave={() => {
-                          if (batch?.description) scheduleHideModal();
                         }}
                         style={{ cursor: batch?.description ? "pointer" : undefined }}
                       >
