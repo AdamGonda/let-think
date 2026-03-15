@@ -36,10 +36,6 @@ export function SessionSidebar({
   const removeProject = useMutation(api.projects.remove);
   const updateTitle = useMutation(api.sessions.updateTitle);
   const updateProjectName = useMutation(api.projects.updateName);
-  const [openMenuId, setOpenMenuId] = useState<Id<"sessions"> | Id<"projects"> | null>(null);
-  const [projectMenuId, setProjectMenuId] = useState<Id<"projects"> | null>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const projectMenuRef = useRef<HTMLDivElement>(null);
   const [expandedProjectIds, setExpandedProjectIds] = useState<Set<string>>(() => new Set());
   const [dragOverProjectId, setDragOverProjectId] = useState<string | "inbox" | null>(null);
   const [editingSessionId, setEditingSessionId] = useState<Id<"sessions"> | null>(null);
@@ -111,7 +107,6 @@ export function SessionSidebar({
       await updateTitle({ id, title: title.trim() });
     }
     setEditingSessionId(null);
-    setOpenMenuId(null);
   };
 
   const handleRenameProject = async (id: Id<"projects">, name: string) => {
@@ -119,7 +114,6 @@ export function SessionSidebar({
       await updateProjectName({ id, name: name.trim() });
     }
     setEditingProjectId(null);
-    setProjectMenuId(null);
   };
 
   useEffect(() => {
@@ -139,7 +133,6 @@ export function SessionSidebar({
   const handleDelete = async (id: Id<"sessions">) => {
     const wasActive = activeSessionId === id;
     await removeSession({ id });
-    setOpenMenuId(null);
     if (wasActive) {
       const remaining = allSessions.filter((s: Doc<"sessions">) => s._id !== id);
       onSelectSession(remaining[0]?._id ?? null);
@@ -159,7 +152,6 @@ export function SessionSidebar({
   const handleDeleteProject = async (id: Id<"projects">) => {
     const wasActiveProject = activeProjectId === id;
     await removeProject({ id });
-    setProjectMenuId(null);
     if (wasActiveProject) {
       const remainingProjects = data?.filter(
         (g: ProjectWithSessions) => g.project && g.project._id !== id
@@ -175,20 +167,6 @@ export function SessionSidebar({
       return next;
     });
   };
-
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as Node;
-      if (menuRef.current && !menuRef.current.contains(target)) {
-        setOpenMenuId(null);
-      }
-      if (projectMenuRef.current && !projectMenuRef.current.contains(target)) {
-        setProjectMenuId(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
 
   return (
     <aside
@@ -234,11 +212,7 @@ export function SessionSidebar({
         )}
         <button
           type="button"
-          onClick={() => {
-            setIsCollapsed((c) => !c);
-            setOpenMenuId(null);
-            setProjectMenuId(null);
-          }}
+          onClick={() => setIsCollapsed((c) => !c)}
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           className="p-2.5 min-w-[40px] min-h-[40px] flex items-center justify-center border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-[#16171d] text-zinc-600 dark:text-zinc-400 hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:border-violet-500/50 dark:hover:border-violet-400/50 cursor-pointer shrink-0"
         >
@@ -317,7 +291,6 @@ export function SessionSidebar({
                             handleRenameProject(project._id, (e.target as HTMLInputElement).value);
                           } else if (e.key === "Escape") {
                             setEditingProjectId(null);
-                            setProjectMenuId(null);
                           }
                         }}
                         onBlur={(e) => {
@@ -342,43 +315,23 @@ export function SessionSidebar({
                         {project.name}
                       </button>
                     )}
-                    <div className="flex items-center gap-0.5 opacity-0 group-hover/project:opacity-100">
-                      <div className="relative" ref={projectMenuId === project._id ? projectMenuRef : undefined}>
-                        <button
-                          type="button"
-                          className="p-1 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setProjectMenuId(projectMenuId === project._id ? null : project._id);
-                          }}
-                          aria-label="Project menu"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                            <circle cx="12" cy="6" r="1.5" />
-                            <circle cx="12" cy="12" r="1.5" />
-                            <circle cx="12" cy="18" r="1.5" />
-                          </svg>
-                        </button>
-                        {projectMenuId === project._id && (
-                          <div className="absolute left-0 top-full mt-1 py-1.5 min-w-[160px] rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 shadow-xl z-20">
-                            <button
-                              type="button"
-                              className="w-full px-3 py-2 flex items-center gap-3 text-left text-sm text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/80"
-                              onClick={() => handleDeleteProject(project._id)}
-                            >
-                              <svg className="shrink-0 w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M3 6h18" />
-                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                                <line x1="10" x2="10" y1="11" y2="17" />
-                                <line x1="14" x2="14" y1="11" y2="17" />
-                              </svg>
-                              Delete
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteProject(project._id);
+                      }}
+                      className="p-1 rounded text-zinc-500 hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 opacity-0 group-hover/project:opacity-100"
+                      aria-label="Delete project"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 6h18" />
+                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                        <line x1="10" x2="10" y1="11" y2="17" />
+                        <line x1="14" x2="14" y1="11" y2="17" />
+                      </svg>
+                    </button>
                   </div>
                 ) : (
                   <div
@@ -441,7 +394,6 @@ export function SessionSidebar({
                               handleRename(session._id, (e.target as HTMLInputElement).value);
                             } else if (e.key === "Escape") {
                               setEditingSessionId(null);
-                              setOpenMenuId(null);
                             }
                           }}
                           onBlur={(e) => {
@@ -469,42 +421,23 @@ export function SessionSidebar({
                           {session.title}
                         </button>
                       )}
-                      <div className="relative shrink-0" ref={openMenuId === session._id ? menuRef : undefined}>
-                        <button
-                          type="button"
-                          className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover:opacity-100 data-[open=true]:opacity-100 hover:bg-violet-500/20 dark:hover:bg-violet-400/25 hover:text-violet-700 dark:hover:text-violet-300"
-                          data-open={openMenuId === session._id}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setOpenMenuId(openMenuId === session._id ? null : session._id);
-                          }}
-                          aria-label="Session menu"
-                        >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden>
-                            <circle cx="12" cy="6" r="1.5" />
-                            <circle cx="12" cy="12" r="1.5" />
-                            <circle cx="12" cy="18" r="1.5" />
-                          </svg>
-                        </button>
-                        {openMenuId === session._id && (
-                          <div className="absolute left-1/2 top-full mt-1 -translate-x-1/2 py-1.5 min-w-[180px] rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 shadow-xl z-10">
-                            <button
-                              type="button"
-                              className="w-full px-3 py-2 flex items-center gap-3 text-left text-sm text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/80"
-                              onClick={() => handleDelete(session._id)}
-                            >
-                              <svg className="shrink-0 w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M3 6h18" />
-                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                                <line x1="10" x2="10" y1="11" y2="17" />
-                                <line x1="14" x2="14" y1="11" y2="17" />
-                              </svg>
-                              Delete
-                            </button>
-                          </div>
-                        )}
-                      </div>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(session._id);
+                        }}
+                        className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover:opacity-100 hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 shrink-0"
+                        aria-label="Delete session"
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 6h18" />
+                          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                          <line x1="10" x2="10" y1="11" y2="17" />
+                          <line x1="14" x2="14" y1="11" y2="17" />
+                        </svg>
+                      </button>
                     </div>
                   ))}
               </div>
