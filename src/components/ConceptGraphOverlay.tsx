@@ -60,6 +60,7 @@ export function ConceptGraphOverlay({
   const svgRef = useRef<SVGSVGElement>(null);
   const [dimensions, setDimensions] = useState({ width: 400, height: 300 });
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
+  const [hoveredBatchIndex, setHoveredBatchIndex] = useState<number | null>(null);
   const [selectedBatchIndex, setSelectedBatchIndex] = useState<number>(0);
 
   // Build batches: use graph.batches, or fallback to single batch with all nodes
@@ -242,7 +243,10 @@ export function ConceptGraphOverlay({
       ref={containerRef}
       className={className ?? "flex flex-1 min-w-0 min-h-0 flex-col"}
       style={{ width: "100%", height: "100%" }}
-      onMouseLeave={() => setHoveredNode(null)}
+      onMouseLeave={() => {
+        setHoveredNode(null);
+        setHoveredBatchIndex(null);
+      }}
     >
       {isEmpty ? (
         <div className="flex flex-1 items-center justify-center text-zinc-600 dark:text-zinc-400 text-base py-6 px-6">
@@ -325,17 +329,28 @@ export function ConceptGraphOverlay({
                 >
                   {(() => {
                     const batch = batches[cluster.batchIndex];
-                    const label =
+                    const summary =
                       (cluster.role === "prev" ? "← " : "") +
                       (batch?.promptSummary ?? `Batch ${cluster.batchIndex + 1}`) +
                       (cluster.role === "next" ? " →" : "");
+                    const fullText =
+                      (cluster.role === "prev" ? "← " : "") +
+                      (batch?.description ?? batch?.promptSummary ?? `Batch ${cluster.batchIndex + 1}`) +
+                      (cluster.role === "next" ? " →" : "");
+                    const isHovered = hoveredBatchIndex === cluster.batchIndex;
+                    const displayText = isHovered && batch?.description ? fullText : summary;
                     const padX = 18;
-                    const boxW = Math.max(80, label.length * 10 + padX * 2);
+                    const maxBoxW = Math.min(cluster.width - 24, 480);
+                    const boxW = Math.max(80, Math.min(displayText.length * 8 + padX * 2, maxBoxW));
                     const boxH = 36;
                     const cx = cluster.x + cluster.width / 2;
                     const cy = cluster.y + 30;
                     return (
-                      <g>
+                      <g
+                        onMouseEnter={() => setHoveredBatchIndex(cluster.batchIndex)}
+                        onMouseLeave={() => setHoveredBatchIndex(null)}
+                        style={{ cursor: batch?.description ? "help" : undefined }}
+                      >
                         <rect
                           x={cx - boxW / 2}
                           y={cy - boxH / 2}
@@ -348,16 +363,23 @@ export function ConceptGraphOverlay({
                           strokeWidth={isCenter ? 1.5 : 1}
                           style={isDimmed ? { opacity: 0.85 } : undefined}
                         />
-                        <text
-                          x={cx}
-                          y={cy}
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                          className="fill-white text-base font-black"
-                          style={isDimmed ? { opacity: 0.9 } : undefined}
+                        <foreignObject
+                          x={cx - boxW / 2 + 8}
+                          y={cy - boxH / 2 + 6}
+                          width={boxW - 16}
+                          height={boxH - 12}
+                          className="overflow-hidden"
+                          style={{ pointerEvents: "none" }}
                         >
-                          {label}
-                        </text>
+                          <div
+                            className="text-base font-black text-white text-center overflow-hidden text-ellipsis whitespace-nowrap w-full"
+                            style={{
+                              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                            }}
+                          >
+                            {displayText}
+                          </div>
+                        </foreignObject>
                       </g>
                     );
                   })()}
