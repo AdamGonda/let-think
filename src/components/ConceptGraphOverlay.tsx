@@ -30,8 +30,8 @@ const MIN_NODE_WIDTH = 420;
 const NODE_HEIGHT = 100;
 const NODE_HEIGHT_EXPANDED = 200;
 const GRID_COLS = 3;
-const GRID_CELL_WIDTH = 260;
-const GRID_CELL_HEIGHT = 120;
+const MIN_CELL_WIDTH = 200;
+const MIN_CELL_HEIGHT = 80;
 
 interface ConceptGraphOverlayProps {
   graph: ConceptGraphData | null;
@@ -138,7 +138,22 @@ export function ConceptGraphOverlay({
   // Compute a STABLE full rail layout for ALL batches. Cluster positions stay fixed;
   // only translateX changes when navigating, enabling smooth CSS transition.
   const layout = useMemo(() => {
-    // Compute dimensions for ALL batches (stable rail)
+    const gridAreaWidth = dimensions.width - 2 * VIEWPORT_PADDING - 2 * CLUSTER_PAD;
+    const gridAreaHeight = dimensions.height - 32 - BATCH_HEADER - 2 * CLUSTER_PAD;
+
+    const maxNumRows = Math.max(
+      1,
+      ...batches.map((b) => Math.ceil((b.nodeIds?.length ?? 0) / GRID_COLS))
+    );
+    const cellWidth = Math.max(
+      MIN_CELL_WIDTH,
+      (gridAreaWidth - (GRID_COLS - 1) * NODE_GAP) / GRID_COLS
+    );
+    const cellHeight = Math.max(
+      MIN_CELL_HEIGHT,
+      (gridAreaHeight - (maxNumRows - 1) * NODE_GAP) / maxNumRows
+    );
+
     const allDims: Array<{
       width: number;
       height: number;
@@ -163,7 +178,7 @@ export function ConceptGraphOverlay({
           const i = r * GRID_COLS + c;
           if (i >= batchNodes.length) break;
           const node = batchNodes[i]!;
-          const h = node.description ? NODE_HEIGHT_EXPANDED : GRID_CELL_HEIGHT;
+          const h = node.description ? Math.max(cellHeight, NODE_HEIGHT_EXPANDED) : cellHeight;
           maxH = Math.max(maxH, h);
         }
         rowHeights.push(maxH);
@@ -175,16 +190,16 @@ export function ConceptGraphOverlay({
         const node = batchNodes[i]!;
         const col = i % GRID_COLS;
         const row = Math.floor(i / GRID_COLS);
-        const x = CLUSTER_PAD + col * (GRID_CELL_WIDTH + NODE_GAP);
+        const x = CLUSTER_PAD + col * (cellWidth + NODE_GAP);
         const y = cy;
-        const h = node.description ? NODE_HEIGHT_EXPANDED : GRID_CELL_HEIGHT;
-        nodeLayouts.push({ node, x, y, w: GRID_CELL_WIDTH, h });
+        const h = node.description ? Math.max(cellHeight, NODE_HEIGHT_EXPANDED) : cellHeight;
+        nodeLayouts.push({ node, x, y, w: cellWidth, h });
         if (col === GRID_COLS - 1) {
           cy += rowHeights[row]! + NODE_GAP;
         }
       }
       const clusterHeight = cy - NODE_GAP + CLUSTER_PAD;
-      const clusterWidth = GRID_COLS * GRID_CELL_WIDTH + (GRID_COLS - 1) * NODE_GAP + 2 * CLUSTER_PAD;
+      const clusterWidth = GRID_COLS * cellWidth + (GRID_COLS - 1) * NODE_GAP + 2 * CLUSTER_PAD;
 
       allDims.push({
         width: clusterWidth,
@@ -218,7 +233,6 @@ export function ConceptGraphOverlay({
       nodes: Array<{ node: GraphNode; x: number; y: number; w: number; h: number }>;
     }> = [];
 
-    const contentHeight = dimensions.height - 32; // py-4 = 16px top + bottom
     let x = VIEWPORT_PADDING;
     for (let i = 0; i < batches.length; i++) {
       const dims = allDims[i]!;
