@@ -137,10 +137,20 @@ export function SessionSidebar({
   const handleDelete = async (id: Id<"sessions">) => {
     setConfirmDeleteSessionId(null);
     const wasActive = activeSessionId === id;
+    const deletedSession = allSessions.find((s: Doc<"sessions">) => s._id === id);
+    const projectId = deletedSession?.projectId ?? null;
     await removeSession({ id });
     if (wasActive) {
       const remaining = allSessions.filter((s: Doc<"sessions">) => s._id !== id);
-      onSelectSession(remaining[0]?._id ?? null);
+      // Prefer remaining sessions in the same project (or inbox) so focus stays there
+      const sameProject = remaining.filter(
+        (s: Doc<"sessions">) => (s.projectId ?? null) === projectId
+      );
+      const nextSession = sameProject[0] ?? remaining[0] ?? null;
+      onSelectSession(nextSession?._id ?? null);
+      if (nextSession?.projectId) {
+        onSelectProject(nextSession.projectId);
+      }
     }
   };
 
