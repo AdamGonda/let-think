@@ -383,7 +383,7 @@ export function SessionSidebar({
                     className={`flex items-center gap-1 rounded-lg border transition-colors py-1.5 px-3 ${
                       isInboxSelected
                         ? "bg-violet-500/20 dark:bg-violet-400/25 border-violet-500/50 dark:border-violet-400/50 hover:bg-violet-500/30 dark:hover:bg-violet-400/35"
-                        : "border-transparent hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
+                        : "border-transparent"
                     } ${dragOverProjectId === "inbox" ? "ring-2 ring-violet-500 dark:ring-violet-400 ring-inset" : ""}`}
                     onDragOver={(e) => {
                       e.preventDefault();
@@ -406,7 +406,7 @@ export function SessionSidebar({
                       className={`flex-1 min-w-0 py-1 px-2 text-left rounded text-sm font-medium truncate ${
                         isInboxSelected
                           ? "text-violet-700 dark:text-violet-300"
-                          : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                          : "text-zinc-500 dark:text-zinc-400"
                       }`}
                     >
                       Inbox
