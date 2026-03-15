@@ -63,9 +63,7 @@ export const listWithSessions = query({
       project: (typeof projects)[0] | null;
       sessions: (typeof allSessions)[0][];
     }> = [];
-    if (inboxSessions.length > 0) {
-      result.push({ project: null, sessions: inboxSessions });
-    }
+    result.push({ project: null, sessions: inboxSessions });
     for (const project of projects) {
       result.push({
         project,
