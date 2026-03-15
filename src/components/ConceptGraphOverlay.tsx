@@ -338,11 +338,14 @@ export function ConceptGraphOverlay({
                       (batch?.description ?? batch?.promptSummary ?? `Batch ${cluster.batchIndex + 1}`) +
                       (cluster.role === "next" ? " →" : "");
                     const isHovered = hoveredBatchIndex === cluster.batchIndex;
-                    const displayText = isHovered && batch?.description ? fullText : summary;
+                    const showFullDescription = isHovered && batch?.description;
+                    const displayText = showFullDescription ? fullText : summary;
                     const padX = 18;
                     const maxBoxW = Math.min(cluster.width - 24, 480);
                     const boxW = Math.max(80, Math.min(displayText.length * 8 + padX * 2, maxBoxW));
-                    const boxH = 36;
+                    const minBoxH = 36;
+                    const expandedBoxH = 120; // Fixed height when showing full description
+                    const boxH = showFullDescription ? expandedBoxH : minBoxH;
                     const cx = cluster.x + cluster.width / 2;
                     const cy = cluster.y + 30;
                     return (
@@ -368,11 +371,15 @@ export function ConceptGraphOverlay({
                           y={cy - boxH / 2 + 6}
                           width={boxW - 16}
                           height={boxH - 12}
-                          className="overflow-hidden"
-                          style={{ pointerEvents: "none" }}
+                          className={showFullDescription ? "overflow-y-auto overflow-x-hidden" : "overflow-hidden"}
+                          style={{ pointerEvents: showFullDescription ? "auto" : "none" }}
                         >
                           <div
-                            className="text-base font-black text-white text-center overflow-hidden text-ellipsis whitespace-nowrap w-full"
+                            className={`text-base font-black text-white w-full ${
+                              showFullDescription
+                                ? "text-left whitespace-pre-wrap break-words"
+                                : "text-center overflow-hidden text-ellipsis whitespace-nowrap"
+                            }`}
                             style={{
                               fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
                             }}
