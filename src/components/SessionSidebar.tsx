@@ -248,10 +248,10 @@ export function SessionSidebar({
               <div key={projectId ?? "inbox"} className="flex flex-col gap-1">
                 {project ? (
                   <div
-                    className={`flex items-center gap-1 group/project rounded-md transition-colors ${
+                    className={`flex items-center gap-1 group/project rounded-lg border transition-colors py-1.5 px-3 ${
                       activeProjectId === project._id
-                        ? "bg-violet-500/15 dark:bg-violet-400/20 border-l-2 border-violet-500 dark:border-violet-400"
-                        : "border-l-2 border-transparent"
+                        ? "bg-violet-500/20 dark:bg-violet-400/25 border-violet-500/50 dark:border-violet-400/50 hover:bg-violet-500/30 dark:hover:bg-violet-400/35"
+                        : "border-transparent hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
                     } ${dragOverProjectId === project._id ? "ring-2 ring-violet-500 dark:ring-violet-400 ring-inset" : ""}`}
                     onDragOver={(e) => {
                       e.preventDefault();
@@ -310,7 +310,7 @@ export function SessionSidebar({
                           e.stopPropagation();
                           setEditingProjectId(project._id);
                         }}
-                        className={`flex-1 min-w-0 py-1.5 px-2 text-left rounded truncate font-medium ${
+                        className={`flex-1 min-w-0 py-1 px-2 text-left rounded truncate font-medium text-sm ${
                           activeProjectId === project._id
                             ? "text-violet-700 dark:text-violet-300"
                             : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700"
@@ -330,7 +330,7 @@ export function SessionSidebar({
                           className="p-1 rounded bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/30 cursor-pointer"
                           aria-label="Confirm delete"
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M3 6h18" />
                             <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
                             <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
@@ -347,7 +347,7 @@ export function SessionSidebar({
                           className="p-1 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600 cursor-pointer"
                           aria-label="Cancel delete"
                         >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                             <path d="M18 6 6 18" />
                             <path d="m6 6 12 12" />
                           </svg>
@@ -360,10 +360,10 @@ export function SessionSidebar({
                           e.stopPropagation();
                           setConfirmDeleteProjectId(project._id);
                         }}
-                        className="p-1 rounded text-zinc-500 hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 opacity-0 group-hover/project:opacity-100 h-7 shrink-0 flex items-center justify-center cursor-pointer"
+                        className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover/project:opacity-100 hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 h-7 shrink-0 flex items-center justify-center"
                         aria-label="Delete project"
                       >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M3 6h18" />
                           <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
                           <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
@@ -375,10 +375,10 @@ export function SessionSidebar({
                   </div>
                 ) : (
                   <div
-                    className={`flex items-center gap-1 rounded-md transition-colors ${
+                    className={`flex items-center gap-1 rounded-lg border transition-colors py-1.5 px-3 ${
                       activeProjectId === null
-                        ? "bg-violet-500/15 dark:bg-violet-400/20 border-l-2 border-violet-500 dark:border-violet-400"
-                        : "border-l-2 border-transparent"
+                        ? "bg-violet-500/20 dark:bg-violet-400/25 border-violet-500/50 dark:border-violet-400/50 hover:bg-violet-500/30 dark:hover:bg-violet-400/35"
+                        : "border-transparent hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
                     } ${dragOverProjectId === "inbox" ? "ring-2 ring-violet-500 dark:ring-violet-400 ring-inset" : ""}`}
                     onDragOver={(e) => {
                       e.preventDefault();
@@ -398,7 +398,7 @@ export function SessionSidebar({
                     <button
                       type="button"
                       onClick={() => onSelectProject(null)}
-                      className={`flex-1 min-w-0 py-1.5 px-2 text-left rounded text-sm font-medium truncate ${
+                      className={`flex-1 min-w-0 py-1 px-2 text-left rounded text-sm font-medium truncate ${
                         activeProjectId === null
                           ? "text-violet-700 dark:text-violet-300"
                           : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
