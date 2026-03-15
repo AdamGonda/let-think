@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Class-based dark mode for manual toggle; fallback to system preference when no class */
+@custom-variant dark (&:where(.dark, .dark *));
+
 #root {
   width: 100%;
   max-width: 100%;

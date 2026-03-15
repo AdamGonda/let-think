@@ -2,11 +2,13 @@ import { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
+import { useTheme } from "./hooks/useTheme";
 import { SessionSidebar } from "./components/SessionSidebar";
 import { Chat } from "./components/Chat";
 import { ConceptGraphOverlay } from "./components/ConceptGraphOverlay";
 
 function App() {
+  const { toggleTheme, isDark } = useTheme();
   const [activeSessionId, setActiveSessionId] = useState<Id<"sessions"> | null>(
     null
   );
@@ -32,6 +34,8 @@ function App() {
       <SessionSidebar
         activeSessionId={activeSessionId}
         onSelectSession={setActiveSessionId}
+        onToggleTheme={toggleTheme}
+        isDark={isDark}
       />
       <main className="flex flex-1 flex-col min-w-0">
         <div className="flex flex-1 min-h-0 flex-col relative">
