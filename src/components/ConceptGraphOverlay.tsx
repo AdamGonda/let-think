@@ -202,6 +202,7 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
               width={dimensions.width}
               height={dimensions.height}
               nodeId="id"
+              nodeLabel={() => null}
               onNodeHover={handleNodeHover}
               nodeCanvasObject={handleNodeCanvasObject}
               nodeCanvasObjectMode={() => "replace"}
