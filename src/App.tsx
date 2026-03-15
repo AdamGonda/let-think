@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
@@ -72,6 +72,8 @@ function App() {
     setSelectedNodeIds(new Set());
   };
 
+  const mainContentRef = useRef<HTMLDivElement>(null);
+
   return (
     <div className="flex h-screen bg-white dark:bg-[#16171d]">
       <SessionSidebar
@@ -83,7 +85,7 @@ function App() {
         isDark={isDark}
       />
       <main className="flex flex-1 flex-col min-w-0">
-        <div className="flex flex-1 min-h-0 flex-col relative">
+        <div ref={mainContentRef} className="flex flex-1 min-h-0 flex-col relative">
           <div className="flex flex-1 min-h-0 items-stretch justify-stretch">
             {activeSessionId ? (
               <ConceptGraphOverlay
@@ -91,6 +93,7 @@ function App() {
                 graph={conceptGraph ?? null}
                 selectedNodeIds={selectedNodeIds}
                 onToggleNodeSelection={handleToggleNodeSelection}
+                modalContainerRef={mainContentRef}
               />
             ) : (
               <div className="flex flex-1 items-center justify-center text-zinc-600 dark:text-zinc-400 text-base py-6 px-6">

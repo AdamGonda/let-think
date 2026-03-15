@@ -1,4 +1,6 @@
 import { useRef, useEffect, useState, useMemo } from "react";
+import { createPortal } from "react-dom";
+import type { RefObject } from "react";
 
 type GraphNode = {
   id: string;
@@ -33,6 +35,7 @@ interface ConceptGraphOverlayProps {
   className?: string;
   selectedNodeIds?: Set<string>;
   onToggleNodeSelection?: (nodeId: string) => void;
+  modalContainerRef?: RefObject<HTMLDivElement | null>;
 }
 
 function measureText(text: string, font: string): { width: number; height: number } {
@@ -53,6 +56,7 @@ export function ConceptGraphOverlay({
   className,
   selectedNodeIds = new Set(),
   onToggleNodeSelection,
+  modalContainerRef,
 }: ConceptGraphOverlayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphViewportRef = useRef<HTMLDivElement>(null);
@@ -60,7 +64,7 @@ export function ConceptGraphOverlay({
   const svgRef = useRef<SVGSVGElement>(null);
   const [dimensions, setDimensions] = useState({ width: 400, height: 300 });
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
-  const [hoveredBatchIndex, setHoveredBatchIndex] = useState<number | null>(null);
+  const [batchModalIndex, setBatchModalIndex] = useState<number | null>(null);
   const [selectedBatchIndex, setSelectedBatchIndex] = useState<number>(0);
 
   // Build batches: use graph.batches, or fallback to single batch with all nodes
@@ -243,10 +247,7 @@ export function ConceptGraphOverlay({
       ref={containerRef}
       className={className ?? "flex flex-1 min-w-0 min-h-0 flex-col"}
       style={{ width: "100%", height: "100%" }}
-      onMouseLeave={() => {
-        setHoveredNode(null);
-        setHoveredBatchIndex(null);
-      }}
+      onMouseLeave={() => setHoveredNode(null)}
     >
       {isEmpty ? (
         <div className="flex flex-1 items-center justify-center text-zinc-600 dark:text-zinc-400 text-base py-6 px-6">
@@ -254,6 +255,42 @@ export function ConceptGraphOverlay({
         </div>
       ) : (
         <>
+        {batchModalIndex != null &&
+          batches[batchModalIndex]?.description &&
+          typeof document !== "undefined" &&
+          (() => {
+            const portalTarget = modalContainerRef?.current ?? document.body;
+            const isInMain = portalTarget !== document.body;
+            return createPortal(
+              <>
+                <div
+                  className={`${isInMain ? "absolute" : "fixed"} inset-0 z-[9999] bg-black/50`}
+                  onClick={() => setBatchModalIndex(null)}
+                />
+                <div
+                  className={`${isInMain ? "absolute" : "fixed"} left-1/2 top-1/2 z-[9999] w-full max-w-lg max-h-[80vh] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl bg-white dark:bg-zinc-800 shadow-2xl p-6 border border-zinc-200 dark:border-zinc-700 mx-6`}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                <p
+                  className="text-zinc-800 dark:text-white/95 whitespace-pre-wrap text-left leading-relaxed"
+                  style={{
+                    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                  }}
+                >
+                  {batches[batchModalIndex]!.description}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setBatchModalIndex(null)}
+                  className="mt-4 w-full py-2 rounded-lg bg-zinc-200 dark:bg-zinc-600 hover:bg-zinc-300 dark:hover:bg-zinc-500 text-zinc-800 dark:text-white/90 text-sm font-medium transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </>,
+            portalTarget
+          );
+          })()}
         <div
           ref={graphViewportRef}
           className="flex flex-1 min-h-0 min-w-0 overflow-auto relative py-6 px-8"
@@ -333,26 +370,21 @@ export function ConceptGraphOverlay({
                       (cluster.role === "prev" ? "← " : "") +
                       (batch?.promptSummary ?? `Batch ${cluster.batchIndex + 1}`) +
                       (cluster.role === "next" ? " →" : "");
-                    const fullText =
-                      (cluster.role === "prev" ? "← " : "") +
-                      (batch?.description ?? batch?.promptSummary ?? `Batch ${cluster.batchIndex + 1}`) +
-                      (cluster.role === "next" ? " →" : "");
-                    const isHovered = hoveredBatchIndex === cluster.batchIndex;
-                    const showFullDescription = isHovered && batch?.description;
-                    const displayText = showFullDescription ? fullText : summary;
                     const padX = 18;
-                    const maxBoxW = Math.min(cluster.width - 24, 480);
-                    const boxW = Math.max(80, Math.min(displayText.length * 8 + padX * 2, maxBoxW));
-                    const minBoxH = 36;
-                    const expandedBoxH = 120; // Fixed height when showing full description
-                    const boxH = showFullDescription ? expandedBoxH : minBoxH;
+                    const boxW = Math.max(80, summary.length * 10 + padX * 2);
+                    const boxH = 36;
                     const cx = cluster.x + cluster.width / 2;
                     const cy = cluster.y + 30;
                     return (
                       <g
-                        onMouseEnter={() => setHoveredBatchIndex(cluster.batchIndex)}
-                        onMouseLeave={() => setHoveredBatchIndex(null)}
-                        style={{ cursor: batch?.description ? "help" : undefined }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (batch?.description) {
+                            setBatchModalIndex(cluster.batchIndex);
+                            if (isDimmed) setSelectedBatchIndex(cluster.batchIndex);
+                          }
+                        }}
+                        style={{ cursor: batch?.description ? "pointer" : undefined }}
                       >
                         <rect
                           x={cx - boxW / 2}
@@ -366,27 +398,16 @@ export function ConceptGraphOverlay({
                           strokeWidth={isCenter ? 1.5 : 1}
                           style={isDimmed ? { opacity: 0.85 } : undefined}
                         />
-                        <foreignObject
-                          x={cx - boxW / 2 + 8}
-                          y={cy - boxH / 2 + 6}
-                          width={boxW - 16}
-                          height={boxH - 12}
-                          className={showFullDescription ? "overflow-y-auto overflow-x-hidden" : "overflow-hidden"}
-                          style={{ pointerEvents: showFullDescription ? "auto" : "none" }}
+                        <text
+                          x={cx}
+                          y={cy}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          className="fill-white text-base font-black"
+                          style={isDimmed ? { opacity: 0.9 } : undefined}
                         >
-                          <div
-                            className={`text-base font-black text-white w-full ${
-                              showFullDescription
-                                ? "text-left whitespace-pre-wrap break-words"
-                                : "text-center overflow-hidden text-ellipsis whitespace-nowrap"
-                            }`}
-                            style={{
-                              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                            }}
-                          >
-                            {displayText}
-                          </div>
-                        </foreignObject>
+                          {summary}
+                        </text>
                       </g>
                     );
                   })()}
