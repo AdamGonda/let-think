@@ -76,7 +76,7 @@ export function SessionSidebar({
             <div className="relative shrink-0" ref={openMenuId === session._id ? menuRef : undefined}>
               <button
                 type="button"
-                className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover:opacity-100 data-[open=true]:opacity-100 hover:bg-zinc-200 dark:hover:bg-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-200"
+                className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover:opacity-100 data-[open=true]:opacity-100 hover:bg-violet-500/20 dark:hover:bg-violet-400/25 hover:text-violet-700 dark:hover:text-violet-300"
                 data-open={openMenuId === session._id}
                 onClick={(e) => {
                   e.stopPropagation();
