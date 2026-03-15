@@ -23,6 +23,15 @@ export default defineSchema({
             target: v.string(),
           })
         ),
+        /** Batches of nodes per LLM response – for UI traversal/highlighting */
+        batches: v.optional(
+          v.array(
+            v.object({
+              id: v.string(),
+              nodeIds: v.array(v.string()),
+            })
+          )
+        ),
       })
     ),
   }).index("by_created", ["createdAt"]),

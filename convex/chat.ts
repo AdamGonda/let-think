@@ -86,7 +86,27 @@ export const send = action({
 
     let finalGraph: ConceptGraph | null = existingGraph;
     if (extractedGraph && extractedGraph.nodes.length > 0) {
-      finalGraph = extractedGraph;
+      const existingNodeIds: Set<string> = new Set(
+        (existingGraph?.nodes ?? []).map((n) => n.id)
+      );
+      const newNodeIds: string[] = extractedGraph.nodes
+        .filter((n) => !existingNodeIds.has(n.id))
+        .map((n) => n.id);
+      const existingBatches = existingGraph?.batches ?? [];
+      const batches: Array<{ id: string; nodeIds: string[] }> =
+        newNodeIds.length > 0
+          ? [
+              ...existingBatches,
+              {
+                id: `batch-${Date.now()}`,
+                nodeIds: newNodeIds,
+              },
+            ]
+          : existingBatches;
+      finalGraph = {
+        ...extractedGraph,
+        batches: batches.length > 0 ? batches : undefined,
+      };
       await ctx.runMutation(api.sessions.updateConceptGraph, {
         sessionId,
         conceptGraph: finalGraph,

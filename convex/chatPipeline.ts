@@ -3,6 +3,8 @@ import type { ModelMessage } from "ai";
 export type ConceptGraph = {
   nodes: Array< { id: string; name: string } >;
   edges: Array< { source: string; target: string } >;
+  /** Batches for UI traversal – nodeIds per batch */
+  batches?: Array< { id: string; nodeIds: string[] } >;
 };
 
 /** Extract CONCEPT GRAPH from LLM response (expects ```json ... ``` block, prefers last one at end). */

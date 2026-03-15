@@ -7,6 +7,7 @@ import ForceGraph2D, {
 export type ConceptGraphData = {
   nodes: Array< { id: string; name: string } >;
   edges: Array< { source: string; target: string } >;
+  batches?: Array< { id: string; nodeIds: string[] } >;
 };
 
 function toForceGraphData(data: ConceptGraphData | null) {
@@ -24,14 +25,44 @@ interface ConceptGraphOverlayProps {
 
 export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const graphAreaRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 400, height: 300 });
   const fgRef = useRef<ForceGraphMethods<NodeObject, { source: string; target: string }> | null>(null);
+  const batches = graph?.batches ?? [];
+  const [selectedBatchIndex, setSelectedBatchIndex] = useState<number | null>(null);
+
+  // Sync selectedBatchIndex with batches (default to last batch, clamp when out of bounds)
+  useEffect(() => {
+    if (batches.length === 0) {
+      setSelectedBatchIndex(null);
+    } else if (selectedBatchIndex === null) {
+      setSelectedBatchIndex(batches.length - 1);
+    } else if (selectedBatchIndex > batches.length) {
+      setSelectedBatchIndex(batches.length);
+    } else if (selectedBatchIndex < 0) {
+      setSelectedBatchIndex(0);
+    }
+  }, [batches.length, selectedBatchIndex]);
+
+  const effectiveBatchIndex =
+    selectedBatchIndex ?? (batches.length > 0 ? batches.length - 1 : null);
+  const isViewingAll =
+    effectiveBatchIndex != null && effectiveBatchIndex >= batches.length;
+  const highlightedNodeIds = new Set(
+    isViewingAll && graph
+      ? graph.nodes.map((n) => n.id)
+      : effectiveBatchIndex != null &&
+          effectiveBatchIndex < batches.length &&
+          batches[effectiveBatchIndex]
+        ? batches[effectiveBatchIndex].nodeIds
+        : []
+  );
 
   const graphData = toForceGraphData(graph);
   const isEmpty = graphData.nodes.length === 0;
 
   useEffect(() => {
-    const el = containerRef.current;
+    const el = graphAreaRef.current ?? containerRef.current;
     if (!el) return;
     const updateSize = () => {
       setDimensions({ width: el.clientWidth, height: el.clientHeight });
@@ -55,15 +86,21 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
     (node: { id?: string; name?: string; x?: number; y?: number }, ctx: CanvasRenderingContext2D, globalScale: number) => {
       const label = (node.name ?? node.id ?? "") as string;
       if (!label) return;
+      const isHighlighted =
+        batches.length === 0 || highlightedNodeIds.has((node.id as string) ?? "");
       const fontSize = Math.max(8, 11 / globalScale);
       ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
       const textWidth = ctx.measureText(label).width;
       const pad = fontSize * 0.5;
       const bckgDimensions = [textWidth + pad * 2, fontSize + pad];
 
-      ctx.fillStyle = "rgba(255,255,255,0.95)";
-      ctx.strokeStyle = "rgba(100,100,100,0.9)";
-      ctx.lineWidth = Math.max(0.5, 1.5 / globalScale);
+      ctx.fillStyle = isHighlighted
+        ? "rgba(255,255,255,0.98)"
+        : "rgba(255,255,255,0.4)";
+      ctx.strokeStyle = isHighlighted
+        ? "rgba(139,92,246,0.9)"
+        : "rgba(100,100,100,0.5)";
+      ctx.lineWidth = Math.max(0.5, (isHighlighted ? 2 : 1) / globalScale);
       const [w, h] = bckgDimensions;
       ctx.beginPath();
       const x = (node.x ?? 0) - w / 2;
@@ -84,33 +121,98 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
 
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillStyle = "rgba(20,20,20,1)";
+      ctx.fillStyle = isHighlighted ? "rgba(20,20,20,1)" : "rgba(80,80,80,0.7)";
       ctx.fillText(label, node.x ?? 0, node.y ?? 0);
     },
-    []
+    [batches.length, selectedBatchIndex]
   );
 
+  const hasBatches = batches.length > 0;
+  const maxIndex = batches.length; // batches.length = "All" view
+  const canGoPrev = effectiveBatchIndex != null && effectiveBatchIndex > 0;
+  const canGoNext =
+    effectiveBatchIndex != null && effectiveBatchIndex < maxIndex;
+
   return (
-    <div ref={containerRef} className={className ?? "flex flex-1 min-w-0 min-h-0"} style={{ width: "100%", height: "100%" }}>
+    <div
+      ref={containerRef}
+      className={className ?? "flex flex-1 min-w-0 min-h-0 flex-col"}
+      style={{ width: "100%", height: "100%" }}
+    >
       {isEmpty ? (
         <div className="flex flex-1 items-center justify-center text-zinc-600 dark:text-zinc-400 text-base py-6 px-6">
           Type a message to build your concept graph
         </div>
       ) : (
-        <ForceGraph2D
-          ref={fgRef}
-          graphData={graphData}
-          width={dimensions.width}
-          height={dimensions.height}
-          nodeId="id"
-          nodeLabel="name"
-          nodeCanvasObject={handleNodeCanvasObject}
-          nodeCanvasObjectMode={() => "replace"}
-          linkColor={() => "rgba(150,150,150,0.5)"}
-          linkWidth={1}
-          onEngineStop={() => fgRef.current?.zoomToFit(200)}
-          backgroundColor="rgba(255,255,255,0.85)"
-        />
+        <>
+          <div ref={graphAreaRef} className="flex-1 min-h-0 min-w-0">
+            <ForceGraph2D
+              ref={fgRef}
+              graphData={graphData}
+              width={dimensions.width}
+              height={dimensions.height}
+              nodeId="id"
+              nodeLabel="name"
+              nodeCanvasObject={handleNodeCanvasObject}
+              nodeCanvasObjectMode={() => "replace"}
+              linkColor={() => "rgba(150,150,150,0.5)"}
+              linkWidth={1}
+              onEngineStop={() => fgRef.current?.zoomToFit(200)}
+              backgroundColor="rgba(255,255,255,0.85)"
+            />
+          </div>
+          {hasBatches && (
+            <div className="relative z-10 flex items-center justify-center gap-3 py-2 px-3 border-t border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  if (!canGoPrev) return;
+                  setSelectedBatchIndex((i) => {
+                    const idx = i ?? batches.length - 1;
+                    return idx > 0 ? idx - 1 : idx;
+                  });
+                }}
+                aria-disabled={!canGoPrev}
+                tabIndex={canGoPrev ? 0 : -1}
+                className={`py-1.5 px-3 rounded-md text-sm font-medium transition-colors select-none ${
+                  canGoPrev
+                    ? "text-violet-600 dark:text-violet-400 hover:bg-violet-100 dark:hover:bg-violet-900/50 cursor-pointer active:scale-95"
+                    : "text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-50"
+                }`}
+                aria-label="Previous batch"
+              >
+                ← Prev
+              </button>
+              <span className="text-sm text-zinc-500 dark:text-zinc-400 tabular-nums min-w-12 text-center">
+                {effectiveBatchIndex != null
+                  ? isViewingAll
+                    ? "All"
+                    : `${effectiveBatchIndex + 1} / ${batches.length}`
+                  : "—"}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!canGoNext) return;
+                  setSelectedBatchIndex((i) => {
+                    const idx = i ?? batches.length - 1;
+                    return idx < maxIndex ? idx + 1 : idx;
+                  });
+                }}
+                aria-disabled={!canGoNext}
+                tabIndex={canGoNext ? 0 : -1}
+                className={`py-1.5 px-3 rounded-md text-sm font-medium transition-colors select-none ${
+                  canGoNext
+                    ? "text-violet-600 dark:text-violet-400 hover:bg-violet-100 dark:hover:bg-violet-900/50 cursor-pointer active:scale-95"
+                    : "text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-50"
+                }`}
+                aria-label="Next batch"
+              >
+                Next →
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

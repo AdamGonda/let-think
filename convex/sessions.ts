@@ -76,6 +76,9 @@ export const addMessages = mutation({
 const conceptGraphValidator = {
   nodes: v.array(v.object({ id: v.string(), name: v.string() })),
   edges: v.array(v.object({ source: v.string(), target: v.string() })),
+  batches: v.optional(
+    v.array(v.object({ id: v.string(), nodeIds: v.array(v.string()) }))
+  ),
 };
 
 export const updateConceptGraph = mutation({

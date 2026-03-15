@@ -35,7 +35,10 @@ function App() {
       <main className="flex flex-1 flex-col min-w-0">
         <div className="flex flex-1 min-h-0 items-stretch justify-stretch">
           {activeSessionId ? (
-            <ConceptGraphOverlay graph={conceptGraph ?? null} />
+            <ConceptGraphOverlay
+              key={activeSessionId}
+              graph={conceptGraph ?? null}
+            />
           ) : (
             <div className="flex flex-1 items-center justify-center text-zinc-600 dark:text-zinc-400 text-base py-6 px-6">
               Select a chat or create a new one to get started
