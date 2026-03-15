@@ -40,6 +40,8 @@ export function SessionSidebar({
   const [dragOverProjectId, setDragOverProjectId] = useState<string | "inbox" | null>(null);
   const [editingSessionId, setEditingSessionId] = useState<Id<"sessions"> | null>(null);
   const [editingProjectId, setEditingProjectId] = useState<Id<"projects"> | null>(null);
+  const [confirmDeleteSessionId, setConfirmDeleteSessionId] = useState<Id<"sessions"> | null>(null);
+  const [confirmDeleteProjectId, setConfirmDeleteProjectId] = useState<Id<"projects"> | null>(null);
   const sessionInputRef = useRef<HTMLInputElement>(null);
   const projectInputRef = useRef<HTMLInputElement>(null);
   const [isCollapsed, setIsCollapsed] = useState(() => {
@@ -131,6 +133,7 @@ export function SessionSidebar({
   }, [editingProjectId]);
 
   const handleDelete = async (id: Id<"sessions">) => {
+    setConfirmDeleteSessionId(null);
     const wasActive = activeSessionId === id;
     await removeSession({ id });
     if (wasActive) {
@@ -150,6 +153,7 @@ export function SessionSidebar({
   };
 
   const handleDeleteProject = async (id: Id<"projects">) => {
+    setConfirmDeleteProjectId(null);
     const wasActiveProject = activeProjectId === id;
     await removeProject({ id });
     if (wasActiveProject) {
@@ -315,23 +319,53 @@ export function SessionSidebar({
                         {project.name}
                       </button>
                     )}
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteProject(project._id);
-                      }}
-                      className="p-1 rounded text-zinc-500 hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 opacity-0 group-hover/project:opacity-100"
-                      aria-label="Delete project"
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M3 6h18" />
-                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                        <line x1="10" x2="10" y1="11" y2="17" />
-                        <line x1="14" x2="14" y1="11" y2="17" />
-                      </svg>
-                    </button>
+                    {confirmDeleteProjectId === project._id ? (
+                      <div className="flex items-center gap-0.5">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteProject(project._id);
+                          }}
+                          className="p-1 rounded text-zinc-500 hover:bg-green-500/20 hover:text-green-600 dark:hover:text-green-400"
+                          aria-label="Confirm delete"
+                        >
+                          <span className="text-sm">👌</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmDeleteProjectId(null);
+                          }}
+                          className="p-1 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600"
+                          aria-label="Cancel delete"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 6 6 18" />
+                            <path d="m6 6 12 12" />
+                          </svg>
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setConfirmDeleteProjectId(project._id);
+                        }}
+                        className="p-1 rounded text-zinc-500 hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 opacity-0 group-hover/project:opacity-100"
+                        aria-label="Delete project"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 6h18" />
+                          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                          <line x1="10" x2="10" y1="11" y2="17" />
+                          <line x1="14" x2="14" y1="11" y2="17" />
+                        </svg>
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div
@@ -421,23 +455,53 @@ export function SessionSidebar({
                           {session.title}
                         </button>
                       )}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(session._id);
-                        }}
-                        className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover:opacity-100 hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 shrink-0"
-                        aria-label="Delete session"
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M3 6h18" />
-                          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                          <line x1="10" x2="10" y1="11" y2="17" />
-                          <line x1="14" x2="14" y1="11" y2="17" />
-                        </svg>
-                      </button>
+                      {confirmDeleteSessionId === session._id ? (
+                        <div className="flex items-center gap-0.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDelete(session._id);
+                            }}
+                            className="p-1 rounded text-zinc-500 hover:bg-green-500/20 hover:text-green-600 dark:hover:text-green-400"
+                            aria-label="Confirm delete"
+                          >
+                            <span className="text-sm">👌</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmDeleteSessionId(null);
+                            }}
+                            className="p-1 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600"
+                            aria-label="Cancel delete"
+                          >
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M18 6 6 18" />
+                              <path d="m6 6 12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setConfirmDeleteSessionId(session._id);
+                          }}
+                          className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover:opacity-100 hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 shrink-0"
+                          aria-label="Delete session"
+                        >
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M3 6h18" />
+                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                            <line x1="10" x2="10" y1="11" y2="17" />
+                            <line x1="14" x2="14" y1="11" y2="17" />
+                          </svg>
+                        </button>
+                      )}
                     </div>
                   ))}
               </div>
