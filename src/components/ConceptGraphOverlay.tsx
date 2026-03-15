@@ -99,9 +99,10 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
     let rafId: number;
     const updatePos = () => {
       if (!fgRef.current || !hoveredNode) return;
-      const x = hoveredNode.x ?? 0;
+      const bckgDimensions = (hoveredNode as { __bckgDimensions?: [number, number] }).__bckgDimensions ?? [50, 24];
+      const leftX = (hoveredNode.x ?? 0) - bckgDimensions[0] / 2;
       const y = hoveredNode.y ?? 0;
-      const { x: sx, y: sy } = fgRef.current.graph2ScreenCoords(x, y);
+      const { x: sx, y: sy } = fgRef.current.graph2ScreenCoords(leftX, y);
       setTooltipPos({ x: sx, y: sy });
     };
     updatePos();
@@ -225,7 +226,7 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
                     left:
                       graphAreaRef.current.getBoundingClientRect().left +
                       tooltipPos.x +
-                      12,
+                      4,
                     top:
                       graphAreaRef.current.getBoundingClientRect().top +
                       tooltipPos.y,
