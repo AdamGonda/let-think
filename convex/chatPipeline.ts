@@ -88,7 +88,7 @@ export async function preProcess(
   ctx?: PipelineContext
 ): Promise<ModelMessage[]> {
   const existing = ctx?.conceptGraph;
-  const n = Math.min(3, Math.max(1, ctx?.branching ?? 2));
+  const n = Math.min(6, Math.max(1, ctx?.branching ?? 2));
   const graphContext = existing
     ? `\n\nEXISTING CONCEPT GRAPH (merge new nodes into this):\n${JSON.stringify(existing)}`
     : "";
