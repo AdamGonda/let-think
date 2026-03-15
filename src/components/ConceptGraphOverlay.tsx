@@ -297,7 +297,7 @@ export function ConceptGraphOverlay({
         <>
         <div
           ref={graphViewportRef}
-          className="flex flex-1 min-h-0 min-w-0 overflow-hidden relative py-6 px-8"
+          className="flex flex-1 min-h-0 min-w-0 overflow-auto relative py-6 px-8"
         >
           <div
             className="inline-block"
