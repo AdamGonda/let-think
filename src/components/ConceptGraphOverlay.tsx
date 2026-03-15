@@ -220,7 +220,7 @@ export function ConceptGraphOverlay({
 
     // Build full rail: fixed x positions for every batch (stable across navigation)
     const maxHeight = Math.max(...allDims.map((d) => d.height), 100);
-    // Center the cluster in the visible content area (px-8 padding reduces the content box)
+    // Center the cluster in the visible content area (px-4 padding reduces the content box)
     const contentWidth = dimensions.width - 2 * VIEWPORT_PADDING;
     const viewportCenterX = contentWidth / 2;
 
@@ -368,7 +368,7 @@ export function ConceptGraphOverlay({
           })()}
         <div
           ref={graphViewportRef}
-          className="flex flex-1 min-h-0 min-w-0 overflow-hidden relative py-4 px-8 touch-none"
+          className="flex flex-1 min-h-0 min-w-0 overflow-hidden relative py-4 touch-none"
         >
           <div
             className="inline-block"
@@ -614,7 +614,7 @@ export function ConceptGraphOverlay({
         {hasBatches && (
           <div
             ref={stepperRef}
-            className="relative z-10 flex items-center justify-center gap-3 py-2 px-8 border-t border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shrink-0"
+            className="relative z-10 flex items-center justify-center gap-3 py-2 px-4 border-t border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shrink-0"
           >
             <button
               type="button"
