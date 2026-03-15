@@ -89,46 +89,25 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
   const canGoNext = selectedBatchIndex < batches.length - 1;
   const isEmpty = !graph?.nodes?.length;
 
-  // Visible batches: prev (if any), center, next (if any)
-  const visibleBatches = useMemo(() => {
-    const result: Array<{ batch: (typeof batches)[0]; index: number; role: "prev" | "center" | "next" }> = [];
-    if (batches.length === 0) return result;
-    const curr = batches[selectedBatchIndex];
-    if (!curr) return result;
-
-    if (canGoPrev) {
-      result.push({ batch: batches[selectedBatchIndex - 1]!, index: selectedBatchIndex - 1, role: "prev" });
-    }
-    result.push({ batch: curr, index: selectedBatchIndex, role: "center" });
-    if (canGoNext) {
-      result.push({ batch: batches[selectedBatchIndex + 1]!, index: selectedBatchIndex + 1, role: "next" });
-    }
-    return result;
-  }, [batches, selectedBatchIndex, canGoPrev, canGoNext]);
-
-  // Compute layout: 3 clusters max (prev | center | next), centered in viewport
+  // Compute a STABLE full rail layout for ALL batches. Cluster positions stay fixed;
+  // only translateX changes when navigating, enabling smooth CSS transition.
   const layout = useMemo(() => {
-    const clusters: Array<{
-      x: number;
-      y: number;
-      width: number;
-      height: number;
-      role: "prev" | "center" | "next";
-      batchIndex: number;
-      nodes: Array<{ node: GraphNode; x: number; y: number; w: number; h: number }>;
-    }> = [];
     const font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
 
-    // First compute dimensions for each visible batch
-    const clusterDims: Array<{ width: number; height: number; nodes: Array<{ node: GraphNode; x: number; y: number; w: number; h: number }> }> = [];
+    // Compute dimensions for ALL batches (stable rail)
+    const allDims: Array<{
+      width: number;
+      height: number;
+      nodes: Array<{ node: GraphNode; x: number; y: number; w: number; h: number }>;
+    }> = [];
 
-    for (const { batch } of visibleBatches) {
+    for (const batch of batches) {
       const batchNodes = batch.nodeIds
         .map((id) => nodeMap.get(id))
         .filter((n): n is GraphNode => n != null);
 
       if (batchNodes.length === 0) {
-        clusterDims.push({ width: 120, height: 80, nodes: [] });
+        allDims.push({ width: 120, height: 80, nodes: [] });
         continue;
       }
 
@@ -147,54 +126,85 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
       const clusterWidth = maxW + CLUSTER_PAD;
       const nodeFullWidth = clusterWidth - 2 * CLUSTER_PAD;
 
-      clusterDims.push({
+      allDims.push({
         width: clusterWidth,
         height: clusterHeight,
         nodes: nodeLayouts.map((nl) => ({ ...nl, w: nodeFullWidth, h: nl.h })),
       });
     }
 
-    // Position clusters in a horizontal "rail" (prev | center | next) - no pre-centering.
-    // translateX will pan to center the selected batch, and it CHANGES when switching batches,
-    // enabling smooth CSS transitions.
-    const maxHeight = Math.max(...clusterDims.map((d) => d.height), 100);
+    if (allDims.length === 0) {
+      return {
+        clusters: [],
+        totalWidth: dimensions.width,
+        totalHeight: dimensions.height,
+        translateX: 0,
+      };
+    }
+
+    // Build full rail: fixed x positions for every batch (stable across navigation)
+    const maxHeight = Math.max(...allDims.map((d) => d.height), 100);
     const viewportCenterX = dimensions.width / 2;
 
+    const allClusters: Array<{
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+      role: "prev" | "center" | "next";
+      batchIndex: number;
+      nodes: Array<{ node: GraphNode; x: number; y: number; w: number; h: number }>;
+    }> = [];
+
     let x = VIEWPORT_PADDING;
-    visibleBatches.forEach((vb, i) => {
-      const dims = clusterDims[i]!;
-      clusters.push({
+    for (let i = 0; i < batches.length; i++) {
+      const dims = allDims[i]!;
+      const role: "prev" | "center" | "next" =
+        i < selectedBatchIndex ? "prev" : i > selectedBatchIndex ? "next" : "center";
+      const clusterY = Math.max(CLUSTER_PAD, (dimensions.height - dims.height) / 2);
+
+      allClusters.push({
         x,
-        y: Math.max(CLUSTER_PAD, (dimensions.height - dims.height) / 2),
+        y: clusterY,
         width: dims.width,
         height: dims.height,
-        role: vb.role,
-        batchIndex: vb.index,
+        role,
+        batchIndex: i,
         nodes: dims.nodes.map((nl) => ({
           ...nl,
           x: nl.x + x,
-          y: nl.y + Math.max(CLUSTER_PAD, (dimensions.height - dims.height) / 2),
+          y: nl.y + clusterY,
           w: nl.w,
           h: nl.h,
         })),
       });
       x += dims.width + CLUSTER_GAP;
-    });
+    }
 
-    const contentMinX = clusters.length > 0 ? Math.min(...clusters.map((c) => c.x)) : 0;
-    const contentMaxX = clusters.length > 0 ? Math.max(...clusters.map((c) => c.x + c.width)) : dimensions.width;
-    const contentWidth = Math.max(dimensions.width, contentMaxX - contentMinX + VIEWPORT_PADDING * 2);
-    const centerCluster = clusters.find((c) => c.role === "center");
-    const centerClusterCenter = centerCluster ? centerCluster.x + centerCluster.width / 2 : dimensions.width / 2;
+    // Only include prev, center, next for rendering (3 max)
+    const prevIdx = selectedBatchIndex - 1;
+    const nextIdx = selectedBatchIndex + 1;
+    const indicesToRender = [
+      ...(prevIdx >= 0 ? [prevIdx] : []),
+      selectedBatchIndex,
+      ...(nextIdx < batches.length ? [nextIdx] : []),
+    ];
+    const clusters = indicesToRender.map((i) => allClusters[i]!);
+
+    const contentMaxX = allClusters.length > 0 ? allClusters[allClusters.length - 1]!.x + allClusters[allClusters.length - 1]!.width : dimensions.width;
+    const totalWidth = Math.max(dimensions.width, contentMaxX + VIEWPORT_PADDING);
+
+    const centerCluster = allClusters[selectedBatchIndex];
+    const centerClusterCenter = centerCluster ? centerCluster.x + centerCluster.width / 2 : viewportCenterX;
     const translateX = viewportCenterX - centerClusterCenter;
 
     return {
       clusters,
-      totalWidth: contentWidth,
+      totalWidth,
       totalHeight: Math.max(dimensions.height, maxHeight + CLUSTER_PAD * 2),
       translateX,
     };
-  }, [visibleBatches, nodeMap, dimensions]);
+  }, [batches, selectedBatchIndex, nodeMap, dimensions]);
 
   useEffect(() => {
     const el = graphViewportRef.current ?? containerRef.current;
@@ -240,9 +250,10 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
         <>
         <div
           ref={graphViewportRef}
-          className="flex flex-1 min-h-0 min-w-0 overflow-auto relative py-6 px-8"
+          className="flex flex-1 min-h-0 min-w-0 overflow-hidden relative py-6 px-8"
         >
           <div
+            className="inline-block"
             style={{
               transform: `translate3d(${layout.translateX}px, 0, 0)`,
               transition: "transform 0.4s cubic-bezier(0.32, 0.72, 0, 1)",
@@ -285,7 +296,7 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
               const midX = (fromX + toX) / 2;
               return (
                 <path
-                  key={`flow-${i}`}
+                  key={`flow-${curr.batchIndex}-${next.batchIndex}`}
                   d={`M ${fromX} ${fromY} C ${midX} ${fromY}, ${midX} ${toY}, ${toX} ${toY}`}
                   fill="none"
                   stroke="rgba(139,92,246,0.5)"
@@ -297,12 +308,12 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
             })}
 
             {/* Cluster backgrounds and nodes */}
-            {layout.clusters.map((cluster, ci) => {
+            {layout.clusters.map((cluster) => {
               const isCenter = cluster.role === "center";
               const isDimmed = cluster.role !== "center";
               return (
                 <g
-                  key={`cluster-${ci}`}
+                  key={`cluster-${cluster.batchIndex}`}
                   onClick={
                     isDimmed
                       ? () => setSelectedBatchIndex(cluster.batchIndex)
@@ -328,7 +339,6 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
                         `Batch ${cluster.batchIndex + 1}`) +
                       (cluster.role === "next" ? " →" : "");
                     const padX = 18;
-                    const padY = 10;
                     const boxW = Math.max(80, label.length * 10 + padX * 2);
                     const boxH = 36;
                     const cx = cluster.x + cluster.width / 2;
