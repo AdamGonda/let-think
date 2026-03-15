@@ -466,29 +466,49 @@ export function ConceptGraphOverlay({
                           />
                         </g>
                       )}
-                      <text
-                        x={showDescription ? x + 24 : x + w / 2}
-                        y={showDescription ? y + 20 : y + h / 2}
-                        textAnchor={showDescription ? "start" : "middle"}
-                        dominantBaseline={showDescription ? "hanging" : "middle"}
-                        className={`text-xl font-semibold ${isSelected ? "fill-white" : "fill-zinc-800 dark:fill-zinc-200"}`}
-                        style={
-                          isDimmed && !isSelected
-                            ? { opacity: 0.9 }
-                            : isSelected
-                              ? { textShadow: "0 1px 2px rgba(0,0,0,0.4)" }
-                              : undefined
-                        }
-                      >
-                        {node.name}
-                      </text>
-                      {showDescription && (
+                      <g style={{ pointerEvents: "none" }}>
+                        <text
+                          x={x + w / 2}
+                          y={y + h / 2}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          className={`text-xl font-semibold ${isSelected ? "fill-white" : "fill-zinc-800 dark:fill-zinc-200"}`}
+                          style={{
+                            opacity: showDescription ? 0 : isDimmed && !isSelected ? 0.9 : 1,
+                            transition: "opacity 200ms ease-out",
+                            ...(isSelected ? { textShadow: "0 1px 2px rgba(0,0,0,0.4)" } : {}),
+                          }}
+                        >
+                          {node.name}
+                        </text>
+                        <text
+                          x={x + 24}
+                          y={y + 20}
+                          textAnchor="start"
+                          dominantBaseline="hanging"
+                          className={`text-xl font-semibold ${isSelected ? "fill-white" : "fill-zinc-800 dark:fill-zinc-200"}`}
+                          style={{
+                            opacity: showDescription ? (isDimmed && !isSelected ? 0.9 : 1) : 0,
+                            transition: "opacity 200ms ease-out",
+                            ...(isSelected ? { textShadow: "0 1px 2px rgba(0,0,0,0.4)" } : {}),
+                          }}
+                        >
+                          {node.name}
+                        </text>
+                      </g>
+                      {node.description && (
                         <foreignObject
                           x={x + 24}
                           y={y + 44}
                           width={w - 48}
                           height={h - 52}
                           className="overflow-hidden"
+                          style={{
+                            opacity: showDescription ? 1 : 0,
+                            transform: showDescription ? "translateY(0)" : "translateY(-8px)",
+                            transition: "opacity 200ms ease-out, transform 200ms ease-out",
+                            pointerEvents: showDescription ? "auto" : "none",
+                          }}
                         >
                           <div
                             className={`text-sm leading-snug line-clamp-3 ${isSelected ? "text-white/90" : "text-zinc-600 dark:text-zinc-400"}`}
