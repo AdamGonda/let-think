@@ -26,7 +26,7 @@ const VIEWPORT_PADDING = 32;
 const ARROW_SIZE = 8;
 const MIN_NODE_WIDTH = 340;
 const NODE_HEIGHT = 84;
-const NODE_HEIGHT_EXPANDED = 120;
+const NODE_HEIGHT_EXPANDED = 160;
 
 interface ConceptGraphOverlayProps {
   graph: ConceptGraphData | null;
@@ -502,7 +502,7 @@ export function ConceptGraphOverlay({
                           y={y + 44}
                           width={w - 48}
                           height={h - 52}
-                          className="overflow-hidden"
+                          className="overflow-y-auto overflow-x-hidden"
                           style={{
                             opacity: showDescription ? 1 : 0,
                             transform: showDescription ? "translateY(0)" : "translateY(-8px)",
@@ -511,7 +511,7 @@ export function ConceptGraphOverlay({
                           }}
                         >
                           <div
-                            className={`text-sm leading-snug line-clamp-3 ${isSelected ? "text-white/90" : "text-zinc-600 dark:text-zinc-400"}`}
+                            className={`text-sm leading-snug ${isSelected ? "text-white/90" : "text-zinc-600 dark:text-zinc-400"}`}
                             style={{
                               width: "100%",
                               fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
