@@ -24,7 +24,8 @@ const NODE_GAP = 32;
 const CLUSTER_PAD = 24;
 const CLUSTER_GAP = 120;
 const BATCH_HEADER = 40;
-const VIEWPORT_PADDING = 16;
+const BATCH_HEADER_GAP = 56;
+const VIEWPORT_PADDING = 0;
 const ARROW_SIZE = 8;
 const MIN_NODE_WIDTH = 420;
 const NODE_HEIGHT = 100;
@@ -139,7 +140,7 @@ export function ConceptGraphOverlay({
   // only translateX changes when navigating, enabling smooth CSS transition.
   const layout = useMemo(() => {
     const gridAreaWidth = dimensions.width - 2 * VIEWPORT_PADDING - 2 * CLUSTER_PAD;
-    const gridAreaHeight = dimensions.height - 32 - BATCH_HEADER - 2 * CLUSTER_PAD;
+    const gridAreaHeight = dimensions.height - 32 - BATCH_HEADER - BATCH_HEADER_GAP - CLUSTER_PAD;
 
     const maxNumRows = Math.max(
       1,
@@ -185,7 +186,7 @@ export function ConceptGraphOverlay({
       }
 
       const nodeLayouts: Array<{ node: GraphNode; x: number; y: number; w: number; h: number }> = [];
-      let cy = BATCH_HEADER + CLUSTER_PAD;
+      let cy = BATCH_HEADER + BATCH_HEADER_GAP;
       for (let i = 0; i < batchNodes.length; i++) {
         const node = batchNodes[i]!;
         const col = i % GRID_COLS;
