@@ -264,10 +264,7 @@ export function SessionSidebar({
                     </button>
                     <button
                       type="button"
-                      onClick={() => {
-                        onSelectProject(project._id);
-                        setExpandedProjectIds((prev) => new Set([...prev, project._id]));
-                      }}
+                      onClick={() => onSelectProject(project._id)}
                       className={`flex-1 min-w-0 py-1.5 px-2 text-left rounded truncate font-medium ${
                         activeProjectId === project._id
                           ? "text-violet-700 dark:text-violet-300"
