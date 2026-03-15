@@ -53,16 +53,4 @@ export default defineSchema({
     content: v.string(),
     createdAt: v.number(),
   }).index("by_session", ["sessionId"]),
-
-  sessionEmbeddings: defineTable({
-    sessionId: v.id("sessions"),
-    embedding: v.array(v.float64()),
-    projectId: v.optional(v.id("projects")),
-  })
-    .index("by_session", ["sessionId"])
-    .vectorIndex("by_embedding", {
-      vectorField: "embedding",
-      dimensions: 3072,
-      filterFields: ["projectId"],
-    }),
 });

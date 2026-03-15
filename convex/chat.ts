@@ -161,8 +161,6 @@ export const send = action({
       });
     }
 
-    await ctx.scheduler.runAfter(0, api.embeddings.upsert, { sessionId });
-
     return { content: processedContent, conceptGraph: finalGraph };
   },
 });

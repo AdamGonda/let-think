@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { useQuery, useMutation, useAction } from "convex/react";
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id, Doc } from "../../convex/_generated/dataModel";
 
@@ -34,9 +34,8 @@ export function SessionSidebar({
   const removeSession = useMutation(api.sessions.remove);
   const moveToProject = useMutation(api.sessions.moveToProject);
   const removeProject = useMutation(api.projects.remove);
-  const updateTitle = useAction(api.sessions.updateTitle);
+  const updateTitle = useMutation(api.sessions.updateTitle);
   const updateProjectName = useMutation(api.projects.updateName);
-  const searchAction = useAction(api.embeddings.search);
   const [expandedProjectIds, setExpandedProjectIds] = useState<Set<string>>(() => new Set());
   const [dragOverProjectId, setDragOverProjectId] = useState<string | "inbox" | null>(null);
   const [editingSessionId, setEditingSessionId] = useState<Id<"sessions"> | null>(null);
@@ -52,12 +51,6 @@ export function SessionSidebar({
       return false;
     }
   });
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<
-    { sessions: Doc<"sessions">[]; scores: number[] } | null
-  >(null);
-  const [isSearching, setIsSearching] = useState(false);
-  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Expand project containing active session by default
   useEffect(() => {
@@ -83,67 +76,8 @@ export function SessionSidebar({
     }
   }, [isCollapsed]);
 
-  const runSearch = useCallback(async () => {
-    if (!searchQuery.trim()) {
-      setSearchResults(null);
-      return;
-    }
-    setIsSearching(true);
-    try {
-      const result = await searchAction({
-        query: searchQuery.trim(),
-        limit: 10,
-        projectId: activeProjectId ?? undefined,
-      });
-      setSearchResults(result);
-    } catch {
-      setSearchResults({ sessions: [], scores: [] });
-    } finally {
-      setIsSearching(false);
-    }
-  }, [searchQuery, searchAction, activeProjectId]);
-
-  useEffect(() => {
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-      searchTimeoutRef.current = null;
-    }
-    if (!searchQuery.trim()) {
-      setSearchResults(null);
-      setIsSearching(false);
-      return;
-    }
-    searchTimeoutRef.current = setTimeout(runSearch, 300);
-    return () => {
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-      }
-    };
-  }, [searchQuery, runSearch]);
-
-  const handleSearchKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      if (searchTimeoutRef.current) {
-        clearTimeout(searchTimeoutRef.current);
-        searchTimeoutRef.current = null;
-      }
-      runSearch();
-    } else if (e.key === "Escape") {
-      setSearchQuery("");
-      setSearchResults(null);
-    }
-  };
-
-  const handleSearchResultClick = (session: Doc<"sessions">) => {
-    onSelectSession(session._id);
-    if (session.projectId) onSelectProject(session.projectId);
-    setSearchQuery("");
-    setSearchResults(null);
-  };
-
   const allSessions = data?.flatMap((g: ProjectWithSessions) => g.sessions) ?? [];
-  const hasProjects = (data?.some((g: ProjectWithSessions) => g.project != null) ?? false);
+  const hasProjects = (data?.some((g) => g.project != null) ?? false);
   const isInboxSelected = activeProjectId === null && hasProjects;
 
   const handleNewChat = async (projectId?: Id<"projects">) => {
@@ -313,47 +247,8 @@ export function SessionSidebar({
         </button>
       </div>
       {!isCollapsed && (
-        <>
-          <div className="px-3 pb-2">
-            <input
-              type="text"
-              placeholder="Search chats by meaning..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-              className="w-full py-2 px-3 rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#16171d] text-zinc-950 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 text-sm outline-none focus:ring-2 focus:ring-violet-500/50 dark:focus:ring-violet-400/50 focus:border-violet-500/50 dark:focus:border-violet-400/50"
-            />
-          </div>
-          <nav className="flex-1 overflow-y-auto py-3 px-3 flex flex-col gap-3">
-            {searchQuery.trim() ? (
-              <div className="flex flex-col gap-1">
-                {isSearching ? (
-                  <div className="py-4 px-3 text-center text-sm text-zinc-500 dark:text-zinc-400">
-                    Searching...
-                  </div>
-                ) : searchResults && searchResults.sessions.length > 0 ? (
-                  searchResults.sessions.map((session) => (
-                    <button
-                      key={session._id}
-                      type="button"
-                      onClick={() => handleSearchResultClick(session)}
-                      className={`w-full py-1.5 px-3 text-left rounded-lg border transition-colors text-sm ${
-                        activeSessionId === session._id
-                          ? "bg-violet-500/20 dark:bg-violet-400/25 border-violet-500/50 dark:border-violet-400/50"
-                          : "border-transparent hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
-                      }`}
-                    >
-                      <span className="truncate block">{session.title}</span>
-                    </button>
-                  ))
-                ) : searchResults ? (
-                  <div className="py-4 px-3 text-center text-sm text-zinc-500 dark:text-zinc-400">
-                    No matching chats found
-                  </div>
-                ) : null}
-              </div>
-            ) : (
-              data?.map((group: ProjectWithSessions) => {
+        <nav className="flex-1 overflow-y-auto py-3 px-3 flex flex-col gap-3">
+          {data?.map((group: ProjectWithSessions) => {
             const project = group.project;
             const sessions = group.sessions;
             const projectId = project?._id ?? null;
@@ -656,10 +551,8 @@ export function SessionSidebar({
                   ))}
               </div>
             );
-          })
-            )}
-          </nav>
-        </>
+          })}
+        </nav>
       )}
       <div className={`flex items-center p-3 border-t border-zinc-200 dark:border-zinc-700 ${isCollapsed ? "justify-center" : ""}`}>
         <button

@@ -82,11 +82,6 @@ export const remove = mutation({
       .withIndex("by_project", (q) => q.eq("projectId", id))
       .collect();
     for (const session of sessions) {
-      const embedding = await ctx.db
-        .query("sessionEmbeddings")
-        .withIndex("by_session", (q) => q.eq("sessionId", session._id))
-        .unique();
-      if (embedding) await ctx.db.delete(embedding._id);
       const messages = await ctx.db
         .query("messages")
         .withIndex("by_session", (q) => q.eq("sessionId", session._id))

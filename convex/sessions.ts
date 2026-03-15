@@ -1,6 +1,5 @@
 import { v } from "convex/values";
-import { action, internalMutation, mutation, query } from "./_generated/server";
-import { api, internal } from "./_generated/api";
+import { mutation, query } from "./_generated/server";
 
 export const list = query({
   args: {},
@@ -43,19 +42,13 @@ export const create = mutation({
   },
 });
 
-const patchTitleValidator = { id: v.id("sessions"), title: v.string() };
-export const patchTitle = internalMutation({
-  args: patchTitleValidator,
+export const updateTitle = mutation({
+  args: {
+    id: v.id("sessions"),
+    title: v.string(),
+  },
   handler: async (ctx, { id, title }) => {
     await ctx.db.patch(id, { title });
-  },
-});
-
-export const updateTitle = action({
-  args: patchTitleValidator,
-  handler: async (ctx, { id, title }) => {
-    await ctx.runMutation(internal.sessions.patchTitle, { id, title });
-    await ctx.scheduler.runAfter(0, api.embeddings.upsert, { sessionId: id });
   },
 });
 
@@ -72,11 +65,6 @@ export const moveToProject = mutation({
 export const remove = mutation({
   args: { id: v.id("sessions") },
   handler: async (ctx, { id }) => {
-    const embedding = await ctx.db
-      .query("sessionEmbeddings")
-      .withIndex("by_session", (q) => q.eq("sessionId", id))
-      .unique();
-    if (embedding) await ctx.db.delete(embedding._id);
     const messages = await ctx.db
       .query("messages")
       .withIndex("by_session", (q) => q.eq("sessionId", id))
@@ -156,13 +144,6 @@ export const updateConceptGraph = mutation({
   },
   handler: async (ctx, { sessionId, conceptGraph }) => {
     await ctx.db.patch(sessionId, { conceptGraph });
-  },
-});
-
-export const get = query({
-  args: { sessionId: v.id("sessions") },
-  handler: async (ctx, { sessionId }) => {
-    return ctx.db.get(sessionId);
   },
 });
 
