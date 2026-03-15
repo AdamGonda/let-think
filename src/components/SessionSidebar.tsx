@@ -42,6 +42,10 @@ export function SessionSidebar({
   const projectMenuRef = useRef<HTMLDivElement>(null);
   const [expandedProjectIds, setExpandedProjectIds] = useState<Set<string>>(() => new Set());
   const [dragOverProjectId, setDragOverProjectId] = useState<string | "inbox" | null>(null);
+  const [editingSessionId, setEditingSessionId] = useState<Id<"sessions"> | null>(null);
+  const [editingProjectId, setEditingProjectId] = useState<Id<"projects"> | null>(null);
+  const sessionInputRef = useRef<HTMLInputElement>(null);
+  const projectInputRef = useRef<HTMLInputElement>(null);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     try {
       return localStorage.getItem("sidebar-collapsed") === "true";
@@ -102,21 +106,35 @@ export function SessionSidebar({
     });
   };
 
-  const handleRename = async (id: Id<"sessions">, currentTitle: string) => {
-    const title = window.prompt("Rename chat", currentTitle);
+  const handleRename = async (id: Id<"sessions">, title: string) => {
     if (title?.trim()) {
       await updateTitle({ id, title: title.trim() });
     }
+    setEditingSessionId(null);
     setOpenMenuId(null);
   };
 
-  const handleRenameProject = async (id: Id<"projects">, currentName: string) => {
-    const name = window.prompt("Rename project", currentName);
+  const handleRenameProject = async (id: Id<"projects">, name: string) => {
     if (name?.trim()) {
       await updateProjectName({ id, name: name.trim() });
     }
+    setEditingProjectId(null);
     setProjectMenuId(null);
   };
+
+  useEffect(() => {
+    if (editingSessionId) {
+      sessionInputRef.current?.focus();
+      sessionInputRef.current?.select();
+    }
+  }, [editingSessionId]);
+
+  useEffect(() => {
+    if (editingProjectId) {
+      projectInputRef.current?.focus();
+      projectInputRef.current?.select();
+    }
+  }, [editingProjectId]);
 
   const handleDelete = async (id: Id<"sessions">) => {
     const wasActive = activeSessionId === id;
@@ -288,17 +306,42 @@ export function SessionSidebar({
                         <path d="m6 9 6 6 6-6" />
                       </svg>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => onSelectProject(project._id)}
-                      className={`flex-1 min-w-0 py-1.5 px-2 text-left rounded truncate font-medium ${
-                        activeProjectId === project._id
-                          ? "text-violet-700 dark:text-violet-300"
-                          : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-                      }`}
-                    >
-                      {project.name}
-                    </button>
+                    {editingProjectId === project._id ? (
+                      <input
+                        ref={projectInputRef}
+                        type="text"
+                        defaultValue={project.name}
+                        className="flex-1 min-w-0 py-1 px-2 text-left rounded text-sm font-medium bg-white dark:bg-zinc-800 border border-violet-500 dark:border-violet-400 text-zinc-900 dark:text-zinc-100 outline-none"
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            handleRenameProject(project._id, (e.target as HTMLInputElement).value);
+                          } else if (e.key === "Escape") {
+                            setEditingProjectId(null);
+                            setProjectMenuId(null);
+                          }
+                        }}
+                        onBlur={(e) => {
+                          handleRenameProject(project._id, e.target.value);
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => onSelectProject(project._id)}
+                        onDoubleClick={(e) => {
+                          e.stopPropagation();
+                          setEditingProjectId(project._id);
+                        }}
+                        className={`flex-1 min-w-0 py-1.5 px-2 text-left rounded truncate font-medium ${
+                          activeProjectId === project._id
+                            ? "text-violet-700 dark:text-violet-300"
+                            : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                        }`}
+                      >
+                        {project.name}
+                      </button>
+                    )}
                     <div className="flex items-center gap-0.5 opacity-0 group-hover/project:opacity-100">
                       <div className="relative" ref={projectMenuId === project._id ? projectMenuRef : undefined}>
                         <button
@@ -318,17 +361,6 @@ export function SessionSidebar({
                         </button>
                         {projectMenuId === project._id && (
                           <div className="absolute left-0 top-full mt-1 py-1.5 min-w-[160px] rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 shadow-xl z-20">
-                            <button
-                              type="button"
-                              className="w-full px-3 py-2 flex items-center gap-3 text-left text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700/80"
-                              onClick={() => handleRenameProject(project._id, project.name)}
-                            >
-                              <svg className="shrink-0 w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                                <path d="m15 5 4 4" />
-                              </svg>
-                              Rename
-                            </button>
                             <button
                               type="button"
                               className="w-full px-3 py-2 flex items-center gap-3 text-left text-sm text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/80"
@@ -398,20 +430,45 @@ export function SessionSidebar({
                           : "border-transparent hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
                       }`}
                     >
-                      <button
-                        type="button"
-                        className={`flex-1 min-w-0 text-left truncate font-inherit cursor-pointer text-sm ${
-                          activeSessionId === session._id
-                            ? "text-violet-700 dark:text-violet-300"
-                            : "text-zinc-600 dark:text-zinc-400"
-                        }`}
-                        onClick={() => {
-                          onSelectSession(session._id);
-                          if (session.projectId) onSelectProject(session.projectId);
-                        }}
-                      >
-                        {session.title}
-                      </button>
+                      {editingSessionId === session._id ? (
+                        <input
+                          ref={sessionInputRef}
+                          type="text"
+                          defaultValue={session.title}
+                          className="flex-1 min-w-0 py-1 px-2 text-left rounded text-sm bg-white dark:bg-zinc-800 border border-violet-500 dark:border-violet-400 text-zinc-900 dark:text-zinc-100 outline-none"
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              handleRename(session._id, (e.target as HTMLInputElement).value);
+                            } else if (e.key === "Escape") {
+                              setEditingSessionId(null);
+                              setOpenMenuId(null);
+                            }
+                          }}
+                          onBlur={(e) => {
+                            handleRename(session._id, e.target.value);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      ) : (
+                        <button
+                          type="button"
+                          className={`flex-1 min-w-0 text-left truncate font-inherit cursor-pointer text-sm ${
+                            activeSessionId === session._id
+                              ? "text-violet-700 dark:text-violet-300"
+                              : "text-zinc-600 dark:text-zinc-400"
+                          }`}
+                          onClick={() => {
+                            onSelectSession(session._id);
+                            if (session.projectId) onSelectProject(session.projectId);
+                          }}
+                          onDoubleClick={(e) => {
+                            e.stopPropagation();
+                            setEditingSessionId(session._id);
+                          }}
+                        >
+                          {session.title}
+                        </button>
+                      )}
                       <div className="relative shrink-0" ref={openMenuId === session._id ? menuRef : undefined}>
                         <button
                           type="button"
@@ -431,17 +488,6 @@ export function SessionSidebar({
                         </button>
                         {openMenuId === session._id && (
                           <div className="absolute left-1/2 top-full mt-1 -translate-x-1/2 py-1.5 min-w-[180px] rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 shadow-xl z-10">
-                            <button
-                              type="button"
-                              className="w-full px-3 py-2 flex items-center gap-3 text-left text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-700/80"
-                              onClick={() => handleRename(session._id, session.title)}
-                            >
-                              <svg className="shrink-0 w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                                <path d="m15 5 4 4" />
-                              </svg>
-                              Rename
-                            </button>
                             <button
                               type="button"
                               className="w-full px-3 py-2 flex items-center gap-3 text-left text-sm text-red-600 dark:text-red-400 hover:bg-zinc-100 dark:hover:bg-zinc-700/80"
