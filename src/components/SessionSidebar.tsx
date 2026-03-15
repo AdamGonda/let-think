@@ -327,7 +327,7 @@ export function SessionSidebar({
                             e.stopPropagation();
                             handleDeleteProject(project._id);
                           }}
-                          className="p-1 rounded text-zinc-500 hover:bg-green-500/20 hover:text-green-600 dark:hover:text-green-400 leading-none"
+                          className="p-1 rounded text-zinc-500 hover:bg-green-500/20 hover:text-green-600 dark:hover:text-green-400 leading-none cursor-pointer"
                           aria-label="Confirm delete"
                         >
                           <span className="text-xs leading-none">👌</span>
@@ -338,7 +338,7 @@ export function SessionSidebar({
                             e.stopPropagation();
                             setConfirmDeleteProjectId(null);
                           }}
-                          className="p-1 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600"
+                          className="p-1 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600 cursor-pointer"
                           aria-label="Cancel delete"
                         >
                           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -354,7 +354,7 @@ export function SessionSidebar({
                           e.stopPropagation();
                           setConfirmDeleteProjectId(project._id);
                         }}
-                        className="p-1 rounded text-zinc-500 hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 opacity-0 group-hover/project:opacity-100 h-7 shrink-0 flex items-center justify-center"
+                        className="p-1 rounded text-zinc-500 hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 opacity-0 group-hover/project:opacity-100 h-7 shrink-0 flex items-center justify-center cursor-pointer"
                         aria-label="Delete project"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -463,7 +463,7 @@ export function SessionSidebar({
                               e.stopPropagation();
                               handleDelete(session._id);
                             }}
-                            className="p-1 rounded text-zinc-500 hover:bg-green-500/20 hover:text-green-600 dark:hover:text-green-400 leading-none"
+                            className="p-1 rounded text-zinc-500 hover:bg-green-500/20 hover:text-green-600 dark:hover:text-green-400 leading-none cursor-pointer"
                             aria-label="Confirm delete"
                           >
                             <span className="text-xs leading-none">👌</span>
@@ -474,7 +474,7 @@ export function SessionSidebar({
                               e.stopPropagation();
                               setConfirmDeleteSessionId(null);
                             }}
-                            className="p-1 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600"
+                            className="p-1 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600 cursor-pointer"
                             aria-label="Cancel delete"
                           >
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
