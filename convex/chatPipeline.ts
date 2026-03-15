@@ -4,7 +4,7 @@ export type ConceptGraph = {
   nodes: Array< { id: string; name: string; description?: string } >;
   edges: Array< { source: string; target: string } >;
   /** Batches for UI traversal – nodeIds per batch */
-  batches?: Array< { id: string; nodeIds: string[] } >;
+  batches?: Array< { id: string; nodeIds: string[]; promptSummary?: string } >;
 };
 
 /** Extract CONCEPT GRAPH from LLM response (expects ```json ... ``` block, prefers last one at end). */

@@ -30,6 +30,8 @@ export default defineSchema({
             v.object({
               id: v.string(),
               nodeIds: v.array(v.string()),
+              /** One-word summary of the user input that drove this batch */
+              promptSummary: v.optional(v.string()),
             })
           )
         ),

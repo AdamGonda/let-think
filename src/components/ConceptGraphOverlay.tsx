@@ -10,14 +10,15 @@ type GraphNode = {
 export type ConceptGraphData = {
   nodes: Array<{ id: string; name: string; description?: string }>;
   edges: Array<{ source: string; target: string }>;
-  batches?: Array<{ id: string; nodeIds: string[] }>;
+  batches?: Array<{ id: string; nodeIds: string[]; promptSummary?: string }>;
 };
 
 const NODE_PAD = 40;
 const NODE_GAP = 24;
 const CLUSTER_PAD = 40;
-const CLUSTER_GAP = 80;
+const CLUSTER_GAP = 120;
 const BATCH_HEADER = 44;
+const VIEWPORT_PADDING = 32;
 const ARROW_SIZE = 8;
 const MIN_NODE_WIDTH = 340;
 const NODE_HEIGHT = 84;
@@ -192,7 +193,7 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
 
     const contentMinX = clusters.length > 0 ? Math.min(...clusters.map((c) => c.x)) : 0;
     const contentMaxX = clusters.length > 0 ? Math.max(...clusters.map((c) => c.x + c.width)) : dimensions.width;
-    const contentWidth = Math.max(dimensions.width, contentMaxX - contentMinX + CLUSTER_PAD * 2);
+    const contentWidth = Math.max(dimensions.width, contentMaxX - contentMinX + VIEWPORT_PADDING * 2);
     const centerCluster = clusters.find((c) => c.role === "center");
     const centerClusterCenter = centerCluster ? centerCluster.x + centerCluster.width / 2 : dimensions.width / 2;
     const translateX = dimensions.width / 2 - centerClusterCenter;
@@ -249,7 +250,7 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
         <>
         <div
           ref={graphViewportRef}
-          className="flex flex-1 min-h-0 min-w-0 overflow-hidden relative"
+          className="flex flex-1 min-h-0 min-w-0 overflow-auto relative py-6 px-8"
         >
           <svg
             ref={svgRef}
@@ -325,16 +326,45 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
                     stroke={isCenter ? "rgba(139,92,246,0.6)" : "rgba(139,92,246,0.25)"}
                     strokeWidth={isCenter ? 2 : 1}
                   />
-                  <text
-                    x={cluster.x + cluster.width / 2}
-                    y={cluster.y + 12}
-                    textAnchor="middle"
-                    className="fill-zinc-500 dark:fill-zinc-400 text-[10px] font-medium"
-                  >
-                    {cluster.role === "prev" && "← "}
-                    Batch {cluster.batchIndex + 1}
-                    {cluster.role === "next" && " →"}
-                  </text>
+                  {(() => {
+                    const label =
+                      (cluster.role === "prev" ? "← " : "") +
+                      (batches[cluster.batchIndex]?.promptSummary ??
+                        `Batch ${cluster.batchIndex + 1}`) +
+                      (cluster.role === "next" ? " →" : "");
+                    const padX = 18;
+                    const padY = 10;
+                    const boxW = Math.max(80, label.length * 10 + padX * 2);
+                    const boxH = 36;
+                    const cx = cluster.x + cluster.width / 2;
+                    const cy = cluster.y + 30;
+                    return (
+                      <g>
+                        <rect
+                          x={cx - boxW / 2}
+                          y={cy - boxH / 2}
+                          width={boxW}
+                          height={boxH}
+                          rx={4}
+                          ry={4}
+                          fill={isCenter ? "rgba(21,128,61,0.85)" : "rgba(21,128,61,0.75)"}
+                          stroke={isCenter ? "rgba(21,128,61,1)" : "rgba(21,128,61,0.9)"}
+                          strokeWidth={isCenter ? 1.5 : 1}
+                          style={isDimmed ? { opacity: 0.85 } : undefined}
+                        />
+                        <text
+                          x={cx}
+                          y={cy}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          className="fill-white text-base font-black"
+                          style={isDimmed ? { opacity: 0.9 } : undefined}
+                        >
+                          {label}
+                        </text>
+                      </g>
+                    );
+                  })()}
                   {cluster.nodes.map(({ node, x, y, w, h }) => (
                     <g
                       key={node.id}

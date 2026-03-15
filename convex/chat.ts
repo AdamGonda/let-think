@@ -13,6 +13,23 @@ import {
 } from "./chatPipeline";
 import type { ModelMessage } from "ai";
 
+/** Derive a one-word summary from user input for display between batches. */
+function summarizeToWord(text: string): string {
+  const stopWords = new Set([
+    "what", "how", "is", "are", "the", "a", "an", "to", "of", "in", "for",
+    "on", "with", "at", "by", "from", "why", "when", "where", "who", "which",
+  ]);
+  const words = text
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w\s]/g, "")
+    .split(/\s+/)
+    .filter((w) => w.length > 2 && !stopWords.has(w));
+  const word = words[0] ?? text.trim().split(/\s+/)[0];
+  if (!word) return "—";
+  return word.charAt(0).toUpperCase() + word.slice(1);
+}
+
 function toModelMessages(
   messages: Array<{ role: string; content?: string }>
 ): ModelMessage[] {
@@ -93,13 +110,14 @@ export const send = action({
         .filter((n) => !existingNodeIds.has(n.id))
         .map((n) => n.id);
       const existingBatches = existingGraph?.batches ?? [];
-      const batches: Array<{ id: string; nodeIds: string[] }> =
+      const batches: Array<{ id: string; nodeIds: string[]; promptSummary?: string }> =
         newNodeIds.length > 0
           ? [
               ...existingBatches,
               {
                 id: `batch-${Date.now()}`,
                 nodeIds: newNodeIds,
+                promptSummary: summarizeToWord(userContent),
               },
             ]
           : existingBatches;

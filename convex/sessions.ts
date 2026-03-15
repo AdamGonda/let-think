@@ -83,7 +83,13 @@ const conceptGraphValidator = {
   ),
   edges: v.array(v.object({ source: v.string(), target: v.string() })),
   batches: v.optional(
-    v.array(v.object({ id: v.string(), nodeIds: v.array(v.string()) }))
+    v.array(
+      v.object({
+        id: v.string(),
+        nodeIds: v.array(v.string()),
+        promptSummary: v.optional(v.string()),
+      })
+    )
   ),
 };
 
