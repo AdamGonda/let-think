@@ -90,7 +90,7 @@ export const send = action({
 
     // 2. Call LLM
     const result = await generateText({
-      model: google("gemini-3-flash-preview"),
+      model: google("gemini-3.1-pro-preview"),
       system: "You are a helpful assistant.",
       messages: modelMessages,
     });
