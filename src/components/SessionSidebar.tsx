@@ -32,6 +32,7 @@ export function SessionSidebar({
   const createSession = useMutation(api.sessions.create);
   const createProject = useMutation(api.projects.create);
   const removeSession = useMutation(api.sessions.remove);
+  const moveToProject = useMutation(api.sessions.moveToProject);
   const removeProject = useMutation(api.projects.remove);
   const updateTitle = useMutation(api.sessions.updateTitle);
   const updateProjectName = useMutation(api.projects.updateName);
@@ -40,6 +41,7 @@ export function SessionSidebar({
   const menuRef = useRef<HTMLDivElement>(null);
   const projectMenuRef = useRef<HTMLDivElement>(null);
   const [expandedProjectIds, setExpandedProjectIds] = useState<Set<string>>(() => new Set());
+  const [dragOverProjectId, setDragOverProjectId] = useState<string | "inbox" | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(() => {
     try {
       return localStorage.getItem("sidebar-collapsed") === "true";
@@ -124,6 +126,16 @@ export function SessionSidebar({
       const remaining = allSessions.filter((s: Doc<"sessions">) => s._id !== id);
       onSelectSession(remaining[0]?._id ?? null);
     }
+  };
+
+  const handleMoveSession = async (sessionId: Id<"sessions">, targetProjectId: Id<"projects"> | null) => {
+    const session = allSessions.find((s: Doc<"sessions">) => s._id === sessionId);
+    if ((session?.projectId ?? null) === targetProjectId) return;
+    await moveToProject({ id: sessionId, projectId: targetProjectId ?? undefined });
+    if (activeSessionId === sessionId && targetProjectId) {
+      onSelectProject(targetProjectId);
+    }
+    setDragOverProjectId(null);
   };
 
   const handleDeleteProject = async (id: Id<"projects">) => {
@@ -244,7 +256,21 @@ export function SessionSidebar({
                       activeProjectId === project._id
                         ? "bg-violet-500/15 dark:bg-violet-400/20 border-l-2 border-violet-500 dark:border-violet-400"
                         : "border-l-2 border-transparent"
-                    }`}
+                    } ${dragOverProjectId === project._id ? "ring-2 ring-violet-500 dark:ring-violet-400 ring-inset" : ""}`}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "move";
+                      setDragOverProjectId(project._id);
+                    }}
+                    onDragLeave={() => setDragOverProjectId(null)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const sessionId = e.dataTransfer.getData("text/plain") as Id<"sessions">;
+                      if (sessionId) {
+                        handleMoveSession(sessionId, project._id);
+                      }
+                      setDragOverProjectId(null);
+                    }}
                   >
                     <button
                       type="button"
@@ -328,7 +354,21 @@ export function SessionSidebar({
                       activeProjectId === null
                         ? "bg-violet-500/15 dark:bg-violet-400/20 border-l-2 border-violet-500 dark:border-violet-400"
                         : "border-l-2 border-transparent"
-                    }`}
+                    } ${dragOverProjectId === "inbox" ? "ring-2 ring-violet-500 dark:ring-violet-400 ring-inset" : ""}`}
+                    onDragOver={(e) => {
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "move";
+                      setDragOverProjectId("inbox");
+                    }}
+                    onDragLeave={() => setDragOverProjectId(null)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const sessionId = e.dataTransfer.getData("text/plain") as Id<"sessions">;
+                      if (sessionId) {
+                        handleMoveSession(sessionId, null);
+                      }
+                      setDragOverProjectId(null);
+                    }}
                   >
                     <button
                       type="button"
@@ -353,6 +393,24 @@ export function SessionSidebar({
                           : "border-transparent hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
                       }`}
                     >
+                      <div
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData("text/plain", session._id);
+                          e.dataTransfer.effectAllowed = "move";
+                        }}
+                        className="shrink-0 p-1 -m-1 rounded cursor-grab active:cursor-grabbing text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300 touch-none opacity-40 group-hover:opacity-100"
+                        aria-label="Drag to move"
+                      >
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor">
+                          <circle cx="9" cy="6" r="1.5" />
+                          <circle cx="9" cy="12" r="1.5" />
+                          <circle cx="9" cy="18" r="1.5" />
+                          <circle cx="15" cy="6" r="1.5" />
+                          <circle cx="15" cy="12" r="1.5" />
+                          <circle cx="15" cy="18" r="1.5" />
+                        </svg>
+                      </div>
                       <button
                         type="button"
                         className={`flex-1 min-w-0 text-left truncate font-inherit cursor-pointer text-sm ${

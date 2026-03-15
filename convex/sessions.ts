@@ -52,6 +52,16 @@ export const updateTitle = mutation({
   },
 });
 
+export const moveToProject = mutation({
+  args: {
+    id: v.id("sessions"),
+    projectId: v.optional(v.id("projects")),
+  },
+  handler: async (ctx, { id, projectId }) => {
+    await ctx.db.patch(id, { projectId });
+  },
+});
+
 export const remove = mutation({
   args: { id: v.id("sessions") },
   handler: async (ctx, { id }) => {
