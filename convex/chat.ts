@@ -41,8 +41,9 @@ export const send = action({
     ),
     sessionId: v.id("sessions"),
     userContent: v.string(),
+    branching: v.optional(v.number()),
   },
-  handler: async (ctx, { messages, sessionId, userContent }) => {
+  handler: async (ctx, { messages, sessionId, userContent, branching }) => {
     const anthropic = createAnthropic({
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
@@ -56,6 +57,7 @@ export const send = action({
     modelMessages = await preProcess(modelMessages, {
       sessionId,
       conceptGraph: existingGraph,
+      branching,
       meta: {},
     });
 

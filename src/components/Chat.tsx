@@ -16,6 +16,7 @@ interface ChatProps {
 export function Chat({ sessionId, messageHistory }: ChatProps) {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [branching, setBranching] = useState(2);
   const sendMessage = useAction(api.chat.send);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,6 +40,7 @@ export function Chat({ sessionId, messageHistory }: ChatProps) {
         messages,
         sessionId,
         userContent,
+        branching,
       });
     } catch (err) {
       console.error("Chat error:", err);
@@ -50,14 +52,27 @@ export function Chat({ sessionId, messageHistory }: ChatProps) {
   };
 
   return (
-    <form className="chat-form" onSubmit={handleSubmit}>
-      <input
-        className="chat-input"
-        value={input}
-        onChange={(e) => setInput(e.target.value)}
-        placeholder={sessionId ? "Type a message..." : "Select a chat to start"}
-        disabled={isLoading || !sessionId}
-      />
+    <div className="chat-bar">
+      <label className="chat-branching">
+        <span className="chat-branching__label">Branching spectrum</span>
+        <input
+          type="range"
+          min={1}
+          max={3}
+          value={branching}
+          onChange={(e) => setBranching(Number(e.target.value))}
+          className="chat-branching__slider"
+        />
+        <span className="chat-branching__value">{branching}</span>
+      </label>
+      <form className="chat-form" onSubmit={handleSubmit}>
+        <input
+          className="chat-input"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder={sessionId ? "Type a message..." : "Select a chat to start"}
+          disabled={isLoading || !sessionId}
+        />
       <button
         type="submit"
         className="chat-submit"
@@ -66,5 +81,6 @@ export function Chat({ sessionId, messageHistory }: ChatProps) {
         {isLoading ? "..." : "Send"}
       </button>
     </form>
+    </div>
   );
 }

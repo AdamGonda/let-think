@@ -56,6 +56,8 @@ export type PipelineContext = {
   sessionId?: string;
   /** Existing concept graph to merge new nodes into */
   conceptGraph?: ConceptGraph | null;
+  /** Branching spectrum 1-3: max number of new nodes (n) to generate per response */
+  branching?: number;
   /** Any metadata you want to pass through */
   meta?: Record<string, unknown>;
 };
@@ -69,6 +71,7 @@ export async function preProcess(
   ctx?: PipelineContext
 ): Promise<ModelMessage[]> {
   const existing = ctx?.conceptGraph;
+  const n = Math.min(3, Math.max(1, ctx?.branching ?? 2));
   const graphContext = existing
     ? `\n\nEXISTING CONCEPT GRAPH (merge new nodes into this):\n${JSON.stringify(existing)}`
     : "";
@@ -84,7 +87,7 @@ IF CONCEPT GRAPH EXISTS:
 Add new nodes to the CONCEPT GRAPH based on ideas in your response.
 
 Rules:
-- Find 0-n concepts (nodes) based on ideas in your response. Each node: id (unique string), name (one word or short phrase).
+- The user has set BRANCHING to ${n}. Generate 1 to ${n} concepts (nodes) based on ideas in your response. Not 0. Each node: id (unique string), name (one word or short phrase).
 - Connect nodes with edges so the graph stays connected.
 - You MUST end your response with the CONCEPT GRAPH as valid JSON in a code block. No exceptions.
 - Example: if your answer discusses "graph" and "Convex", create nodes for those ideas and link them.
