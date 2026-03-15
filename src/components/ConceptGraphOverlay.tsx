@@ -154,26 +154,15 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
       });
     }
 
-    // Position clusters: center batch at viewport center, prev to left, next to right (neighbors partially visible)
+    // Position clusters in a horizontal "rail" (prev | center | next) - no pre-centering.
+    // translateX will pan to center the selected batch, and it CHANGES when switching batches,
+    // enabling smooth CSS transitions.
     const maxHeight = Math.max(...clusterDims.map((d) => d.height), 100);
-    const centerIdx = visibleBatches.findIndex((vb) => vb.role === "center");
-    const centerDims = centerIdx >= 0 ? clusterDims[centerIdx]! : null;
-
     const viewportCenterX = dimensions.width / 2;
-    const centerClusterWidth = centerDims?.width ?? 200;
-    const centerX = viewportCenterX - centerClusterWidth / 2;
 
-    let x = 0;
+    let x = VIEWPORT_PADDING;
     visibleBatches.forEach((vb, i) => {
       const dims = clusterDims[i]!;
-      if (vb.role === "prev") {
-        x = centerX - dims.width - CLUSTER_GAP;
-      } else if (vb.role === "center") {
-        x = centerX;
-      } else if (vb.role === "next") {
-        x = centerX + centerClusterWidth + CLUSTER_GAP;
-      }
-
       clusters.push({
         x,
         y: Math.max(CLUSTER_PAD, (dimensions.height - dims.height) / 2),
@@ -189,6 +178,7 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
           h: nl.h,
         })),
       });
+      x += dims.width + CLUSTER_GAP;
     });
 
     const contentMinX = clusters.length > 0 ? Math.min(...clusters.map((c) => c.x)) : 0;
@@ -196,7 +186,7 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
     const contentWidth = Math.max(dimensions.width, contentMaxX - contentMinX + VIEWPORT_PADDING * 2);
     const centerCluster = clusters.find((c) => c.role === "center");
     const centerClusterCenter = centerCluster ? centerCluster.x + centerCluster.width / 2 : dimensions.width / 2;
-    const translateX = dimensions.width / 2 - centerClusterCenter;
+    const translateX = viewportCenterX - centerClusterCenter;
 
     return {
       clusters,
@@ -252,15 +242,20 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
           ref={graphViewportRef}
           className="flex flex-1 min-h-0 min-w-0 overflow-auto relative py-6 px-8"
         >
+          <div
+            style={{
+              transform: `translate3d(${layout.translateX}px, 0, 0)`,
+              transition: "transform 0.4s cubic-bezier(0.32, 0.72, 0, 1)",
+              willChange: "transform",
+            }}
+          >
           <svg
             ref={svgRef}
             width={layout.totalWidth}
             height={Math.max(dimensions.height, layout.totalHeight)}
-            className="min-h-full"
+            className="min-h-full block"
             style={{
               minWidth: dimensions.width,
-              transform: `translateX(${layout.translateX}px)`,
-              transformOrigin: "0 0",
             }}
           >
             <defs>
@@ -407,6 +402,7 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
               );
             })}
           </svg>
+          </div>
         </div>
         {hasBatches && (
           <div className="relative z-10 flex items-center justify-center gap-3 py-2 px-3 border-t border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shrink-0">
