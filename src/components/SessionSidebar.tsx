@@ -33,10 +33,10 @@ export function SessionSidebar({
           <button
             key={session._id}
             type="button"
-            className={`py-1.5 px-3 rounded-lg border border-transparent text-left text-zinc-600 dark:text-zinc-400 font-inherit cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 ${
+            className={`py-1.5 px-3 rounded-lg border text-left text-zinc-600 dark:text-zinc-400 font-inherit cursor-pointer ${
               activeSessionId === session._id
                 ? "bg-violet-500/20 dark:bg-violet-400/25 text-violet-700 dark:text-violet-300 border-violet-500/50 dark:border-violet-400/50"
-                : ""
+                : "border-transparent hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
             }`}
             onClick={() => onSelectSession(session._id)}
           >
