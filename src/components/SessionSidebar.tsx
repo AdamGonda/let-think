@@ -80,7 +80,19 @@ export function SessionSidebar({
       style={{ width: isCollapsed ? COLLAPSED_WIDTH : SIDEBAR_WIDTH }}
     >
       <div className={`flex m-3 gap-2 ${isCollapsed ? "flex-col items-center" : ""}`}>
-        {!isCollapsed && (
+        {isCollapsed ? (
+          <button
+            type="button"
+            onClick={handleNewChat}
+            aria-label="New chat"
+            className="p-2.5 min-w-[40px] min-h-[40px] flex items-center justify-center border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-[#16171d] text-zinc-600 dark:text-zinc-400 hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:border-violet-500/50 dark:hover:border-violet-400/50 cursor-pointer shrink-0"
+          >
+            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+              <path d="M12 5v14" />
+              <path d="M5 12h14" />
+            </svg>
+          </button>
+        ) : (
           <button
             type="button"
             className="flex-1 py-2.5 px-4 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-[#16171d] text-zinc-950 dark:text-zinc-100 font-inherit cursor-pointer hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:border-violet-500/50 dark:hover:border-violet-400/50"
