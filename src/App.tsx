@@ -34,9 +34,25 @@ function App() {
         onSelectSession={setActiveSessionId}
       />
       <main className="flex flex-1 flex-col min-w-0">
-        <div className="flex flex-1 min-h-0 flex-col">
+        <div className="flex flex-1 min-h-0 flex-col relative">
+          <div className="flex flex-1 min-h-0 items-stretch justify-stretch">
+            {activeSessionId ? (
+              <ConceptGraphOverlay
+                key={activeSessionId}
+                graph={conceptGraph ?? null}
+              />
+            ) : (
+              <div className="flex flex-1 items-center justify-center text-zinc-600 dark:text-zinc-400 text-base py-6 px-6">
+                Select a chat or create a new one to get started
+              </div>
+            )}
+          </div>
           {isLoading && (
-            <div className="flex w-full items-center justify-center gap-4 py-6 px-6 shrink-0 border-b-2 border-violet-700/30 dark:border-violet-400/30 bg-violet-700 dark:bg-violet-800">
+            <div
+              className="absolute top-0 left-0 right-0 z-10 flex items-center justify-center gap-4 py-6 px-6 border-b-2 border-violet-700/30 dark:border-violet-400/30 bg-violet-700 dark:bg-violet-800"
+              aria-live="polite"
+              aria-busy="true"
+            >
               <svg
                 className="animate-spin h-10 w-10 text-white shrink-0"
                 xmlns="http://www.w3.org/2000/svg"
@@ -63,18 +79,6 @@ function App() {
               </span>
             </div>
           )}
-          <div className="flex flex-1 min-h-0 items-stretch justify-stretch">
-            {activeSessionId ? (
-              <ConceptGraphOverlay
-                key={activeSessionId}
-                graph={conceptGraph ?? null}
-              />
-            ) : (
-              <div className="flex flex-1 items-center justify-center text-zinc-600 dark:text-zinc-400 text-base py-6 px-6">
-                Select a chat or create a new one to get started
-              </div>
-            )}
-          </div>
         </div>
         <Chat
           key={activeSessionId ?? "empty"}
