@@ -320,17 +320,17 @@ export function SessionSidebar({
                       </button>
                     )}
                     {confirmDeleteProjectId === project._id ? (
-                      <div className="flex items-center gap-0.5">
+                      <div className="flex items-center gap-0.5 h-7 shrink-0">
                         <button
                           type="button"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDeleteProject(project._id);
                           }}
-                          className="p-1 rounded text-zinc-500 hover:bg-green-500/20 hover:text-green-600 dark:hover:text-green-400"
+                          className="p-1 rounded text-zinc-500 hover:bg-green-500/20 hover:text-green-600 dark:hover:text-green-400 leading-none"
                           aria-label="Confirm delete"
                         >
-                          <span className="text-sm">👌</span>
+                          <span className="text-xs leading-none">👌</span>
                         </button>
                         <button
                           type="button"
@@ -354,7 +354,7 @@ export function SessionSidebar({
                           e.stopPropagation();
                           setConfirmDeleteProjectId(project._id);
                         }}
-                        className="p-1 rounded text-zinc-500 hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 opacity-0 group-hover/project:opacity-100"
+                        className="p-1 rounded text-zinc-500 hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 opacity-0 group-hover/project:opacity-100 h-7 shrink-0 flex items-center justify-center"
                         aria-label="Delete project"
                       >
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -456,17 +456,17 @@ export function SessionSidebar({
                         </button>
                       )}
                       {confirmDeleteSessionId === session._id ? (
-                        <div className="flex items-center gap-0.5 shrink-0">
+                        <div className="flex items-center gap-0.5 h-7 shrink-0">
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDelete(session._id);
                             }}
-                            className="p-1 rounded text-zinc-500 hover:bg-green-500/20 hover:text-green-600 dark:hover:text-green-400"
+                            className="p-1 rounded text-zinc-500 hover:bg-green-500/20 hover:text-green-600 dark:hover:text-green-400 leading-none"
                             aria-label="Confirm delete"
                           >
-                            <span className="text-sm">👌</span>
+                            <span className="text-xs leading-none">👌</span>
                           </button>
                           <button
                             type="button"
@@ -490,7 +490,7 @@ export function SessionSidebar({
                             e.stopPropagation();
                             setConfirmDeleteSessionId(session._id);
                           }}
-                          className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover:opacity-100 hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 shrink-0"
+                          className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover:opacity-100 hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 h-7 shrink-0 flex items-center justify-center"
                           aria-label="Delete session"
                         >
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
