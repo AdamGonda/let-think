@@ -1,23 +1,22 @@
 import { useState } from "react";
-import { useMutation } from "convex/react";
+import { useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 
-const CONVEX_URL = import.meta.env.VITE_CONVEX_URL;
-const CHAT_API = CONVEX_URL
-  ? `${CONVEX_URL.replace(".cloud", ".site")}/api/chat`
-  : "/api/chat";
-
 interface ChatProps {
   sessionId: Id<"sessions"> | null;
-  /** Conversation history for context (not displayed, only sent to LLM) */
-  messageHistory: Array<{ role: "user" | "assistant"; content: string }>;
+  /** Conversation history for context and display */
+  messageHistory: Array<{
+    _id?: Id<"messages">;
+    role: "user" | "assistant";
+    content: string;
+  }>;
 }
 
 export function Chat({ sessionId, messageHistory }: ChatProps) {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const addMessages = useMutation(api.sessions.addMessages);
+  const sendMessage = useAction(api.chat.send);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,28 +35,10 @@ export function Chat({ sessionId, messageHistory }: ChatProps) {
         { role: "user" as const, content: userContent },
       ];
 
-      const res = await fetch(CHAT_API, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages,
-          sessionId,
-        }),
-      });
-
-      if (!res.ok) {
-        const err = await res.text();
-        throw new Error(err || `HTTP ${res.status}`);
-      }
-
-      const { content: assistantContent } = (await res.json()) as {
-        content: string;
-      };
-
-      await addMessages({
+      await sendMessage({
+        messages,
         sessionId,
         userContent,
-        assistantContent,
       });
     } catch (err) {
       console.error("Chat error:", err);
@@ -78,6 +59,19 @@ export function Chat({ sessionId, messageHistory }: ChatProps) {
 
   return (
     <div className="chat">
+      <div className="chat-messages">
+        {messageHistory.map((msg, i) => (
+          <div
+            key={msg._id ?? i}
+            className={`chat-message chat-message--${msg.role}`}
+          >
+            <span className="chat-message__role">
+              {msg.role === "user" ? "You" : "Assistant"}
+            </span>
+            <div className="chat-message__content">{msg.content}</div>
+          </div>
+        ))}
+      </div>
       <form className="chat-form" onSubmit={handleSubmit}>
         <input
           className="chat-input"
