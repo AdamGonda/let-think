@@ -53,18 +53,22 @@ export function Chat({ sessionId, messageHistory }: ChatProps) {
 
   return (
     <div className="chat-bar">
-      <label className="chat-branching">
+      <div className="chat-branching">
         <span className="chat-branching__label">Branching spectrum</span>
-        <input
-          type="range"
-          min={1}
-          max={3}
-          value={branching}
-          onChange={(e) => setBranching(Number(e.target.value))}
-          className="chat-branching__slider"
-        />
-        <span className="chat-branching__value">{branching}</span>
-      </label>
+        <div className="chat-branching__buttons" role="group" aria-label="Branching level">
+          {([1, 2, 3] as const).map((n) => (
+            <button
+              key={n}
+              type="button"
+              className={`chat-branching__btn ${branching === n ? "active" : ""}`}
+              onClick={() => setBranching(n)}
+              aria-pressed={branching === n}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+      </div>
       <form className="chat-form" onSubmit={handleSubmit}>
         <input
           className="chat-input"

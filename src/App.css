@@ -118,16 +118,35 @@
   white-space: nowrap;
 }
 
-.chat-branching__slider {
-  flex: 1;
-  min-width: 80px;
-  accent-color: var(--accent);
+.chat-branching__buttons {
+  display: flex;
+  gap: 4px;
 }
 
-.chat-branching__value {
-  min-width: 1.5ch;
-  font-weight: 600;
-  color: var(--text-h);
+.chat-branching__btn {
+  width: 36px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  font-weight: 500;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.chat-branching__btn:hover {
+  background: var(--accent-bg);
+  border-color: var(--accent-border);
+}
+
+.chat-branching__btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
 }
 
 .chat-form {
