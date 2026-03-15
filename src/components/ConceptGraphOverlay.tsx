@@ -44,8 +44,10 @@ function measureText(text: string, font: string): { width: number; height: numbe
 export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphViewportRef = useRef<HTMLDivElement>(null);
+  const stepperRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [dimensions, setDimensions] = useState({ width: 400, height: 300 });
+  const [stepperCenterInViewport, setStepperCenterInViewport] = useState<number | null>(null);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ clientX: number; clientY: number } | null>(null);
   const [selectedBatchIndex, setSelectedBatchIndex] = useState<number>(0);
@@ -144,7 +146,8 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
 
     // Build full rail: fixed x positions for every batch (stable across navigation)
     const maxHeight = Math.max(...allDims.map((d) => d.height), 100);
-    const viewportCenterX = dimensions.width / 2;
+    // Use stepper's actual center position (relative to viewport) for pixel-perfect alignment
+    const viewportCenterX = stepperCenterInViewport ?? dimensions.width / 2;
 
     const allClusters: Array<{
       x: number;
@@ -204,7 +207,7 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
       totalHeight: Math.max(dimensions.height, maxHeight + CLUSTER_PAD * 2),
       translateX,
     };
-  }, [batches, selectedBatchIndex, nodeMap, dimensions]);
+  }, [batches, selectedBatchIndex, nodeMap, dimensions, stepperCenterInViewport]);
 
   useEffect(() => {
     const el = graphViewportRef.current ?? containerRef.current;
@@ -220,6 +223,33 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
     ro.observe(el);
     return () => ro.disconnect();
   }, [isEmpty]);
+
+  useEffect(() => {
+    const viewport = graphViewportRef.current;
+    const stepper = stepperRef.current;
+    if (!viewport || !stepper || !hasBatches) return;
+    const updateAlignment = () => {
+      const v = graphViewportRef.current;
+      const s = stepperRef.current;
+      if (!v || !s) return;
+      const viewportRect = v.getBoundingClientRect();
+      const stepperRect = s.getBoundingClientRect();
+      // px-8 = 32px padding; content area starts 32px from viewport's left
+      const VIEWPORT_PAD = 32;
+      const contentLeft = viewportRect.left + VIEWPORT_PAD;
+      const center = stepperRect.left + stepperRect.width / 2 - contentLeft;
+      setStepperCenterInViewport(center);
+    };
+    updateAlignment();
+    const ro = new ResizeObserver(updateAlignment);
+    ro.observe(viewport);
+    ro.observe(stepper);
+    window.addEventListener("scroll", updateAlignment, true);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("scroll", updateAlignment, true);
+    };
+  }, [hasBatches]);
 
 
   const handleMouseMove = useCallback(
@@ -415,7 +445,10 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
           </div>
         </div>
         {hasBatches && (
-          <div className="relative z-10 flex items-center justify-center gap-3 py-2 px-3 border-t border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shrink-0">
+          <div
+            ref={stepperRef}
+            className="relative z-10 flex items-center justify-center gap-3 py-2 px-8 border-t border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shrink-0"
+          >
             <button
               type="button"
               onClick={() => setSelectedBatchIndex((i) => Math.max(0, i - 1))}
