@@ -58,7 +58,6 @@ export const send = action({
     ),
     sessionId: v.id("sessions"),
     userContent: v.string(),
-    branching: v.optional(v.number()),
     selectedNodeContext: v.optional(
       v.array(
         v.object({
@@ -69,7 +68,7 @@ export const send = action({
       )
     ),
   },
-  handler: async (ctx, { messages, sessionId, userContent, branching, selectedNodeContext }) => {
+  handler: async (ctx, { messages, sessionId, userContent, selectedNodeContext }) => {
     const google = createGoogleGenerativeAI({
       apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
     });
@@ -83,7 +82,6 @@ export const send = action({
     modelMessages = await preProcess(modelMessages, {
       sessionId,
       conceptGraph: existingGraph,
-      branching,
       selectedNodes: selectedNodeContext,
       meta: {},
     });

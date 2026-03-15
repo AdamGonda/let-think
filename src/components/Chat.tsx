@@ -57,8 +57,6 @@ export function Chat({
     if (!input.trim() || !sessionId) return;
 
     const userContent = input.trim();
-    const wordCount = userContent.split(/\s+/).filter(Boolean).length;
-    const branching = Math.min(6, Math.max(1, Math.ceil(wordCount / 10)));
     setInput("");
     setIsLoading(true);
 
@@ -75,7 +73,6 @@ export function Chat({
         messages,
         sessionId,
         userContent,
-        branching,
         selectedNodeContext: selectedNodes.length > 0 ? selectedNodes : undefined,
       });
       onMessageSent?.();

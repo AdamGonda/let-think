@@ -71,8 +71,6 @@ export type PipelineContext = {
   sessionId?: string;
   /** Existing concept graph to merge new nodes into */
   conceptGraph?: ConceptGraph | null;
-  /** Branching spectrum 1-3: max number of new nodes (n) to generate per response */
-  branching?: number;
   /** User-selected nodes to add as context to the prompt */
   selectedNodes?: Array<{ id: string; name: string; description?: string }>;
   /** Any metadata you want to pass through */
@@ -88,7 +86,7 @@ export async function preProcess(
   ctx?: PipelineContext
 ): Promise<ModelMessage[]> {
   const existing = ctx?.conceptGraph;
-  const n = Math.min(6, Math.max(1, ctx?.branching ?? 2));
+  const n = 6;
   const graphContext = existing
     ? `\n\nEXISTING CONCEPT GRAPH (merge new nodes into this):\n${JSON.stringify(existing)}`
     : "";
