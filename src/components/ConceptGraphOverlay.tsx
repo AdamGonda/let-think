@@ -21,14 +21,17 @@ export type ConceptGraphData = {
 
 const NODE_PAD = 48;
 const NODE_GAP = 32;
-const CLUSTER_PAD = 48;
+const CLUSTER_PAD = 24;
 const CLUSTER_GAP = 120;
-const BATCH_HEADER = 44;
-const VIEWPORT_PADDING = 32;
+const BATCH_HEADER = 40;
+const VIEWPORT_PADDING = 16;
 const ARROW_SIZE = 8;
 const MIN_NODE_WIDTH = 420;
 const NODE_HEIGHT = 100;
 const NODE_HEIGHT_EXPANDED = 200;
+const GRID_COLS = 3;
+const GRID_CELL_WIDTH = 260;
+const GRID_CELL_HEIGHT = 120;
 
 interface ConceptGraphOverlayProps {
   graph: ConceptGraphData | null;
@@ -135,8 +138,6 @@ export function ConceptGraphOverlay({
   // Compute a STABLE full rail layout for ALL batches. Cluster positions stay fixed;
   // only translateX changes when navigating, enabling smooth CSS transition.
   const layout = useMemo(() => {
-    const font = 'bold 24px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
-
     // Compute dimensions for ALL batches (stable rail)
     const allDims: Array<{
       width: number;
@@ -154,26 +155,41 @@ export function ConceptGraphOverlay({
         continue;
       }
 
-      const nodeLayouts: Array<{ node: GraphNode; x: number; y: number; w: number; h: number }> = [];
-      let cy = BATCH_HEADER + CLUSTER_PAD;
-      let maxW = 0;
-
-      for (const node of batchNodes) {
-        const { width: w } = measureText(node.name, font);
-        const h = node.description ? NODE_HEIGHT_EXPANDED : NODE_HEIGHT;
-        nodeLayouts.push({ node, x: CLUSTER_PAD, y: cy, w, h });
-        maxW = Math.max(maxW, w + CLUSTER_PAD * 2);
-        cy += h + NODE_GAP;
+      const numRows = Math.ceil(batchNodes.length / GRID_COLS);
+      const rowHeights: number[] = [];
+      for (let r = 0; r < numRows; r++) {
+        let maxH = 0;
+        for (let c = 0; c < GRID_COLS; c++) {
+          const i = r * GRID_COLS + c;
+          if (i >= batchNodes.length) break;
+          const node = batchNodes[i]!;
+          const h = node.description ? NODE_HEIGHT_EXPANDED : GRID_CELL_HEIGHT;
+          maxH = Math.max(maxH, h);
+        }
+        rowHeights.push(maxH);
       }
 
+      const nodeLayouts: Array<{ node: GraphNode; x: number; y: number; w: number; h: number }> = [];
+      let cy = BATCH_HEADER + CLUSTER_PAD;
+      for (let i = 0; i < batchNodes.length; i++) {
+        const node = batchNodes[i]!;
+        const col = i % GRID_COLS;
+        const row = Math.floor(i / GRID_COLS);
+        const x = CLUSTER_PAD + col * (GRID_CELL_WIDTH + NODE_GAP);
+        const y = cy;
+        const h = node.description ? NODE_HEIGHT_EXPANDED : GRID_CELL_HEIGHT;
+        nodeLayouts.push({ node, x, y, w: GRID_CELL_WIDTH, h });
+        if (col === GRID_COLS - 1) {
+          cy += rowHeights[row]! + NODE_GAP;
+        }
+      }
       const clusterHeight = cy - NODE_GAP + CLUSTER_PAD;
-      const clusterWidth = maxW + CLUSTER_PAD;
-      const nodeFullWidth = clusterWidth - 2 * CLUSTER_PAD;
+      const clusterWidth = GRID_COLS * GRID_CELL_WIDTH + (GRID_COLS - 1) * NODE_GAP + 2 * CLUSTER_PAD;
 
       allDims.push({
         width: clusterWidth,
         height: clusterHeight,
-        nodes: nodeLayouts.map((nl) => ({ ...nl, w: nodeFullWidth, h: nl.h })),
+        nodes: nodeLayouts,
       });
     }
 
@@ -202,13 +218,13 @@ export function ConceptGraphOverlay({
       nodes: Array<{ node: GraphNode; x: number; y: number; w: number; h: number }>;
     }> = [];
 
-    const contentHeight = dimensions.height - 48; // py-6 = 24px top + bottom
+    const contentHeight = dimensions.height - 32; // py-4 = 16px top + bottom
     let x = VIEWPORT_PADDING;
     for (let i = 0; i < batches.length; i++) {
       const dims = allDims[i]!;
       const role: "prev" | "center" | "next" =
         i < selectedBatchIndex ? "prev" : i > selectedBatchIndex ? "next" : "center";
-      const clusterY = Math.max(CLUSTER_PAD, (contentHeight - dims.height) / 2);
+      const clusterY = VIEWPORT_PADDING;
 
       allClusters.push({
         x,
@@ -337,7 +353,7 @@ export function ConceptGraphOverlay({
           })()}
         <div
           ref={graphViewportRef}
-          className="flex flex-1 min-h-0 min-w-0 overflow-auto relative py-6 px-8"
+          className="flex flex-1 min-h-0 min-w-0 overflow-auto relative py-4 px-8"
         >
           <div
             className="inline-block"
