@@ -239,14 +239,21 @@ export function SessionSidebar({
             return (
               <div key={projectId ?? "inbox"} className="flex flex-col gap-1">
                 {project ? (
-                  <div className="flex items-center gap-1 group/project">
+                  <div
+                    className={`flex items-center gap-1 group/project rounded-md transition-colors ${
+                      activeProjectId === project._id
+                        ? "bg-violet-500/15 dark:bg-violet-400/20 border-l-2 border-violet-500 dark:border-violet-400"
+                        : "border-l-2 border-transparent"
+                    }`}
+                  >
                     <button
                       type="button"
                       onClick={() => toggleProjectExpanded(projectId!)}
-                      className="flex-1 min-w-0 flex items-center gap-1.5 py-1.5 px-2 rounded-md hover:bg-zinc-200 dark:hover:bg-zinc-700 text-left"
+                      className="p-1 shrink-0 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                      aria-label={isExpanded ? "Collapse" : "Expand"}
                     >
                       <svg
-                        className={`w-4 h-4 shrink-0 text-zinc-500 transition-transform ${isExpanded ? "" : "-rotate-90"}`}
+                        className={`w-4 h-4 transition-transform ${isExpanded ? "" : "-rotate-90"}`}
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -254,9 +261,20 @@ export function SessionSidebar({
                       >
                         <path d="m6 9 6 6 6-6" />
                       </svg>
-                      <span className="truncate font-medium text-zinc-700 dark:text-zinc-300">
-                        {project.name}
-                      </span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onSelectProject(project._id);
+                        setExpandedProjectIds((prev) => new Set([...prev, project._id]));
+                      }}
+                      className={`flex-1 min-w-0 py-1.5 px-2 text-left rounded truncate font-medium ${
+                        activeProjectId === project._id
+                          ? "text-violet-700 dark:text-violet-300"
+                          : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                      }`}
+                    >
+                      {project.name}
                     </button>
                     <div className="flex items-center gap-0.5 opacity-0 group-hover/project:opacity-100">
                       <button
@@ -322,14 +340,31 @@ export function SessionSidebar({
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center gap-1.5 py-1.5 px-2">
-                    <span className="truncate text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                      Inbox
-                    </span>
+                  <div
+                    className={`flex items-center gap-1 rounded-md transition-colors ${
+                      activeProjectId === null
+                        ? "bg-violet-500/15 dark:bg-violet-400/20 border-l-2 border-violet-500 dark:border-violet-400"
+                        : "border-l-2 border-transparent"
+                    }`}
+                  >
                     <button
                       type="button"
-                      onClick={() => handleNewChat(undefined)}
-                      className="ml-auto p-1 rounded text-zinc-500 hover:bg-violet-500/20 dark:hover:bg-violet-400/25 hover:text-violet-700 dark:hover:text-violet-300"
+                      onClick={() => onSelectProject(null)}
+                      className={`flex-1 min-w-0 py-1.5 px-2 text-left rounded text-sm font-medium truncate ${
+                        activeProjectId === null
+                          ? "text-violet-700 dark:text-violet-300"
+                          : "text-zinc-500 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                      }`}
+                    >
+                      Inbox
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleNewChat(undefined);
+                      }}
+                      className="p-1 shrink-0 rounded text-zinc-500 hover:bg-violet-500/20 dark:hover:bg-violet-400/25 hover:text-violet-700 dark:hover:text-violet-300"
                       aria-label="New chat in Inbox"
                     >
                       <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
