@@ -137,11 +137,12 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
 
       const clusterHeight = cy - NODE_GAP + CLUSTER_PAD;
       const clusterWidth = maxW + CLUSTER_PAD;
+      const nodeFullWidth = clusterWidth - 2 * CLUSTER_PAD;
 
       clusterDims.push({
         width: clusterWidth,
         height: clusterHeight,
-        nodes: nodeLayouts.map((nl) => ({ ...nl, w: nl.w, h: nl.h })),
+        nodes: nodeLayouts.map((nl) => ({ ...nl, w: nodeFullWidth, h: nl.h })),
       });
     }
 
