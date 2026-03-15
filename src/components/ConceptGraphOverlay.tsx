@@ -1,4 +1,4 @@
-import { useCallback, useRef, useEffect, useState } from "react";
+import { useCallback, useRef, useEffect, useState, useMemo } from "react";
 import ForceGraph2D, {
   type ForceGraphMethods,
   type NodeObject,
@@ -58,7 +58,10 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
         : []
   );
 
-  const graphData = toForceGraphData(graph);
+  const graphData = useMemo(
+    () => toForceGraphData(graph),
+    [graph?.nodes, graph?.edges]
+  );
   const isEmpty = graphData.nodes.length === 0;
 
   useEffect(() => {
@@ -157,6 +160,8 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
               nodeCanvasObjectMode={() => "replace"}
               linkColor={() => "rgba(150,150,150,0.5)"}
               linkWidth={1}
+              d3VelocityDecay={0.6}
+              d3AlphaDecay={0.03}
               onEngineStop={() => fgRef.current?.zoomToFit(200)}
               backgroundColor="rgba(255,255,255,0.85)"
             />
