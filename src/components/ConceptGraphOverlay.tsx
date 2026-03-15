@@ -21,6 +21,9 @@ function toForceGraphData(data: ConceptGraphData | null) {
   };
 }
 
+const ZOOM_DURATION_MS = 400;
+const ZOOM_PADDING = 60;
+
 interface ConceptGraphOverlayProps {
   graph: ConceptGraphData | null;
   className?: string;
@@ -31,6 +34,7 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
   const graphAreaRef = useRef<HTMLDivElement>(null);
   const [dimensions, setDimensions] = useState({ width: 400, height: 300 });
   const fgRef = useRef<ForceGraphMethods<NodeObject, { source: string; target: string }> | null>(null);
+  const prevNodeCountRef = useRef<number>(0);
   const batches = graph?.batches ?? [];
   const [selectedBatchIndex, setSelectedBatchIndex] = useState<number | null>(null);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
@@ -89,6 +93,20 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
     if (chargeForce) chargeForce.strength(-400);
     fgRef.current.d3ReheatSimulation();
   }, [graph?.nodes?.length, isEmpty]);
+
+  // Center the graph when new nodes are added (after simulation settles)
+  useEffect(() => {
+    const nodeCount = graph?.nodes?.length ?? 0;
+    if (nodeCount === 0 || nodeCount <= prevNodeCountRef.current) {
+      prevNodeCountRef.current = nodeCount;
+      return;
+    }
+    prevNodeCountRef.current = nodeCount;
+    const timeoutId = setTimeout(() => {
+      fgRef.current?.zoomToFit(ZOOM_DURATION_MS, ZOOM_PADDING);
+    }, 800);
+    return () => clearTimeout(timeoutId);
+  }, [graph?.nodes?.length]);
 
   // Update tooltip position when hovered node changes or graph transforms (pan/zoom)
   useEffect(() => {
@@ -212,7 +230,7 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
               linkWidth={1}
               d3VelocityDecay={0.6}
               d3AlphaDecay={0.03}
-              onEngineStop={() => fgRef.current?.zoomToFit(200)}
+              onEngineStop={() => fgRef.current?.zoomToFit(ZOOM_DURATION_MS, ZOOM_PADDING)}
               backgroundColor="rgba(255,255,255,0.85)"
             />
             {hoveredNode &&
