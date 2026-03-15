@@ -17,16 +17,16 @@ export type ConceptGraphData = {
   }>;
 };
 
-const NODE_PAD = 40;
-const NODE_GAP = 24;
-const CLUSTER_PAD = 40;
+const NODE_PAD = 48;
+const NODE_GAP = 32;
+const CLUSTER_PAD = 48;
 const CLUSTER_GAP = 120;
 const BATCH_HEADER = 44;
 const VIEWPORT_PADDING = 32;
 const ARROW_SIZE = 8;
-const MIN_NODE_WIDTH = 340;
-const NODE_HEIGHT = 84;
-const NODE_HEIGHT_EXPANDED = 160;
+const MIN_NODE_WIDTH = 420;
+const NODE_HEIGHT = 100;
+const NODE_HEIGHT_EXPANDED = 200;
 
 interface ConceptGraphOverlayProps {
   graph: ConceptGraphData | null;
@@ -59,7 +59,6 @@ export function ConceptGraphOverlay({
   const stepperRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [dimensions, setDimensions] = useState({ width: 400, height: 300 });
-  const [stepperCenterInViewport, setStepperCenterInViewport] = useState<number | null>(null);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [selectedBatchIndex, setSelectedBatchIndex] = useState<number>(0);
 
@@ -158,8 +157,9 @@ export function ConceptGraphOverlay({
 
     // Build full rail: fixed x positions for every batch (stable across navigation)
     const maxHeight = Math.max(...allDims.map((d) => d.height), 100);
-    // Use stepper's actual center position (relative to viewport) for pixel-perfect alignment
-    const viewportCenterX = stepperCenterInViewport ?? dimensions.width / 2;
+    // Center the cluster in the visible content area (px-8 padding reduces the content box)
+    const contentWidth = dimensions.width - 2 * VIEWPORT_PADDING;
+    const viewportCenterX = contentWidth / 2;
 
     const allClusters: Array<{
       x: number;
@@ -171,12 +171,13 @@ export function ConceptGraphOverlay({
       nodes: Array<{ node: GraphNode; x: number; y: number; w: number; h: number }>;
     }> = [];
 
+    const contentHeight = dimensions.height - 48; // py-6 = 24px top + bottom
     let x = VIEWPORT_PADDING;
     for (let i = 0; i < batches.length; i++) {
       const dims = allDims[i]!;
       const role: "prev" | "center" | "next" =
         i < selectedBatchIndex ? "prev" : i > selectedBatchIndex ? "next" : "center";
-      const clusterY = Math.max(CLUSTER_PAD, (dimensions.height - dims.height) / 2);
+      const clusterY = Math.max(CLUSTER_PAD, (contentHeight - dims.height) / 2);
 
       allClusters.push({
         x,
@@ -219,7 +220,7 @@ export function ConceptGraphOverlay({
       totalHeight: Math.max(dimensions.height, maxHeight + CLUSTER_PAD * 2),
       translateX,
     };
-  }, [batches, selectedBatchIndex, nodeMap, dimensions, stepperCenterInViewport]);
+  }, [batches, selectedBatchIndex, nodeMap, dimensions]);
 
   useEffect(() => {
     const el = graphViewportRef.current ?? containerRef.current;
@@ -235,34 +236,6 @@ export function ConceptGraphOverlay({
     ro.observe(el);
     return () => ro.disconnect();
   }, [isEmpty]);
-
-  useEffect(() => {
-    const viewport = graphViewportRef.current;
-    const stepper = stepperRef.current;
-    if (!viewport || !stepper || !hasBatches) return;
-    const updateAlignment = () => {
-      const v = graphViewportRef.current;
-      const s = stepperRef.current;
-      if (!v || !s) return;
-      const viewportRect = v.getBoundingClientRect();
-      const stepperRect = s.getBoundingClientRect();
-      // px-8 = 32px padding; content area starts 32px from viewport's left
-      const VIEWPORT_PAD = 32;
-      const contentLeft = viewportRect.left + VIEWPORT_PAD;
-      const center = stepperRect.left + stepperRect.width / 2 - contentLeft;
-      setStepperCenterInViewport(center);
-    };
-    updateAlignment();
-    const ro = new ResizeObserver(updateAlignment);
-    ro.observe(viewport);
-    ro.observe(stepper);
-    window.addEventListener("scroll", updateAlignment, true);
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("scroll", updateAlignment, true);
-    };
-  }, [hasBatches]);
-
 
   return (
     <div
