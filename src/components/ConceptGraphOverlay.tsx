@@ -283,16 +283,11 @@ export function ConceptGraphOverlay({
             const isInMain = portalTarget !== document.body;
             return createPortal(
               <div
-                className={`${isInMain ? "absolute" : "fixed"} left-[48%] top-[49%] z-[9999] w-full max-w-lg max-h-[80vh] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl bg-white dark:bg-zinc-800 shadow-2xl p-6 border border-zinc-200 dark:border-zinc-700 mx-6`}
+                className={`${isInMain ? "absolute" : "fixed"} left-[48%] top-[49%] z-[9999] w-full max-w-lg max-h-[80vh] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded bg-white dark:bg-zinc-800 shadow-2xl p-6 border border-zinc-200 dark:border-zinc-700 mx-6`}
                 onMouseEnter={clearHideModalTimeout}
                 onMouseLeave={() => setBatchModalIndex(null)}
               >
                 <div className="text-left" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
-                  {batches[batchModalIndex]!.promptSummary && (
-                    <h3 className="text-xl font-semibold text-zinc-800 dark:text-white/95 mb-3">
-                      {batches[batchModalIndex]!.promptSummary}
-                    </h3>
-                  )}
                   <p
                     className="text-zinc-800 dark:text-white/95 whitespace-pre-wrap leading-relaxed"
                   >
