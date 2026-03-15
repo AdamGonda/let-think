@@ -315,7 +315,7 @@ export function ConceptGraphOverlay({
                 onMouseLeave={() => setBatchModalIndex(null)}
               >
                 <div
-                  className="overflow-y-auto rounded bg-white dark:bg-zinc-800 shadow-2xl p-6 border border-zinc-200 dark:border-zinc-700 animate-modal-in"
+                  className="overflow-y-auto rounded bg-white dark:bg-zinc-800 shadow-2xl p-6 border-2 border-zinc-300 dark:border-zinc-600 animate-modal-in"
                 >
                   <div className="text-left" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
                     <p
