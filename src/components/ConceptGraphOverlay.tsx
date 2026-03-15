@@ -87,6 +87,32 @@ export function ConceptGraphOverlay({
     return () => clearTimeout(id);
   }, [batchModalIndex]);
 
+  // Align modal x with graph viewport center (fixes offset when portaled to main content)
+  const [modalLeft, setModalLeft] = useState<number | null>(null);
+  useEffect(() => {
+    if (batchModalIndex == null || !graphViewportRef.current) {
+      setModalLeft(null);
+      return;
+    }
+    const updatePosition = () => {
+      const viewport = graphViewportRef.current;
+      const container = modalContainerRef?.current;
+      if (!viewport) return;
+      const rect = viewport.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const left =
+        container && document.body.contains(container)
+          ? centerX - container.getBoundingClientRect().left
+          : centerX;
+      setModalLeft(left);
+    };
+    updatePosition();
+    const ro = new ResizeObserver(updatePosition);
+    ro.observe(graphViewportRef.current);
+    if (modalContainerRef?.current) ro.observe(modalContainerRef.current);
+    return () => ro.disconnect();
+  }, [batchModalIndex, modalContainerRef]);
+
   // Build batches: use graph.batches, or fallback to single batch with all nodes
   const batches = useMemo(() => {
     const b = graph?.batches ?? [];
@@ -283,16 +309,21 @@ export function ConceptGraphOverlay({
             const isInMain = portalTarget !== document.body;
             return createPortal(
               <div
-                className={`${isInMain ? "absolute" : "fixed"} left-[48%] top-[52%] z-[9999] w-[468px] max-w-lg max-h-[80vh] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded bg-white dark:bg-zinc-800 shadow-2xl p-6 border border-zinc-200 dark:border-zinc-700 mx-6`}
+                className={`${isInMain ? "absolute" : "fixed"} top-[52%] z-[9999] w-[468px] max-w-lg max-h-[80vh] -translate-x-1/2 -translate-y-1/2`}
+                style={{ left: modalLeft != null ? `${modalLeft}px` : "50%" }}
                 onMouseEnter={clearHideModalTimeout}
                 onMouseLeave={() => setBatchModalIndex(null)}
               >
-                <div className="text-left" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
-                  <p
-                    className="text-zinc-800 dark:text-white/95 whitespace-pre-wrap leading-relaxed"
-                  >
-                    {batches[batchModalIndex]!.description}
-                  </p>
+                <div
+                  className="overflow-y-auto rounded bg-white dark:bg-zinc-800 shadow-2xl p-6 border border-zinc-200 dark:border-zinc-700 animate-modal-in"
+                >
+                  <div className="text-left" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
+                    <p
+                      className="text-zinc-800 dark:text-white/95 whitespace-pre-wrap leading-relaxed"
+                    >
+                      {batches[batchModalIndex]!.description}
+                    </p>
+                  </div>
                 </div>
               </div>,
             portalTarget
