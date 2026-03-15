@@ -26,7 +26,6 @@ const CLUSTER_GAP = 120;
 const BATCH_HEADER = 40;
 const BATCH_HEADER_GAP = 56;
 const VIEWPORT_PADDING = 0;
-const ARROW_SIZE = 8;
 const MIN_NODE_WIDTH = 420;
 const NODE_HEIGHT = 100;
 const NODE_HEIGHT_EXPANDED = 200;
@@ -387,44 +386,6 @@ export function ConceptGraphOverlay({
               minWidth: dimensions.width,
             }}
           >
-            <defs>
-              <marker
-                id="flow-arrow"
-                markerWidth={ARROW_SIZE}
-                markerHeight={ARROW_SIZE}
-                refX={ARROW_SIZE}
-                refY={ARROW_SIZE / 2}
-                orient="auto"
-              >
-                <path
-                  d={`M0,0 L${ARROW_SIZE},${ARROW_SIZE / 2} L0,${ARROW_SIZE} z`}
-                  fill="rgba(139,92,246,0.6)"
-                />
-              </marker>
-            </defs>
-
-            {/* Flow connectors: arrow from each cluster to the next */}
-            {layout.clusters.slice(0, -1).map((curr, i) => {
-              const next = layout.clusters[i + 1];
-              if (!next) return null;
-              const fromX = curr.x + curr.width;
-              const fromY = curr.y + curr.height / 2;
-              const toX = next.x;
-              const toY = next.y + next.height / 2;
-              const midX = (fromX + toX) / 2;
-              return (
-                <path
-                  key={`flow-${curr.batchIndex}-${next.batchIndex}`}
-                  d={`M ${fromX} ${fromY} C ${midX} ${fromY}, ${midX} ${toY}, ${toX} ${toY}`}
-                  fill="none"
-                  stroke="rgba(139,92,246,0.5)"
-                  strokeWidth={2}
-                  strokeDasharray="4 4"
-                  markerEnd="url(#flow-arrow)"
-                />
-              );
-            })}
-
             {/* Cluster backgrounds and nodes */}
             {layout.clusters.map((cluster) => {
               const isCenter = cluster.role === "center";
