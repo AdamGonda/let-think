@@ -56,9 +56,9 @@ export function SessionSidebar({
         {sessions?.map((session) => (
           <div
             key={session._id}
-            className={`group flex items-center gap-1 py-1.5 px-3 rounded-lg border ${
+            className={`group flex items-center gap-1 py-1.5 px-3 rounded-lg border transition-colors ${
               activeSessionId === session._id
-                ? "bg-violet-500/20 dark:bg-violet-400/25 border-violet-500/50 dark:border-violet-400/50"
+                ? "bg-violet-500/20 dark:bg-violet-400/25 border-violet-500/50 dark:border-violet-400/50 hover:bg-violet-500/30 dark:hover:bg-violet-400/35"
                 : "border-transparent hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
             }`}
           >
@@ -76,7 +76,7 @@ export function SessionSidebar({
             <div className="relative shrink-0" ref={openMenuId === session._id ? menuRef : undefined}>
               <button
                 type="button"
-                className="p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-600 text-zinc-500 dark:text-zinc-400 opacity-0 group-hover:opacity-100 data-[open=true]:opacity-100"
+                className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover:opacity-100 data-[open=true]:opacity-100 hover:bg-zinc-200 dark:hover:bg-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-200"
                 data-open={openMenuId === session._id}
                 onClick={(e) => {
                   e.stopPropagation();
