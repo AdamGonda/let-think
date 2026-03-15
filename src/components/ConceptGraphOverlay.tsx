@@ -31,6 +31,8 @@ const NODE_HEIGHT = 84;
 interface ConceptGraphOverlayProps {
   graph: ConceptGraphData | null;
   className?: string;
+  selectedNodeIds?: Set<string>;
+  onToggleNodeSelection?: (nodeId: string) => void;
 }
 
 function measureText(text: string, font: string): { width: number; height: number } {
@@ -46,7 +48,12 @@ function measureText(text: string, font: string): { width: number; height: numbe
   };
 }
 
-export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayProps) {
+export function ConceptGraphOverlay({
+  graph,
+  className,
+  selectedNodeIds = new Set(),
+  onToggleNodeSelection,
+}: ConceptGraphOverlayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphViewportRef = useRef<HTMLDivElement>(null);
   const stepperRef = useRef<HTMLDivElement>(null);
@@ -432,7 +439,9 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
                       </g>
                     );
                   })()}
-                  {cluster.nodes.map(({ node, x, y, w, h }) => (
+                  {cluster.nodes.map(({ node, x, y, w, h }) => {
+                    const isSelected = selectedNodeIds.has(node.id);
+                    return (
                     <g
                       key={node.id}
                       onMouseEnter={(e) => {
@@ -443,8 +452,26 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
                         setHoveredNode(null);
                         setTooltipPos(null);
                       }}
-                      style={{ cursor: "pointer" }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleNodeSelection?.(node.id);
+                      }}
+                      style={{ cursor: onToggleNodeSelection ? "pointer" : undefined }}
                     >
+                      {isSelected && (
+                        <rect
+                          x={x - 3}
+                          y={y - 3}
+                          width={w + 6}
+                          height={h + 6}
+                          rx={6}
+                          ry={6}
+                          fill="none"
+                          stroke="rgba(139,92,246,0.9)"
+                          strokeWidth={4}
+                          style={{ filter: "drop-shadow(0 0 8px rgba(139,92,246,0.6))" }}
+                        />
+                      )}
                       <rect
                         x={x}
                         y={y}
@@ -452,24 +479,56 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
                         height={h}
                         rx={4}
                         ry={4}
-                        fill={isCenter ? "rgba(255,255,255,0.98)" : "rgba(255,255,255,0.85)"}
-                        stroke={isCenter ? "rgba(139,92,246,0.8)" : "rgba(139,92,246,0.45)"}
-                        strokeWidth={isCenter ? 1.5 : 1}
-                        className="dark:fill-zinc-800 dark:stroke-violet-500"
-                        style={isDimmed ? { opacity: 0.85 } : undefined}
+                        fill={
+                          isSelected
+                            ? "rgba(139,92,246,0.6)"
+                            : isCenter
+                              ? "rgba(255,255,255,0.98)"
+                              : "rgba(255,255,255,0.85)"
+                        }
+                        stroke={
+                          isSelected
+                            ? "rgba(139,92,246,1)"
+                            : isCenter
+                              ? "rgba(139,92,246,0.8)"
+                              : "rgba(139,92,246,0.45)"
+                        }
+                        strokeWidth={isSelected ? 4 : isCenter ? 1.5 : 1}
+                        className={isSelected ? "" : "dark:fill-zinc-800 dark:stroke-violet-500"}
+                        style={isDimmed && !isSelected ? { opacity: 0.85 } : undefined}
                       />
+                      {isSelected && (
+                        <g transform={`translate(${x + w - 28}, ${y + 12})`}>
+                          <circle cx={14} cy={10} r={12} fill="rgba(139,92,246,1)" />
+                          <path
+                            d="M8 10l4 4 8-8"
+                            fill="none"
+                            stroke="white"
+                            strokeWidth={2.5}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </g>
+                      )}
                       <text
                         x={x + w / 2}
                         y={y + h / 2}
                         textAnchor="middle"
                         dominantBaseline="middle"
-                        className="fill-zinc-800 dark:fill-zinc-200 text-xl font-semibold"
-                        style={isDimmed ? { opacity: 0.9 } : undefined}
+                        className={`text-xl font-semibold ${isSelected ? "fill-white" : "fill-zinc-800 dark:fill-zinc-200"}`}
+                        style={
+                          isDimmed && !isSelected
+                            ? { opacity: 0.9 }
+                            : isSelected
+                              ? { textShadow: "0 1px 2px rgba(0,0,0,0.4)" }
+                              : undefined
+                        }
                       >
                         {node.name}
                       </text>
                     </g>
-                  ))}
+                    );
+                  })}
                 </g>
               );
             })}

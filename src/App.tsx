@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
@@ -13,6 +13,7 @@ function App() {
     null
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
   const sessions = useQuery(api.sessions.list);
   const messages = useQuery(
     api.sessions.getMessages,
@@ -29,6 +30,29 @@ function App() {
     }
   }, [sessions, activeSessionId]);
 
+  // Reset selected nodes when switching sessions
+  useEffect(() => {
+    setSelectedNodeIds(new Set());
+  }, [activeSessionId]);
+
+  const selectedNodes = useMemo(() => {
+    if (!conceptGraph?.nodes) return [];
+    return conceptGraph.nodes.filter((n) => selectedNodeIds.has(n.id));
+  }, [conceptGraph?.nodes, selectedNodeIds]);
+
+  const handleToggleNodeSelection = (nodeId: string) => {
+    setSelectedNodeIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(nodeId)) next.delete(nodeId);
+      else next.add(nodeId);
+      return next;
+    });
+  };
+
+  const handleClearSelectedNodes = () => {
+    setSelectedNodeIds(new Set());
+  };
+
   return (
     <div className="flex h-screen bg-white dark:bg-[#16171d]">
       <SessionSidebar
@@ -44,6 +68,8 @@ function App() {
               <ConceptGraphOverlay
                 key={activeSessionId}
                 graph={conceptGraph ?? null}
+                selectedNodeIds={selectedNodeIds}
+                onToggleNodeSelection={handleToggleNodeSelection}
               />
             ) : (
               <div className="flex flex-1 items-center justify-center text-zinc-600 dark:text-zinc-400 text-base py-6 px-6">
@@ -90,6 +116,8 @@ function App() {
           messageHistory={messages ?? []}
           isLoading={isLoading}
           setIsLoading={setIsLoading}
+          selectedNodes={selectedNodes}
+          onMessageSent={handleClearSelectedNodes}
         />
       </main>
     </div>

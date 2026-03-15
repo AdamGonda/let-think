@@ -3,6 +3,12 @@ import { useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 
+interface SelectedNode {
+  id: string;
+  name: string;
+  description?: string;
+}
+
 interface ChatProps {
   sessionId: Id<"sessions"> | null;
   /** Conversation history for context and display */
@@ -13,9 +19,20 @@ interface ChatProps {
   }>;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
+  /** Nodes selected by user to add as context to the next prompt */
+  selectedNodes?: SelectedNode[];
+  /** Called after a message is sent successfully (e.g. to clear selections) */
+  onMessageSent?: () => void;
 }
 
-export function Chat({ sessionId, messageHistory, isLoading, setIsLoading }: ChatProps) {
+export function Chat({
+  sessionId,
+  messageHistory,
+  isLoading,
+  setIsLoading,
+  selectedNodes = [],
+  onMessageSent,
+}: ChatProps) {
   const [input, setInput] = useState("");
   const [branching, setBranching] = useState(2);
   const sendMessage = useAction(api.chat.send);
@@ -42,7 +59,9 @@ export function Chat({ sessionId, messageHistory, isLoading, setIsLoading }: Cha
         sessionId,
         userContent,
         branching,
+        selectedNodeContext: selectedNodes.length > 0 ? selectedNodes : undefined,
       });
+      onMessageSent?.();
     } catch (err) {
       console.error("Chat error:", err);
       // Put the input back on error
@@ -54,6 +73,19 @@ export function Chat({ sessionId, messageHistory, isLoading, setIsLoading }: Cha
 
   return (
     <div className="flex flex-col gap-2 py-3 px-6 pb-4 border-t border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#16171d] shrink-0">
+      {selectedNodes.length > 0 && (
+        <div className="flex items-center gap-2 flex-wrap text-sm">
+          <span className="text-zinc-600 dark:text-zinc-400">Context:</span>
+          {selectedNodes.map((n) => (
+            <span
+              key={n.id}
+              className="inline-flex items-center px-2.5 py-1 rounded-md bg-violet-500/20 dark:bg-violet-400/25 text-violet-700 dark:text-violet-300 border border-violet-500/50 dark:border-violet-400/50 font-medium"
+            >
+              {n.name}
+            </span>
+          ))}
+        </div>
+      )}
       <div className="flex items-center gap-3 text-sm text-zinc-600 dark:text-zinc-400">
         <span className="whitespace-nowrap">Branching spectrum</span>
         <div className="flex gap-1" role="group" aria-label="Branching level">

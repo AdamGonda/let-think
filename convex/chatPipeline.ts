@@ -73,6 +73,8 @@ export type PipelineContext = {
   conceptGraph?: ConceptGraph | null;
   /** Branching spectrum 1-3: max number of new nodes (n) to generate per response */
   branching?: number;
+  /** User-selected nodes to add as context to the prompt */
+  selectedNodes?: Array<{ id: string; name: string; description?: string }>;
   /** Any metadata you want to pass through */
   meta?: Record<string, unknown>;
 };
@@ -90,6 +92,11 @@ export async function preProcess(
   const graphContext = existing
     ? `\n\nEXISTING CONCEPT GRAPH (merge new nodes into this):\n${JSON.stringify(existing)}`
     : "";
+
+  const selectedContext =
+    ctx?.selectedNodes && ctx.selectedNodes.length > 0
+      ? `\n\nADDITIONAL CONTEXT - USER-SELECTED CONCEPTS:\nThe user has explicitly selected the following concepts to focus on. Please incorporate and address these in your response:\n${ctx.selectedNodes.map((node) => `- ${node.name}: ${node.description ?? node.id}`).join("\n")}`
+      : "";
 
   const prompt = `
 You have access to the whole conversation history, and a CONCEPT GRAPH,
@@ -114,6 +121,7 @@ Put this EXACTLY at the very end of your reply (after all other text):
 {"nodes":[{"id":"1","name":"Graph","description":"A data structure representing nodes and connections between them, used for modeling relationships."},{"id":"2","name":"Convex","description":"A serverless backend platform providing real-time database and backend functions."}],"edges":[{"source":"1","target":"2"}]}
 \`\`\`
 ${graphContext}
+${selectedContext}
 `;
 
   return [
