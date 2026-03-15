@@ -66,6 +66,26 @@ export function ConceptGraphOverlay({
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [batchModalIndex, setBatchModalIndex] = useState<number | null>(null);
   const [selectedBatchIndex, setSelectedBatchIndex] = useState<number>(0);
+  const hideModalTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearHideModalTimeout = () => {
+    if (hideModalTimeoutRef.current) {
+      clearTimeout(hideModalTimeoutRef.current);
+      hideModalTimeoutRef.current = null;
+    }
+  };
+  const scheduleHideModal = () => {
+    clearHideModalTimeout();
+    hideModalTimeoutRef.current = setTimeout(() => setBatchModalIndex(null), 150);
+  };
+
+  // When modal opens, the overlay covers the trigger—green box gets mouseLeave and schedules hide.
+  // Clear that after a tick so the modal stays open when the user is effectively "in" the modal area.
+  useEffect(() => {
+    if (batchModalIndex == null) return;
+    const id = setTimeout(clearHideModalTimeout, 100);
+    return () => clearTimeout(id);
+  }, [batchModalIndex]);
 
   // Build batches: use graph.batches, or fallback to single batch with all nodes
   const batches = useMemo(() => {
@@ -262,22 +282,11 @@ export function ConceptGraphOverlay({
             const portalTarget = modalContainerRef?.current ?? document.body;
             const isInMain = portalTarget !== document.body;
             return createPortal(
-              <>
-                <div
-                  className={`${isInMain ? "absolute" : "fixed"} inset-0 z-[9999] bg-black/50`}
-                  onClick={() => setBatchModalIndex(null)}
-                />
-                <div
-                  className={`${isInMain ? "absolute" : "fixed"} left-1/2 top-[42%] z-[9999] w-full max-w-lg max-h-[80vh] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl bg-white dark:bg-zinc-800 shadow-2xl p-6 border border-zinc-200 dark:border-zinc-700 mx-6`}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                <button
-                  type="button"
-                  onClick={() => setBatchModalIndex(null)}
-                  className="mb-4 w-full py-2 rounded-lg bg-zinc-200 dark:bg-zinc-600 hover:bg-zinc-300 dark:hover:bg-zinc-500 text-zinc-800 dark:text-white/90 text-sm font-medium transition-colors"
-                >
-                  Close
-                </button>
+              <div
+                className={`${isInMain ? "absolute" : "fixed"} left-1/2 top-[41%] z-[9999] w-full max-w-lg max-h-[80vh] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-xl bg-white dark:bg-zinc-800 shadow-2xl p-6 border border-zinc-200 dark:border-zinc-700 mx-6`}
+                onMouseEnter={clearHideModalTimeout}
+                onMouseLeave={() => setBatchModalIndex(null)}
+              >
                 <div className="text-left" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}>
                   {batches[batchModalIndex]!.promptSummary && (
                     <h3 className="text-xl font-semibold text-zinc-800 dark:text-white/95 mb-3">
@@ -290,8 +299,7 @@ export function ConceptGraphOverlay({
                     {batches[batchModalIndex]!.description}
                   </p>
                 </div>
-              </div>
-            </>,
+              </div>,
             portalTarget
           );
           })()}
@@ -381,12 +389,15 @@ export function ConceptGraphOverlay({
                     const cy = cluster.y + 30;
                     return (
                       <g
-                        onClick={(e) => {
-                          e.stopPropagation();
+                        onMouseEnter={() => {
                           if (batch?.description) {
+                            clearHideModalTimeout();
                             setBatchModalIndex(cluster.batchIndex);
                             if (isDimmed) setSelectedBatchIndex(cluster.batchIndex);
                           }
+                        }}
+                        onMouseLeave={() => {
+                          if (batch?.description) scheduleHideModal();
                         }}
                         style={{ cursor: batch?.description ? "pointer" : undefined }}
                       >
