@@ -1,0 +1,19 @@
+import { defineSchema, defineTable } from "convex/server";
+import { v } from "convex/values";
+
+/**
+ * Convex schema for chat sessions and messages.
+ */
+export default defineSchema({
+  sessions: defineTable({
+    title: v.string(),
+    createdAt: v.number(),
+  }).index("by_created", ["createdAt"]),
+
+  messages: defineTable({
+    sessionId: v.id("sessions"),
+    role: v.union(v.literal("user"), v.literal("assistant")),
+    content: v.string(),
+    createdAt: v.number(),
+  }).index("by_session", ["sessionId"]),
+});
