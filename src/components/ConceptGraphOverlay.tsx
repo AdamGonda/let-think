@@ -1,5 +1,4 @@
-import { useCallback, useRef, useEffect, useState, useMemo } from "react";
-import { createPortal } from "react-dom";
+import { useRef, useEffect, useState, useMemo } from "react";
 
 type GraphNode = {
   id: string;
@@ -27,6 +26,7 @@ const VIEWPORT_PADDING = 32;
 const ARROW_SIZE = 8;
 const MIN_NODE_WIDTH = 340;
 const NODE_HEIGHT = 84;
+const NODE_HEIGHT_EXPANDED = 120;
 
 interface ConceptGraphOverlayProps {
   graph: ConceptGraphData | null;
@@ -61,11 +61,6 @@ export function ConceptGraphOverlay({
   const [dimensions, setDimensions] = useState({ width: 400, height: 300 });
   const [stepperCenterInViewport, setStepperCenterInViewport] = useState<number | null>(null);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
-  const [hoveredBatch, setHoveredBatch] = useState<{
-    label: string;
-    description?: string;
-  } | null>(null);
-  const [tooltipPos, setTooltipPos] = useState<{ clientX: number; clientY: number } | null>(null);
   const [selectedBatchIndex, setSelectedBatchIndex] = useState<number>(0);
 
   // Build batches: use graph.batches, or fallback to single batch with all nodes
@@ -134,7 +129,8 @@ export function ConceptGraphOverlay({
       let maxW = 0;
 
       for (const node of batchNodes) {
-        const { width: w, height: h } = measureText(node.name, font);
+        const { width: w } = measureText(node.name, font);
+        const h = node.description ? NODE_HEIGHT_EXPANDED : NODE_HEIGHT;
         nodeLayouts.push({ node, x: CLUSTER_PAD, y: cy, w, h });
         maxW = Math.max(maxW, w + CLUSTER_PAD * 2);
         cy += h + NODE_GAP;
@@ -268,26 +264,12 @@ export function ConceptGraphOverlay({
   }, [hasBatches]);
 
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      if (hoveredNode || hoveredBatch) {
-        setTooltipPos({ clientX: e.clientX, clientY: e.clientY });
-      }
-    },
-    [hoveredNode, hoveredBatch]
-  );
-
   return (
     <div
       ref={containerRef}
       className={className ?? "flex flex-1 min-w-0 min-h-0 flex-col"}
       style={{ width: "100%", height: "100%" }}
-      onMouseMove={handleMouseMove}
-      onMouseLeave={() => {
-        setHoveredNode(null);
-        setHoveredBatch(null);
-        setTooltipPos(null);
-      }}
+      onMouseLeave={() => setHoveredNode(null)}
     >
       {isEmpty ? (
         <div className="flex flex-1 items-center justify-center text-zinc-600 dark:text-zinc-400 text-base py-6 px-6">
@@ -385,35 +367,13 @@ export function ConceptGraphOverlay({
                       (cluster.role === "prev" ? "← " : "") +
                       (batch?.promptSummary ?? `Batch ${cluster.batchIndex + 1}`) +
                       (cluster.role === "next" ? " →" : "");
-                    const hasTooltip = batch?.description ?? batch?.promptSummary;
                     const padX = 18;
                     const boxW = Math.max(80, label.length * 10 + padX * 2);
                     const boxH = 36;
                     const cx = cluster.x + cluster.width / 2;
                     const cy = cluster.y + 30;
                     return (
-                      <g
-                        onMouseEnter={
-                          hasTooltip
-                            ? (e) => {
-                                setHoveredBatch({
-                                  label: batch?.promptSummary ?? label,
-                                  description: batch?.description,
-                                });
-                                setTooltipPos({ clientX: e.clientX, clientY: e.clientY });
-                              }
-                            : undefined
-                        }
-                        onMouseLeave={
-                          hasTooltip
-                            ? () => {
-                                setHoveredBatch(null);
-                                setTooltipPos(null);
-                              }
-                            : undefined
-                        }
-                        style={hasTooltip ? { cursor: "pointer" } : undefined}
-                      >
+                      <g>
                         <rect
                           x={cx - boxW / 2}
                           y={cy - boxH / 2}
@@ -441,17 +401,13 @@ export function ConceptGraphOverlay({
                   })()}
                   {cluster.nodes.map(({ node, x, y, w, h }) => {
                     const isSelected = selectedNodeIds.has(node.id);
+                    const isHovered = hoveredNode?.id === node.id;
+                    const showDescription = isHovered && node.description;
                     return (
                     <g
                       key={node.id}
-                      onMouseEnter={(e) => {
-                        setHoveredNode(node);
-                        setTooltipPos({ clientX: e.clientX, clientY: e.clientY });
-                      }}
-                      onMouseLeave={() => {
-                        setHoveredNode(null);
-                        setTooltipPos(null);
-                      }}
+                      onMouseEnter={() => setHoveredNode(node)}
+                      onMouseLeave={() => setHoveredNode(null)}
                       onClick={(e) => {
                         e.stopPropagation();
                         onToggleNodeSelection?.(node.id);
@@ -511,10 +467,10 @@ export function ConceptGraphOverlay({
                         </g>
                       )}
                       <text
-                        x={x + w / 2}
-                        y={y + h / 2}
-                        textAnchor="middle"
-                        dominantBaseline="middle"
+                        x={showDescription ? x + 24 : x + w / 2}
+                        y={showDescription ? y + 20 : y + h / 2}
+                        textAnchor={showDescription ? "start" : "middle"}
+                        dominantBaseline={showDescription ? "hanging" : "middle"}
                         className={`text-xl font-semibold ${isSelected ? "fill-white" : "fill-zinc-800 dark:fill-zinc-200"}`}
                         style={
                           isDimmed && !isSelected
@@ -526,6 +482,25 @@ export function ConceptGraphOverlay({
                       >
                         {node.name}
                       </text>
+                      {showDescription && (
+                        <foreignObject
+                          x={x + 24}
+                          y={y + 44}
+                          width={w - 48}
+                          height={h - 52}
+                          className="overflow-hidden"
+                        >
+                          <div
+                            className={`text-sm leading-snug line-clamp-3 ${isSelected ? "text-white/90" : "text-zinc-600 dark:text-zinc-400"}`}
+                            style={{
+                              width: "100%",
+                              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                            }}
+                          >
+                            {node.description}
+                          </div>
+                        </foreignObject>
+                      )}
                     </g>
                     );
                   })}
@@ -573,26 +548,6 @@ export function ConceptGraphOverlay({
         )}
         </>
       )}
-
-      {tooltipPos &&
-        ((hoveredNode && (hoveredNode.description ?? hoveredNode.name)) ||
-          (hoveredBatch && (hoveredBatch.description ?? hoveredBatch.label))) &&
-        createPortal(
-          <div
-            className="fixed z-9999 pointer-events-none max-w-[360px] rounded-lg border-2 border-zinc-500 dark:border-zinc-500 bg-white dark:bg-zinc-900 shadow-lg px-4 py-3 text-2xl font-bold text-zinc-800 dark:text-zinc-200"
-            style={{
-              left: tooltipPos.clientX + 8,
-              top: tooltipPos.clientY + 4,
-            }}
-          >
-            {hoveredNode
-              ? (hoveredNode.description ?? hoveredNode.name)
-              : hoveredBatch
-                ? (hoveredBatch.description ?? hoveredBatch.label)
-                : ""}
-          </div>,
-          document.body
-        )}
     </div>
   );
 }
