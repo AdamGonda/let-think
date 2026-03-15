@@ -15,6 +15,7 @@ export default defineSchema({
           v.object({
             id: v.string(),
             name: v.string(),
+            description: v.optional(v.string()),
           })
         ),
         edges: v.array(

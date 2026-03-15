@@ -1,11 +1,14 @@
 import { useCallback, useRef, useEffect, useState, useMemo } from "react";
+import { createPortal } from "react-dom";
 import ForceGraph2D, {
   type ForceGraphMethods,
   type NodeObject,
 } from "react-force-graph-2d";
 
+type GraphNode = { id?: string; name?: string; description?: string; x?: number; y?: number };
+
 export type ConceptGraphData = {
-  nodes: Array< { id: string; name: string } >;
+  nodes: Array< { id: string; name: string; description?: string } >;
   edges: Array< { source: string; target: string } >;
   batches?: Array< { id: string; nodeIds: string[] } >;
 };
@@ -30,6 +33,8 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
   const fgRef = useRef<ForceGraphMethods<NodeObject, { source: string; target: string }> | null>(null);
   const batches = graph?.batches ?? [];
   const [selectedBatchIndex, setSelectedBatchIndex] = useState<number | null>(null);
+  const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
+  const [tooltipPos, setTooltipPos] = useState<{ x: number; y: number } | null>(null);
 
   // Sync selectedBatchIndex with batches (default to last batch, clamp when out of bounds)
   useEffect(() => {
@@ -85,8 +90,36 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
     fgRef.current.d3ReheatSimulation();
   }, [graph?.nodes?.length, isEmpty]);
 
+  // Update tooltip position when hovered node changes or graph transforms (pan/zoom)
+  useEffect(() => {
+    if (!hoveredNode || !fgRef.current) {
+      setTooltipPos(null);
+      return;
+    }
+    let rafId: number;
+    const updatePos = () => {
+      if (!fgRef.current || !hoveredNode) return;
+      const x = hoveredNode.x ?? 0;
+      const y = hoveredNode.y ?? 0;
+      const { x: sx, y: sy } = fgRef.current.graph2ScreenCoords(x, y);
+      setTooltipPos({ x: sx, y: sy });
+    };
+    updatePos();
+    const loop = () => {
+      updatePos();
+      rafId = requestAnimationFrame(loop);
+    };
+    rafId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(rafId);
+  }, [hoveredNode]);
+
+  const handleNodeHover = useCallback((node: GraphNode | null) => {
+    setHoveredNode(node);
+    if (!node) setTooltipPos(null);
+  }, []);
+
   const handleNodeCanvasObject = useCallback(
-    (node: { id?: string; name?: string; x?: number; y?: number }, ctx: CanvasRenderingContext2D, globalScale: number) => {
+    (node: { id?: string; name?: string; description?: string; x?: number; y?: number }, ctx: CanvasRenderingContext2D, globalScale: number) => {
       const label = (node.name ?? node.id ?? "") as string;
       if (!label) return;
       const isHighlighted =
@@ -95,7 +128,8 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
       ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`;
       const textWidth = ctx.measureText(label).width;
       const pad = fontSize * 0.5;
-      const bckgDimensions = [textWidth + pad * 2, fontSize + pad];
+      const bckgDimensions = [textWidth + pad * 2, fontSize + pad] as [number, number];
+      (node as { __bckgDimensions?: [number, number] }).__bckgDimensions = bckgDimensions;
 
       ctx.fillStyle = isHighlighted
         ? "rgba(255,255,255,0.98)"
@@ -130,6 +164,19 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
     [batches.length, selectedBatchIndex]
   );
 
+  const handleNodePointerAreaPaint = useCallback(
+    (node: { __bckgDimensions?: [number, number]; x?: number; y?: number }, color: string, ctx: CanvasRenderingContext2D) => {
+      const bckgDimensions = (node as { __bckgDimensions?: [number, number] }).__bckgDimensions ?? [50, 24];
+      ctx.fillStyle = color;
+      ctx.fillRect(
+        (node.x ?? 0) - bckgDimensions[0] / 2,
+        (node.y ?? 0) - bckgDimensions[1] / 2,
+        ...bckgDimensions
+      );
+    },
+    []
+  );
+
   const hasBatches = batches.length > 0;
   const maxIndex = batches.length; // batches.length = "All" view
   const canGoPrev = effectiveBatchIndex != null && effectiveBatchIndex > 0;
@@ -148,16 +195,17 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
         </div>
       ) : (
         <>
-          <div ref={graphAreaRef} className="flex-1 min-h-0 min-w-0">
+          <div ref={graphAreaRef} className="flex-1 min-h-0 min-w-0 relative overflow-visible">
             <ForceGraph2D
               ref={fgRef}
               graphData={graphData}
               width={dimensions.width}
               height={dimensions.height}
               nodeId="id"
-              nodeLabel="name"
+              onNodeHover={handleNodeHover}
               nodeCanvasObject={handleNodeCanvasObject}
               nodeCanvasObjectMode={() => "replace"}
+              nodePointerAreaPaint={handleNodePointerAreaPaint}
               linkColor={() => "rgba(150,150,150,0.5)"}
               linkWidth={1}
               d3VelocityDecay={0.6}
@@ -165,6 +213,28 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
               onEngineStop={() => fgRef.current?.zoomToFit(200)}
               backgroundColor="rgba(255,255,255,0.85)"
             />
+            {hoveredNode &&
+              tooltipPos &&
+              graphAreaRef.current &&
+              (hoveredNode.description ?? hoveredNode.name) &&
+              createPortal(
+                <div
+                  className="fixed z-9999 pointer-events-none max-w-[280px] rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-lg px-3 py-2 text-base text-zinc-800 dark:text-zinc-200"
+                  style={{
+                    left:
+                      graphAreaRef.current.getBoundingClientRect().left +
+                      tooltipPos.x +
+                      12,
+                    top:
+                      graphAreaRef.current.getBoundingClientRect().top +
+                      tooltipPos.y,
+                    transform: "translateY(-50%)",
+                  }}
+                >
+                  {hoveredNode.description ?? hoveredNode.name}
+                </div>,
+                document.body
+              )}
           </div>
           {hasBatches && (
             <div className="relative z-10 flex items-center justify-center gap-3 py-2 px-3 border-t border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shrink-0">

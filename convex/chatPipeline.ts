@@ -1,7 +1,7 @@
 import type { ModelMessage } from "ai";
 
 export type ConceptGraph = {
-  nodes: Array< { id: string; name: string } >;
+  nodes: Array< { id: string; name: string; description?: string } >;
   edges: Array< { source: string; target: string } >;
   /** Batches for UI traversal – nodeIds per batch */
   batches?: Array< { id: string; nodeIds: string[] } >;
@@ -28,8 +28,16 @@ export function extractConceptGraph(text: string): ConceptGraph | null {
       const g = parsed as ConceptGraph;
       return {
         nodes: g.nodes.filter(
-          (n) => n && typeof n.id === "string" && typeof n.name === "string"
-        ),
+          (n) =>
+            n &&
+            typeof n.id === "string" &&
+            typeof n.name === "string" &&
+            (n.description === undefined || typeof n.description === "string")
+        ).map((n) => ({
+          id: n.id,
+          name: n.name,
+          ...(n.description != null ? { description: n.description } : {}),
+        })),
         edges: g.edges.filter(
           (e) =>
             e &&
@@ -80,7 +88,7 @@ export async function preProcess(
 
   const prompt = `
 You have access to the whole conversation history, and a CONCEPT GRAPH,
-where the nodes are concepts or reasoning summarized into one word.
+where the nodes are concepts or reasoning from the conversation.
 
 IF NO CONCEPT GRAPH EXISTS IN CONTEXT:
 Generate a new CONCEPT GRAPH from scratch based on the ideas in your response.
@@ -89,15 +97,16 @@ IF CONCEPT GRAPH EXISTS:
 Add new nodes to the CONCEPT GRAPH based on ideas in your response.
 
 Rules:
-- The user has set BRANCHING to ${n}. Generate 1 to ${n} concepts (nodes) based on ideas in your response. Not 0. Each node: id (unique string), name (one word or short phrase).
+- The user has set BRANCHING to ${n}. Generate 1 to ${n} concepts (nodes) based on ideas in your response. Not 0.
+- Each node must have: id (unique string), name (short label, 1–3 words), and description (a clear 1–2 sentence explanation of the concept—not just a single word).
 - Connect nodes with edges so the graph stays connected.
 - You MUST end your response with the CONCEPT GRAPH as valid JSON in a code block. No exceptions.
-- Example: if your answer discusses "graph" and "Convex", create nodes for those ideas and link them.
+- Example: if your answer discusses "graph" and "Convex", create nodes with descriptive explanations and link them.
 
 Put this EXACTLY at the very end of your reply (after all other text):
 
 \`\`\`json
-{"nodes":[{"id":"1","name":"Graph"},{"id":"2","name":"Convex"}],"edges":[{"source":"1","target":"2"}]}
+{"nodes":[{"id":"1","name":"Graph","description":"A data structure representing nodes and connections between them, used for modeling relationships."},{"id":"2","name":"Convex","description":"A serverless backend platform providing real-time database and backend functions."}],"edges":[{"source":"1","target":"2"}]}
 \`\`\`
 ${graphContext}
 `;
