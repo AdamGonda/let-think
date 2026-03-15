@@ -80,7 +80,7 @@ export const send = action({
 
     // 2. Call LLM
     const result = await generateText({
-      model: google("gemini-3.1-pro-preview"),
+      model: google("gemini-3-flash-preview"),
       system: "You are a helpful assistant.",
       messages: modelMessages,
     });
@@ -103,9 +103,8 @@ export const send = action({
 
     let finalGraph: ConceptGraph | null = existingGraph;
     if (extractedGraph && extractedGraph.nodes.length > 0) {
-      const existingNodeIds: Set<string> = new Set(
-        (existingGraph?.nodes ?? []).map((n) => n.id)
-      );
+      const existingNodes = existingGraph?.nodes ?? [];
+      const existingNodeIds: Set<string> = new Set(existingNodes.map((n) => n.id));
       const newNodeIds: string[] = extractedGraph.nodes
         .filter((n) => !existingNodeIds.has(n.id))
         .map((n) => n.id);
@@ -121,8 +120,23 @@ export const send = action({
               },
             ]
           : existingBatches;
+      // Merge: keep existing nodes + add new ones (don't replace with extractedGraph!)
+      const mergedNodes = [
+        ...existingNodes,
+        ...extractedGraph.nodes.filter((n) => !existingNodeIds.has(n.id)),
+      ];
+      const existingEdgeKeys = new Set(
+        (existingGraph?.edges ?? []).map((e) => `${e.source}→${e.target}`)
+      );
+      const mergedEdges = [
+        ...(existingGraph?.edges ?? []),
+        ...extractedGraph.edges.filter(
+          (e) => !existingEdgeKeys.has(`${e.source}→${e.target}`)
+        ),
+      ];
       finalGraph = {
-        ...extractedGraph,
+        nodes: mergedNodes,
+        edges: mergedEdges,
         batches: batches.length > 0 ? batches : undefined,
       };
       await ctx.runMutation(api.sessions.updateConceptGraph, {
