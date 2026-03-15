@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as chatPipeline from "../chatPipeline.js";
 import type * as http from "../http.js";
 import type * as sessions from "../sessions.js";
 
@@ -18,6 +19,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  chatPipeline: typeof chatPipeline;
   http: typeof http;
   sessions: typeof sessions;
 }>;

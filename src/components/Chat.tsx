@@ -1,6 +1,4 @@
-import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport } from "ai";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -10,75 +8,64 @@ const CHAT_API = CONVEX_URL
   ? `${CONVEX_URL.replace(".cloud", ".site")}/api/chat`
   : "/api/chat";
 
-function getMessageText(message: {
-  parts?: Array<{ type?: string; text?: string }>;
-}): string {
-  return (
-    message.parts
-      ?.filter((p) => p.type === "text")
-      .map((p) => p.text ?? "")
-      .join("") ?? ""
-  );
-}
-
-type DbMessage = { role: "user" | "assistant"; content: string };
-
-function dbMessagesToUIMessages(
-  messages: DbMessage[],
-  generateId: () => string
-): Array<{ id: string; role: "user" | "assistant"; parts: Array<{ type: "text"; text: string }> }> {
-  return messages.map((m) => ({
-    id: generateId(),
-    role: m.role,
-    parts: [{ type: "text" as const, text: m.content }],
-  }));
-}
-
 interface ChatProps {
   sessionId: Id<"sessions"> | null;
-  initialMessages: DbMessage[];
+  /** Conversation history for context (not displayed, only sent to LLM) */
+  messageHistory: Array<{ role: "user" | "assistant"; content: string }>;
 }
 
-export function Chat({ sessionId, initialMessages }: ChatProps) {
+export function Chat({ sessionId, messageHistory }: ChatProps) {
   const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const addMessages = useMutation(api.sessions.addMessages);
 
-  const initialUIMessages = useMemo(
-    () =>
-      dbMessagesToUIMessages(
-        initialMessages,
-        () => `msg-${Math.random().toString(36).slice(2)}`
-      ),
-    [sessionId]
-  );
-
-  const { messages, sendMessage, status } = useChat({
-    id: sessionId ?? undefined,
-    messages: initialUIMessages,
-    transport: new DefaultChatTransport({ api: CHAT_API }),
-    onFinish: async ({ message }) => {
-      if (!sessionId) return;
-      const assistantText = getMessageText(message);
-      // User message is second-to-last (last is the assistant we just completed)
-      const userMessage = messages[messages.length - 2];
-      const userText = userMessage ? getMessageText(userMessage) : "";
-      if (userText && assistantText) {
-        await addMessages({
-          sessionId,
-          userContent: userText,
-          assistantContent: assistantText,
-        });
-      }
-    },
-  });
-
-  const isLoading = status === "streaming" || status === "submitted";
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || !sessionId) return;
-    sendMessage({ text: input });
+
+    const userContent = input.trim();
     setInput("");
+    setIsLoading(true);
+
+    try {
+      const messages = [
+        ...messageHistory.map((m) => ({
+          role: m.role,
+          content: m.content,
+        })),
+        { role: "user" as const, content: userContent },
+      ];
+
+      const res = await fetch(CHAT_API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          messages,
+          sessionId,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.text();
+        throw new Error(err || `HTTP ${res.status}`);
+      }
+
+      const { content: assistantContent } = (await res.json()) as {
+        content: string;
+      };
+
+      await addMessages({
+        sessionId,
+        userContent,
+        assistantContent,
+      });
+    } catch (err) {
+      console.error("Chat error:", err);
+      // Put the input back on error
+      setInput(userContent);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!sessionId) {
@@ -91,14 +78,6 @@ export function Chat({ sessionId, initialMessages }: ChatProps) {
 
   return (
     <div className="chat">
-      <div className="chat-messages">
-        {messages.map((m) => (
-          <div key={m.id} className={`chat-message chat-message--${m.role}`}>
-            <span className="chat-message__role">{m.role}</span>
-            <div className="chat-message__content">{getMessageText(m)}</div>
-          </div>
-        ))}
-      </div>
       <form className="chat-form" onSubmit={handleSubmit}>
         <input
           className="chat-input"

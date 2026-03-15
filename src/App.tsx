@@ -32,7 +32,7 @@ function App() {
         <Chat
           key={activeSessionId ?? "empty"}
           sessionId={activeSessionId}
-          initialMessages={messages ?? []}
+          messageHistory={messages ?? []}
         />
       </main>
     </div>
