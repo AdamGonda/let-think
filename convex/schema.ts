@@ -32,6 +32,8 @@ export default defineSchema({
               nodeIds: v.array(v.string()),
               /** One-word summary of the user input that drove this batch */
               promptSummary: v.optional(v.string()),
+              /** Full user input – shown on hover, like node descriptions */
+              description: v.optional(v.string()),
             })
           )
         ),

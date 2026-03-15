@@ -10,7 +10,12 @@ type GraphNode = {
 export type ConceptGraphData = {
   nodes: Array<{ id: string; name: string; description?: string }>;
   edges: Array<{ source: string; target: string }>;
-  batches?: Array<{ id: string; nodeIds: string[]; promptSummary?: string }>;
+  batches?: Array<{
+    id: string;
+    nodeIds: string[];
+    promptSummary?: string;
+    description?: string;
+  }>;
 };
 
 const NODE_PAD = 40;
@@ -49,6 +54,10 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
   const [dimensions, setDimensions] = useState({ width: 400, height: 300 });
   const [stepperCenterInViewport, setStepperCenterInViewport] = useState<number | null>(null);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
+  const [hoveredBatch, setHoveredBatch] = useState<{
+    label: string;
+    description?: string;
+  } | null>(null);
   const [tooltipPos, setTooltipPos] = useState<{ clientX: number; clientY: number } | null>(null);
   const [selectedBatchIndex, setSelectedBatchIndex] = useState<number>(0);
 
@@ -254,11 +263,11 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
-      if (hoveredNode) {
+      if (hoveredNode || hoveredBatch) {
         setTooltipPos({ clientX: e.clientX, clientY: e.clientY });
       }
     },
-    [hoveredNode]
+    [hoveredNode, hoveredBatch]
   );
 
   return (
@@ -269,6 +278,7 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
       onMouseMove={handleMouseMove}
       onMouseLeave={() => {
         setHoveredNode(null);
+        setHoveredBatch(null);
         setTooltipPos(null);
       }}
     >
@@ -363,18 +373,40 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
                     strokeWidth={isCenter ? 2 : 1}
                   />
                   {(() => {
+                    const batch = batches[cluster.batchIndex];
                     const label =
                       (cluster.role === "prev" ? "← " : "") +
-                      (batches[cluster.batchIndex]?.promptSummary ??
-                        `Batch ${cluster.batchIndex + 1}`) +
+                      (batch?.promptSummary ?? `Batch ${cluster.batchIndex + 1}`) +
                       (cluster.role === "next" ? " →" : "");
+                    const hasTooltip = batch?.description ?? batch?.promptSummary;
                     const padX = 18;
                     const boxW = Math.max(80, label.length * 10 + padX * 2);
                     const boxH = 36;
                     const cx = cluster.x + cluster.width / 2;
                     const cy = cluster.y + 30;
                     return (
-                      <g>
+                      <g
+                        onMouseEnter={
+                          hasTooltip
+                            ? (e) => {
+                                setHoveredBatch({
+                                  label: batch?.promptSummary ?? label,
+                                  description: batch?.description,
+                                });
+                                setTooltipPos({ clientX: e.clientX, clientY: e.clientY });
+                              }
+                            : undefined
+                        }
+                        onMouseLeave={
+                          hasTooltip
+                            ? () => {
+                                setHoveredBatch(null);
+                                setTooltipPos(null);
+                              }
+                            : undefined
+                        }
+                        style={hasTooltip ? { cursor: "pointer" } : undefined}
+                      >
                         <rect
                           x={cx - boxW / 2}
                           y={cy - boxH / 2}
@@ -483,9 +515,9 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
         </>
       )}
 
-      {hoveredNode &&
-        tooltipPos &&
-        (hoveredNode.description ?? hoveredNode.name) &&
+      {tooltipPos &&
+        ((hoveredNode && (hoveredNode.description ?? hoveredNode.name)) ||
+          (hoveredBatch && (hoveredBatch.description ?? hoveredBatch.label))) &&
         createPortal(
           <div
             className="fixed z-9999 pointer-events-none max-w-[360px] rounded-lg border-2 border-zinc-500 dark:border-zinc-500 bg-white dark:bg-zinc-900 shadow-lg px-4 py-3 text-2xl font-bold text-zinc-800 dark:text-zinc-200"
@@ -494,7 +526,11 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
               top: tooltipPos.clientY + 4,
             }}
           >
-            {hoveredNode.description ?? hoveredNode.name}
+            {hoveredNode
+              ? (hoveredNode.description ?? hoveredNode.name)
+              : hoveredBatch
+                ? (hoveredBatch.description ?? hoveredBatch.label)
+                : ""}
           </div>,
           document.body
         )}

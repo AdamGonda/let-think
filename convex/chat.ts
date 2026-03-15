@@ -109,7 +109,12 @@ export const send = action({
         .filter((n) => !existingNodeIds.has(n.id))
         .map((n) => n.id);
       const existingBatches = existingGraph?.batches ?? [];
-      const batches: Array<{ id: string; nodeIds: string[]; promptSummary?: string }> =
+      const batches: Array<{
+        id: string;
+        nodeIds: string[];
+        promptSummary?: string;
+        description?: string;
+      }> =
         newNodeIds.length > 0
           ? [
               ...existingBatches,
@@ -117,6 +122,7 @@ export const send = action({
                 id: `batch-${Date.now()}`,
                 nodeIds: newNodeIds,
                 promptSummary: summarizeToWord(userContent),
+                description: userContent.trim() || undefined,
               },
             ]
           : existingBatches;

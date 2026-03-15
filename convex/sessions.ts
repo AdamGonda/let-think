@@ -102,6 +102,7 @@ const conceptGraphValidator = {
         id: v.string(),
         nodeIds: v.array(v.string()),
         promptSummary: v.optional(v.string()),
+        description: v.optional(v.string()),
       })
     )
   ),
