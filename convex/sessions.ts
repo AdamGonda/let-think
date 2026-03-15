@@ -33,6 +33,20 @@ export const updateTitle = mutation({
   },
 });
 
+export const remove = mutation({
+  args: { id: v.id("sessions") },
+  handler: async (ctx, { id }) => {
+    const messages = await ctx.db
+      .query("messages")
+      .withIndex("by_session", (q) => q.eq("sessionId", id))
+      .collect();
+    for (const msg of messages) {
+      await ctx.db.delete(msg._id);
+    }
+    await ctx.db.delete(id);
+  },
+});
+
 export const getMessages = query({
   args: { sessionId: v.id("sessions") },
   handler: async (ctx, { sessionId }) => {
