@@ -326,6 +326,20 @@ export function SessionSidebar({
                         {project.name}
                       </button>
                     )}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleNewChat(project._id);
+                      }}
+                      className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover/project:opacity-100 hover:bg-violet-500/20 dark:hover:bg-violet-400/20 hover:text-violet-700 dark:hover:text-violet-300 h-7 shrink-0 flex items-center justify-center"
+                      aria-label="New chat in project"
+                    >
+                      <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M12 5v14" />
+                        <path d="M5 12h14" />
+                      </svg>
+                    </button>
                     {confirmDeleteProjectId === project._id ? (
                       <div className="flex items-center gap-0.5 h-7 shrink-0">
                         <button
