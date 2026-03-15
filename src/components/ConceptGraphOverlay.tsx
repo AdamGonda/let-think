@@ -323,17 +323,6 @@ export function ConceptGraphOverlay({
                   }
                   style={isDimmed ? { cursor: "pointer" } : undefined}
                 >
-                  <rect
-                    x={cluster.x}
-                    y={cluster.y}
-                    width={cluster.width}
-                    height={cluster.height}
-                    rx={8}
-                    ry={8}
-                    fill={isCenter ? "rgba(139,92,246,0.12)" : "rgba(139,92,246,0.05)"}
-                    stroke={isCenter ? "rgba(139,92,246,0.6)" : "rgba(139,92,246,0.25)"}
-                    strokeWidth={isCenter ? 2 : 1}
-                  />
                   {(() => {
                     const batch = batches[cluster.batchIndex];
                     const label =
@@ -415,15 +404,9 @@ export function ConceptGraphOverlay({
                               ? "rgba(255,255,255,0.98)"
                               : "rgba(255,255,255,0.85)"
                         }
-                        stroke={
-                          isSelected
-                            ? "rgba(139,92,246,1)"
-                            : isCenter
-                              ? "rgba(139,92,246,0.8)"
-                              : "rgba(139,92,246,0.45)"
-                        }
-                        strokeWidth={isSelected ? 4 : isCenter ? 1.5 : 1}
-                        className={isSelected ? "" : "dark:fill-zinc-800 dark:stroke-violet-500"}
+                        stroke={isSelected ? "rgba(139,92,246,1)" : "none"}
+                        strokeWidth={isSelected ? 4 : 0}
+                        className={isSelected ? "" : "dark:fill-zinc-800"}
                         style={isDimmed && !isSelected ? { opacity: 0.85 } : undefined}
                       />
                       {isSelected && (
@@ -484,7 +467,7 @@ export function ConceptGraphOverlay({
                           }}
                         >
                           <div
-                            className={`text-sm leading-snug ${isSelected ? "text-white/90" : "text-zinc-600 dark:text-zinc-400"}`}
+                            className={`text-xl leading-tight ${isSelected ? "text-white/90" : "text-zinc-600 dark:text-zinc-400"}`}
                             style={{
                               width: "100%",
                               fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
