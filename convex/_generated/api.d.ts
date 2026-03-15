@@ -11,6 +11,7 @@
 import type * as chat from "../chat.js";
 import type * as chatPipeline from "../chatPipeline.js";
 import type * as http from "../http.js";
+import type * as projects from "../projects.js";
 import type * as sessions from "../sessions.js";
 
 import type {
@@ -23,6 +24,7 @@ declare const fullApi: ApiFromModules<{
   chat: typeof chat;
   chatPipeline: typeof chatPipeline;
   http: typeof http;
+  projects: typeof projects;
   sessions: typeof sessions;
 }>;
 

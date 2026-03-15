@@ -2,10 +2,16 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 /**
- * Convex schema for chat sessions and messages.
+ * Convex schema for projects, chat sessions, and messages.
  */
 export default defineSchema({
+  projects: defineTable({
+    name: v.string(),
+    createdAt: v.number(),
+  }).index("by_created", ["createdAt"]),
+
   sessions: defineTable({
+    projectId: v.optional(v.id("projects")),
     title: v.string(),
     createdAt: v.number(),
     /** Concept graph: nodes (id, name) and edges (source, target) from preprocess prompt */
@@ -39,7 +45,7 @@ export default defineSchema({
         ),
       })
     ),
-  }).index("by_created", ["createdAt"]),
+  }).index("by_created", ["createdAt"]).index("by_project", ["projectId", "createdAt"]),
 
   messages: defineTable({
     sessionId: v.id("sessions"),

@@ -12,10 +12,29 @@ export const list = query({
   },
 });
 
+export const listByProject = query({
+  args: { projectId: v.optional(v.id("projects")) },
+  handler: async (ctx, { projectId }) => {
+    if (projectId === undefined) {
+      const sessions = await ctx.db
+        .query("sessions")
+        .filter((q) => q.eq(q.field("projectId"), undefined))
+        .collect();
+      return sessions.sort((a, b) => b.createdAt - a.createdAt);
+    }
+    return ctx.db
+      .query("sessions")
+      .withIndex("by_project", (q) => q.eq("projectId", projectId))
+      .order("desc")
+      .collect();
+  },
+});
+
 export const create = mutation({
-  args: {},
-  handler: async (ctx) => {
+  args: { projectId: v.optional(v.id("projects")) },
+  handler: async (ctx, { projectId }) => {
     const id = await ctx.db.insert("sessions", {
+      projectId,
       title: "New chat",
       createdAt: Date.now(),
     });

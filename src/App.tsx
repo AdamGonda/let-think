@@ -12,6 +12,9 @@ function App() {
   const [activeSessionId, setActiveSessionId] = useState<Id<"sessions"> | null>(
     null
   );
+  const [activeProjectId, setActiveProjectId] = useState<Id<"projects"> | null>(
+    null
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
   const sessions = useQuery(api.sessions.list);
@@ -26,7 +29,9 @@ function App() {
 
   useEffect(() => {
     if (sessions && sessions.length > 0 && !activeSessionId) {
-      setActiveSessionId(sessions[0]._id);
+      const first = sessions[0];
+      setActiveSessionId(first._id);
+      if (first.projectId) setActiveProjectId(first.projectId);
     }
   }, [sessions, activeSessionId]);
 
@@ -37,7 +42,7 @@ function App() {
 
   const selectedNodes = useMemo(() => {
     if (!conceptGraph?.nodes) return [];
-    return conceptGraph.nodes.filter((n) => selectedNodeIds.has(n.id));
+    return conceptGraph.nodes.filter((n: { id: string }) => selectedNodeIds.has(n.id));
   }, [conceptGraph?.nodes, selectedNodeIds]);
 
   const handleToggleNodeSelection = (nodeId: string) => {
@@ -57,7 +62,9 @@ function App() {
     <div className="flex h-screen bg-white dark:bg-[#16171d]">
       <SessionSidebar
         activeSessionId={activeSessionId}
+        activeProjectId={activeProjectId}
         onSelectSession={setActiveSessionId}
+        onSelectProject={setActiveProjectId}
         onToggleTheme={toggleTheme}
         isDark={isDark}
       />
