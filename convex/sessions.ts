@@ -72,3 +72,26 @@ export const addMessages = mutation({
     }
   },
 });
+
+const conceptGraphValidator = {
+  nodes: v.array(v.object({ id: v.string(), name: v.string() })),
+  edges: v.array(v.object({ source: v.string(), target: v.string() })),
+};
+
+export const updateConceptGraph = mutation({
+  args: {
+    sessionId: v.id("sessions"),
+    conceptGraph: v.object(conceptGraphValidator),
+  },
+  handler: async (ctx, { sessionId, conceptGraph }) => {
+    await ctx.db.patch(sessionId, { conceptGraph });
+  },
+});
+
+export const getConceptGraph = query({
+  args: { sessionId: v.id("sessions") },
+  handler: async (ctx, { sessionId }) => {
+    const session = await ctx.db.get(sessionId);
+    return session?.conceptGraph ?? null;
+  },
+});

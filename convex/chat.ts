@@ -5,7 +5,12 @@ import { api } from "./_generated/api";
 import { v } from "convex/values";
 import { generateText } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
-import { preProcess, postProcess } from "./chatPipeline";
+import {
+  preProcess,
+  postProcess,
+  extractConceptGraph,
+  type ConceptGraph,
+} from "./chatPipeline";
 import type { ModelMessage } from "ai";
 
 function toModelMessages(
@@ -42,10 +47,15 @@ export const send = action({
       apiKey: process.env.ANTHROPIC_API_KEY,
     });
 
+    // 0. Fetch existing concept graph for this session
+    const existingGraph: ConceptGraph | null =
+      (await ctx.runQuery(api.sessions.getConceptGraph, { sessionId })) ?? null;
+
     // 1. Convert and pre-process messages
     let modelMessages = toModelMessages(messages);
     modelMessages = await preProcess(modelMessages, {
       sessionId,
+      conceptGraph: existingGraph,
       meta: {},
     });
 
@@ -56,21 +66,31 @@ export const send = action({
       messages: modelMessages,
     });
 
-    console.log(result.text);
+    // 3. Extract concept graph from raw response (before stripping)
+    const extractedGraph = extractConceptGraph(result.text);
 
-    // 3. Post-process the response
+    // 4. Post-process the response (strips graph block for display)
     const processedContent = await postProcess(result.text, {
       sessionId,
       meta: {},
     });
 
-    // 4. Persist messages via mutation
+    // 5. Persist messages and update graph
     await ctx.runMutation(api.sessions.addMessages, {
       sessionId,
       userContent,
       assistantContent: processedContent,
     });
 
-    return { content: processedContent };
+    let finalGraph: ConceptGraph | null = existingGraph;
+    if (extractedGraph && extractedGraph.nodes.length > 0) {
+      finalGraph = extractedGraph;
+      await ctx.runMutation(api.sessions.updateConceptGraph, {
+        sessionId,
+        conceptGraph: finalGraph,
+      });
+    }
+
+    return { content: processedContent, conceptGraph: finalGraph };
   },
 });

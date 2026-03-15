@@ -4,6 +4,7 @@ import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import { SessionSidebar } from "./components/SessionSidebar";
 import { Chat } from "./components/Chat";
+import { ConceptGraphOverlay } from "./components/ConceptGraphOverlay";
 import "./App.css";
 
 function App() {
@@ -13,6 +14,10 @@ function App() {
   const sessions = useQuery(api.sessions.list);
   const messages = useQuery(
     api.sessions.getMessages,
+    activeSessionId ? { sessionId: activeSessionId } : "skip"
+  );
+  const conceptGraph = useQuery(
+    api.sessions.getConceptGraph,
     activeSessionId ? { sessionId: activeSessionId } : "skip"
   );
 
@@ -28,7 +33,16 @@ function App() {
         activeSessionId={activeSessionId}
         onSelectSession={setActiveSessionId}
       />
-      <main className="chat-main">
+      <main className="main-content">
+        <div className="graph-area">
+          {activeSessionId ? (
+            <ConceptGraphOverlay graph={conceptGraph ?? null} />
+          ) : (
+            <div className="graph-empty-state">
+              Select a chat or create a new one to get started
+            </div>
+          )}
+        </div>
         <Chat
           key={activeSessionId ?? "empty"}
           sessionId={activeSessionId}

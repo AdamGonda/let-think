@@ -1,5 +1,52 @@
 import type { ModelMessage } from "ai";
 
+export type ConceptGraph = {
+  nodes: Array< { id: string; name: string } >;
+  edges: Array< { source: string; target: string } >;
+};
+
+/** Extract CONCEPT GRAPH from LLM response (expects ```json ... ``` block, prefers last one at end). */
+export function extractConceptGraph(text: string): ConceptGraph | null {
+  let matches = [...text.matchAll(/```json\s*([\s\S]*?)```/g)];
+  if (matches.length === 0) {
+    matches = [...text.matchAll(/```\s*([\s\S]*?)```/g)].filter(
+      (m) => m[1]?.trim().startsWith("{") && m[1]?.includes('"nodes"')
+    );
+  }
+  const match = matches.length > 0 ? matches[matches.length - 1] : null;
+  if (!match || !match[1]) return null;
+  try {
+    const parsed = JSON.parse(match[1].trim()) as unknown;
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      Array.isArray((parsed as ConceptGraph).nodes) &&
+      Array.isArray((parsed as ConceptGraph).edges)
+    ) {
+      const g = parsed as ConceptGraph;
+      return {
+        nodes: g.nodes.filter(
+          (n) => n && typeof n.id === "string" && typeof n.name === "string"
+        ),
+        edges: g.edges.filter(
+          (e) =>
+            e &&
+            typeof e.source === "string" &&
+            typeof e.target === "string"
+        ),
+      };
+    }
+  } catch {
+    // ignore parse errors
+  }
+  return null;
+}
+
+/** Strip the ```json ... ``` block from the response for display. */
+export function stripConceptGraphBlock(text: string): string {
+  return text.replace(/\n*```json\s*[\s\S]*?```\s*$/i, "").trim();
+}
+
 /**
  * Chat pipeline with pre and post processing hooks.
  * Modify these to customize behavior around LLM calls.
@@ -7,6 +54,8 @@ import type { ModelMessage } from "ai";
 
 export type PipelineContext = {
   sessionId?: string;
+  /** Existing concept graph to merge new nodes into */
+  conceptGraph?: ConceptGraph | null;
   /** Any metadata you want to pass through */
   meta?: Record<string, unknown>;
 };
@@ -19,43 +68,34 @@ export async function preProcess(
   messages: ModelMessage[],
   ctx?: PipelineContext
 ): Promise<ModelMessage[]> {
+  const existing = ctx?.conceptGraph;
+  const graphContext = existing
+    ? `\n\nEXISTING CONCEPT GRAPH (merge new nodes into this):\n${JSON.stringify(existing)}`
+    : "";
+
   const prompt = `
-  You have access to the whole conversation history, and a CONCEPT GRAPH,
-  where the nodes are concepts or reasoning summarized into one word.
+You have access to the whole conversation history, and a CONCEPT GRAPH,
+where the nodes are concepts or reasoning summarized into one word.
 
-  So based on that CONCEPT GRAPH or if it does not exists in the context generate one from scratch
+IF NO CONCEPT GRAPH EXISTS IN CONTEXT:
+Generate a new CONCEPT GRAPH from scratch based on the ideas in your response.
 
-  "json
-  example
-  CONCEPT GRAPH:
-  {
-    "nodes": [
-      {
-        "id": "1",
-        "name": "Concept 1"
-      }
-    ],
-    "edges": [
-      {
-        "source": "1",
-        "target": "2"
-      }
-    ]
-  }
-  "
+IF CONCEPT GRAPH EXISTS:
+Add new nodes to the CONCEPT GRAPH based on ideas in your response.
 
-  Your have to find 0-n number of nodes aka concepts based on the ideas on you response
+Rules:
+- Find 0-n concepts (nodes) based on ideas in your response. Each node: id (unique string), name (one word or short phrase).
+- Connect nodes with edges so the graph stays connected.
+- You MUST end your response with the CONCEPT GRAPH as valid JSON in a code block. No exceptions.
+- Example: if your answer discusses "graph" and "Convex", create nodes for those ideas and link them.
 
-  IF NO CONCEPT GRAPH:
-  Generate a new CONCEPT GRAPH from scratch based on the ideas on you response
+Put this EXACTLY at the very end of your reply (after all other text):
 
-  IF CONCEPT GRAPH EXISTS:
-  Add the new nodes to the CONCEPT GRAPH
-
-  Your response should follow CONCEPT GRAPH JSON object structure
-
-  and based on the n number of nodes connect them so the graph is connected
-  `;
+\`\`\`json
+{"nodes":[{"id":"1","name":"Graph"},{"id":"2","name":"Convex"}],"edges":[{"source":"1","target":"2"}]}
+\`\`\`
+${graphContext}
+`;
 
   return [
     {
@@ -68,12 +108,12 @@ export async function preProcess(
 
 /**
  * Post-process the LLM response before returning to the client.
- * Use this to: reformat output, add structure, filter content, etc.
+ * Strips the concept graph JSON block so it isn't shown in the chat.
  */
 export async function postProcess(
   text: string,
-  ctx?: PipelineContext
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _ctx?: PipelineContext
 ): Promise<string> {
-  // Default: pass through unchanged
-  return text;
+  return stripConceptGraphBlock(text);
 }

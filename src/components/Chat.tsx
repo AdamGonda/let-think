@@ -49,45 +49,22 @@ export function Chat({ sessionId, messageHistory }: ChatProps) {
     }
   };
 
-  if (!sessionId) {
-    return (
-      <div className="chat-empty">
-        <p>Select a chat or create a new one to get started.</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="chat">
-      <div className="chat-messages">
-        {messageHistory.map((msg, i) => (
-          <div
-            key={msg._id ?? i}
-            className={`chat-message chat-message--${msg.role}`}
-          >
-            <span className="chat-message__role">
-              {msg.role === "user" ? "You" : "Assistant"}
-            </span>
-            <div className="chat-message__content">{msg.content}</div>
-          </div>
-        ))}
-      </div>
-      <form className="chat-form" onSubmit={handleSubmit}>
-        <input
-          className="chat-input"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Type a message..."
-          disabled={isLoading}
-        />
-        <button
-          type="submit"
-          className="chat-submit"
-          disabled={isLoading}
-        >
-          {isLoading ? "..." : "Send"}
-        </button>
-      </form>
-    </div>
+    <form className="chat-form" onSubmit={handleSubmit}>
+      <input
+        className="chat-input"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        placeholder={sessionId ? "Type a message..." : "Select a chat to start"}
+        disabled={isLoading || !sessionId}
+      />
+      <button
+        type="submit"
+        className="chat-submit"
+        disabled={isLoading || !sessionId}
+      >
+        {isLoading ? "..." : "Send"}
+      </button>
+    </form>
   );
 }
