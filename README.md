@@ -15,10 +15,10 @@ A Vite + React + TypeScript app with Convex backend and Vercel AI SDK.
    ```
    This will prompt you to sign in and create a Convex project. It will generate the `convex/_generated` folder and populate `.env.local`.
 
-3. **Set Anthropic API key** in Convex Dashboard:
+3. **Set Google AI API key** in Convex Dashboard:
    - Go to [dashboard.convex.dev](https://dashboard.convex.dev)
    - Select your project → Settings → Environment Variables
-   - Add `ANTHROPIC_API_KEY` with your Anthropic API key (Claude 4.6)
+   - Add `GOOGLE_GENERATIVE_AI_API_KEY` with your Google AI API key (Gemini 3.1 Pro Preview)
 
 4. **Run the app**:
    ```bash
@@ -34,7 +34,7 @@ A Vite + React + TypeScript app with Convex backend and Vercel AI SDK.
 | Variable | Where | Description |
 |----------|-------|-------------|
 | `VITE_CONVEX_URL` | `.env.local` | Convex deployment URL (auto-set by `npx convex dev`) |
-| `ANTHROPIC_API_KEY` | Convex Dashboard | For Claude 4.6 chat (never expose to client) |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Convex Dashboard | For Gemini 3.1 Pro Preview chat (never expose to client) |
 
 Add client-side vars with the `VITE_` prefix in `.env` or `.env.local`. Vite auto-loads `.env`, `.env.local`, `.env.[mode]` and injects `VITE_*` vars at build time.
 
@@ -42,7 +42,7 @@ Add client-side vars with the `VITE_` prefix in `.env` or `.env.local`. Vite aut
 
 ```
 ├── convex/
-│   ├── http.ts      # Claude 4.6 chat HTTP action
+│   ├── http.ts      # HTTP router
 │   ├── schema.ts    # Sessions & messages tables
 │   └── sessions.ts  # Queries & mutations for chat sessions
 ├── src/
