@@ -95,7 +95,7 @@ export async function preProcess(
 
   const selectedContext =
     ctx?.selectedNodes && ctx.selectedNodes.length > 0
-      ? `\n\nADDITIONAL CONTEXT - USER-SELECTED CONCEPTS:\nThe user has explicitly selected the following concepts to focus on. Please incorporate and address these in your response:\n${ctx.selectedNodes.map((node) => `- ${node.name}: ${node.description ?? node.id}`).join("\n")}`
+      ? `\n\nWEIGHTED BRANCH DIRECTION - USER-SELECTED ANCHORS:\nThe user has selected the following concepts as the new branch direction. Treat these as the WEIGHTED FOCUS: expand, deepen, and build from these concepts. Your response should primarily branch from and connect to these ideas. Do not ignore them.\n${ctx.selectedNodes.map((node) => `- ${node.name}: ${node.description ?? node.id}`).join("\n")}`
       : "";
 
   const prompt = `
