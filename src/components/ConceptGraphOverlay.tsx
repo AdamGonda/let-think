@@ -220,7 +220,7 @@ export function ConceptGraphOverlay({ graph, className }: ConceptGraphOverlayPro
               (hoveredNode.description ?? hoveredNode.name) &&
               createPortal(
                 <div
-                  className="fixed z-9999 pointer-events-none max-w-[280px] rounded-lg border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shadow-lg px-3 py-2 text-base text-zinc-800 dark:text-zinc-200"
+                  className="fixed z-9999 pointer-events-none max-w-[280px] rounded-lg border-2 border-zinc-500 dark:border-zinc-500 bg-white dark:bg-zinc-900 shadow-lg px-3 py-2 text-xl text-zinc-800 dark:text-zinc-200"
                   style={{
                     left:
                       graphAreaRef.current.getBoundingClientRect().left +
