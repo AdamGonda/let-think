@@ -51,11 +51,21 @@ export const create = mutation({
         throw new Error("Project not found or access denied");
       }
     }
+    const now = Date.now();
     const id = await ctx.db.insert("sessions", {
       userId,
       projectId,
       title: "New chat",
-      createdAt: Date.now(),
+      createdAt: now,
+    });
+    // Create interaction session upfront so user sees count before first message
+    const limit = 3;
+    await ctx.db.insert("interactionSessions", {
+      sessionId: id,
+      userId,
+      limit,
+      used: 0,
+      createdAt: now,
     });
     return id;
   },
@@ -106,6 +116,13 @@ export const remove = mutation({
       .collect();
     for (const msg of messages) {
       await ctx.db.delete(msg._id);
+    }
+    const interactionSession = await ctx.db
+      .query("interactionSessions")
+      .withIndex("by_session", (q) => q.eq("sessionId", id))
+      .first();
+    if (interactionSession) {
+      await ctx.db.delete(interactionSession._id);
     }
     await ctx.db.delete(id);
   },

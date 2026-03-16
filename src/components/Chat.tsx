@@ -108,11 +108,21 @@ export function Chat({
         ? "Type a message..."
         : "Select a chat to start";
 
+  const showInteractionCount =
+    sessionId && breakRemainingMs === null && remaining !== null && limit !== null;
+  const showFallback =
+    sessionId && breakRemainingMs === null && remaining === null && limit === null;
+
   return (
     <div className="flex flex-col gap-2 py-3 px-6 pb-4 border-t border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#16171d] shrink-0">
-      {remaining !== null && limit !== null && breakRemainingMs === null && (
-        <p className="text-xs text-zinc-500 dark:text-zinc-400">
-          {remaining} of {limit} interactions left
+      {showInteractionCount && (
+        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
+          {remaining} of {limit} interactions until long break
+        </p>
+      )}
+      {showFallback && (
+        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
+          Interactions limited—send a message to see your count until long break
         </p>
       )}
       <form className="flex gap-2 items-end" onSubmit={handleSubmit}>

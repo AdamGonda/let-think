@@ -57,4 +57,14 @@ export default defineSchema({
     content: v.string(),
     createdAt: v.number(),
   }).index("by_session", ["sessionId"]),
+
+  /** Tracks interaction limits per chat session (limit, used, breakEndsAt). */
+  interactionSessions: defineTable({
+    sessionId: v.id("sessions"),
+    userId: v.id("users"),
+    limit: v.number(),
+    used: v.number(),
+    breakEndsAt: v.optional(v.number()),
+    createdAt: v.number(),
+  }).index("by_session", ["sessionId"]).index("by_user", ["userId"]),
 });
