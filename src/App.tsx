@@ -5,7 +5,7 @@ import type { Id } from "../convex/_generated/dataModel";
 import { useTheme } from "./hooks/useTheme";
 import { SessionSidebar } from "./components/SessionSidebar";
 import { Chat } from "./components/Chat";
-import { ConceptGraphOverlay } from "./components/ConceptGraphOverlay";
+import { ConceptCardGrid } from "./components/ConceptCardGrid";
 
 function App() {
   const { toggleTheme, isDark } = useTheme();
@@ -88,7 +88,7 @@ function App() {
         <div ref={mainContentRef} className="flex flex-1 min-h-0 flex-col relative">
           <div className="flex flex-1 min-h-0 items-stretch justify-stretch">
             {activeSessionId ? (
-              <ConceptGraphOverlay
+              <ConceptCardGrid
                 key={activeSessionId}
                 graph={conceptGraph ?? null}
                 selectedNodeIds={selectedNodeIds}
