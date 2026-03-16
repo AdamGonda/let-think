@@ -104,7 +104,7 @@ export function Chat({
           disabled={isLoading || !sessionId}
         >
           {isLoading ? (
-            <span className="text-lg uppercase">Wake up!</span>
+            <span className="text-lg uppercase">Wake up</span>
           ) : (
             "Send"
           )}

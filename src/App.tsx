@@ -82,7 +82,7 @@ function App() {
           aria-busy
           aria-live="polite"
         >
-          <span className="text-zinc-600 dark:text-zinc-400 text-4xl font-medium uppercase">Wake up!</span>
+          <span className="text-zinc-600 dark:text-zinc-400 text-4xl font-medium uppercase">Wake up</span>
         </div>
       )}
       <SessionSidebar
