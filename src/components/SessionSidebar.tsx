@@ -10,7 +10,6 @@ type ProjectWithSessions = {
 
 const SIDEBAR_WIDTH = 260;
 const COLLAPSED_WIDTH = 72;
-const TRANSITION_MS = 200;
 
 interface SessionSidebarProps {
   activeSessionId: Id<"sessions"> | null;
@@ -52,24 +51,6 @@ export function SessionSidebar({
       return false;
     }
   });
-  // Delayed layout prevents jank: when expanding, keep icon-only until width
-  // animation completes; when collapsing, switch immediately
-  const [showExpandedContent, setShowExpandedContent] = useState(() => {
-    try {
-      return localStorage.getItem("sidebar-collapsed") !== "true";
-    } catch {
-      return true;
-    }
-  });
-
-  useEffect(() => {
-    if (isCollapsed) {
-      setShowExpandedContent(false);
-    } else {
-      const t = setTimeout(() => setShowExpandedContent(true), TRANSITION_MS);
-      return () => clearTimeout(t);
-    }
-  }, [isCollapsed]);
 
   // Expand project containing active session by default
   useEffect(() => {
@@ -205,72 +186,81 @@ export function SessionSidebar({
 
   return (
     <aside
-      className="shrink-0 flex flex-col h-screen overflow-hidden bg-zinc-50 dark:bg-[#1a1b22] border-r border-zinc-200 dark:border-zinc-700"
-      style={{
-        width: isCollapsed ? COLLAPSED_WIDTH : SIDEBAR_WIDTH,
-        transition: `width ${TRANSITION_MS}ms ease-in-out`,
-      }}
+      className="shrink-0 flex flex-col h-screen bg-zinc-50 dark:bg-[#1a1b22] border-r border-zinc-200 dark:border-zinc-700 transition-[width] duration-200 ease-in-out"
+      style={{ width: isCollapsed ? COLLAPSED_WIDTH : SIDEBAR_WIDTH }}
     >
-      <div className={`flex flex-col m-3 gap-1 min-w-0 ${showExpandedContent ? "" : "items-center"}`}>
-        <button
-          type="button"
-          onClick={() => {
-            if (!isCollapsed) {
-              setShowExpandedContent(false);
-            }
-            setIsCollapsed((c) => !c);
-          }}
-          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className={`flex items-center gap-2 rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer shrink-0 w-full ${
-            showExpandedContent ? "py-2.5 px-3" : "p-2.5 min-w-[40px] min-h-[40px] justify-center"
-          }`}
-        >
-          <svg
-            className={`w-5 h-5 shrink-0 ${isCollapsed ? "rotate-180" : ""}`}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden
+      <div className={`flex m-3 gap-2 ${isCollapsed ? "flex-col items-center" : ""}`}>
+        {isCollapsed ? (
+          <>
+            <button
+              type="button"
+              onClick={() => setIsCollapsed((c) => !c)}
+              aria-label="Expand sidebar"
+              className="p-2.5 min-w-[40px] min-h-[40px] flex items-center justify-center border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-[#16171d] text-zinc-600 dark:text-zinc-400 hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:border-violet-500/50 dark:hover:border-violet-400/50 cursor-pointer shrink-0"
+            >
+              <svg className="w-5 h-5 rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="m15 18-6-6 6-6" />
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleNewChat()}
+              aria-label="New chat"
+              className="p-2.5 min-w-[40px] min-h-[40px] flex items-center justify-center border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-[#16171d] text-zinc-600 dark:text-zinc-400 hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:border-violet-500/50 dark:hover:border-violet-400/50 cursor-pointer shrink-0"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M12 5v14" />
+                <path d="M5 12h14" />
+              </svg>
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              className="flex-1 py-2.5 px-4 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-[#16171d] text-zinc-950 dark:text-zinc-100 font-inherit cursor-pointer hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:border-violet-500/50 dark:hover:border-violet-400/50"
+              onClick={() => handleNewChat()}
+            >
+              + New chat
+            </button>
+            <button
+              type="button"
+              className="py-2.5 px-3 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-[#16171d] text-zinc-600 dark:text-zinc-400 hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:border-violet-500/50 dark:hover:border-violet-400/50 cursor-pointer shrink-0"
+              onClick={handleNewProject}
+              aria-label="New project"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+                <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+                <path d="M12 11v6" />
+                <path d="M9 14h6" />
+              </svg>
+            </button>
+          </>
+        )}
+        {!isCollapsed && (
+          <button
+            type="button"
+            onClick={() => setIsCollapsed((c) => !c)}
+            aria-label="Collapse sidebar"
+            className="p-2.5 min-w-[40px] min-h-[40px] flex items-center justify-center border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-[#16171d] text-zinc-600 dark:text-zinc-400 hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:border-violet-500/50 dark:hover:border-violet-400/50 cursor-pointer shrink-0"
           >
-            <path d="m15 18-6-6 6-6" />
-          </svg>
-          {showExpandedContent && <span>Collapse</span>}
-        </button>
-        <button
-          type="button"
-          onClick={() => handleNewChat()}
-          aria-label="New chat"
-          className={`flex items-center gap-2 rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer shrink-0 w-full ${
-            showExpandedContent ? "py-2.5 px-3" : "p-2.5 min-w-[40px] min-h-[40px] justify-center"
-          }`}
-        >
-          <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M12 5v14" />
-            <path d="M5 12h14" />
-          </svg>
-          {showExpandedContent && <span>New chat</span>}
-        </button>
-        <button
-          type="button"
-          onClick={handleNewProject}
-          aria-label="New project"
-          className={`flex items-center gap-2 rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer shrink-0 w-full ${
-            showExpandedContent ? "py-2.5 px-3" : "p-2.5 min-w-[40px] min-h-[40px] justify-center"
-          }`}
-        >
-          <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-            <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-            <path d="M12 11v6" />
-            <path d="M9 14h6" />
-          </svg>
-          {showExpandedContent && <span>New project</span>}
-        </button>
+            <svg
+              className="w-5 h-5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="m15 18-6-6 6-6" />
+            </svg>
+          </button>
+        )}
       </div>
-      {showExpandedContent && (
+      {!isCollapsed && (
         <nav className="flex-1 overflow-y-auto py-3 px-3 flex flex-col gap-3">
           {data?.map((group: ProjectWithSessions) => {
             const project = group.project;
@@ -578,7 +568,7 @@ export function SessionSidebar({
           })}
         </nav>
       )}
-      <div className={`flex items-center p-3 border-t border-zinc-200 dark:border-zinc-700 ${showExpandedContent ? "" : "justify-center"}`}>
+      <div className={`flex items-center p-3 border-t border-zinc-200 dark:border-zinc-700 ${isCollapsed ? "justify-center" : ""}`}>
         <button
           type="button"
           onClick={onToggleTheme}
