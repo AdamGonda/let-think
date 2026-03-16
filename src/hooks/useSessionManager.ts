@@ -153,7 +153,7 @@ export function useSessionManager(sessionId: Id<"sessions"> | null) {
       s = { ...s, breakEndsAt: Date.now() + BREAK_MS };
       saveState(sessionId, s);
       setState(s);
-      setBreakRemainingMs(Math.max(0, s.breakEndsAt - Date.now()));
+      setBreakRemainingMs(Math.max(0, (s.breakEndsAt ?? 0) - Date.now()));
       if (typeof window !== "undefined") {
         window.dispatchEvent(
           new CustomEvent("think:session-break-started", {

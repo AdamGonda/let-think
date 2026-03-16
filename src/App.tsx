@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useQuery } from "convex/react";
+import { useQuery, AuthLoading, Unauthenticated, Authenticated } from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import { useTheme } from "./hooks/useTheme";
@@ -10,8 +10,27 @@ import {
 import { SessionSidebar } from "./components/SessionSidebar";
 import { Chat } from "./components/Chat";
 import { ConceptGraphOverlay } from "./components/ConceptGraphOverlay";
+import { SignIn } from "./components/SignIn";
 
 function App() {
+  return (
+    <>
+      <AuthLoading>
+        <div className="flex h-screen w-screen items-center justify-center bg-white dark:bg-[#16171d]">
+          <span className="text-zinc-600 dark:text-zinc-400">Loading…</span>
+        </div>
+      </AuthLoading>
+      <Unauthenticated>
+        <SignIn />
+      </Unauthenticated>
+      <Authenticated>
+        <AppContent />
+      </Authenticated>
+    </>
+  );
+}
+
+function AppContent() {
   const { toggleTheme, isDark } = useTheme();
   const [activeSessionId, setActiveSessionId] = useState<Id<"sessions"> | null>(
     null
@@ -46,8 +65,8 @@ function App() {
   // understands they're viewing the inbox and can create a new chat
   useEffect(() => {
     if (!projectsWithSessions) return;
-    const hasProjects = projectsWithSessions.some((g) => g.project != null);
-    const inboxGroup = projectsWithSessions.find((g) => g.project == null);
+    const hasProjects = projectsWithSessions.some((g: { project: unknown }) => g.project != null);
+    const inboxGroup = projectsWithSessions.find((g: { project: unknown }) => g.project == null);
     const inboxEmpty = !inboxGroup || inboxGroup.sessions.length === 0;
     if (!hasProjects && inboxEmpty) {
       setActiveProjectId(null);

@@ -1,12 +1,16 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { mutation, query, type MutationCtx } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const list = query({
   args: {},
   handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
     return ctx.db
       .query("sessions")
-      .withIndex("by_created")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .order("desc")
       .collect();
   },
@@ -15,13 +19,19 @@ export const list = query({
 export const listByProject = query({
   args: { projectId: v.optional(v.id("projects")) },
   handler: async (ctx, { projectId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
     if (projectId === undefined) {
       const sessions = await ctx.db
         .query("sessions")
-        .filter((q) => q.eq(q.field("projectId"), undefined))
+        .withIndex("by_user", (q) => q.eq("userId", userId))
         .collect();
-      return sessions.sort((a, b) => b.createdAt - a.createdAt);
+      return sessions
+        .filter((s) => s.projectId === undefined)
+        .sort((a, b) => b.createdAt - a.createdAt);
     }
+    const project = await ctx.db.get(projectId);
+    if (!project || project.userId !== userId) return [];
     return ctx.db
       .query("sessions")
       .withIndex("by_project", (q) => q.eq("projectId", projectId))
@@ -33,7 +43,16 @@ export const listByProject = query({
 export const create = mutation({
   args: { projectId: v.optional(v.id("projects")) },
   handler: async (ctx, { projectId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Must be signed in to create a session");
+    if (projectId) {
+      const project = await ctx.db.get(projectId);
+      if (!project || project.userId !== userId) {
+        throw new Error("Project not found or access denied");
+      }
+    }
     const id = await ctx.db.insert("sessions", {
+      userId,
       projectId,
       title: "New chat",
       createdAt: Date.now(),
@@ -42,12 +61,21 @@ export const create = mutation({
   },
 });
 
+async function requireSessionOwner(ctx: MutationCtx, sessionId: Id<"sessions">) {
+  const userId = await getAuthUserId(ctx);
+  if (!userId) throw new Error("Must be signed in");
+  const session = await ctx.db.get(sessionId);
+  if (!session || session.userId !== userId) throw new Error("Session not found or access denied");
+  return session;
+}
+
 export const updateTitle = mutation({
   args: {
     id: v.id("sessions"),
     title: v.string(),
   },
   handler: async (ctx, { id, title }) => {
+    await requireSessionOwner(ctx, id);
     await ctx.db.patch(id, { title });
   },
 });
@@ -58,6 +86,12 @@ export const moveToProject = mutation({
     projectId: v.optional(v.id("projects")),
   },
   handler: async (ctx, { id, projectId }) => {
+    await requireSessionOwner(ctx, id);
+    if (projectId) {
+      const userId = await getAuthUserId(ctx);
+      const project = await ctx.db.get(projectId);
+      if (!project || project.userId !== userId) throw new Error("Project not found or access denied");
+    }
     await ctx.db.patch(id, { projectId });
   },
 });
@@ -65,6 +99,7 @@ export const moveToProject = mutation({
 export const remove = mutation({
   args: { id: v.id("sessions") },
   handler: async (ctx, { id }) => {
+    await requireSessionOwner(ctx, id);
     const messages = await ctx.db
       .query("messages")
       .withIndex("by_session", (q) => q.eq("sessionId", id))
@@ -79,6 +114,10 @@ export const remove = mutation({
 export const getMessages = query({
   args: { sessionId: v.id("sessions") },
   handler: async (ctx, { sessionId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+    const session = await ctx.db.get(sessionId);
+    if (!session || session.userId !== userId) return [];
     return ctx.db
       .query("messages")
       .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
@@ -94,6 +133,7 @@ export const addMessages = mutation({
     assistantContent: v.string(),
   },
   handler: async (ctx, { sessionId, userContent, assistantContent }) => {
+    await requireSessionOwner(ctx, sessionId);
     const now = Date.now();
     await ctx.db.insert("messages", {
       sessionId,
@@ -143,6 +183,7 @@ export const updateConceptGraph = mutation({
     conceptGraph: v.object(conceptGraphValidator),
   },
   handler: async (ctx, { sessionId, conceptGraph }) => {
+    await requireSessionOwner(ctx, sessionId);
     await ctx.db.patch(sessionId, { conceptGraph });
   },
 });
@@ -150,7 +191,10 @@ export const updateConceptGraph = mutation({
 export const getConceptGraph = query({
   args: { sessionId: v.id("sessions") },
   handler: async (ctx, { sessionId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
     const session = await ctx.db.get(sessionId);
-    return session?.conceptGraph ?? null;
+    if (!session || session.userId !== userId) return null;
+    return session.conceptGraph ?? null;
   },
 });

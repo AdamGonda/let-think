@@ -19,15 +19,12 @@ export type ConceptGraphData = {
   }>;
 };
 
-const NODE_PAD = 48;
 const NODE_GAP = 32;
 const CLUSTER_PAD = 24;
 const CLUSTER_GAP = 120;
 const BATCH_HEADER = 40;
 const BATCH_HEADER_GAP = 56;
 const VIEWPORT_PADDING = 0;
-const MIN_NODE_WIDTH = 420;
-const NODE_HEIGHT = 100;
 const NODE_HEIGHT_EXPANDED = 200;
 const GRID_COLS = 3;
 const MIN_CELL_WIDTH = 200;
@@ -42,26 +39,13 @@ interface ConceptGraphOverlayProps {
   isLoading?: boolean;
 }
 
-function measureText(text: string, font: string): { width: number; height: number } {
-  if (typeof document === "undefined") return { width: MIN_NODE_WIDTH, height: NODE_HEIGHT };
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return { width: 60, height: 20 };
-  ctx.font = font;
-  const metrics = ctx.measureText(text);
-  return {
-    width: Math.max(MIN_NODE_WIDTH, metrics.width + NODE_PAD * 2),
-    height: NODE_HEIGHT,
-  };
-}
-
 export function ConceptGraphOverlay({
   graph,
   className,
   selectedNodeIds = new Set(),
   onToggleNodeSelection,
   modalContainerRef,
-  isLoading = false,
+  isLoading: _isLoading = false,
 }: ConceptGraphOverlayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphViewportRef = useRef<HTMLDivElement>(null);

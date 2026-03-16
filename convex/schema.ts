@@ -1,16 +1,20 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import { authTables } from "@convex-dev/auth/server";
 
 /**
  * Convex schema for projects, chat sessions, and messages.
  */
 export default defineSchema({
+  ...authTables,
   projects: defineTable({
+    userId: v.optional(v.id("users")),
     name: v.string(),
     createdAt: v.number(),
-  }).index("by_created", ["createdAt"]),
+  }).index("by_created", ["createdAt"]).index("by_user", ["userId", "createdAt"]),
 
   sessions: defineTable({
+    userId: v.optional(v.id("users")),
     projectId: v.optional(v.id("projects")),
     title: v.string(),
     createdAt: v.number(),
@@ -45,7 +49,7 @@ export default defineSchema({
         ),
       })
     ),
-  }).index("by_created", ["createdAt"]).index("by_project", ["projectId", "createdAt"]),
+  }).index("by_created", ["createdAt"]).index("by_project", ["projectId", "createdAt"]).index("by_user", ["userId", "createdAt"]),
 
   messages: defineTable({
     sessionId: v.id("sessions"),

@@ -11,6 +11,7 @@ import {
   extractConceptGraph,
   type ConceptGraph,
 } from "./chatPipeline";
+type ConceptNode = ConceptGraph["nodes"][number];
 import type { ModelMessage } from "ai";
 
 /** Derive a one-word summary from user input for display between batches. */
@@ -68,7 +69,7 @@ export const send = action({
       )
     ),
   },
-  handler: async (ctx, { messages, sessionId, userContent, selectedNodeContext }) => {
+  handler: async (ctx, { messages, sessionId, userContent, selectedNodeContext }): Promise<{ content: string; conceptGraph: ConceptGraph | null }> => {
     const google = createGoogleGenerativeAI({
       apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
     });
@@ -111,11 +112,11 @@ export const send = action({
 
     let finalGraph: ConceptGraph | null = existingGraph;
     if (extractedGraph && extractedGraph.nodes.length > 0) {
-      const existingNodes = existingGraph?.nodes ?? [];
-      const existingNodeIds: Set<string> = new Set(existingNodes.map((n) => n.id));
+      const existingNodes: ConceptNode[] = existingGraph?.nodes ?? [];
+      const existingNodeIds: Set<string> = new Set(existingNodes.map((n: ConceptNode) => n.id));
       const newNodeIds: string[] = extractedGraph.nodes
-        .filter((n) => !existingNodeIds.has(n.id))
-        .map((n) => n.id);
+        .filter((n: ConceptNode) => !existingNodeIds.has(n.id))
+        .map((n: ConceptNode) => n.id);
       const existingBatches = existingGraph?.batches ?? [];
       const batches: Array<{
         id: string;
@@ -135,9 +136,9 @@ export const send = action({
             ]
           : existingBatches;
       // Merge: keep existing nodes + add new ones (don't replace with extractedGraph!)
-      const mergedNodes = [
+      const mergedNodes: ConceptNode[] = [
         ...existingNodes,
-        ...extractedGraph.nodes.filter((n) => !existingNodeIds.has(n.id)),
+        ...extractedGraph.nodes.filter((n: ConceptNode) => !existingNodeIds.has(n.id)),
       ];
       const existingEdgeKeys = new Set(
         (existingGraph?.edges ?? []).map((e) => `${e.source}→${e.target}`)
