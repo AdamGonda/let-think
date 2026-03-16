@@ -1,5 +1,10 @@
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useQuery, AuthLoading, Unauthenticated, Authenticated } from "convex/react";
+import {
+  useQuery,
+  AuthLoading,
+  Unauthenticated,
+  Authenticated,
+} from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import { useTheme } from "./hooks/useTheme";
@@ -33,24 +38,26 @@ function App() {
 function AppContent() {
   const { toggleTheme, isDark } = useTheme();
   const [activeSessionId, setActiveSessionId] = useState<Id<"sessions"> | null>(
-    null
+    null,
   );
   const [activeProjectId, setActiveProjectId] = useState<Id<"projects"> | null>(
-    null
+    null,
   );
   const [isLoading, setIsLoading] = useState(false);
   const { breakRemainingMs } = useSessionManager(activeSessionId);
   const isInBreak = breakRemainingMs !== null && breakRemainingMs > 0;
-  const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
+  const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(
+    new Set(),
+  );
   const sessions = useQuery(api.sessions.list);
   const projectsWithSessions = useQuery(api.projects.listWithSessions);
   const messages = useQuery(
     api.sessions.getMessages,
-    activeSessionId ? { sessionId: activeSessionId } : "skip"
+    activeSessionId ? { sessionId: activeSessionId } : "skip",
   );
   const conceptGraph = useQuery(
     api.sessions.getConceptGraph,
-    activeSessionId ? { sessionId: activeSessionId } : "skip"
+    activeSessionId ? { sessionId: activeSessionId } : "skip",
   );
 
   useEffect(() => {
@@ -65,8 +72,12 @@ function AppContent() {
   // understands they're viewing the inbox and can create a new chat
   useEffect(() => {
     if (!projectsWithSessions) return;
-    const hasProjects = projectsWithSessions.some((g: { project: unknown }) => g.project != null);
-    const inboxGroup = projectsWithSessions.find((g: { project: unknown }) => g.project == null);
+    const hasProjects = projectsWithSessions.some(
+      (g: { project: unknown }) => g.project != null,
+    );
+    const inboxGroup = projectsWithSessions.find(
+      (g: { project: unknown }) => g.project == null,
+    );
     const inboxEmpty = !inboxGroup || inboxGroup.sessions.length === 0;
     if (!hasProjects && inboxEmpty) {
       setActiveProjectId(null);
@@ -81,7 +92,9 @@ function AppContent() {
 
   const selectedNodes = useMemo(() => {
     if (!conceptGraph?.nodes) return [];
-    return conceptGraph.nodes.filter((n: { id: string }) => selectedNodeIds.has(n.id));
+    return conceptGraph.nodes.filter((n: { id: string }) =>
+      selectedNodeIds.has(n.id),
+    );
   }, [conceptGraph?.nodes, selectedNodeIds]);
 
   const handleToggleNodeSelection = (nodeId: string) => {
@@ -107,11 +120,16 @@ function AppContent() {
           aria-busy={isLoading}
           aria-live="polite"
         >
-          <span className="text-zinc-600 dark:text-zinc-400 text-4xl font-medium uppercase">
-            {breakRemainingMs != null && breakRemainingMs > 0
-              ? `Wake up in ${formatBreakCountdown(breakRemainingMs)}`
-              : "Wake up"}
-          </span>
+          <div className="flex flex-col items-center justify-center gap-2">
+            <span className="text-zinc-600 dark:text-zinc-400 text-4xl font-medium uppercase">
+              Wake up
+            </span>
+            {breakRemainingMs != null && breakRemainingMs > 0 && (
+              <span className="text-zinc-500 dark:text-zinc-500 text-xl font-medium tabular-nums">
+                {formatBreakCountdown(breakRemainingMs)}
+              </span>
+            )}
+          </div>
         </div>
       )}
       <SessionSidebar
@@ -123,7 +141,10 @@ function AppContent() {
         isDark={isDark}
       />
       <main className="flex flex-1 flex-col min-w-0">
-        <div ref={mainContentRef} className="flex flex-1 min-h-0 flex-col relative">
+        <div
+          ref={mainContentRef}
+          className="flex flex-1 min-h-0 flex-col relative"
+        >
           <div className="flex flex-1 min-h-0 items-stretch justify-stretch">
             {activeSessionId ? (
               <ConceptGraphOverlay
