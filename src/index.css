@@ -41,3 +41,62 @@ body {
     font-size: 16px;
   }
 }
+
+/* Loading screen editor - document-style typography & proportions */
+.md-editor-focused .w-md-editor {
+  flex: 1;
+  min-height: 0;
+  background-color: transparent !important;
+}
+.md-editor-focused .w-md-editor-content {
+  flex: 1;
+  min-height: 0;
+}
+.md-editor-focused .w-md-editor-area {
+  flex: 1;
+  min-height: 0;
+}
+/* Padding only on container; text-input uses padding:inherit so cursor aligns with text */
+.md-editor-focused .w-md-editor-text {
+  font-size: 16px !important;
+  line-height: 1.65 !important;
+  padding: 1.5rem 2rem !important;
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
+}
+.md-editor-focused .w-md-editor-text-pre > code {
+  font-size: 16px !important;
+  line-height: 1.65 !important;
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
+}
+.md-editor-focused .w-md-editor-text-input {
+  font-size: 16px !important;
+  line-height: 1.65 !important;
+  font-family: ui-monospace, "SF Mono", "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
+  /* Do NOT override padding - keep inherit so cursor aligns with visible text */
+}
+/* Light theme for focused editor */
+.md-editor-focused:not(.md-editor-dark) .w-md-editor {
+  background-color: #fafafa !important;
+}
+.md-editor-focused:not(.md-editor-dark) .w-md-editor-text,
+.md-editor-focused:not(.md-editor-dark) .w-md-editor-text-input {
+  color: #333 !important;
+}
+/* Dark theme for focused editor */
+.md-editor-focused.md-editor-dark .w-md-editor {
+  background-color: #1e1e1e !important;
+}
+.md-editor-focused.md-editor-dark .w-md-editor-text,
+.md-editor-focused.md-editor-dark .w-md-editor-text-input {
+  color: #d4d4d4 !important;
+}
+.md-editor-focused.md-editor-dark .w-md-editor-text-input::placeholder {
+  color: #9ca3af !important;
+  opacity: 0.9 !important;
+}
+
+/* Focus ring so the editable area is clearly indicated when active */
+.md-editor-focused:focus-within {
+  outline: 2px solid rgb(139 92 246);
+  outline-offset: 2px;
+}

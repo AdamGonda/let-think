@@ -16,6 +16,7 @@ import {
 import { SessionSidebar } from "./components/SessionSidebar";
 import { Chat } from "./components/Chat";
 import { ConceptGraphOverlay } from "./components/ConceptGraphOverlay";
+import { MarkdownEditor } from "./components/MarkdownEditor";
 import { SignIn } from "./components/SignIn";
 
 function App() {
@@ -199,29 +200,34 @@ function AppContent() {
     <div className="flex h-screen bg-white dark:bg-[#16171d]">
       {(isLoading || isInBreak) && (
         <div
-          className="fixed inset-0 z-[9999] flex h-screen w-screen flex-col bg-white dark:bg-[#16171d]"
+          className="fixed inset-0 z-[9999] flex h-screen w-screen flex-col bg-white dark:bg-[#1e1e1e]"
           aria-busy={isLoading}
           aria-live="polite"
         >
-          <div className="flex flex-1 flex-col items-center justify-center gap-2">
-            <span className="text-zinc-600 dark:text-zinc-400 text-4xl font-medium uppercase">
+          <div className="shrink-0 py-6 flex flex-col items-center gap-1">
+            <span className="text-zinc-500 dark:text-zinc-400 text-2xl font-medium uppercase tracking-widest">
               Wake up
             </span>
             {breakRemainingMs != null && breakRemainingMs > 0 && (
-              <span className="text-zinc-500 dark:text-zinc-500 text-xl font-medium tabular-nums">
+              <span className="text-zinc-500 dark:text-zinc-500 text-lg font-medium tabular-nums">
                 {formatBreakCountdown(breakRemainingMs)}
               </span>
             )}
           </div>
           {activeSessionId && (
-            <div className="shrink-0 border-t border-zinc-200 dark:border-zinc-700 p-4">
-              <textarea
-                rows={3}
-                className="w-full py-3 px-4 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-[#16171d] text-zinc-950 dark:text-zinc-100 font-inherit text-[0.95rem] placeholder:text-zinc-500 dark:placeholder:text-zinc-500 placeholder:opacity-70 focus:outline-none focus:border-violet-500 dark:focus:border-violet-400 resize-none overflow-y-auto"
-                value={thinkingNotes}
-                onChange={(e) => setThinkingNotes(e.target.value)}
-                placeholder="Keep writing... your thinking notes are saved"
-              />
+            <div className="flex-1 min-h-0 flex flex-col items-center px-6 pb-8 overflow-hidden">
+              <div className="w-full max-w-[720px] flex-1 min-h-0 flex flex-col">
+                <p className="mb-3 text-sm font-medium text-zinc-500 dark:text-zinc-400">
+                  Draft your next message — type here
+                </p>
+                <MarkdownEditor
+                  value={draftInput}
+                  onChange={(v) => setDraftInput(v ?? "")}
+                  placeholder="Draft your next message…"
+                  variant="focused"
+                  dark={isDark}
+                />
+              </div>
             </div>
           )}
         </div>
