@@ -406,12 +406,41 @@ export function ConceptGraphOverlay({
           ref={graphViewportRef}
           className={`flex flex-1 min-h-0 min-w-0 overflow-hidden relative py-4 touch-none transition-colors duration-200 ${
             isLoading
-              ? "outline-2 outline-violet-600 dark:outline-violet-500 -outline-offset-2"
+              ? "outline-2 outline-violet-600 dark:outline-violet-500 -outline-offset-2 rounded-lg"
               : ""
           }`}
           aria-busy={isLoading}
           aria-live={isLoading ? "polite" : "off"}
         >
+          {isLoading && (
+            <div
+              className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-white/80 dark:bg-[#16171d]/80 backdrop-blur-[1px]"
+              aria-hidden
+            >
+              <svg
+                className="animate-spin h-8 w-8 text-violet-600 dark:text-violet-500"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                aria-hidden
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+              <span className="text-zinc-600 dark:text-zinc-400 text-base">Thinking</span>
+            </div>
+          )}
           <div
             className="inline-block"
             style={{
