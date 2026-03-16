@@ -127,7 +127,7 @@ export function useSessionManager(sessionId: Id<"sessions"> | null) {
     }
 
     s = { ...s, used: s.used + 1 };
-    if (s.used >= s.limit) {
+    if (s.used >= s.limit && !s.breakEndsAt) {
       s.breakEndsAt = Date.now() + BREAK_MS;
     }
     saveState(sessionId, s);
@@ -136,6 +136,49 @@ export function useSessionManager(sessionId: Id<"sessions"> | null) {
     if (s.breakEndsAt) {
       setBreakRemainingMs(Math.max(0, s.breakEndsAt - Date.now()));
     }
+  }, [sessionId]);
+
+  /** Start the 25 min break immediately when user sends their last allowed message. */
+  const startBreakOptimistically = useCallback(() => {
+    if (!sessionId || typeof window === "undefined") return;
+    let s = loadState(sessionId);
+
+    if (!s) {
+      const newLimit = pickRandomLimit();
+      s = { limit: newLimit, used: 0, breakEndsAt: null };
+      saveState(sessionId, s);
+    }
+
+    if (s.used >= s.limit - 1 && !s.breakEndsAt) {
+      s = { ...s, breakEndsAt: Date.now() + BREAK_MS };
+      saveState(sessionId, s);
+      setState(s);
+      setBreakRemainingMs(Math.max(0, s.breakEndsAt - Date.now()));
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(
+          new CustomEvent("think:session-break-started", {
+            detail: { sessionId },
+          })
+        );
+      }
+    }
+  }, [sessionId]);
+
+  // React to optimistic break started from another component (e.g. Chat)
+  useEffect(() => {
+    if (!sessionId || typeof window === "undefined") return;
+    const handler = (e: Event) => {
+      const ev = e as CustomEvent<{ sessionId: string }>;
+      if (ev.detail?.sessionId === sessionId) {
+        const s = loadState(sessionId);
+        if (s?.breakEndsAt && Date.now() < s.breakEndsAt) {
+          setState(s);
+          setBreakRemainingMs(Math.max(0, s.breakEndsAt - Date.now()));
+        }
+      }
+    };
+    window.addEventListener("think:session-break-started", handler);
+    return () => window.removeEventListener("think:session-break-started", handler);
   }, [sessionId]);
 
   return {
@@ -148,5 +191,6 @@ export function useSessionManager(sessionId: Id<"sessions"> | null) {
         ? formatBreakCountdown(breakRemainingMs)
         : null,
     onInteractionComplete,
+    startBreakOptimistically,
   };
 }

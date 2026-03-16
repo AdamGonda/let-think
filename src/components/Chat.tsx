@@ -44,6 +44,7 @@ export function Chat({
     breakRemainingMs,
     breakRemainingFormatted,
     onInteractionComplete,
+    startBreakOptimistically,
   } = useSessionManager(sessionId);
 
   // Auto-resize textarea as user types
@@ -67,6 +68,9 @@ export function Chat({
 
     const userContent = input.trim();
     setInput("");
+    if (remaining === 1 || remaining === null) {
+      startBreakOptimistically();
+    }
     setIsLoading(true);
 
     try {
