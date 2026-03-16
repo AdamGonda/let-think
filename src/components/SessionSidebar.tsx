@@ -9,8 +9,6 @@ type ProjectWithSessions = {
 };
 
 const SIDEBAR_WIDTH = 260;
-const COLLAPSED_WIDTH = 72;
-const TRANSITION_MS = 200;
 
 interface SessionSidebarProps {
   activeSessionId: Id<"sessions"> | null;
@@ -45,31 +43,6 @@ export function SessionSidebar({
   const [confirmDeleteProjectId, setConfirmDeleteProjectId] = useState<Id<"projects"> | null>(null);
   const sessionInputRef = useRef<HTMLInputElement>(null);
   const projectInputRef = useRef<HTMLInputElement>(null);
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    try {
-      return localStorage.getItem("sidebar-collapsed") === "true";
-    } catch {
-      return false;
-    }
-  });
-  // Delayed layout prevents jank: when expanding, keep icon-only until width
-  // animation completes; when collapsing, switch immediately
-  const [showExpandedContent, setShowExpandedContent] = useState(() => {
-    try {
-      return localStorage.getItem("sidebar-collapsed") !== "true";
-    } catch {
-      return true;
-    }
-  });
-
-  useEffect(() => {
-    if (isCollapsed) {
-      setShowExpandedContent(false);
-    } else {
-      const t = setTimeout(() => setShowExpandedContent(true), TRANSITION_MS);
-      return () => clearTimeout(t);
-    }
-  }, [isCollapsed]);
 
   // Expand project containing active session by default
   useEffect(() => {
@@ -86,14 +59,6 @@ export function SessionSidebar({
       }
     }
   }, [data, activeSessionId]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("sidebar-collapsed", String(isCollapsed));
-    } catch {
-      // ignore
-    }
-  }, [isCollapsed]);
 
   const allSessions = data?.flatMap((g: ProjectWithSessions) => g.sessions) ?? [];
   const hasProjects = (data?.some((g) => g.project != null) ?? false);
@@ -206,60 +171,26 @@ export function SessionSidebar({
   return (
     <aside
       className="shrink-0 flex flex-col h-screen overflow-hidden bg-zinc-50 dark:bg-[#1a1b22] border-r border-zinc-200 dark:border-zinc-700"
-      style={{
-        width: isCollapsed ? COLLAPSED_WIDTH : SIDEBAR_WIDTH,
-        transition: `width ${TRANSITION_MS}ms ease-in-out`,
-      }}
+      style={{ width: SIDEBAR_WIDTH }}
     >
-      <div className={`flex flex-col m-3 gap-1 min-w-0 ${showExpandedContent ? "" : "items-center"}`}>
-        <button
-          type="button"
-          onClick={() => {
-            if (!isCollapsed) {
-              setShowExpandedContent(false);
-            }
-            setIsCollapsed((c) => !c);
-          }}
-          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className={`flex items-center gap-2 rounded-lg text-zinc-600 h-[40px] dark:text-zinc-400 hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer shrink-0 w-full ${
-            showExpandedContent ? "py-2.5 px-3" : "p-2.5 min-w-[40px]  justify-center"
-          }`}
-        >
-          <svg
-            className={`w-5 h-5 shrink-0 ${isCollapsed ? "rotate-180" : ""}`}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            aria-hidden
-          >
-            <path d="m15 18-6-6 6-6" />
-          </svg>
-          {showExpandedContent && <span>Collapse</span>}
-        </button>
+      <div className="flex flex-col m-3 gap-1 min-w-0">
         <button
           type="button"
           onClick={() => handleNewChat()}
           aria-label="New chat"
-          className={`flex items-center gap-2 rounded-lg text-zinc-600 h-[40px] dark:text-zinc-400 hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer shrink-0 w-full ${
-            showExpandedContent ? "py-2.5 px-3" : "p-2.5 min-w-[40px] h-[40px] justify-center"
-          }`}
+          className="flex items-center gap-2 rounded-lg text-zinc-600 h-[40px] dark:text-zinc-400 hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer shrink-0 w-full py-2.5 px-3"
         >
           <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="M12 5v14" />
             <path d="M5 12h14" />
           </svg>
-          {showExpandedContent && <span>New chat</span>}
+          <span>New chat</span>
         </button>
-        { showExpandedContent && <button
+        <button
           type="button"
           onClick={handleNewProject}
           aria-label="New project"
-          className={`flex items-center gap-2 rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer shrink-0 w-full ${
-            showExpandedContent ? "py-2.5 px-3" : "p-2.5 min-w-[40px] min-h-[40px] justify-center"
-          }`}
+          className="flex items-center gap-2 rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer shrink-0 w-full py-2.5 px-3"
         >
           <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
@@ -269,10 +200,8 @@ export function SessionSidebar({
           </svg>
           <span>New project</span>
         </button>
-        }
       </div>
-      {showExpandedContent && (
-        <nav className="flex-1 overflow-y-auto py-3 px-3 flex flex-col gap-3">
+      <nav className="flex-1 overflow-y-auto py-3 px-3 flex flex-col gap-3">
           {data?.map((group: ProjectWithSessions) => {
             const project = group.project;
             const sessions = group.sessions;
@@ -577,9 +506,8 @@ export function SessionSidebar({
               </div>
             );
           })}
-        </nav>
-      )}
-      <div className={`flex items-center p-3 border-t border-zinc-200 dark:border-zinc-700 ${showExpandedContent ? "" : "justify-center"}`}>
+      </nav>
+      <div className="flex items-center p-3 border-t border-zinc-200 dark:border-zinc-700">
         <button
           type="button"
           onClick={onToggleTheme}
