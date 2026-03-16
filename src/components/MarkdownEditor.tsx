@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import MDEditor from "@uiw/react-md-editor";
 import "@uiw/react-md-editor/markdown-editor.css";
 
@@ -12,6 +12,8 @@ interface MarkdownEditorProps {
   dark?: boolean;
   /** "focused" = full-height, document-style typography for loading screen */
   variant?: "default" | "focused";
+  /** Focus the editor on mount (for overlay so Chat doesn't steal input) */
+  autoFocus?: boolean;
 }
 
 export function MarkdownEditor({
@@ -22,9 +24,24 @@ export function MarkdownEditor({
   minHeight = "120px",
   dark = false,
   variant = "default",
+  autoFocus = false,
 }: MarkdownEditorProps) {
   const isFocused = variant === "focused";
   const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!autoFocus) return;
+    const focusInput = () => {
+      const input = wrapperRef.current?.querySelector(
+        "textarea, .w-md-editor-text-input"
+      ) as HTMLTextAreaElement | null;
+      input?.focus();
+    };
+    focusInput();
+    // MDEditor may render its textarea asynchronously
+    const id = requestAnimationFrame(() => focusInput());
+    return () => cancelAnimationFrame(id);
+  }, [autoFocus]);
 
   const handleWrapperClick = () => {
     const input = wrapperRef.current?.querySelector(

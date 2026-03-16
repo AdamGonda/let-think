@@ -49,11 +49,11 @@ function AppContent() {
   const { breakRemainingMs } = useSessionManager(activeSessionId);
   const isInBreak = breakRemainingMs !== null && breakRemainingMs > 0;
   const [draftInput, setDraftInput] = useState("");
+  const [notes, setNotes] = useState("");
   const draftInputRef = useRef(draftInput);
+  const notesRef = useRef(notes);
   draftInputRef.current = draftInput;
-  const [thinkingNotes, setThinkingNotes] = useState("");
-  const thinkingNotesRef = useRef(thinkingNotes);
-  thinkingNotesRef.current = thinkingNotes;
+  notesRef.current = notes;
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(
     new Set(),
   );
@@ -109,7 +109,7 @@ function AppContent() {
     setSelectedNodeIds(new Set());
   }, [activeSessionId]);
 
-  // Sync draft and thinking notes from DB when session changes
+  // Load draft and thinking notes from Convex when session changes
   useEffect(() => {
     const prevId = prevSessionIdRef.current;
     const sessionChanged = prevId !== activeSessionId;
@@ -118,14 +118,14 @@ function AppContent() {
       updateDraft({ sessionId: prevId, draftInput: draftInputRef.current });
       updateThinkingNotes({
         sessionId: prevId,
-        thinkingNotes: thinkingNotesRef.current,
+        thinkingNotes: notesRef.current,
       });
     }
     prevSessionIdRef.current = activeSessionId;
 
     if (sessionChanged) {
       setDraftInput(activeSessionId == null ? "" : (storedDraft ?? ""));
-      setThinkingNotes(
+      setNotes(
         activeSessionId == null ? "" : (storedThinkingNotes ?? ""),
       );
     }
@@ -149,7 +149,7 @@ function AppContent() {
   useEffect(() => {
     if (!activeSessionId) return;
     const timer = setTimeout(() => {
-      saveDraft(draftInputRef.current);
+      saveDraft(draftInput);
     }, 400);
     return () => clearTimeout(timer);
   }, [activeSessionId, draftInput, saveDraft]);
@@ -169,10 +169,10 @@ function AppContent() {
   useEffect(() => {
     if (!activeSessionId) return;
     const timer = setTimeout(() => {
-      saveThinkingNotes(thinkingNotesRef.current);
+      saveThinkingNotes(notes);
     }, 400);
     return () => clearTimeout(timer);
-  }, [activeSessionId, thinkingNotes, saveThinkingNotes]);
+  }, [activeSessionId, notes, saveThinkingNotes]);
 
   const selectedNodes = useMemo(() => {
     if (!conceptGraph?.nodes) return [];
@@ -196,9 +196,11 @@ function AppContent() {
 
   const mainContentRef = useRef<HTMLDivElement>(null);
 
+  const showOverlay = isLoading || isInBreak;
+
   return (
     <div className="flex h-screen bg-white dark:bg-[#16171d]">
-      {(isLoading || isInBreak) && (
+      {showOverlay && (
         <div
           className="fixed inset-0 z-[9999] flex h-screen w-screen flex-col bg-white dark:bg-[#1e1e1e]"
           aria-busy={isLoading}
@@ -217,30 +219,29 @@ function AppContent() {
           {activeSessionId && (
             <div className="flex-1 min-h-0 flex flex-col items-center px-6 pb-8 overflow-hidden">
               <div className="w-full max-w-[720px] flex-1 min-h-0 flex flex-col">
-                <p className="mb-3 text-sm font-medium text-zinc-500 dark:text-zinc-400">
-                  Draft your next message — type here
-                </p>
                 <MarkdownEditor
-                  value={draftInput}
-                  onChange={(v) => setDraftInput(v ?? "")}
-                  placeholder="Draft your next message…"
+                  value={notes}
+                  onChange={(v) => setNotes(v ?? "")}
+                  placeholder="Take notes…"
                   variant="focused"
                   dark={isDark}
+                  autoFocus
                 />
               </div>
             </div>
           )}
         </div>
       )}
-      <SessionSidebar
-        activeSessionId={activeSessionId}
-        activeProjectId={activeProjectId}
-        onSelectSession={setActiveSessionId}
-        onSelectProject={setActiveProjectId}
-        onToggleTheme={toggleTheme}
-        isDark={isDark}
-      />
-      <main className="flex flex-1 flex-col min-w-0">
+      <div className="flex flex-1 min-w-0" inert={showOverlay}>
+        <SessionSidebar
+          activeSessionId={activeSessionId}
+          activeProjectId={activeProjectId}
+          onSelectSession={setActiveSessionId}
+          onSelectProject={setActiveProjectId}
+          onToggleTheme={toggleTheme}
+          isDark={isDark}
+        />
+        <main className="flex flex-1 flex-col min-w-0">
         <div
           ref={mainContentRef}
           className="flex flex-1 min-h-0 flex-col relative"
@@ -262,18 +263,21 @@ function AppContent() {
             )}
           </div>
         </div>
-        <Chat
-          key={activeSessionId ?? "empty"}
-          sessionId={activeSessionId}
-          messageHistory={messages ?? []}
-          isLoading={isLoading}
-          setIsLoading={setIsLoading}
-          selectedNodes={selectedNodes}
-          onMessageSent={handleClearSelectedNodes}
-          draftInput={draftInput}
-          setDraftInput={setDraftInput}
-        />
+        {!showOverlay && (
+          <Chat
+            key={activeSessionId ?? "empty"}
+            sessionId={activeSessionId}
+            messageHistory={messages ?? []}
+            isLoading={isLoading}
+            setIsLoading={setIsLoading}
+            selectedNodes={selectedNodes}
+            onMessageSent={handleClearSelectedNodes}
+            draftInput={draftInput}
+            setDraftInput={setDraftInput}
+          />
+        )}
       </main>
+      </div>
     </div>
   );
 }
