@@ -78,6 +78,7 @@ function AppContent() {
   const updateDraft = useMutation(api.sessions.updateDraft);
   const updateThinkingNotes = useMutation(api.sessions.updateThinkingNotes);
   const prevSessionIdRef = useRef<Id<"sessions"> | null>(null);
+  const appliedStoredForSessionRef = useRef<Id<"sessions"> | null>(null);
 
   useEffect(() => {
     if (sessions && sessions.length > 0 && !activeSessionId) {
@@ -109,7 +110,7 @@ function AppContent() {
     setSelectedNodeIds(new Set());
   }, [activeSessionId]);
 
-  // Load draft and thinking notes from Convex when session changes
+  // Load draft and thinking notes from Convex when session changes or when stored data loads (e.g. after refresh)
   useEffect(() => {
     const prevId = prevSessionIdRef.current;
     const sessionChanged = prevId !== activeSessionId;
@@ -124,10 +125,28 @@ function AppContent() {
     prevSessionIdRef.current = activeSessionId;
 
     if (sessionChanged) {
+      appliedStoredForSessionRef.current = null;
       setDraftInput(activeSessionId == null ? "" : (storedDraft ?? ""));
       setNotes(
         activeSessionId == null ? "" : (storedThinkingNotes ?? ""),
       );
+      if (
+        activeSessionId != null &&
+        storedDraft !== undefined &&
+        storedThinkingNotes !== undefined
+      ) {
+        appliedStoredForSessionRef.current = activeSessionId;
+      }
+    } else if (
+      activeSessionId != null &&
+      appliedStoredForSessionRef.current !== activeSessionId &&
+      storedDraft !== undefined &&
+      storedThinkingNotes !== undefined
+    ) {
+      // Stored data just loaded for current session (e.g. page refresh)
+      setDraftInput(storedDraft ?? "");
+      setNotes(storedThinkingNotes ?? "");
+      appliedStoredForSessionRef.current = activeSessionId;
     }
   }, [
     activeSessionId,
