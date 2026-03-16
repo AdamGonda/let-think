@@ -224,7 +224,7 @@ export function ConceptCardGrid({
                           onMouseLeave={() => setHoveredNode(null)}
                           onClick={() => onToggleNodeSelection?.(node.id)}
                           className={`
-                            rounded-lg p-4 min-h-[80px] transition-colors border-2
+                            rounded-lg p-4 min-h-[140px] transition-colors border-2
                             ${onToggleNodeSelection ? "cursor-pointer" : "cursor-default"}
                             ${
                               isSelected
@@ -233,27 +233,35 @@ export function ConceptCardGrid({
                             }
                           `}
                         >
-                          <div className="flex items-start gap-2">
-                            <span className="text-xl font-semibold flex-1">
-                              {node.name}
-                            </span>
-                            {isSelected && (
-                              <span className="shrink-0 w-6 h-6 rounded-full bg-violet-600 dark:bg-violet-500 flex items-center justify-center">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                  <path d="M8 12l4 4 8-8" />
-                                </svg>
+                          <div
+                            className={`flex flex-col min-h-[108px] ${
+                              isHovered ? "items-start justify-start transition-all duration-300 ease-out" : "items-center justify-center"
+                            }`}
+                          >
+                            <div className={`flex items-center gap-2 ${isHovered ? "w-full" : ""}`}>
+                              <span className="text-xl font-semibold flex-1">
+                                {node.name}
                               </span>
+                              {isSelected && (
+                                <span className="shrink-0 w-6 h-6 rounded-full bg-violet-600 dark:bg-violet-500 flex items-center justify-center">
+                                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M8 12l4 4 8-8" />
+                                  </svg>
+                                </span>
+                              )}
+                            </div>
+                            {node.description && (
+                              <p
+                                className={`text-sm leading-relaxed overflow-hidden ${
+                                  showDescription
+                                    ? "opacity-100 mt-2 max-h-[300px] transition-all duration-300 ease-out"
+                                    : "opacity-0 max-h-0 mt-0 transition-none"
+                                } ${isSelected ? "text-white/90" : "text-zinc-600 dark:text-zinc-400"}`}
+                              >
+                                {node.description}
+                              </p>
                             )}
                           </div>
-                          {node.description && showDescription && (
-                            <p
-                              className={`text-sm mt-2 leading-relaxed ${
-                                isSelected ? "text-white/90" : "text-zinc-600 dark:text-zinc-400"
-                              }`}
-                            >
-                              {node.description}
-                            </p>
-                          )}
                         </div>
                       );
                     })}
