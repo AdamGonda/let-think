@@ -14,21 +14,28 @@ import {
 type ConceptNode = ConceptGraph["nodes"][number];
 import type { ModelMessage } from "ai";
 
-/** Derive a one-word summary from user input for display between batches. */
-function summarizeToWord(text: string): string {
-  const stopWords = new Set([
-    "what", "how", "is", "are", "the", "a", "an", "to", "of", "in", "for",
-    "on", "with", "at", "by", "from", "why", "when", "where", "who", "which",
-  ]);
-  const words = text
-    .trim()
-    .toLowerCase()
-    .replace(/[^\w\s]/g, "")
-    .split(/\s+/)
-    .filter((w) => w.length > 2 && !stopWords.has(w));
-  const word = words[0] ?? text.trim().split(/\s+/)[0];
-  if (!word) return "—";
-  return word.charAt(0).toUpperCase() + word.slice(1);
+/** Generate a short-sentence summary from user prompt via AI for display between batches. */
+async function generatePromptSummary(
+  userContent: string,
+  model: ReturnType<typeof createGoogleGenerativeAI>
+): Promise<string> {
+  const trimmed = userContent.trim();
+  if (!trimmed) return "—";
+  try {
+    const { text } = await generateText({
+      model: model("gemini-2.0-flash"),
+      prompt: `Summarize the following in one short sentence (max 8–10 words). Reply with only that sentence, nothing else.
+
+User prompt:
+${trimmed.slice(0, 500)}`,
+    });
+    const sentence = text.trim().replace(/\n+/g, " ").slice(0, 80);
+    if (!sentence) return "—";
+    return sentence.charAt(0).toUpperCase() + sentence.slice(1);
+  } catch {
+    const firstSentence = trimmed.split(/[.!?]/)[0]?.trim();
+    return firstSentence?.slice(0, 80) ?? trimmed.slice(0, 80) ?? "—";
+  }
 }
 
 function toModelMessages(
@@ -87,12 +94,15 @@ export const send = action({
       meta: {},
     });
 
-    // 2. Call LLM
-    const result = await generateText({
-      model: google("gemini-3.1-pro-preview"),
-      system: "You are a helpful assistant.",
-      messages: modelMessages,
-    });
+    // 2. Call LLM (main response) and generate single-word summary in parallel
+    const [result, promptSummary] = await Promise.all([
+      generateText({
+        model: google("gemini-3.1-pro-preview"),
+        system: "You are a helpful assistant.",
+        messages: modelMessages,
+      }),
+      generatePromptSummary(userContent, google),
+    ]);
 
     // 3. Extract concept graph from raw response (before stripping)
     const extractedGraph = extractConceptGraph(result.text);
@@ -130,7 +140,7 @@ export const send = action({
               {
                 id: `batch-${Date.now()}`,
                 nodeIds: newNodeIds,
-                promptSummary: summarizeToWord(userContent),
+                promptSummary,
                 description: userContent.trim() || undefined,
               },
             ]
