@@ -1,6 +1,13 @@
 # Think
 
-A Vite + React + TypeScript app with Convex backend and Vercel AI SDK.
+Think won't blast you with a bunch of text. It will help you think through a problem
+by breaking it down into smaller concepts.
+it does not try to look smart, and act like a conscious AI
+it is an honest take on the use of the underlying technology of LLMs.
+
+no emotional manipulation from the model to think you are the best and smartest.
+hopefully it won't hallucinate as much.
+and cause mass hysteria and delusion.
 
 ## Setup
 
