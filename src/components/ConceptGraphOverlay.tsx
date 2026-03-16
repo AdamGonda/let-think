@@ -292,8 +292,8 @@ export function ConceptGraphOverlay({
       onMouseLeave={() => setHoveredNode(null)}
     >
       {isEmpty ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 text-zinc-600 dark:text-zinc-400 text-base py-6 px-6">
-          Type a message to build your concept graph
+        <div className="flex flex-1 flex-col items-center justify-center gap-3 text-zinc-600 dark:text-zinc-400 text-2xl py-6 px-6">
+          LET THINK
         </div>
       ) : (
         <>
