@@ -221,8 +221,8 @@ export function SessionSidebar({
             setIsCollapsed((c) => !c);
           }}
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          className={`flex items-center gap-2 rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer shrink-0 w-full ${
-            showExpandedContent ? "py-2.5 px-3" : "p-2.5 min-w-[40px] min-h-[40px] justify-center"
+          className={`flex items-center gap-2 rounded-lg text-zinc-600 h-[40px] dark:text-zinc-400 hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer shrink-0 w-full ${
+            showExpandedContent ? "py-2.5 px-3" : "p-2.5 min-w-[40px]  justify-center"
           }`}
         >
           <svg
@@ -243,8 +243,8 @@ export function SessionSidebar({
           type="button"
           onClick={() => handleNewChat()}
           aria-label="New chat"
-          className={`flex items-center gap-2 rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer shrink-0 w-full ${
-            showExpandedContent ? "py-2.5 px-3" : "p-2.5 min-w-[40px] min-h-[40px] justify-center"
+          className={`flex items-center gap-2 rounded-lg text-zinc-600 h-[40px] dark:text-zinc-400 hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer shrink-0 w-full ${
+            showExpandedContent ? "py-2.5 px-3" : "p-2.5 min-w-[40px] h-[40px] justify-center"
           }`}
         >
           <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
@@ -253,7 +253,7 @@ export function SessionSidebar({
           </svg>
           {showExpandedContent && <span>New chat</span>}
         </button>
-        <button
+        { showExpandedContent && <button
           type="button"
           onClick={handleNewProject}
           aria-label="New project"
@@ -267,8 +267,9 @@ export function SessionSidebar({
             <path d="M12 11v6" />
             <path d="M9 14h6" />
           </svg>
-          {showExpandedContent && <span>New project</span>}
+          <span>New project</span>
         </button>
+        }
       </div>
       {showExpandedContent && (
         <nav className="flex-1 overflow-y-auto py-3 px-3 flex flex-col gap-3">
