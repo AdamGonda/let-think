@@ -24,6 +24,9 @@ interface ChatProps {
   selectedNodes?: SelectedNode[];
   /** Called after a message is sent successfully (e.g. to clear selections) */
   onMessageSent?: () => void;
+  /** Controlled draft input (shared with overlay during loading/break) */
+  draftInput?: string;
+  setDraftInput?: (value: string) => void;
 }
 
 export function Chat({
@@ -33,8 +36,13 @@ export function Chat({
   setIsLoading,
   selectedNodes = [],
   onMessageSent,
+  draftInput,
+  setDraftInput,
 }: ChatProps) {
-  const [input, setInput] = useState("");
+  const [internalInput, setInternalInput] = useState("");
+  const input = draftInput !== undefined ? draftInput : internalInput;
+  const setInput =
+    setDraftInput !== undefined ? setDraftInput : setInternalInput;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const sendMessage = useAction(api.chat.send);
   const {

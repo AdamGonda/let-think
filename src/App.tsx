@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo, useRef } from "react";
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
   useQuery,
+  useMutation,
   AuthLoading,
   Unauthenticated,
   Authenticated,
@@ -46,6 +47,12 @@ function AppContent() {
   const [isLoading, setIsLoading] = useState(false);
   const { breakRemainingMs } = useSessionManager(activeSessionId);
   const isInBreak = breakRemainingMs !== null && breakRemainingMs > 0;
+  const [draftInput, setDraftInput] = useState("");
+  const draftInputRef = useRef(draftInput);
+  draftInputRef.current = draftInput;
+  const [thinkingNotes, setThinkingNotes] = useState("");
+  const thinkingNotesRef = useRef(thinkingNotes);
+  thinkingNotesRef.current = thinkingNotes;
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(
     new Set(),
   );
@@ -59,6 +66,17 @@ function AppContent() {
     api.sessions.getConceptGraph,
     activeSessionId ? { sessionId: activeSessionId } : "skip",
   );
+  const storedDraft = useQuery(
+    api.sessions.getDraft,
+    activeSessionId ? { sessionId: activeSessionId } : "skip",
+  );
+  const storedThinkingNotes = useQuery(
+    api.sessions.getThinkingNotes,
+    activeSessionId ? { sessionId: activeSessionId } : "skip",
+  );
+  const updateDraft = useMutation(api.sessions.updateDraft);
+  const updateThinkingNotes = useMutation(api.sessions.updateThinkingNotes);
+  const prevSessionIdRef = useRef<Id<"sessions"> | null>(null);
 
   useEffect(() => {
     if (sessions && sessions.length > 0 && !activeSessionId) {
@@ -90,6 +108,71 @@ function AppContent() {
     setSelectedNodeIds(new Set());
   }, [activeSessionId]);
 
+  // Sync draft and thinking notes from DB when session changes
+  useEffect(() => {
+    const prevId = prevSessionIdRef.current;
+    const sessionChanged = prevId !== activeSessionId;
+
+    if (sessionChanged && prevId != null) {
+      updateDraft({ sessionId: prevId, draftInput: draftInputRef.current });
+      updateThinkingNotes({
+        sessionId: prevId,
+        thinkingNotes: thinkingNotesRef.current,
+      });
+    }
+    prevSessionIdRef.current = activeSessionId;
+
+    if (sessionChanged) {
+      setDraftInput(activeSessionId == null ? "" : (storedDraft ?? ""));
+      setThinkingNotes(
+        activeSessionId == null ? "" : (storedThinkingNotes ?? ""),
+      );
+    }
+  }, [
+    activeSessionId,
+    storedDraft,
+    storedThinkingNotes,
+    updateDraft,
+    updateThinkingNotes,
+  ]);
+
+  // Debounced save when draft changes (same session)
+  const saveDraft = useCallback(
+    (value: string) => {
+      if (activeSessionId) {
+        updateDraft({ sessionId: activeSessionId, draftInput: value });
+      }
+    },
+    [activeSessionId, updateDraft],
+  );
+  useEffect(() => {
+    if (!activeSessionId) return;
+    const timer = setTimeout(() => {
+      saveDraft(draftInputRef.current);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [activeSessionId, draftInput, saveDraft]);
+
+  // Debounced save when thinking notes change (same session)
+  const saveThinkingNotes = useCallback(
+    (value: string) => {
+      if (activeSessionId) {
+        updateThinkingNotes({
+          sessionId: activeSessionId,
+          thinkingNotes: value,
+        });
+      }
+    },
+    [activeSessionId, updateThinkingNotes],
+  );
+  useEffect(() => {
+    if (!activeSessionId) return;
+    const timer = setTimeout(() => {
+      saveThinkingNotes(thinkingNotesRef.current);
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [activeSessionId, thinkingNotes, saveThinkingNotes]);
+
   const selectedNodes = useMemo(() => {
     if (!conceptGraph?.nodes) return [];
     return conceptGraph.nodes.filter((n: { id: string }) =>
@@ -116,11 +199,11 @@ function AppContent() {
     <div className="flex h-screen bg-white dark:bg-[#16171d]">
       {(isLoading || isInBreak) && (
         <div
-          className="fixed inset-0 z-[9999] flex h-screen w-screen items-center justify-center bg-white dark:bg-[#16171d]"
+          className="fixed inset-0 z-[9999] flex h-screen w-screen flex-col bg-white dark:bg-[#16171d]"
           aria-busy={isLoading}
           aria-live="polite"
         >
-          <div className="flex flex-col items-center justify-center gap-2">
+          <div className="flex flex-1 flex-col items-center justify-center gap-2">
             <span className="text-zinc-600 dark:text-zinc-400 text-4xl font-medium uppercase">
               Wake up
             </span>
@@ -130,6 +213,17 @@ function AppContent() {
               </span>
             )}
           </div>
+          {activeSessionId && (
+            <div className="shrink-0 border-t border-zinc-200 dark:border-zinc-700 p-4">
+              <textarea
+                rows={3}
+                className="w-full py-3 px-4 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-[#16171d] text-zinc-950 dark:text-zinc-100 font-inherit text-[0.95rem] placeholder:text-zinc-500 dark:placeholder:text-zinc-500 placeholder:opacity-70 focus:outline-none focus:border-violet-500 dark:focus:border-violet-400 resize-none overflow-y-auto"
+                value={thinkingNotes}
+                onChange={(e) => setThinkingNotes(e.target.value)}
+                placeholder="Keep writing... your thinking notes are saved"
+              />
+            </div>
+          )}
         </div>
       )}
       <SessionSidebar
@@ -170,6 +264,8 @@ function AppContent() {
           setIsLoading={setIsLoading}
           selectedNodes={selectedNodes}
           onMessageSent={handleClearSelectedNodes}
+          draftInput={draftInput}
+          setDraftInput={setDraftInput}
         />
       </main>
     </div>

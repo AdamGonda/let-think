@@ -215,3 +215,47 @@ export const getConceptGraph = query({
     return session.conceptGraph ?? null;
   },
 });
+
+export const getDraft = query({
+  args: { sessionId: v.id("sessions") },
+  handler: async (ctx, { sessionId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    const session = await ctx.db.get(sessionId);
+    if (!session || session.userId !== userId) return null;
+    return session.draftInput ?? "";
+  },
+});
+
+export const updateDraft = mutation({
+  args: {
+    sessionId: v.id("sessions"),
+    draftInput: v.string(),
+  },
+  handler: async (ctx, { sessionId, draftInput }) => {
+    await requireSessionOwner(ctx, sessionId);
+    await ctx.db.patch(sessionId, { draftInput });
+  },
+});
+
+export const getThinkingNotes = query({
+  args: { sessionId: v.id("sessions") },
+  handler: async (ctx, { sessionId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    const session = await ctx.db.get(sessionId);
+    if (!session || session.userId !== userId) return null;
+    return session.thinkingNotes ?? "";
+  },
+});
+
+export const updateThinkingNotes = mutation({
+  args: {
+    sessionId: v.id("sessions"),
+    thinkingNotes: v.string(),
+  },
+  handler: async (ctx, { sessionId, thinkingNotes }) => {
+    await requireSessionOwner(ctx, sessionId);
+    await ctx.db.patch(sessionId, { thinkingNotes });
+  },
+});

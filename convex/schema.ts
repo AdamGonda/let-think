@@ -18,6 +18,10 @@ export default defineSchema({
     projectId: v.optional(v.id("projects")),
     title: v.string(),
     createdAt: v.number(),
+    /** User's draft for next chat message, preserved across sessions */
+    draftInput: v.optional(v.string()),
+    /** Notes written during thinking/break period, separate from chat draft */
+    thinkingNotes: v.optional(v.string()),
     /** Concept graph: nodes (id, name) and edges (source, target) from preprocess prompt */
     conceptGraph: v.optional(
       v.object({
