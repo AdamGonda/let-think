@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
+import { useSessionManager } from "../hooks/useSessionManager";
 
 interface SelectedNode {
   id: string;
@@ -36,6 +37,14 @@ export function Chat({
   const [input, setInput] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const sendMessage = useAction(api.chat.send);
+  const {
+    canSend,
+    remaining,
+    limit,
+    breakRemainingMs,
+    breakRemainingFormatted,
+    onInteractionComplete,
+  } = useSessionManager(sessionId);
 
   // Auto-resize textarea as user types
   useEffect(() => {
@@ -54,7 +63,7 @@ export function Chat({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || !sessionId) return;
+    if (!input.trim() || !sessionId || !canSend) return;
 
     const userContent = input.trim();
     setInput("");
@@ -75,6 +84,7 @@ export function Chat({
         userContent,
         selectedNodeContext: selectedNodes.length > 0 ? selectedNodes : undefined,
       });
+      onInteractionComplete();
       onMessageSent?.();
     } catch (err) {
       console.error("Chat error:", err);
@@ -85,8 +95,22 @@ export function Chat({
     }
   };
 
+  const isDisabled = isLoading || !sessionId || !canSend;
+
+  const placeholder =
+    breakRemainingFormatted
+      ? `Wake up in ${breakRemainingFormatted}`
+      : sessionId
+        ? "Type a message..."
+        : "Select a chat to start";
+
   return (
     <div className="flex flex-col gap-2 py-3 px-6 pb-4 border-t border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#16171d] shrink-0">
+      {remaining !== null && limit !== null && breakRemainingMs === null && (
+        <p className="text-xs text-zinc-500 dark:text-zinc-400">
+          {remaining} of {limit} interactions left
+        </p>
+      )}
       <form className="flex gap-2 items-end" onSubmit={handleSubmit}>
         <textarea
           ref={textareaRef}
@@ -95,16 +119,18 @@ export function Chat({
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder={sessionId ? "Type a message..." : "Select a chat to start"}
-          disabled={isLoading || !sessionId}
+          placeholder={placeholder}
+          disabled={isDisabled}
         />
         <button
           type="submit"
           className="py-3 px-5 border-none rounded-lg bg-violet-600 dark:bg-violet-500 text-white font-inherit font-medium cursor-pointer transition-opacity duration-150 hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:opacity-60 flex items-center justify-center gap-2 min-w-[72px]"
-          disabled={isLoading || !sessionId}
+          disabled={isDisabled}
         >
           {isLoading ? (
             <span className="text-lg uppercase">Wake up</span>
+          ) : breakRemainingFormatted ? (
+            breakRemainingFormatted
           ) : (
             "Send"
           )}

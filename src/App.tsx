@@ -3,6 +3,10 @@ import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import { useTheme } from "./hooks/useTheme";
+import {
+  useSessionManager,
+  formatBreakCountdown,
+} from "./hooks/useSessionManager";
 import { SessionSidebar } from "./components/SessionSidebar";
 import { Chat } from "./components/Chat";
 import { ConceptGraphOverlay } from "./components/ConceptGraphOverlay";
@@ -16,6 +20,8 @@ function App() {
     null
   );
   const [isLoading, setIsLoading] = useState(false);
+  const { breakRemainingMs } = useSessionManager(activeSessionId);
+  const isInBreak = breakRemainingMs !== null && breakRemainingMs > 0;
   const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(new Set());
   const sessions = useQuery(api.sessions.list);
   const projectsWithSessions = useQuery(api.projects.listWithSessions);
@@ -76,13 +82,17 @@ function App() {
 
   return (
     <div className="flex h-screen bg-white dark:bg-[#16171d]">
-      {isLoading && (
+      {(isLoading || isInBreak) && (
         <div
           className="fixed inset-0 z-[9999] flex h-screen w-screen items-center justify-center bg-white dark:bg-[#16171d]"
-          aria-busy
+          aria-busy={isLoading}
           aria-live="polite"
         >
-          <span className="text-zinc-600 dark:text-zinc-400 text-4xl font-medium uppercase">Wake up</span>
+          <span className="text-zinc-600 dark:text-zinc-400 text-4xl font-medium uppercase">
+            {isInBreak && !isLoading && breakRemainingMs
+              ? `Wake up in ${formatBreakCountdown(breakRemainingMs)}`
+              : "Wake up"}
+          </span>
         </div>
       )}
       <SessionSidebar
