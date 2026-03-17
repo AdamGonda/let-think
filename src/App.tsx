@@ -252,12 +252,11 @@ function AppContent() {
             <button
               type="button"
               onClick={handleExitOverlay}
-              className="absolute top-4 right-4 p-2 w-[38px] h-[38px] rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-              aria-label="Exit and return to chat"
+              className="absolute top-4 right-4 z-10 p-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer"
+              aria-label="Summarize and return to chat"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 6 6 18" />
-                <path d="m6 6 12 12" />
+              <svg width="20" height="20" viewBox="0 0 24 24">
+                <text x="12" y="18" textAnchor="middle" fill="currentColor" fontSize="22" fontFamily="serif" fontWeight="600">Σ</text>
               </svg>
             </button>
           )}
