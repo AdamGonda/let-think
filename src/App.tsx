@@ -46,6 +46,8 @@ function AppContent() {
     null,
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [overlayDismissed, setOverlayDismissed] = useState(false);
+  const [editorOpen, setEditorOpen] = useState(false);
   const { breakRemainingMs } = useSessionManager(activeSessionId);
   const isInBreak = breakRemainingMs !== null && breakRemainingMs > 0;
   const [draftInput, setDraftInput] = useState("");
@@ -215,7 +217,18 @@ function AppContent() {
 
   const mainContentRef = useRef<HTMLDivElement>(null);
 
-  const showOverlay = isLoading || isInBreak;
+  const overlayActive = isLoading || isInBreak || editorOpen;
+  const showOverlay = overlayActive && !overlayDismissed;
+
+  useEffect(() => {
+    if (!overlayActive) setOverlayDismissed(false);
+  }, [overlayActive]);
+
+  const handleExitOverlay = () => {
+    setOverlayDismissed(true);
+    setIsLoading(false);
+    setEditorOpen(false);
+  };
 
   return (
     <div className="flex h-screen bg-white dark:bg-[#16171d]">
@@ -225,11 +238,22 @@ function AppContent() {
           aria-busy={isLoading}
           aria-live="polite"
         >
+          <button
+            type="button"
+            onClick={handleExitOverlay}
+            className="absolute top-4 right-4 p-2 rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+            aria-label="Exit and return to chat"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 6 6 18" />
+              <path d="m6 6 12 12" />
+            </svg>
+          </button>
           <div className="shrink-0 py-6 flex flex-col items-center gap-1">
             <span className="text-zinc-500 dark:text-zinc-400 text-2xl font-medium uppercase tracking-widest">
-              Wake up
+              {editorOpen && !isLoading && !isInBreak ? "Notes" : "Wake up"}
             </span>
-            {breakRemainingMs != null && breakRemainingMs > 0 && (
+            {breakRemainingMs != null && breakRemainingMs > 0 && !editorOpen && (
               <span className="text-zinc-500 dark:text-zinc-500 text-lg font-medium tabular-nums">
                 {formatBreakCountdown(breakRemainingMs)}
               </span>
@@ -265,6 +289,23 @@ function AppContent() {
           ref={mainContentRef}
           className="flex flex-1 min-h-0 flex-col relative"
         >
+          {!showOverlay && activeSessionId && (
+            <button
+              type="button"
+              onClick={() => setEditorOpen(true)}
+              className="absolute top-4 right-4 z-10 p-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer"
+              title="Open notes"
+              aria-label="Open notes"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" x2="8" y1="13" y2="13" />
+                <line x1="16" x2="8" y1="17" y2="17" />
+                <line x1="10" x2="8" y1="9" y2="9" />
+              </svg>
+            </button>
+          )}
           <div className="flex flex-1 min-h-0 items-stretch justify-stretch">
             {activeSessionId ? (
               <ConceptGraphOverlay
