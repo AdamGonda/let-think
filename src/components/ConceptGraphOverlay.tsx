@@ -61,7 +61,6 @@ export function ConceptGraphOverlay({
 }: ConceptGraphOverlayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphViewportRef = useRef<HTMLDivElement>(null);
-  const stepperRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const [dimensions, setDimensions] = useState({ width: 400, height: 300 });
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
@@ -151,9 +150,6 @@ export function ConceptGraphOverlay({
     }
   }, [batches.length, isControlled, selectedBatchIndex]);
 
-  const hasBatches = batches.length > 0;
-  const canGoPrev = selectedBatchIndex > 0;
-  const canGoNext = selectedBatchIndex < batches.length - 1;
   const isEmpty = !graph?.nodes?.length;
 
   // Compute a STABLE full rail layout for ALL batches. Cluster positions stay fixed;
@@ -570,42 +566,6 @@ export function ConceptGraphOverlay({
           </svg>
           </div>
         </div>
-        {hasBatches && (
-          <div
-            ref={stepperRef}
-            className="relative z-10 flex items-center justify-center gap-3 py-2 px-4 border-t border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 shrink-0"
-          >
-            <button
-              type="button"
-              onClick={() => setSelectedBatchIndex((i) => Math.max(0, i - 1))}
-              disabled={!canGoPrev}
-              aria-label="Previous batch"
-              className={`py-1.5 px-3 rounded-md text-sm font-medium transition-colors select-none ${
-                canGoPrev
-                  ? "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer active:scale-95"
-                  : "text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-50"
-              }`}
-            >
-              ← Prev
-            </button>
-            <span className="text-sm text-zinc-500 dark:text-zinc-400 tabular-nums min-w-16 text-center">
-              {selectedBatchIndex + 1} / {batches.length}
-            </span>
-            <button
-              type="button"
-              onClick={() => setSelectedBatchIndex((i) => Math.min(batches.length - 1, i + 1))}
-              disabled={!canGoNext}
-              aria-label="Next batch"
-              className={`py-1.5 px-3 rounded-md text-sm font-medium transition-colors select-none ${
-                canGoNext
-                  ? "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer active:scale-95"
-                  : "text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-50"
-              }`}
-            >
-              Next →
-            </button>
-          </div>
-        )}
         </>
       )}
     </div>

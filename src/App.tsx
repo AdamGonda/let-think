@@ -20,7 +20,7 @@ import { ConceptGraphOverlay } from "./components/ConceptGraphOverlay";
 import { MarkdownEditor } from "./components/MarkdownEditor";
 import { SignIn } from "./components/SignIn";
 import { Toaster } from "./components/ui/sonner";
-import { Sprout } from "lucide-react";
+import { Sprout, ChevronLeft, ChevronRight } from "lucide-react";
 
 function App() {
   return (
@@ -324,6 +324,30 @@ function AppContent() {
         >
           {!showOverlay && activeSessionId && (
             <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+              {batches.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedBatchIndex((i) => Math.max(0, i - 1))}
+                    disabled={selectedBatchIndex <= 0}
+                    className="p-2 rounded-lg border border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:opacity-50"
+                    title="Previous step"
+                    aria-label="Previous step"
+                  >
+                    <ChevronLeft size={20} strokeWidth={2} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedBatchIndex((i) => Math.min(batches.length - 1, i + 1))}
+                    disabled={selectedBatchIndex >= batches.length - 1}
+                    className="p-2 rounded-lg border border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:opacity-50"
+                    title="Next step"
+                    aria-label="Next step"
+                  >
+                    <ChevronRight size={20} strokeWidth={2} />
+                  </button>
+                </>
+              )}
               <button
                 type="button"
                 onClick={() => setHistoryPanelOpen(true)}
