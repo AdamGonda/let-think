@@ -304,21 +304,35 @@ function AppContent() {
           className="flex flex-1 min-h-0 flex-col relative"
         >
           {!showOverlay && activeSessionId && (
-            <button
-              type="button"
-              onClick={() => setEditorOpen(true)}
-              className="absolute top-4 right-4 z-10 p-2 rounded-lg border border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
-              title="Open notes"
-              aria-label="Open notes"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-                <polyline points="14 2 14 8 20 8" />
-                <line x1="16" x2="8" y1="13" y2="13" />
-                <line x1="16" x2="8" y1="17" y2="17" />
-                <line x1="10" x2="8" y1="9" y2="9" />
-              </svg>
-            </button>
+            <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setHistoryPanelOpen(true)}
+                className="p-2 rounded-lg border border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                title="Conversation history"
+                aria-label="Conversation history"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 8v4l3 3" />
+                  <circle cx="12" cy="12" r="10" />
+                </svg>
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditorOpen(true)}
+                className="p-2 rounded-lg border border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                title="Open notes"
+                aria-label="Open notes"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="16" x2="8" y1="13" y2="13" />
+                  <line x1="16" x2="8" y1="17" y2="17" />
+                  <line x1="10" x2="8" y1="9" y2="9" />
+                </svg>
+              </button>
+            </div>
           )}
           <div className="flex flex-1 min-h-0 items-stretch justify-stretch">
             {activeSessionId ? (
@@ -350,7 +364,6 @@ function AppContent() {
             onMessageSent={handleClearSelectedNodes}
             draftInput={draftInput}
             setDraftInput={setDraftInput}
-            onOpenHistory={() => setHistoryPanelOpen(true)}
           />
         )}
         <ChatHistoryPanel

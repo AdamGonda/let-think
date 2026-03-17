@@ -29,8 +29,6 @@ interface ChatProps {
   setDraftInput?: (value: string) => void;
   /** Called when the model finishes responding (overlay stays visible until user exits) */
   onModelResponded?: () => void;
-  /** Called when user wants to open the conversation history panel */
-  onOpenHistory?: () => void;
 }
 
 export function Chat({
@@ -43,7 +41,6 @@ export function Chat({
   draftInput,
   setDraftInput,
   onModelResponded,
-  onOpenHistory,
 }: ChatProps) {
   const [internalInput, setInternalInput] = useState("");
   const input = draftInput !== undefined ? draftInput : internalInput;
@@ -130,24 +127,6 @@ export function Chat({
 
   return (
     <div className="flex flex-col gap-2 py-3 px-6 pb-4 border-t border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#16171d] shrink-0">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex-1 min-w-0" />
-        {sessionId && onOpenHistory && (
-          <button
-            type="button"
-            onClick={onOpenHistory}
-            className="shrink-0 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
-            title="View conversation history"
-            aria-label="View conversation history"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 8v4l3 3" />
-              <circle cx="12" cy="12" r="10" />
-            </svg>
-            History
-          </button>
-        )}
-      </div>
       {showInteractionCount && (
         <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
           {remaining} interactions until long break
