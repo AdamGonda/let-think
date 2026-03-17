@@ -1,7 +1,8 @@
 import { useRef, useEffect, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import type { RefObject } from "react";
-import { Sprout } from "lucide-react";
+import { Check, Clipboard, Sprout } from "lucide-react";
+import { toast } from "sonner";
 
 type GraphNode = {
   id: string;
@@ -63,6 +64,11 @@ export function ConceptGraphOverlay({
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [batchModalIndex, setBatchModalIndex] = useState<number | null>(null);
   const [internalBatchIndex, setInternalBatchIndex] = useState<number>(0);
+  const [copied, setCopied] = useState(false);
+  const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
+  }, []);
 
   const isControlled = controlledBatchIndex !== undefined && onSelectedBatchIndexChange != null;
   const selectedBatchIndex = isControlled ? controlledBatchIndex : internalBatchIndex;
@@ -325,7 +331,7 @@ export function ConceptGraphOverlay({
                   aria-hidden
                 />
                 <div
-                  className={`${isInMain ? "absolute" : "fixed"} top-[52%] z-[9999] w-[960px] max-w-[95vw] max-h-[80vh] -translate-x-1/2 -translate-y-1/2`}
+                  className={`${isInMain ? "absolute" : "fixed"} top-1/2 z-[9999] w-[960px] max-w-[95vw] max-h-[80vh] -translate-x-1/2 -translate-y-1/2`}
                   style={{ left: modalLeft != null ? `${modalLeft}px` : "50%" }}
                   role="dialog"
                   aria-modal
@@ -339,17 +345,41 @@ export function ConceptGraphOverlay({
                       <h2 id="batch-modal-title" className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
                         User Input
                       </h2>
-                      <button
-                        type="button"
-                        onClick={() => setBatchModalIndex(null)}
-                        className="p-1.5 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
-                        aria-label="Close"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M18 6 6 18" />
-                          <path d="m6 6 12 12" />
-                        </svg>
-                      </button>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={async () => {
+                            const text = batches[batchModalIndex]?.description ?? "";
+                            await navigator.clipboard.writeText(text);
+                            toast.success("Copied to clipboard");
+                            if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
+                            setCopied(true);
+                            copiedTimeoutRef.current = setTimeout(() => {
+                              setCopied(false);
+                              copiedTimeoutRef.current = null;
+                            }, 2000);
+                          }}
+                          className="p-1.5 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                          aria-label={copied ? "Copied" : "Copy to clipboard"}
+                        >
+                          {copied ? (
+                            <Check size={20} strokeWidth={2.5} className="text-emerald-600 dark:text-emerald-400" />
+                          ) : (
+                            <Clipboard size={20} strokeWidth={2} />
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setBatchModalIndex(null)}
+                          className="p-1.5 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                          aria-label="Close"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M18 6 6 18" />
+                            <path d="m6 6 12 12" />
+                          </svg>
+                        </button>
+                      </div>
                     </div>
                     <div
                       className="overflow-y-auto overscroll-contain p-6 min-h-0"

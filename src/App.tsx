@@ -19,6 +19,7 @@ import { ChatHistoryPanel } from "./components/ChatHistoryPanel";
 import { ConceptGraphOverlay } from "./components/ConceptGraphOverlay";
 import { MarkdownEditor } from "./components/MarkdownEditor";
 import { SignIn } from "./components/SignIn";
+import { Toaster } from "./components/ui/sonner";
 
 function App() {
   return (
@@ -396,6 +397,7 @@ function AppContent() {
         />
       </main>
       </div>
+      <Toaster theme={isDark ? "dark" : "light"} />
     </div>
   );
 }
