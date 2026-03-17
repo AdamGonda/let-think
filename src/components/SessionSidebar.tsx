@@ -171,7 +171,7 @@ export function SessionSidebar({
 
   return (
     <aside
-      className="shrink-0 flex flex-col h-screen overflow-hidden bg-zinc-50 dark:bg-[#1a1b22] border-r border-zinc-200 dark:border-zinc-700"
+      className="shrink-0 flex flex-col h-screen overflow-hidden bg-zinc-50 dark:bg-[#1a1b22] border-r border-zinc-300 dark:border-zinc-700"
       style={{ width: SIDEBAR_WIDTH }}
     >
       <div className="flex flex-col m-3 gap-1 min-w-0">
@@ -509,7 +509,7 @@ export function SessionSidebar({
             );
           })}
       </nav>
-      <div className="flex flex-col gap-2 p-3 border-t border-zinc-200 dark:border-zinc-700">
+      <div className="flex flex-col gap-2 p-3 border-t border-zinc-300 dark:border-zinc-700">
         <UserCard onToggleTheme={onToggleTheme} isDark={isDark} />
       </div>
     </aside>

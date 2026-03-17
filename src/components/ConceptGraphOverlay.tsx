@@ -352,7 +352,7 @@ export function ConceptGraphOverlay({
                     className="flex flex-col max-h-[80vh] rounded bg-white dark:bg-zinc-800 shadow-2xl border-2 border-zinc-300 dark:border-zinc-600 animate-modal-in"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    <div className="flex items-center justify-between shrink-0 px-6 py-4 border-b border-zinc-200 dark:border-zinc-600">
+                    <div className="flex items-center justify-between shrink-0 px-6 py-4 border-b border-zinc-300 dark:border-zinc-600">
                       <h2 id="batch-modal-title" className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
                         User Input
                       </h2>

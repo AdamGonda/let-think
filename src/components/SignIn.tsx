@@ -5,7 +5,7 @@ export function SignIn() {
 
   return (
     <div className="flex h-screen w-screen items-center justify-center bg-white dark:bg-[#16171d] sign-in-bg">
-      <div className="flex flex-col items-center gap-6 rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#1a1b22] p-10 shadow-sm max-w-md w-full mx-4">
+      <div className="flex flex-col items-center gap-6 rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-[#1a1b22] p-10 shadow-sm max-w-md w-full mx-4">
         <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 text-center">
           Sign in to Think
         </h1>

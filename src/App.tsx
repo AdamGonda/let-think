@@ -330,7 +330,7 @@ function AppContent() {
                     type="button"
                     onClick={() => setSelectedBatchIndex((i) => Math.max(0, i - 1))}
                     disabled={selectedBatchIndex <= 0}
-                    className="p-2 rounded-lg border border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:opacity-50"
+                    className="p-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:opacity-50"
                     title="Previous step"
                     aria-label="Previous step"
                   >
@@ -340,7 +340,7 @@ function AppContent() {
                     type="button"
                     onClick={() => setSelectedBatchIndex((i) => Math.min(batches.length - 1, i + 1))}
                     disabled={selectedBatchIndex >= batches.length - 1}
-                    className="p-2 rounded-lg border border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:opacity-50"
+                    className="p-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:opacity-50"
                     title="Next step"
                     aria-label="Next step"
                   >
@@ -351,7 +351,7 @@ function AppContent() {
               <button
                 type="button"
                 onClick={() => setHistoryPanelOpen(true)}
-                className="p-2 rounded-lg border border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                className="p-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
                 title="Conversation history"
                 aria-label="Conversation history"
               >
@@ -363,7 +363,7 @@ function AppContent() {
               <button
                 type="button"
                 onClick={() => openBatchModalRef.current?.(selectedBatchIndex)}
-                className="p-2 rounded-lg border border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                className="p-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
                 title="View user input for this step"
                 aria-label="View user input for this step"
               >
@@ -372,7 +372,7 @@ function AppContent() {
               <button
                 type="button"
                 onClick={() => setEditorOpen(true)}
-                className="p-2 rounded-lg border border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                className="p-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
                 title="Open notes"
                 aria-label="Open notes"
               >

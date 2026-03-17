@@ -75,10 +75,10 @@ export function ChatHistoryPanel({
         aria-hidden="true"
       />
       <aside
-        className="fixed top-0 right-0 bottom-0 z-[9999] w-full max-w-sm flex flex-col bg-white dark:bg-[#1a1b22] border-l border-zinc-200 dark:border-zinc-700 shadow-xl"
+        className="fixed top-0 right-0 bottom-0 z-[9999] w-full max-w-sm flex flex-col bg-white dark:bg-[#1a1b22] border-l border-zinc-300 dark:border-zinc-700 shadow-xl"
         aria-label="Conversation history"
       >
-        <div className="flex items-center gap-2 shrink-0 py-4 px-4 border-b border-zinc-200 dark:border-zinc-700">
+        <div className="flex items-center gap-2 shrink-0 py-4 px-4 border-b border-zinc-300 dark:border-zinc-700">
           <button
             type="button"
             onClick={onClose}
@@ -143,7 +143,7 @@ export function ChatHistoryPanel({
                       )}
                       {/* Message bubble */}
                       <div className="flex-1 min-w-0 pl-2">
-                        <div className="rounded-2xl rounded-tl-md px-4 py-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-[0.95rem] leading-relaxed shadow-sm border border-zinc-200/50 dark:border-zinc-700/50">
+                        <div className="rounded-2xl rounded-tl-md px-4 py-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-[0.95rem] leading-relaxed shadow-sm border border-zinc-300/70 dark:border-zinc-700/50">
                           {(() => {
                             const topicOrSubject = (msg.topic ?? msg.subject)?.trim();
                             const isPendingTopic =

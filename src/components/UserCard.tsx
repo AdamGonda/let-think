@@ -68,7 +68,7 @@ export function UserCard({ onToggleTheme, isDark }: UserCardProps) {
   const menuContent = menuOpen && (
     <div
       ref={menuRef}
-      className="fixed min-w-[140px] rounded-lg border border-zinc-200 dark:border-zinc-600 bg-white dark:bg-zinc-800 shadow-xl py-1"
+      className="fixed min-w-[140px] rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 shadow-xl py-1"
       role="menu"
       style={{
         top: menuPosition.top,
@@ -108,7 +108,7 @@ export function UserCard({ onToggleTheme, isDark }: UserCardProps) {
       <button
         type="button"
         role="menuitem"
-        className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 border-t border-zinc-200 dark:border-zinc-600"
+        className="w-full flex items-center gap-2 px-3 py-2 text-left text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-700 border-t border-zinc-300 dark:border-zinc-600"
         onClick={() => {
           setMenuOpen(false);
           void signOut();
