@@ -15,6 +15,7 @@ import {
 } from "./hooks/useSessionManager";
 import { SessionSidebar } from "./components/SessionSidebar";
 import { Chat } from "./components/Chat";
+import { ChatHistoryPanel } from "./components/ChatHistoryPanel";
 import { ConceptGraphOverlay } from "./components/ConceptGraphOverlay";
 import { MarkdownEditor } from "./components/MarkdownEditor";
 import { SignIn } from "./components/SignIn";
@@ -50,6 +51,7 @@ function AppContent() {
     useState(false);
   const [overlayDismissed, setOverlayDismissed] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
+  const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
   const { breakRemainingMs } = useSessionManager(activeSessionId);
   const isInBreak = breakRemainingMs !== null && breakRemainingMs > 0;
   const [draftInput, setDraftInput] = useState("");
@@ -348,8 +350,14 @@ function AppContent() {
             onMessageSent={handleClearSelectedNodes}
             draftInput={draftInput}
             setDraftInput={setDraftInput}
+            onOpenHistory={() => setHistoryPanelOpen(true)}
           />
         )}
+        <ChatHistoryPanel
+          isOpen={historyPanelOpen}
+          onClose={() => setHistoryPanelOpen(false)}
+          messages={messages ?? []}
+        />
       </main>
       </div>
     </div>
