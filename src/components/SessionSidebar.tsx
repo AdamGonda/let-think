@@ -199,144 +199,6 @@ export function SessionSidebar({
         </button>
       </div>
       <nav className="flex-1 overflow-y-auto py-3 px-3 flex flex-col gap-3">
-          {/* Sessions section (sessions without a project) */}
-          <div className="flex flex-col gap-1">
-            <div
-              className={`flex items-center gap-1 rounded-lg border transition-colors py-1.5 px-0 border-transparent ${
-                dragOverProjectId === "inbox" ? "ring-2 ring-zinc-400 dark:ring-zinc-500 ring-inset" : ""
-              }`}
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = "move";
-                setDragOverProjectId("inbox");
-              }}
-              onDragLeave={() => setDragOverProjectId(null)}
-              onDrop={(e) => {
-                e.preventDefault();
-                const sessionId = e.dataTransfer.getData("text/plain") as Id<"sessions">;
-                if (sessionId) {
-                  handleMoveSession(sessionId, null);
-                }
-                setDragOverProjectId(null);
-              }}
-            >
-              <span className="text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400 py-1">
-                Sessions
-              </span>
-            </div>
-            {(data?.find((g: ProjectWithSessions) => !g.project)?.sessions ?? []).map((session: Doc<"sessions">) => (
-              <div
-                key={session._id}
-                draggable={editingSessionId !== session._id}
-                onDragStart={(e) => {
-                  e.dataTransfer.setData("text/plain", session._id);
-                  e.dataTransfer.effectAllowed = "move";
-                }}
-                onClick={() => {
-                  if (editingSessionId !== session._id) {
-                    onSelectSession(session._id);
-                    onSelectProject(null);
-                  }
-                }}
-                onDoubleClick={(e) => {
-                  if (editingSessionId !== session._id) {
-                    e.stopPropagation();
-                    setEditingSessionId(session._id);
-                  }
-                }}
-                className={`group flex items-center gap-1 py-1.5 px-3 rounded-lg border transition-colors cursor-grab active:cursor-grabbing select-none ${
-                  activeSessionId === session._id
-                    ? "bg-zinc-100 dark:bg-zinc-700/50 border-zinc-300 dark:border-zinc-600 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-                    : "border-transparent hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
-                }`}
-              >
-                {editingSessionId === session._id ? (
-                  <input
-                    ref={sessionInputRef}
-                    type="text"
-                    defaultValue={session.title}
-                    className="flex-1 min-w-0 py-1 px-2 text-left rounded text-sm bg-white dark:bg-zinc-800 border border-zinc-400 dark:border-zinc-500 text-zinc-900 dark:text-zinc-100 outline-none focus:border-white dark:focus:border-zinc-800 transition-colors"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleRename(session._id, (e.target as HTMLInputElement).value);
-                      } else if (e.key === "Escape") {
-                        setEditingSessionId(null);
-                      }
-                    }}
-                    onBlur={(e) => {
-                      handleRename(session._id, e.target.value);
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                    onMouseDown={(e) => e.stopPropagation()}
-                  />
-                ) : (
-                  <div
-                    className={`flex-1 min-w-0 text-left truncate pointer-events-none text-sm py-0.5 ${
-                      activeSessionId === session._id
-                        ? "text-zinc-900 dark:text-zinc-100"
-                        : "text-zinc-600 dark:text-zinc-400"
-                    }`}
-                  >
-                    {session.title}
-                  </div>
-                )}
-                {confirmDeleteSessionId === session._id ? (
-                  <div className="flex items-center gap-0.5 h-7 shrink-0">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(session._id);
-                      }}
-                      className="p-1 rounded bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/30 cursor-pointer"
-                      aria-label="Confirm delete"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M3 6h18" />
-                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                        <line x1="10" x2="10" y1="11" y2="17" />
-                        <line x1="14" x2="14" y1="11" y2="17" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setConfirmDeleteSessionId(null);
-                      }}
-                      className="p-1 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600 cursor-pointer"
-                      aria-label="Cancel delete"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M18 6 6 18" />
-                        <path d="m6 6 12 12" />
-                      </svg>
-                    </button>
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setConfirmDeleteSessionId(session._id);
-                    }}
-                    className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto pointer-events-none hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 h-7 shrink-0 flex items-center justify-center"
-                    aria-label="Delete session"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 6h18" />
-                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                      <line x1="10" x2="10" y1="11" y2="17" />
-                      <line x1="14" x2="14" y1="11" y2="17" />
-                    </svg>
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-
           {/* Projects section */}
           <div className="flex flex-col gap-1">
             <span className="text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400 py-1 px-2">
@@ -615,6 +477,144 @@ export function SessionSidebar({
               </div>
             );
           })}
+          </div>
+
+          {/* Sessions section (sessions without a project) */}
+          <div className="flex flex-col gap-1">
+            <div
+              className={`flex items-center gap-1 rounded-lg border transition-colors py-1.5 px-0 border-transparent ${
+                dragOverProjectId === "inbox" ? "ring-2 ring-zinc-400 dark:ring-zinc-500 ring-inset" : ""
+              }`}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                setDragOverProjectId("inbox");
+              }}
+              onDragLeave={() => setDragOverProjectId(null)}
+              onDrop={(e) => {
+                e.preventDefault();
+                const sessionId = e.dataTransfer.getData("text/plain") as Id<"sessions">;
+                if (sessionId) {
+                  handleMoveSession(sessionId, null);
+                }
+                setDragOverProjectId(null);
+              }}
+            >
+              <span className="text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400 py-1">
+                Sessions
+              </span>
+            </div>
+            {(data?.find((g: ProjectWithSessions) => !g.project)?.sessions ?? []).map((session: Doc<"sessions">) => (
+              <div
+                key={session._id}
+                draggable={editingSessionId !== session._id}
+                onDragStart={(e) => {
+                  e.dataTransfer.setData("text/plain", session._id);
+                  e.dataTransfer.effectAllowed = "move";
+                }}
+                onClick={() => {
+                  if (editingSessionId !== session._id) {
+                    onSelectSession(session._id);
+                    onSelectProject(null);
+                  }
+                }}
+                onDoubleClick={(e) => {
+                  if (editingSessionId !== session._id) {
+                    e.stopPropagation();
+                    setEditingSessionId(session._id);
+                  }
+                }}
+                className={`group flex items-center gap-1 py-1.5 px-3 rounded-lg border transition-colors cursor-grab active:cursor-grabbing select-none ${
+                  activeSessionId === session._id
+                    ? "bg-zinc-100 dark:bg-zinc-700/50 border-zinc-300 dark:border-zinc-600 hover:bg-zinc-200 dark:hover:bg-zinc-700"
+                    : "border-transparent hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
+                }`}
+              >
+                {editingSessionId === session._id ? (
+                  <input
+                    ref={sessionInputRef}
+                    type="text"
+                    defaultValue={session.title}
+                    className="flex-1 min-w-0 py-1 px-2 text-left rounded text-sm bg-white dark:bg-zinc-800 border border-zinc-400 dark:border-zinc-500 text-zinc-900 dark:text-zinc-100 outline-none focus:border-white dark:focus:border-zinc-800 transition-colors"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleRename(session._id, (e.target as HTMLInputElement).value);
+                      } else if (e.key === "Escape") {
+                        setEditingSessionId(null);
+                      }
+                    }}
+                    onBlur={(e) => {
+                      handleRename(session._id, e.target.value);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                  />
+                ) : (
+                  <div
+                    className={`flex-1 min-w-0 text-left truncate pointer-events-none text-sm py-0.5 ${
+                      activeSessionId === session._id
+                        ? "text-zinc-900 dark:text-zinc-100"
+                        : "text-zinc-600 dark:text-zinc-400"
+                    }`}
+                  >
+                    {session.title}
+                  </div>
+                )}
+                {confirmDeleteSessionId === session._id ? (
+                  <div className="flex items-center gap-0.5 h-7 shrink-0">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(session._id);
+                      }}
+                      className="p-1 rounded bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/30 cursor-pointer"
+                      aria-label="Confirm delete"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M3 6h18" />
+                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                        <line x1="10" x2="10" y1="11" y2="17" />
+                        <line x1="14" x2="14" y1="11" y2="17" />
+                      </svg>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmDeleteSessionId(null);
+                      }}
+                      className="p-1 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600 cursor-pointer"
+                      aria-label="Cancel delete"
+                    >
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M18 6 6 18" />
+                        <path d="m6 6 12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmDeleteSessionId(session._id);
+                    }}
+                    className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto pointer-events-none hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 h-7 shrink-0 flex items-center justify-center"
+                    aria-label="Delete session"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3 6h18" />
+                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                      <line x1="10" x2="10" y1="11" y2="17" />
+                      <line x1="14" x2="14" y1="11" y2="17" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            ))}
           </div>
       </nav>
       <div className="flex flex-col gap-2 p-3 border-t border-zinc-300 dark:border-zinc-700">
