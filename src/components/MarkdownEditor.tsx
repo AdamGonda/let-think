@@ -59,8 +59,8 @@ export function MarkdownEditor({
       onClick={handleWrapperClick}
       className={`md-editor-wrapper overflow-hidden cursor-text ${
         isFocused
-          ? `md-editor-focused flex-1 min-h-0 flex flex-col rounded-xl border ${dark ? "md-editor-dark border-zinc-500" : "border-zinc-300"} ${className}`
-          : "rounded-lg border border-zinc-200 dark:border-zinc-700"
+          ? `md-editor-focused flex-1 min-h-0 flex flex-col rounded-xl border transition-colors ${dark ? "md-editor-dark border-zinc-500 focus-within:border-[#1e2025]" : "border-zinc-300 focus-within:border-[#fafafa]"} ${className}`
+          : "rounded-lg border border-zinc-200 dark:border-zinc-700 focus-within:border-white dark:focus-within:border-zinc-800 transition-colors"
       } ${className}`}
     >
       <MDEditor

@@ -261,7 +261,7 @@ export function SessionSidebar({
                         ref={projectInputRef}
                         type="text"
                         defaultValue={project.name}
-                        className="flex-1 min-w-0 py-1 px-2 text-left rounded text-sm font-medium bg-white dark:bg-zinc-800 border border-zinc-400 dark:border-zinc-500 text-zinc-900 dark:text-zinc-100 outline-none"
+                        className="flex-1 min-w-0 py-1 px-2 text-left rounded text-sm font-medium bg-white dark:bg-zinc-800 border border-zinc-400 dark:border-zinc-500 text-zinc-900 dark:text-zinc-100 outline-none focus:border-white dark:focus:border-zinc-800 transition-colors"
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             handleRenameProject(project._id, (e.target as HTMLInputElement).value);
@@ -428,7 +428,7 @@ export function SessionSidebar({
                           ref={sessionInputRef}
                           type="text"
                           defaultValue={session.title}
-                          className="flex-1 min-w-0 py-1 px-2 text-left rounded text-sm bg-white dark:bg-zinc-800 border border-zinc-400 dark:border-zinc-500 text-zinc-900 dark:text-zinc-100 outline-none"
+                          className="flex-1 min-w-0 py-1 px-2 text-left rounded text-sm bg-white dark:bg-zinc-800 border border-zinc-400 dark:border-zinc-500 text-zinc-900 dark:text-zinc-100 outline-none focus:border-white dark:focus:border-zinc-800 transition-colors"
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
                               handleRename(session._id, (e.target as HTMLInputElement).value);
