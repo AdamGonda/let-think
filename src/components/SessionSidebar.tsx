@@ -211,9 +211,6 @@ export function SessionSidebar({
               ? expandedProjectIds.has(projectId)
               : true;
 
-            // Hide inbox when it has no sessions
-            if (!project && sessions.length === 0) return null;
-
             return (
               <div key={projectId ?? "inbox"} className="flex flex-col gap-1">
                 {project ? (
