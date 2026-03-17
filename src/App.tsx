@@ -46,6 +46,8 @@ function AppContent() {
     null,
   );
   const [isLoading, setIsLoading] = useState(false);
+  const [modelRespondedAwaitingDismissal, setModelRespondedAwaitingDismissal] =
+    useState(false);
   const [overlayDismissed, setOverlayDismissed] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const { breakRemainingMs } = useSessionManager(activeSessionId);
@@ -217,11 +219,15 @@ function AppContent() {
 
   const mainContentRef = useRef<HTMLDivElement>(null);
 
-  const overlayActive = isLoading || isInBreak || editorOpen;
+  const overlayActive =
+    isLoading || isInBreak || editorOpen || modelRespondedAwaitingDismissal;
   const showOverlay = overlayActive && !overlayDismissed;
 
   useEffect(() => {
-    if (!overlayActive) setOverlayDismissed(false);
+    if (!overlayActive) {
+      setOverlayDismissed(false);
+      setModelRespondedAwaitingDismissal(false);
+    }
   }, [overlayActive]);
 
   const canExitOverlay = !isLoading && !isInBreak;
@@ -231,6 +237,7 @@ function AppContent() {
     setOverlayDismissed(true);
     setIsLoading(false);
     setEditorOpen(false);
+    setModelRespondedAwaitingDismissal(false);
   };
 
   return (
@@ -241,27 +248,22 @@ function AppContent() {
           aria-busy={isLoading}
           aria-live="polite"
         >
-          <button
-            type="button"
-            onClick={handleExitOverlay}
-            disabled={!canExitOverlay}
-            className="absolute top-4 right-4 p-2 rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-zinc-500 dark:disabled:hover:bg-transparent dark:disabled:hover:text-zinc-400"
-            aria-label={
-              canExitOverlay
-                ? "Exit and return to chat"
-                : isInBreak
-                  ? "Complete your break to continue"
-                  : "Wait for the model to finish"
-            }
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 6 6 18" />
-              <path d="m6 6 12 12" />
-            </svg>
-          </button>
+          {canExitOverlay && (
+            <button
+              type="button"
+              onClick={handleExitOverlay}
+              className="absolute top-4 right-4 p-2 rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              aria-label="Exit and return to chat"
+            >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
+            </button>
+          )}
           <div className="shrink-0 py-6 flex flex-col items-center gap-1">
             <span className="text-zinc-500 dark:text-zinc-400 text-2xl font-medium uppercase tracking-widest">
-              {editorOpen && !isLoading && !isInBreak ? "Notes" : "Wake up"}
+              Wake up
             </span>
             {breakRemainingMs != null && breakRemainingMs > 0 && !editorOpen && (
               <span className="text-zinc-500 dark:text-zinc-500 text-lg font-medium tabular-nums">
@@ -340,6 +342,7 @@ function AppContent() {
             messageHistory={messages ?? []}
             isLoading={isLoading}
             setIsLoading={setIsLoading}
+            onModelResponded={() => setModelRespondedAwaitingDismissal(true)}
             selectedNodes={selectedNodes}
             onMessageSent={handleClearSelectedNodes}
             draftInput={draftInput}

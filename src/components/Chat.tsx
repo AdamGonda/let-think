@@ -27,6 +27,8 @@ interface ChatProps {
   /** Controlled draft input (shared with overlay during loading/break) */
   draftInput?: string;
   setDraftInput?: (value: string) => void;
+  /** Called when the model finishes responding (overlay stays visible until user exits) */
+  onModelResponded?: () => void;
 }
 
 export function Chat({
@@ -38,6 +40,7 @@ export function Chat({
   onMessageSent,
   draftInput,
   setDraftInput,
+  onModelResponded,
 }: ChatProps) {
   const [internalInput, setInternalInput] = useState("");
   const input = draftInput !== undefined ? draftInput : internalInput;
@@ -98,11 +101,12 @@ export function Chat({
       });
       onInteractionComplete();
       onMessageSent?.();
+      setIsLoading(false);
+      onModelResponded?.();
     } catch (err) {
       console.error("Chat error:", err);
       // Put the input back on error
       setInput(userContent);
-    } finally {
       setIsLoading(false);
     }
   };
