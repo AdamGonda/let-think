@@ -211,7 +211,7 @@ export function SessionSidebar({
               <div key={projectId ?? "inbox"} className="flex flex-col gap-1">
                 {project ? (
                   <div
-                    className={`flex items-center gap-1 group/project rounded-lg border border-zinc-300 dark:border-zinc-600 transition-colors py-1.5 px-3 ${
+                    className={`flex items-center gap-1 group/project rounded-lg border border-zinc-300 dark:border-zinc-600 transition-colors px-3 pl-0 ${
                       dragOverProjectId === project._id ? "ring-2 ring-zinc-400 dark:ring-zinc-500 ring-inset" : ""
                     }`}
                     onDragOver={(e) => {
@@ -229,22 +229,6 @@ export function SessionSidebar({
                       setDragOverProjectId(null);
                     }}
                   >
-                    {sessions.length > 0 && (
-                      <div
-                        className="p-1 shrink-0 flex items-center justify-center w-6 text-zinc-500 pointer-events-none"
-                        aria-hidden
-                      >
-                        <svg
-                          className={`w-4 h-4 transition-transform ${isExpanded ? "" : "-rotate-90"}`}
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        >
-                          <path d="m6 9 6 6 6-6" />
-                        </svg>
-                      </div>
-                    )}
                     {editingProjectId === project._id ? (
                       <input
                         ref={projectInputRef}
@@ -288,9 +272,22 @@ export function SessionSidebar({
                         }}
                         aria-expanded={isExpanded}
                         aria-label={`${project.name}, click to ${isExpanded ? "collapse" : "expand"}`}
-                        className="flex-1 min-w-0 py-1 px-2 text-left rounded truncate font-medium text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer"
+                        className="flex-1 min-w-0 flex items-center gap-1 py-2.5 pr-2 pl-1.5 text-left rounded font-medium text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer"
                       >
-                        {project.name}
+                        {sessions.length > 0 && (
+                          <span className="shrink-0 flex items-center justify-center w-6 text-zinc-500">
+                            <svg
+                              className={`w-4 h-4 transition-transform ${isExpanded ? "" : "-rotate-90"}`}
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                            >
+                              <path d="m6 9 6 6 6-6" />
+                            </svg>
+                          </span>
+                        )}
+                        <span className="flex-1 min-w-0 truncate">{project.name}</span>
                       </button>
                     )}
                     {confirmDeleteProjectId !== project._id && (
@@ -300,7 +297,7 @@ export function SessionSidebar({
                           e.stopPropagation();
                           handleNewChat(project._id);
                         }}
-                        className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover/project:opacity-100 hover:bg-zinc-200 dark:hover:bg-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-100 h-7 shrink-0 flex items-center justify-center"
+                        className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover/project:opacity-100 group-hover/project:pointer-events-auto pointer-events-none hover:bg-zinc-200 dark:hover:bg-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-100 h-7 shrink-0 flex items-center justify-center"
                         aria-label="New chat in project"
                       >
                         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -350,7 +347,7 @@ export function SessionSidebar({
                           e.stopPropagation();
                           setConfirmDeleteProjectId(project._id);
                         }}
-                        className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover/project:opacity-100 hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 h-7 shrink-0 flex items-center justify-center"
+                        className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover/project:opacity-100 group-hover/project:pointer-events-auto pointer-events-none hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 h-7 shrink-0 flex items-center justify-center"
                         aria-label="Delete project"
                       >
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
