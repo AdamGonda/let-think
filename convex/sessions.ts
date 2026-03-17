@@ -179,6 +179,7 @@ const conceptGraphValidator = {
       id: v.string(),
       name: v.string(),
       description: v.optional(v.string()),
+      origin: v.optional(v.union(v.literal("new"), v.literal("derived"))),
     })
   ),
   edges: v.array(v.object({ source: v.string(), target: v.string() })),

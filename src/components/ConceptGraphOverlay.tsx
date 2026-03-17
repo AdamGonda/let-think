@@ -7,10 +7,16 @@ type GraphNode = {
   id: string;
   name: string;
   description?: string;
+  origin?: "new" | "derived";
 };
 
 export type ConceptGraphData = {
-  nodes: Array<{ id: string; name: string; description?: string }>;
+  nodes: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    origin?: "new" | "derived";
+  }>;
   edges: Array<{ source: string; target: string }>;
   batches?: Array<{
     id: string;
@@ -25,7 +31,7 @@ const CLUSTER_PAD = 24;
 const CLUSTER_GAP = 120;
 const BATCH_HEADER = 40;
 const BATCH_HEADER_GAP = 56;
-const VIEWPORT_PADDING = 0;
+const VIEWPORT_PADDING = 24;
 const NODE_HEIGHT_EXPANDED = 200;
 const GRID_COLS = 3;
 const MIN_CELL_WIDTH = 200;
@@ -354,7 +360,7 @@ export function ConceptGraphOverlay({
           })()}
         <div
           ref={graphViewportRef}
-          className="flex flex-1 min-h-0 min-w-0 overflow-hidden relative py-4 touch-none"
+          className="flex flex-1 min-h-0 min-w-0 overflow-hidden relative py-4 px-6 touch-none"
         >
           <div
             className="inline-block"
@@ -497,6 +503,19 @@ export function ConceptGraphOverlay({
                             strokeLinejoin="round"
                           />
                         </g>
+                      )}
+                      {node.origin && (
+                        <circle
+                          cx={x + w - 20}
+                          cy={y + 16}
+                          r={8}
+                          fill={
+                            node.origin === "new"
+                              ? "rgb(59, 130, 246)"
+                              : "rgb(34, 197, 94)"
+                          }
+                          style={{ pointerEvents: "none" }}
+                        />
                       )}
                       <g style={{ pointerEvents: "none" }}>
                         <text
