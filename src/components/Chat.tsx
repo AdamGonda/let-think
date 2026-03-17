@@ -150,7 +150,7 @@ export function Chat({
         />
         <button
           type="submit"
-          className="py-3 px-5 border-none rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-inherit font-medium cursor-pointer transition-opacity duration-150 hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:opacity-60 flex items-center justify-center gap-2 min-w-[72px]"
+          className="py-3 px-5 h-[44px] mb-[4px] border-none rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-inherit font-medium cursor-pointer transition-opacity duration-150 hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:opacity-60 flex items-center justify-center gap-2 min-w-[72px]"
           disabled={isDisabled}
         >
           {isLoading ? (
