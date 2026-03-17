@@ -44,6 +44,7 @@ export function SessionSidebar({
   const [confirmDeleteProjectId, setConfirmDeleteProjectId] = useState<Id<"projects"> | null>(null);
   const sessionInputRef = useRef<HTMLInputElement>(null);
   const projectInputRef = useRef<HTMLInputElement>(null);
+  const projectClickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Expand project containing active session by default
   useEffect(() => {
@@ -229,11 +230,9 @@ export function SessionSidebar({
                     }}
                   >
                     {sessions.length > 0 && (
-                      <button
-                        type="button"
-                        onClick={() => toggleProjectExpanded(projectId!)}
-                        className="p-1 shrink-0 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-                        aria-label={isExpanded ? "Collapse" : "Expand"}
+                      <div
+                        className="p-1 shrink-0 flex items-center justify-center w-6 text-zinc-500 pointer-events-none"
+                        aria-hidden
                       >
                         <svg
                           className={`w-4 h-4 transition-transform ${isExpanded ? "" : "-rotate-90"}`}
@@ -244,7 +243,7 @@ export function SessionSidebar({
                         >
                           <path d="m6 9 6 6 6-6" />
                         </svg>
-                      </button>
+                      </div>
                     )}
                     {editingProjectId === project._id ? (
                       <input
@@ -267,12 +266,29 @@ export function SessionSidebar({
                     ) : (
                       <button
                         type="button"
-                        onClick={() => onSelectProject(project._id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (projectClickTimeoutRef.current) {
+                            clearTimeout(projectClickTimeoutRef.current);
+                            projectClickTimeoutRef.current = null;
+                            return;
+                          }
+                          projectClickTimeoutRef.current = setTimeout(() => {
+                            projectClickTimeoutRef.current = null;
+                            toggleProjectExpanded(projectId!);
+                          }, 250);
+                        }}
                         onDoubleClick={(e) => {
                           e.stopPropagation();
+                          if (projectClickTimeoutRef.current) {
+                            clearTimeout(projectClickTimeoutRef.current);
+                            projectClickTimeoutRef.current = null;
+                          }
                           setEditingProjectId(project._id);
                         }}
-                        className="flex-1 min-w-0 py-1 px-2 text-left rounded truncate font-medium text-sm text-zinc-700 dark:text-zinc-300"
+                        aria-expanded={isExpanded}
+                        aria-label={`${project.name}, click to ${isExpanded ? "collapse" : "expand"}`}
+                        className="flex-1 min-w-0 py-1 px-2 text-left rounded truncate font-medium text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer"
                       >
                         {project.name}
                       </button>
