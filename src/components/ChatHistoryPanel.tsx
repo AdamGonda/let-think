@@ -121,11 +121,21 @@ export function ChatHistoryPanel({
                       key={key}
                       className="relative flex pb-6 last:pb-0"
                     >
-                      {/* Timeline dot */}
-                      <div
-                        className="absolute left-[7px] top-3 w-3 h-3 -translate-x-1/2 rounded-full bg-zinc-900 dark:bg-zinc-100 shrink-0 ring-4 ring-white dark:ring-[#1a1b22] z-10"
-                        aria-hidden
-                      />
+                      {/* Timeline dot - clickable when message has a matching step */}
+                      {hasStep && onNavigateToStep ? (
+                        <button
+                          type="button"
+                          onClick={() => onNavigateToStep(batchIndex)}
+                          className="absolute left-[7px] top-3 w-3 h-3 -translate-x-1/2 rounded-full bg-zinc-900 dark:bg-zinc-100 shrink-0 ring-4 ring-white dark:ring-[#1a1b22] z-10 cursor-pointer hover:scale-110 transition-transform focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-[#1a1b22]"
+                          title="Go to this step in the graph"
+                          aria-label={`Go to step ${batchIndex + 1} in graph`}
+                        />
+                      ) : (
+                        <div
+                          className="absolute left-[7px] top-3 w-3 h-3 -translate-x-1/2 rounded-full bg-zinc-900 dark:bg-zinc-100 shrink-0 ring-4 ring-white dark:ring-[#1a1b22] z-10"
+                          aria-hidden
+                        />
+                      )}
                       {/* Message bubble */}
                       <div className="flex-1 min-w-0 pl-2">
                         <div className="rounded-2xl rounded-tl-md px-4 py-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-[0.95rem] leading-relaxed shadow-sm border border-zinc-200/50 dark:border-zinc-700/50">
@@ -144,33 +154,15 @@ export function ChatHistoryPanel({
                               </div>
                             ) : null;
                           })()}
-                          {(hasStep && onNavigateToStep) || isLong ? (
+                          {isLong ? (
                             <div className="flex flex-wrap items-center justify-end gap-2 -mt-1 mb-2">
-                              {hasStep && onNavigateToStep && (
-                                <button
-                                  type="button"
-                                  onClick={() => onNavigateToStep(batchIndex)}
-                                  className="flex items-center gap-1.5 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                                  title="Go to this step in the graph"
-                                  aria-label={`Go to step ${batchIndex + 1} in graph`}
-                                >
-                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M15 3h6v6" />
-                                    <path d="M10 14 21 3" />
-                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-                                  </svg>
-                                  Go to step
-                                </button>
-                              )}
-                              {isLong && (
-                                <button
-                                  type="button"
-                                  onClick={() => toggleExpanded(key)}
-                                  className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                                >
-                                  {isExpanded ? "Show less" : "Show more"}
-                                </button>
-                              )}
+                              <button
+                                type="button"
+                                onClick={() => toggleExpanded(key)}
+                                className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                              >
+                                {isExpanded ? "Show less" : "Show more"}
+                              </button>
                             </div>
                           ) : null}
                           <p className="whitespace-pre-wrap break-words m-0">
