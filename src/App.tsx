@@ -88,12 +88,23 @@ function AppContent() {
   const updateThinkingNotes = useMutation(api.sessions.updateThinkingNotes);
   const prevSessionIdRef = useRef<Id<"sessions"> | null>(null);
   const appliedStoredForSessionRef = useRef<Id<"sessions"> | null>(null);
+  const hasEverHadSelectionRef = useRef(false);
 
   useEffect(() => {
-    if (sessions && sessions.length > 0 && !activeSessionId) {
+    if (activeSessionId) hasEverHadSelectionRef.current = true;
+  }, [activeSessionId]);
+
+  useEffect(() => {
+    if (
+      sessions &&
+      sessions.length > 0 &&
+      !activeSessionId &&
+      !hasEverHadSelectionRef.current
+    ) {
       const first = sessions[0];
       setActiveSessionId(first._id);
       if (first.projectId) setActiveProjectId(first.projectId);
+      hasEverHadSelectionRef.current = true;
     }
   }, [sessions, activeSessionId]);
 

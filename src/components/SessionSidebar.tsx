@@ -130,7 +130,8 @@ export function SessionSidebar({
       const sameProject = remaining.filter(
         (s: Doc<"sessions">) => (s.projectId ?? null) === projectId
       );
-      const nextSession = sameProject[0] ?? remaining[0] ?? null;
+      // When deleting last inbox session, don't jump to a project—leave selection empty
+      const nextSession = sameProject[0] ?? (projectId != null ? remaining[0] : null) ?? null;
       onSelectSession(nextSession?._id ?? null);
       if (nextSession?.projectId) {
         onSelectProject(nextSession.projectId);
