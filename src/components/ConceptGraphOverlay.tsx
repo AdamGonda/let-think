@@ -337,7 +337,7 @@ export function ConceptGraphOverlay({
                   >
                     <div className="flex items-center justify-between shrink-0 px-6 py-4 border-b border-zinc-200 dark:border-zinc-600">
                       <h2 id="batch-modal-title" className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                        Batch details
+                        User Input
                       </h2>
                       <button
                         type="button"
