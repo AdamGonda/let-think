@@ -1,6 +1,7 @@
 import { useRef, useEffect, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import type { RefObject } from "react";
+import { Sprout } from "lucide-react";
 
 type GraphNode = {
   id: string;
@@ -388,15 +389,11 @@ export function ConceptGraphOverlay({
                 >
                   {(() => {
                     const batch = batches[cluster.batchIndex];
-                    const summary =
-                      (cluster.role === "prev" ? "← " : "") +
-                      (batch?.promptSummary ?? `Batch ${cluster.batchIndex + 1}`) +
-                      (cluster.role === "next" ? " →" : "");
-                    const padX = 18;
-                    const boxW = Math.max(80, summary.length * 10 + padX * 2);
+                    const boxW = 44;
                     const boxH = 36;
                     const cx = cluster.x + cluster.width / 2;
                     const cy = cluster.y + 30;
+                    const iconSize = 18;
                     return (
                       <g
                         onClick={(e) => {
@@ -420,16 +417,23 @@ export function ConceptGraphOverlay({
                           strokeWidth={isCenter ? 1.5 : 1}
                           style={isDimmed ? { opacity: 0.85 } : undefined}
                         />
-                        <text
-                          x={cx}
-                          y={cy}
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                          className="fill-white text-base font-black"
-                          style={isDimmed ? { opacity: 0.9 } : undefined}
-                        >
-                          {summary}
-                        </text>
+                        <g transform={`translate(${cx - iconSize / 2}, ${cy - iconSize / 2})`}>
+                          <foreignObject width={iconSize} height={iconSize}>
+                            <div
+                              xmlns="http://www.w3.org/1999/xhtml"
+                              style={{
+                                width: iconSize,
+                                height: iconSize,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                color: "white",
+                              }}
+                            >
+                              <Sprout size={iconSize - 2} strokeWidth={2.5} />
+                            </div>
+                          </foreignObject>
+                        </g>
                       </g>
                     );
                   })()}
