@@ -5,9 +5,9 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 
 const BREAK_MS = 10 * 60 * 1000;
 
-/** Returns a random limit between 1 and 3 (used when creating after break reset). */
+/** Returns the interaction limit (used when creating after break reset). */
 function pickRandomLimit(): number {
-  return Math.floor(Math.random() * 3) + 1;
+  return 5;
 }
 
 async function requireSessionOwner(ctx: MutationCtx, sessionId: Id<"sessions">) {

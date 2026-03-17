@@ -59,7 +59,7 @@ export const create = mutation({
       createdAt: now,
     });
     // Create interaction session upfront so user sees count before first message
-    const limit = 3;
+    const limit = 5;
     await ctx.db.insert("interactionSessions", {
       sessionId: id,
       userId,
