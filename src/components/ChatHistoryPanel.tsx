@@ -16,6 +16,7 @@ interface UserMessage {
   role: "user" | "assistant";
   content: string;
   createdAt?: number;
+  topic?: string;
 }
 
 type Batch = {
@@ -133,6 +134,21 @@ export function ChatHistoryPanel({
                       {/* Message bubble */}
                       <div className="flex-1 min-w-0 pl-4">
                         <div className="rounded-2xl rounded-tl-md px-4 py-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-[0.95rem] leading-relaxed shadow-sm border border-zinc-200/50 dark:border-zinc-700/50">
+                          {(() => {
+                            const topic = msg.topic?.trim()
+                              ? msg.topic
+                              : truncateAtWord(msg.content, 60) + (msg.content.length > 60 ? "…" : "");
+                            return topic ? (
+                              <div
+                                className="rounded-t-md -mx-4 -mt-3 mb-3 px-4 py-2 bg-zinc-200/70 dark:bg-zinc-700/70 border-b border-zinc-300/80 dark:border-zinc-600/80"
+                                title={msg.topic ?? msg.content}
+                              >
+                                <p className="text-[0.7rem] font-bold text-zinc-700 dark:text-zinc-300 uppercase tracking-wider line-clamp-2">
+                                  {topic}
+                                </p>
+                              </div>
+                            ) : null;
+                          })()}
                           {(hasStep && onNavigateToStep) || isLong ? (
                             <div className="flex flex-wrap items-center justify-end gap-2 -mt-1 mb-2">
                               {hasStep && onNavigateToStep && (

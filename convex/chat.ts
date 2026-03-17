@@ -14,7 +14,7 @@ import {
 type ConceptNode = ConceptGraph["nodes"][number];
 import type { ModelMessage } from "ai";
 
-/** Generate a short-sentence summary from user prompt via AI for display between batches. */
+/** Generate a short topic/summary from user prompt via AI – fits in max 2 lines above history bubbles. */
 async function generatePromptSummary(
   userContent: string,
   model: ReturnType<typeof createGoogleGenerativeAI>
@@ -24,17 +24,17 @@ async function generatePromptSummary(
   try {
     const { text } = await generateText({
       model: model("gemini-2.0-flash"),
-      prompt: `Summarize the following in one short sentence (max 8–10 words). Reply with only that sentence, nothing else.
+      prompt: `Summarize the following in one short phrase (max 8–12 words). Reply with only that phrase, nothing else.
 
 User prompt:
 ${trimmed.slice(0, 500)}`,
     });
-    const sentence = text.trim().replace(/\n+/g, " ").slice(0, 80);
+    const sentence = text.trim().replace(/\n+/g, " ").slice(0, 100);
     if (!sentence) return "—";
     return sentence.charAt(0).toUpperCase() + sentence.slice(1);
   } catch {
     const firstSentence = trimmed.split(/[.!?]/)[0]?.trim();
-    return firstSentence?.slice(0, 80) ?? trimmed.slice(0, 80) ?? "—";
+    return firstSentence?.slice(0, 100) ?? trimmed.slice(0, 100) ?? "—";
   }
 }
 
@@ -113,11 +113,12 @@ export const send = action({
       meta: {},
     });
 
-    // 5. Persist messages and update graph
+    // 5. Persist messages and update graph (topic = short summary for history bubbles)
     await ctx.runMutation(api.sessions.addMessages, {
       sessionId,
       userContent,
       assistantContent: processedContent,
+      userTopic: promptSummary,
     });
 
     let finalGraph: ConceptGraph | null = existingGraph;

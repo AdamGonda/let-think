@@ -148,8 +148,10 @@ export const addMessages = mutation({
     sessionId: v.id("sessions"),
     userContent: v.string(),
     assistantContent: v.string(),
+    /** Short topic for the user message (e.g. AI-generated summary) */
+    userTopic: v.optional(v.string()),
   },
-  handler: async (ctx, { sessionId, userContent, assistantContent }) => {
+  handler: async (ctx, { sessionId, userContent, assistantContent, userTopic }) => {
     await requireSessionOwner(ctx, sessionId);
     const now = Date.now();
     await ctx.db.insert("messages", {
@@ -157,6 +159,7 @@ export const addMessages = mutation({
       role: "user",
       content: userContent,
       createdAt: now,
+      ...(userTopic != null && userTopic.trim() !== "" ? { topic: userTopic.trim() } : {}),
     });
     await ctx.db.insert("messages", {
       sessionId,

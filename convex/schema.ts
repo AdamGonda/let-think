@@ -60,6 +60,8 @@ export default defineSchema({
     role: v.union(v.literal("user"), v.literal("assistant")),
     content: v.string(),
     createdAt: v.number(),
+    /** Short topic/summary for user messages – shown above bubble in history (max ~2 lines) */
+    topic: v.optional(v.string()),
   }).index("by_session", ["sessionId"]),
 
   /** Tracks interaction limits per chat session (limit, used, breakEndsAt). */
