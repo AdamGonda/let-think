@@ -2,6 +2,7 @@ import { useRef, useEffect, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
 import type { RefObject } from "react";
 import { Sprout } from "lucide-react";
+import { SegmentList } from "./SegmentList";
 
 type GraphNode = {
   id: string;
@@ -31,8 +32,13 @@ const GRID_COLS = 3;
 const MIN_CELL_WIDTH = 200;
 const MIN_CELL_HEIGHT = 80;
 
+type SegmentItem =
+  | { type: "segment"; subject: string; userInputs: string[] }
+  | { type: "end" };
+
 interface ConceptGraphOverlayProps {
   graph: ConceptGraphData | null;
+  segments?: SegmentItem[];
   className?: string;
   selectedNodeIds?: Set<string>;
   onToggleNodeSelection?: (nodeId: string) => void;
@@ -43,6 +49,7 @@ interface ConceptGraphOverlayProps {
 
 export function ConceptGraphOverlay({
   graph,
+  segments = [],
   className,
   selectedNodeIds = new Set(),
   onToggleNodeSelection,
@@ -601,6 +608,7 @@ export function ConceptGraphOverlay({
         )}
         </>
       )}
+      <SegmentList segments={segments} />
     </div>
   );
 }

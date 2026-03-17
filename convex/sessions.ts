@@ -143,13 +143,23 @@ export const getMessages = query({
   },
 });
 
+const segmentItemValidator = v.union(
+  v.object({
+    type: v.literal("segment"),
+    subject: v.string(),
+    userInputs: v.array(v.string()),
+  }),
+  v.object({ type: v.literal("end") })
+);
+
 export const addMessages = mutation({
   args: {
     sessionId: v.id("sessions"),
     userContent: v.string(),
     assistantContent: v.string(),
+    subject: v.optional(v.string()),
   },
-  handler: async (ctx, { sessionId, userContent, assistantContent }) => {
+  handler: async (ctx, { sessionId, userContent, assistantContent, subject }) => {
     await requireSessionOwner(ctx, sessionId);
     const now = Date.now();
     await ctx.db.insert("messages", {
@@ -157,6 +167,7 @@ export const addMessages = mutation({
       role: "user",
       content: userContent,
       createdAt: now,
+      ...(subject != null ? { subject } : {}),
     });
     await ctx.db.insert("messages", {
       sessionId,
@@ -213,6 +224,44 @@ export const getConceptGraph = query({
     const session = await ctx.db.get(sessionId);
     if (!session || session.userId !== userId) return null;
     return session.conceptGraph ?? null;
+  },
+});
+
+export const getLastUserMessage = query({
+  args: { sessionId: v.id("sessions") },
+  handler: async (ctx, { sessionId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    const session = await ctx.db.get(sessionId);
+    if (!session || session.userId !== userId) return null;
+    const messages = await ctx.db
+      .query("messages")
+      .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+      .order("desc")
+      .collect();
+    return messages.find((m) => m.role === "user") ?? null;
+  },
+});
+
+export const getSegments = query({
+  args: { sessionId: v.id("sessions") },
+  handler: async (ctx, { sessionId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    const session = await ctx.db.get(sessionId);
+    if (!session || session.userId !== userId) return null;
+    return session.segments ?? [];
+  },
+});
+
+export const updateSegments = mutation({
+  args: {
+    sessionId: v.id("sessions"),
+    segments: v.array(segmentItemValidator),
+  },
+  handler: async (ctx, { sessionId, segments }) => {
+    await requireSessionOwner(ctx, sessionId);
+    await ctx.db.patch(sessionId, { segments });
   },
 });
 

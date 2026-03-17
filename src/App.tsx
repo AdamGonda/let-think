@@ -71,6 +71,10 @@ function AppContent() {
     api.sessions.getConceptGraph,
     activeSessionId ? { sessionId: activeSessionId } : "skip",
   );
+  const segments = useQuery(
+    api.sessions.getSegments,
+    activeSessionId ? { sessionId: activeSessionId } : "skip",
+  );
   const storedDraft = useQuery(
     api.sessions.getDraft,
     activeSessionId ? { sessionId: activeSessionId } : "skip",
@@ -323,6 +327,7 @@ function AppContent() {
               <ConceptGraphOverlay
                 key={activeSessionId}
                 graph={conceptGraph ?? null}
+                segments={segments ?? []}
                 selectedNodeIds={selectedNodeIds}
                 onToggleNodeSelection={handleToggleNodeSelection}
                 modalContainerRef={mainContentRef}

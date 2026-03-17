@@ -53,6 +53,19 @@ export default defineSchema({
         ),
       })
     ),
+    /** Topic segments – thought pattern changes during a session */
+    segments: v.optional(
+      v.array(
+        v.union(
+          v.object({
+            type: v.literal("segment"),
+            subject: v.string(),
+            userInputs: v.array(v.string()),
+          }),
+          v.object({ type: v.literal("end") })
+        )
+      )
+    ),
   }).index("by_created", ["createdAt"]).index("by_project", ["projectId", "createdAt"]).index("by_user", ["userId", "createdAt"]),
 
   messages: defineTable({
@@ -60,6 +73,8 @@ export default defineSchema({
     role: v.union(v.literal("user"), v.literal("assistant")),
     content: v.string(),
     createdAt: v.number(),
+    /** LLM-derived topic for user messages only */
+    subject: v.optional(v.string()),
   }).index("by_session", ["sessionId"]),
 
   /** Tracks interaction limits per chat session (limit, used, breakEndsAt). */

@@ -3,8 +3,9 @@
 import { action } from "./_generated/server";
 import { api } from "./_generated/api";
 import { v } from "convex/values";
-import { generateText } from "ai";
+import { generateText, generateObject } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
+import { z } from "zod";
 import {
   preProcess,
   postProcess,
@@ -13,6 +14,44 @@ import {
 } from "./chatPipeline";
 type ConceptNode = ConceptGraph["nodes"][number];
 import type { ModelMessage } from "ai";
+
+const SubjectResponseSchema = z.object({
+  subject: z
+    .string()
+    .min(1)
+    .max(80)
+    .describe("The main topic of the user message in 2–5 words"),
+});
+
+type SubjectResponse = z.infer<typeof SubjectResponseSchema>;
+
+/** Generate a topic/subject from user message via AI for segment tracking. */
+async function generateSubject(
+  userContent: string,
+  model: ReturnType<typeof createGoogleGenerativeAI>
+): Promise<string> {
+  const trimmed = userContent.trim();
+  if (!trimmed) return "—";
+  try {
+    const { object } = await generateObject({
+      model: model("gemini-2.0-flash"),
+      schema: SubjectResponseSchema,
+      schemaName: "SubjectResponse",
+      schemaDescription: "The main topic of the user message in 2–5 words",
+      prompt: `Extract the main topic/subject of the following message in 2–5 words.
+You MUST respond with a JSON object: { "subject": "your topic here" }
+
+User message:
+${trimmed.slice(0, 500)}`,
+    });
+    const subject = (object as SubjectResponse).subject?.trim();
+    if (!subject) return "—";
+    return subject.charAt(0).toUpperCase() + subject.slice(1);
+  } catch {
+    const firstSentence = trimmed.split(/[.!?]/)[0]?.trim();
+    return firstSentence?.slice(0, 80) ?? trimmed.slice(0, 80) ?? "—";
+  }
+}
 
 /** Generate a short-sentence summary from user prompt via AI for display between batches. */
 async function generatePromptSummary(
@@ -94,14 +133,15 @@ export const send = action({
       meta: {},
     });
 
-    // 2. Call LLM (main response) and generate single-word summary in parallel
-    const [result, promptSummary] = await Promise.all([
+    // 2. Call LLM (main response), prompt summary, and subject in parallel
+    const [result, promptSummary, currentSubject] = await Promise.all([
       generateText({
         model: google("gemini-3.1-pro-preview"),
         system: "You are a helpful assistant.",
         messages: modelMessages,
       }),
       generatePromptSummary(userContent, google),
+      generateSubject(userContent, google),
     ]);
 
     // 3. Extract concept graph from raw response (before stripping)
@@ -113,12 +153,69 @@ export const send = action({
       meta: {},
     });
 
-    // 5. Persist messages and update graph
-    await ctx.runMutation(api.sessions.addMessages, {
-      sessionId,
-      userContent,
-      assistantContent: processedContent,
-    });
+    // 5. Compute segments from subject comparison
+    const [lastUserMsg, existingSegments] = await Promise.all([
+      ctx.runQuery(api.sessions.getLastUserMessage, { sessionId }),
+      ctx.runQuery(api.sessions.getSegments, { sessionId }),
+    ]);
+    const lastSubject = lastUserMsg?.subject ?? null;
+    const segments = existingSegments ?? [];
+
+    let newSegments: Array<
+      | { type: "segment"; subject: string; userInputs: string[] }
+      | { type: "end" }
+    >;
+    if (lastSubject == null) {
+      newSegments = [
+        { type: "segment", subject: currentSubject, userInputs: [userContent] },
+      ];
+    } else if (lastSubject === currentSubject) {
+      const lastSegmentIdx = segments.findLastIndex(
+        (s): s is { type: "segment"; subject: string; userInputs: string[] } =>
+          s.type === "segment"
+      );
+      if (lastSegmentIdx >= 0) {
+        const lastSegment = segments[lastSegmentIdx] as {
+          type: "segment";
+          subject: string;
+          userInputs: string[];
+        };
+        newSegments = [
+          ...segments.slice(0, lastSegmentIdx),
+          {
+            type: "segment" as const,
+            subject: lastSegment.subject,
+            userInputs: [...lastSegment.userInputs, userContent],
+          },
+          ...segments.slice(lastSegmentIdx + 1),
+        ];
+      } else {
+        newSegments = [
+          ...segments,
+          { type: "segment", subject: currentSubject, userInputs: [userContent] },
+        ];
+      }
+    } else {
+      newSegments = [
+        ...segments,
+        { type: "end" as const },
+        { type: "segment", subject: currentSubject, userInputs: [userContent] },
+      ];
+    }
+
+    // 6. Persist messages (with subject) and update segments
+    await Promise.all([
+      ctx.runMutation(api.sessions.addMessages, {
+        sessionId,
+        userContent,
+        assistantContent: processedContent,
+        subject: currentSubject,
+      }),
+      ctx.runMutation(api.sessions.updateSegments, {
+        sessionId,
+        segments: newSegments,
+      }),
+    ]);
 
     let finalGraph: ConceptGraph | null = existingGraph;
     if (extractedGraph && extractedGraph.nodes.length > 0) {
