@@ -141,7 +141,7 @@ export function Chat({
         <textarea
           ref={textareaRef}
           rows={1}
-          className="flex-1 min-h-[48px] max-h-[240px] py-3 px-4 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-[#16171d] text-zinc-950 dark:text-zinc-100 font-inherit text-[0.95rem] placeholder:text-zinc-500 dark:placeholder:text-zinc-500 placeholder:opacity-70 focus:outline-none focus:border-violet-500 dark:focus:border-violet-400 disabled:opacity-60 disabled:cursor-not-allowed resize-none overflow-y-auto"
+          className="flex-1 min-h-[48px] max-h-[240px] py-3 px-4 border border-zinc-200 dark:border-zinc-700 rounded-lg bg-white dark:bg-[#16171d] text-zinc-950 dark:text-zinc-100 font-inherit text-[0.95rem] placeholder:text-zinc-500 dark:placeholder:text-zinc-500 placeholder:opacity-70 focus:outline-none focus:border-zinc-900 dark:focus:border-zinc-400 disabled:opacity-60 disabled:cursor-not-allowed resize-none overflow-y-auto"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -150,7 +150,7 @@ export function Chat({
         />
         <button
           type="submit"
-          className="py-3 px-5 border-none rounded-lg bg-violet-600 dark:bg-violet-500 text-white font-inherit font-medium cursor-pointer transition-opacity duration-150 hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:opacity-60 flex items-center justify-center gap-2 min-w-[72px]"
+          className="py-3 px-5 border-none rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-inherit font-medium cursor-pointer transition-opacity duration-150 hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:opacity-60 flex items-center justify-center gap-2 min-w-[72px]"
           disabled={isDisabled}
         >
           {isLoading ? (

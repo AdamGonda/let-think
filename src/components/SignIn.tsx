@@ -4,9 +4,9 @@ export function SignIn() {
   const { signIn } = useAuthActions();
 
   return (
-    <div className="flex h-screen w-screen items-center justify-center bg-white dark:bg-[#16171d]">
-      <div className="flex flex-col items-center gap-6 rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-[#1a1b22] p-10 shadow-lg">
-        <h1 className="text-2xl font-semibold text-zinc-900 dark:text-zinc-100">
+    <div className="flex h-screen w-screen items-center justify-center bg-white dark:bg-[#16171d] sign-in-bg">
+      <div className="flex flex-col items-center gap-6 rounded-2xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-[#1a1b22] p-10 shadow-sm max-w-md w-full mx-4">
+        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 text-center">
           Sign in to Think
         </h1>
         <p className="text-zinc-600 dark:text-zinc-400 text-center max-w-xs">
@@ -15,7 +15,7 @@ export function SignIn() {
         <button
           type="button"
           onClick={() => void signIn("google")}
-          className="flex items-center gap-3 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-600 px-6 py-3 text-zinc-900 dark:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors font-medium"
+          className="flex items-center justify-center gap-3 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-6 py-3 font-medium hover:opacity-90 transition-opacity w-full"
         >
           <svg className="w-5 h-5" viewBox="0 0 24 24">
             <path

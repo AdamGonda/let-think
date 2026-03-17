@@ -127,7 +127,7 @@ export function UserCard({ onToggleTheme, isDark }: UserCardProps) {
   return (
     <div className="flex items-center gap-3 w-full min-w-0 py-2">
       <div
-        className="shrink-0 w-10 h-10 rounded-full bg-zinc-300 dark:bg-zinc-700 flex items-center justify-center text-white text-sm font-medium overflow-hidden"
+        className="shrink-0 w-10 h-10 rounded-full bg-zinc-700 dark:bg-zinc-600 flex items-center justify-center text-white text-sm font-medium overflow-hidden"
         aria-hidden
       >
         {showImage ? (

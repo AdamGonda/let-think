@@ -23,8 +23,8 @@ function App() {
   return (
     <>
       <AuthLoading>
-        <div className="flex h-screen w-screen items-center justify-center bg-white dark:bg-[#16171d]">
-          <span className="text-zinc-600 dark:text-zinc-400">Loading…</span>
+        <div className="flex h-screen w-screen items-center justify-center bg-[#202024]">
+          <span className="text-zinc-400">Loading…</span>
         </div>
       </AuthLoading>
       <Unauthenticated>
@@ -244,7 +244,7 @@ function AppContent() {
     <div className="flex h-screen bg-white dark:bg-[#16171d]">
       {showOverlay && (
         <div
-          className="fixed inset-0 z-[9999] flex h-screen w-screen flex-col bg-white dark:bg-[#1e1e1e]"
+          className="fixed inset-0 z-[9999] flex h-screen w-screen flex-col bg-[#1e2025]"
           aria-busy={isLoading}
           aria-live="polite"
         >
@@ -252,7 +252,7 @@ function AppContent() {
             <button
               type="button"
               onClick={handleExitOverlay}
-              className="absolute top-4 right-4 z-10 p-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer"
+              className="absolute top-4 right-4 z-10 p-2 rounded-lg border border-zinc-600 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700 transition-colors cursor-pointer"
               aria-label="Summarize and return to chat"
             >
               <svg width="20" height="20" viewBox="0 0 24 24">
@@ -261,11 +261,11 @@ function AppContent() {
             </button>
           )}
           <div className="shrink-0 py-8 flex flex-col items-center gap-1">
-            <span className="text-zinc-500 dark:text-zinc-400 text-2xl font-medium uppercase tracking-[0.25em]">
+            <span className="text-zinc-400 text-2xl font-medium uppercase tracking-[0.25em]">
               Wake up
             </span>
             {breakRemainingMs != null && breakRemainingMs > 0 && !editorOpen && (
-              <span className="text-zinc-500 dark:text-zinc-500 text-lg font-medium tabular-nums">
+              <span className="text-zinc-400 text-lg font-medium tabular-nums">
                 {formatBreakCountdown(breakRemainingMs)}
               </span>
             )}
@@ -278,7 +278,7 @@ function AppContent() {
                   onChange={(v) => setNotes(v ?? "")}
                   placeholder="Take notes…"
                   variant="focused"
-                  dark={isDark}
+                  dark={true}
                   autoFocus
                   autoFocusEnd
                 />
@@ -305,7 +305,7 @@ function AppContent() {
             <button
               type="button"
               onClick={() => setEditorOpen(true)}
-              className="absolute top-4 right-4 z-10 p-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400 hover:text-zinc-800 dark:hover:text-zinc-200 hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer"
+              className="absolute top-4 right-4 z-10 p-2 rounded-lg border border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
               title="Open notes"
               aria-label="Open notes"
             >
@@ -327,9 +327,10 @@ function AppContent() {
                 onToggleNodeSelection={handleToggleNodeSelection}
                 modalContainerRef={mainContentRef}
                 isLoading={isLoading}
+                isDark={isDark}
               />
             ) : (
-              <div className="flex flex-1 items-center justify-center text-zinc-600 dark:text-zinc-400 text-base py-6 px-6">
+              <div className="flex flex-1 items-center justify-center text-zinc-600 dark:text-zinc-400 text-base py-6 px-6 text-center">
                 Select a chat or create a new one to get started
               </div>
             )}

@@ -38,6 +38,7 @@ interface ConceptGraphOverlayProps {
   onToggleNodeSelection?: (nodeId: string) => void;
   modalContainerRef?: RefObject<HTMLDivElement | null>;
   isLoading?: boolean;
+  isDark?: boolean;
 }
 
 export function ConceptGraphOverlay({
@@ -47,6 +48,7 @@ export function ConceptGraphOverlay({
   onToggleNodeSelection,
   modalContainerRef,
   isLoading: _isLoading = false,
+  isDark = false,
 }: ConceptGraphOverlayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphViewportRef = useRef<HTMLDivElement>(null);
@@ -412,22 +414,21 @@ export function ConceptGraphOverlay({
                           height={boxH}
                           rx={4}
                           ry={4}
-                          fill={isCenter ? "rgba(21,128,61,0.85)" : "rgba(21,128,61,0.75)"}
-                          stroke={isCenter ? "rgba(21,128,61,1)" : "rgba(21,128,61,0.9)"}
+                          fill={isCenter ? (isDark ? "rgba(161,161,170,0.9)" : "rgba(24,24,27,0.9)") : (isDark ? "rgba(161,161,170,0.75)" : "rgba(24,24,27,0.75)")}
+                          stroke={isCenter ? (isDark ? "rgba(161,161,170,1)" : "rgba(24,24,27,1)") : (isDark ? "rgba(161,161,170,0.9)" : "rgba(24,24,27,0.9)")}
                           strokeWidth={isCenter ? 1.5 : 1}
                           style={isDimmed ? { opacity: 0.85 } : undefined}
                         />
                         <g transform={`translate(${cx - iconSize / 2}, ${cy - iconSize / 2})`}>
                           <foreignObject width={iconSize} height={iconSize}>
                             <div
-                              xmlns="http://www.w3.org/1999/xhtml"
                               style={{
                                 width: iconSize,
                                 height: iconSize,
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
-                                color: "white",
+                                color: isDark ? "rgb(24,24,27)" : "white",
                               }}
                             >
                               <Sprout size={iconSize - 2} strokeWidth={2.5} />
@@ -461,9 +462,9 @@ export function ConceptGraphOverlay({
                           rx={6}
                           ry={6}
                           fill="none"
-                          stroke="rgba(139,92,246,0.9)"
+                          stroke={isDark ? "rgba(250,250,250,0.9)" : "rgba(24,24,27,0.9)"}
                           strokeWidth={4}
-                          style={{ filter: "drop-shadow(0 0 8px rgba(139,92,246,0.6))" }}
+                          style={{ filter: isDark ? "drop-shadow(0 0 8px rgba(250,250,250,0.4))" : "drop-shadow(0 0 8px rgba(24,24,27,0.5))" }}
                         />
                       )}
                       <rect
@@ -475,23 +476,23 @@ export function ConceptGraphOverlay({
                         ry={4}
                         fill={
                           isSelected
-                            ? "rgba(139,92,246,0.6)"
+                            ? (isDark ? "rgba(63,63,70,0.95)" : "rgba(24,24,27,0.95)")
                             : isCenter
                               ? "rgba(255,255,255,0.98)"
                               : "rgba(255,255,255,0.85)"
                         }
-                        stroke={isSelected ? "rgba(139,92,246,1)" : "none"}
+                        stroke={isSelected ? (isDark ? "rgba(161,161,170,1)" : "rgba(24,24,27,1)") : "none"}
                         strokeWidth={isSelected ? 4 : 0}
                         className={isSelected ? "" : "dark:fill-zinc-800"}
                         style={isDimmed && !isSelected ? { opacity: 0.85 } : undefined}
                       />
                       {isSelected && (
                         <g transform={`translate(${x + w - 28}, ${y + 12})`}>
-                          <circle cx={14} cy={10} r={12} fill="rgba(139,92,246,1)" />
+                          <circle cx={14} cy={10} r={12} fill={isDark ? "rgba(250,250,250,1)" : "rgba(24,24,27,1)"} />
                           <path
                             d="M8 10l4 4 8-8"
                             fill="none"
-                            stroke="white"
+                            stroke={isDark ? "rgb(24,24,27)" : "white"}
                             strokeWidth={2.5}
                             strokeLinecap="round"
                             strokeLinejoin="round"
@@ -574,7 +575,7 @@ export function ConceptGraphOverlay({
               aria-label="Previous batch"
               className={`py-1.5 px-3 rounded-md text-sm font-medium transition-colors select-none ${
                 canGoPrev
-                  ? "text-violet-600 dark:text-violet-400 hover:bg-violet-100 dark:hover:bg-violet-900/50 cursor-pointer active:scale-95"
+                  ? "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer active:scale-95"
                   : "text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-50"
               }`}
             >
@@ -590,7 +591,7 @@ export function ConceptGraphOverlay({
               aria-label="Next batch"
               className={`py-1.5 px-3 rounded-md text-sm font-medium transition-colors select-none ${
                 canGoNext
-                  ? "text-violet-600 dark:text-violet-400 hover:bg-violet-100 dark:hover:bg-violet-900/50 cursor-pointer active:scale-95"
+                  ? "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer active:scale-95"
                   : "text-zinc-400 dark:text-zinc-500 cursor-not-allowed opacity-50"
               }`}
             >

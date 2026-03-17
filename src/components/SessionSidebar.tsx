@@ -179,7 +179,7 @@ export function SessionSidebar({
           type="button"
           onClick={() => handleNewChat()}
           aria-label="New chat"
-          className="flex items-center gap-2 rounded-lg text-zinc-600 h-[40px] dark:text-zinc-400 hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer shrink-0 w-full py-2.5 px-3"
+          className="flex items-center gap-2 rounded-lg text-zinc-600 h-[40px] dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer shrink-0 w-full py-2.5 px-3"
         >
           <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="M12 5v14" />
@@ -191,7 +191,7 @@ export function SessionSidebar({
           type="button"
           onClick={handleNewProject}
           aria-label="New project"
-          className="flex items-center gap-2 rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg-violet-500/10 dark:hover:bg-violet-400/15 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer shrink-0 w-full py-2.5 px-3"
+          className="flex items-center gap-2 rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer shrink-0 w-full py-2.5 px-3"
         >
           <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
             <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
@@ -220,9 +220,9 @@ export function SessionSidebar({
                   <div
                     className={`flex items-center gap-1 group/project rounded-lg border transition-colors py-1.5 px-3 ${
                       activeProjectId === project._id
-                        ? "bg-violet-500/20 dark:bg-violet-400/25 border-violet-500/50 dark:border-violet-400/50 hover:bg-violet-500/30 dark:hover:bg-violet-400/35"
+                        ? "bg-zinc-100 dark:bg-zinc-700/50 border-zinc-300 dark:border-zinc-600 hover:bg-zinc-200 dark:hover:bg-zinc-700"
                         : "border-transparent hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
-                    } ${dragOverProjectId === project._id ? "ring-2 ring-violet-500 dark:ring-violet-400 ring-inset" : ""}`}
+                    } ${dragOverProjectId === project._id ? "ring-2 ring-zinc-400 dark:ring-zinc-500 ring-inset" : ""}`}
                     onDragOver={(e) => {
                       e.preventDefault();
                       e.dataTransfer.dropEffect = "move";
@@ -261,7 +261,7 @@ export function SessionSidebar({
                         ref={projectInputRef}
                         type="text"
                         defaultValue={project.name}
-                        className="flex-1 min-w-0 py-1 px-2 text-left rounded text-sm font-medium bg-white dark:bg-zinc-800 border border-violet-500 dark:border-violet-400 text-zinc-900 dark:text-zinc-100 outline-none"
+                        className="flex-1 min-w-0 py-1 px-2 text-left rounded text-sm font-medium bg-white dark:bg-zinc-800 border border-zinc-400 dark:border-zinc-500 text-zinc-900 dark:text-zinc-100 outline-none"
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             handleRenameProject(project._id, (e.target as HTMLInputElement).value);
@@ -284,7 +284,7 @@ export function SessionSidebar({
                         }}
                         className={`flex-1 min-w-0 py-1 px-2 text-left rounded truncate font-medium text-sm ${
                           activeProjectId === project._id
-                            ? "text-violet-700 dark:text-violet-300"
+                            ? "text-zinc-900 dark:text-zinc-100"
                             : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700"
                         }`}
                       >
@@ -298,7 +298,7 @@ export function SessionSidebar({
                           e.stopPropagation();
                           handleNewChat(project._id);
                         }}
-                        className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover/project:opacity-100 hover:bg-violet-500/20 dark:hover:bg-violet-400/20 hover:text-violet-700 dark:hover:text-violet-300 h-7 shrink-0 flex items-center justify-center"
+                        className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover/project:opacity-100 hover:bg-zinc-200 dark:hover:bg-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-100 h-7 shrink-0 flex items-center justify-center"
                         aria-label="New chat in project"
                       >
                         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -365,9 +365,9 @@ export function SessionSidebar({
                   <div
                     className={`flex items-center gap-1 rounded-lg border transition-colors py-1.5 px-3 ${
                       isInboxSelected
-                        ? "bg-violet-500/20 dark:bg-violet-400/25 border-violet-500/50 dark:border-violet-400/50 hover:bg-violet-500/30 dark:hover:bg-violet-400/35"
+                        ? "bg-zinc-100 dark:bg-zinc-700/50 border-zinc-300 dark:border-zinc-600 hover:bg-zinc-200 dark:hover:bg-zinc-700"
                         : "border-transparent"
-                    } ${dragOverProjectId === "inbox" ? "ring-2 ring-violet-500 dark:ring-violet-400 ring-inset" : ""}`}
+                    } ${dragOverProjectId === "inbox" ? "ring-2 ring-zinc-400 dark:ring-zinc-500 ring-inset" : ""}`}
                     onDragOver={(e) => {
                       e.preventDefault();
                       e.dataTransfer.dropEffect = "move";
@@ -388,7 +388,7 @@ export function SessionSidebar({
                       onClick={() => onSelectProject(null)}
                       className={`flex-1 min-w-0 py-1 px-2 text-left rounded text-sm font-medium truncate ${
                         isInboxSelected
-                          ? "text-violet-700 dark:text-violet-300"
+                          ? "text-zinc-900 dark:text-zinc-100"
                           : "text-zinc-500 dark:text-zinc-400"
                       }`}
                     >
@@ -419,7 +419,7 @@ export function SessionSidebar({
                       }}
                       className={`group flex items-center gap-1 py-1.5 px-3 ml-4 rounded-lg border transition-colors cursor-grab active:cursor-grabbing select-none ${
                         activeSessionId === session._id
-                          ? "bg-violet-500/20 dark:bg-violet-400/25 border-violet-500/50 dark:border-violet-400/50 hover:bg-violet-500/30 dark:hover:bg-violet-400/35"
+                          ? "bg-zinc-100 dark:bg-zinc-700/50 border-zinc-300 dark:border-zinc-600 hover:bg-zinc-200 dark:hover:bg-zinc-700"
                           : "border-transparent hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
                       }`}
                     >
@@ -428,7 +428,7 @@ export function SessionSidebar({
                           ref={sessionInputRef}
                           type="text"
                           defaultValue={session.title}
-                          className="flex-1 min-w-0 py-1 px-2 text-left rounded text-sm bg-white dark:bg-zinc-800 border border-violet-500 dark:border-violet-400 text-zinc-900 dark:text-zinc-100 outline-none"
+                          className="flex-1 min-w-0 py-1 px-2 text-left rounded text-sm bg-white dark:bg-zinc-800 border border-zinc-400 dark:border-zinc-500 text-zinc-900 dark:text-zinc-100 outline-none"
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
                               handleRename(session._id, (e.target as HTMLInputElement).value);
@@ -446,7 +446,7 @@ export function SessionSidebar({
                         <div
                           className={`flex-1 min-w-0 text-left truncate pointer-events-none text-sm py-0.5 ${
                             activeSessionId === session._id
-                              ? "text-violet-700 dark:text-violet-300"
+                              ? "text-zinc-900 dark:text-zinc-100"
                               : "text-zinc-600 dark:text-zinc-400"
                           }`}
                         >

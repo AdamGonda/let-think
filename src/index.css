@@ -3,6 +3,42 @@
 /* Class-based dark mode for manual toggle; fallback to system preference when no class */
 @custom-variant dark (&:where(.dark, .dark *));
 
+/* LET THINK design tokens - monochrome palette */
+:root {
+  --color-bg: #ffffff;
+  --color-surface: #fafafa;
+  --color-border: #e4e4e7;
+  --color-text: #18181b;
+  --color-text-muted: #71717a;
+  --color-primary: #18181b;
+  --font-sans: "DM Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+.dark {
+  --color-bg: #16171d;
+  --color-surface: #1a1b22;
+  --color-border: #3f3f46;
+  --color-text: #fafafa;
+  --color-text-muted: #a1a1aa;
+  --color-primary: #fafafa;
+}
+
+.font-brand {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.25em;
+}
+
+/* Subtle dot pattern for Sign In / landing backgrounds */
+.sign-in-bg {
+  background-image: radial-gradient(circle at 1px 1px, rgb(212 212 212 / 0.4) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+.dark .sign-in-bg {
+  background-image: radial-gradient(circle at 1px 1px, rgb(63 63 70 / 0.5) 1px, transparent 0);
+}
+
 @keyframes modal-in {
   from {
     opacity: 0;
@@ -26,14 +62,16 @@
 
 body {
   margin: 0;
+  font-family: var(--font-sans);
   font-size: 18px;
-  line-height: 145%;
-  letter-spacing: 0.18px;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  @apply text-zinc-600 bg-white dark:text-zinc-400 dark:bg-[#16171d];
+  color: var(--color-text-muted);
+  background-color: var(--color-bg);
 }
 
 @media (max-width: 1024px) {
@@ -82,9 +120,9 @@ body {
 .md-editor-focused:not(.md-editor-dark) .w-md-editor-text-input {
   color: #333 !important;
 }
-/* Dark theme for focused editor */
+/* Dark theme for focused editor - matches overlay bg */
 .md-editor-focused.md-editor-dark .w-md-editor {
-  background-color: #1e1e1e !important;
+  background-color: transparent !important;
 }
 .md-editor-focused.md-editor-dark .w-md-editor-text,
 .md-editor-focused.md-editor-dark .w-md-editor-text-input {
