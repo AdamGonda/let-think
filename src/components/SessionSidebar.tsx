@@ -400,12 +400,24 @@ export function SessionSidebar({
                   sessions.map((session: Doc<"sessions">) => (
                     <div
                       key={session._id}
-                      draggable
+                      draggable={editingSessionId !== session._id}
                       onDragStart={(e) => {
                         e.dataTransfer.setData("text/plain", session._id);
                         e.dataTransfer.effectAllowed = "move";
                       }}
-                      className={`group flex items-center gap-1 py-1.5 px-3 ml-4 rounded-lg border transition-colors cursor-grab active:cursor-grabbing ${
+                      onClick={() => {
+                        if (editingSessionId !== session._id) {
+                          onSelectSession(session._id);
+                          if (session.projectId) onSelectProject(session.projectId);
+                        }
+                      }}
+                      onDoubleClick={(e) => {
+                        if (editingSessionId !== session._id) {
+                          e.stopPropagation();
+                          setEditingSessionId(session._id);
+                        }
+                      }}
+                      className={`group flex items-center gap-1 py-1.5 px-3 ml-4 rounded-lg border transition-colors cursor-grab active:cursor-grabbing select-none ${
                         activeSessionId === session._id
                           ? "bg-violet-500/20 dark:bg-violet-400/25 border-violet-500/50 dark:border-violet-400/50 hover:bg-violet-500/30 dark:hover:bg-violet-400/35"
                           : "border-transparent hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
@@ -428,26 +440,18 @@ export function SessionSidebar({
                             handleRename(session._id, e.target.value);
                           }}
                           onClick={(e) => e.stopPropagation()}
+                          onMouseDown={(e) => e.stopPropagation()}
                         />
                       ) : (
-                        <button
-                          type="button"
-                          className={`flex-1 min-w-0 text-left truncate font-inherit cursor-pointer text-sm ${
+                        <div
+                          className={`flex-1 min-w-0 text-left truncate pointer-events-none text-sm py-0.5 ${
                             activeSessionId === session._id
                               ? "text-violet-700 dark:text-violet-300"
                               : "text-zinc-600 dark:text-zinc-400"
                           }`}
-                          onClick={() => {
-                            onSelectSession(session._id);
-                            if (session.projectId) onSelectProject(session.projectId);
-                          }}
-                          onDoubleClick={(e) => {
-                            e.stopPropagation();
-                            setEditingSessionId(session._id);
-                          }}
                         >
                           {session.title}
-                        </button>
+                        </div>
                       )}
                       {confirmDeleteSessionId === session._id ? (
                         <div className="flex items-center gap-0.5 h-7 shrink-0">
@@ -490,7 +494,7 @@ export function SessionSidebar({
                             e.stopPropagation();
                             setConfirmDeleteSessionId(session._id);
                           }}
-                          className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover:opacity-100 hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 h-7 shrink-0 flex items-center justify-center"
+                          className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto pointer-events-none hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 h-7 shrink-0 flex items-center justify-center"
                           aria-label="Delete session"
                         >
                           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

@@ -23,6 +23,7 @@ export function UserCard({ onToggleTheme, isDark }: UserCardProps) {
   const { signOut } = useAuthActions();
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
+  const [imageError, setImageError] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -52,10 +53,17 @@ export function UserCard({ onToggleTheme, isDark }: UserCardProps) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuOpen]);
 
+  // Reset image error state when user's image URL changes
+  const userImage = user?.image;
+  useEffect(() => {
+    setImageError(false);
+  }, [userImage]);
+
   if (!user) return null;
 
   const initials = getInitials(user.name ?? user.email ?? undefined);
   const displayName = user.name ?? user.email ?? "User";
+  const showImage = user.image && !imageError;
 
   const menuContent = menuOpen && (
     <div
@@ -122,11 +130,13 @@ export function UserCard({ onToggleTheme, isDark }: UserCardProps) {
         className="shrink-0 w-10 h-10 rounded-full bg-zinc-300 dark:bg-zinc-700 flex items-center justify-center text-white text-sm font-medium overflow-hidden"
         aria-hidden
       >
-        {user.image ? (
+        {showImage ? (
           <img
-            src={user.image}
+            src={user.image!}
             alt=""
             className="w-full h-full object-cover"
+            referrerPolicy="no-referrer"
+            onError={() => setImageError(true)}
           />
         ) : (
           initials
