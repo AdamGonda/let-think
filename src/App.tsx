@@ -224,7 +224,10 @@ function AppContent() {
     if (!overlayActive) setOverlayDismissed(false);
   }, [overlayActive]);
 
+  const canExitOverlay = !isLoading && !isInBreak;
+
   const handleExitOverlay = () => {
+    if (!canExitOverlay) return;
     setOverlayDismissed(true);
     setIsLoading(false);
     setEditorOpen(false);
@@ -241,8 +244,15 @@ function AppContent() {
           <button
             type="button"
             onClick={handleExitOverlay}
-            className="absolute top-4 right-4 p-2 rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
-            aria-label="Exit and return to chat"
+            disabled={!canExitOverlay}
+            className="absolute top-4 right-4 p-2 rounded-lg text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-zinc-500 dark:disabled:hover:bg-transparent dark:disabled:hover:text-zinc-400"
+            aria-label={
+              canExitOverlay
+                ? "Exit and return to chat"
+                : isInBreak
+                  ? "Complete your break to continue"
+                  : "Wait for the model to finish"
+            }
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M18 6 6 18" />
