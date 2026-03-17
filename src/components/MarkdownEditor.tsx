@@ -14,6 +14,8 @@ interface MarkdownEditorProps {
   variant?: "default" | "focused";
   /** Focus the editor on mount (for overlay so Chat doesn't steal input) */
   autoFocus?: boolean;
+  /** Place cursor at end of text when focusing (e.g. when loading so user can continue typing) */
+  autoFocusEnd?: boolean;
 }
 
 export function MarkdownEditor({
@@ -25,6 +27,7 @@ export function MarkdownEditor({
   dark = false,
   variant = "default",
   autoFocus = false,
+  autoFocusEnd = false,
 }: MarkdownEditorProps) {
   const isFocused = variant === "focused";
   const wrapperRef = useRef<HTMLDivElement>(null);
@@ -68,6 +71,7 @@ export function MarkdownEditor({
         visibleDragbar={false}
         height={isFocused ? "100%" : minHeight}
         data-color-mode={dark ? "dark" : "light"}
+        autoFocusEnd={autoFocusEnd}
         textareaProps={{
           placeholder,
         }}

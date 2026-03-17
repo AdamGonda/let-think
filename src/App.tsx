@@ -281,6 +281,7 @@ function AppContent() {
                   variant="focused"
                   dark={isDark}
                   autoFocus
+                  autoFocusEnd
                 />
               </div>
             </div>
