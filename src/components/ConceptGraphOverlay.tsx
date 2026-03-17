@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState, useMemo } from "react";
 import { createPortal } from "react-dom";
-import type { RefObject } from "react";
-import { Check, Clipboard, Sprout } from "lucide-react";
+import type { RefObject, MutableRefObject } from "react";
+import { Check, Clipboard } from "lucide-react";
 import { toast } from "sonner";
 
 type GraphNode = {
@@ -43,6 +43,8 @@ interface ConceptGraphOverlayProps {
   /** Controlled batch index – when provided, navigation is controlled from parent */
   selectedBatchIndex?: number;
   onSelectedBatchIndexChange?: (index: number) => void;
+  /** Ref to assign a function that opens the batch modal for a given index (for external trigger, e.g. top bar seed button) */
+  openBatchModalRef?: MutableRefObject<((batchIndex: number) => void) | null>;
 }
 
 export function ConceptGraphOverlay({
@@ -55,6 +57,7 @@ export function ConceptGraphOverlay({
   isDark = false,
   selectedBatchIndex: controlledBatchIndex,
   onSelectedBatchIndexChange,
+  openBatchModalRef,
 }: ConceptGraphOverlayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphViewportRef = useRef<HTMLDivElement>(null);
@@ -122,6 +125,18 @@ export function ConceptGraphOverlay({
     graph?.nodes?.forEach((n) => m.set(n.id, n));
     return m;
   }, [graph?.nodes]);
+
+  useEffect(() => {
+    if (!openBatchModalRef) return;
+    openBatchModalRef.current = (batchIndex: number) => {
+      if (batches[batchIndex]?.description) {
+        setBatchModalIndex(batchIndex);
+      }
+    };
+    return () => {
+      openBatchModalRef.current = null;
+    };
+  }, [openBatchModalRef, batches]);
 
   // When a new batch arrives, jump to it to show the most up-to-date batch (uncontrolled only)
   const prevBatchesLengthRef = useRef(0);
@@ -430,55 +445,6 @@ export function ConceptGraphOverlay({
                   }
                   style={isDimmed ? { cursor: "pointer" } : undefined}
                 >
-                  {(() => {
-                    const batch = batches[cluster.batchIndex];
-                    const boxW = 44;
-                    const boxH = 36;
-                    const cx = cluster.x + cluster.width / 2;
-                    const cy = cluster.y + 30;
-                    const iconSize = 18;
-                    return (
-                      <g
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (batch?.description) {
-                            setBatchModalIndex(cluster.batchIndex);
-                            if (isDimmed) setSelectedBatchIndex(cluster.batchIndex);
-                          }
-                        }}
-                        style={{ cursor: batch?.description ? "pointer" : undefined }}
-                      >
-                        <rect
-                          x={cx - boxW / 2}
-                          y={cy - boxH / 2}
-                          width={boxW}
-                          height={boxH}
-                          rx={4}
-                          ry={4}
-                          fill={isCenter ? (isDark ? "rgba(161,161,170,0.9)" : "rgba(24,24,27,0.9)") : (isDark ? "rgba(161,161,170,0.75)" : "rgba(24,24,27,0.75)")}
-                          stroke={isCenter ? (isDark ? "rgba(161,161,170,1)" : "rgba(24,24,27,1)") : (isDark ? "rgba(161,161,170,0.9)" : "rgba(24,24,27,0.9)")}
-                          strokeWidth={isCenter ? 1.5 : 1}
-                          style={isDimmed ? { opacity: 0.85 } : undefined}
-                        />
-                        <g transform={`translate(${cx - iconSize / 2}, ${cy - iconSize / 2})`}>
-                          <foreignObject width={iconSize} height={iconSize}>
-                            <div
-                              style={{
-                                width: iconSize,
-                                height: iconSize,
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                color: isDark ? "rgb(24,24,27)" : "white",
-                              }}
-                            >
-                              <Sprout size={iconSize - 2} strokeWidth={2.5} />
-                            </div>
-                          </foreignObject>
-                        </g>
-                      </g>
-                    );
-                  })()}
                   {cluster.nodes.map(({ node, x, y, w, h }) => {
                     const isSelected = selectedNodeIds.has(node.id);
                     const isHovered = hoveredNode?.id === node.id;

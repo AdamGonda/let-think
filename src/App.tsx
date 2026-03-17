@@ -20,6 +20,7 @@ import { ConceptGraphOverlay } from "./components/ConceptGraphOverlay";
 import { MarkdownEditor } from "./components/MarkdownEditor";
 import { SignIn } from "./components/SignIn";
 import { Toaster } from "./components/ui/sonner";
+import { Sprout } from "lucide-react";
 
 function App() {
   return (
@@ -237,6 +238,7 @@ function AppContent() {
   };
 
   const mainContentRef = useRef<HTMLDivElement>(null);
+  const openBatchModalRef = useRef<((batchIndex: number) => void) | null>(null);
 
   const overlayActive =
     isLoading || isInBreak || editorOpen || modelRespondedAwaitingDismissal;
@@ -336,6 +338,15 @@ function AppContent() {
               </button>
               <button
                 type="button"
+                onClick={() => openBatchModalRef.current?.(selectedBatchIndex)}
+                className="p-2 rounded-lg border border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
+                title="View user input for this step"
+                aria-label="View user input for this step"
+              >
+                <Sprout size={20} strokeWidth={2} />
+              </button>
+              <button
+                type="button"
                 onClick={() => setEditorOpen(true)}
                 className="p-2 rounded-lg border border-zinc-200 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
                 title="Open notes"
@@ -363,6 +374,7 @@ function AppContent() {
                 isDark={isDark}
                 selectedBatchIndex={selectedBatchIndex}
                 onSelectedBatchIndexChange={setSelectedBatchIndex}
+                openBatchModalRef={openBatchModalRef}
               />
             ) : (
               <div className="flex flex-1 items-center justify-center text-zinc-600 dark:text-zinc-400 text-base py-6 px-6 text-center">
