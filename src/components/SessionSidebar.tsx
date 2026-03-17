@@ -154,13 +154,8 @@ export function SessionSidebar({
     const wasActiveProject = activeProjectId === id;
     await removeProject({ id });
     if (wasActiveProject) {
-      const remainingProjects = data?.filter(
-        (g: ProjectWithSessions) => g.project && g.project._id !== id
-      ) ?? [];
-      const nextProjectId = remainingProjects[0]?.project?._id ?? null;
-      onSelectProject(nextProjectId);
-      const sessionsInNext = remainingProjects[0]?.sessions ?? [];
-      onSelectSession(sessionsInNext[0]?._id ?? null);
+      onSelectProject(null);
+      onSelectSession(null);
     }
     setExpandedProjectIds((prev) => {
       const next = new Set(prev);
