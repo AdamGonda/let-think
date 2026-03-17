@@ -78,10 +78,7 @@ export function ChatHistoryPanel({
         className="fixed top-0 right-0 bottom-0 z-[9999] w-full max-w-sm flex flex-col bg-white dark:bg-[#1a1b22] border-l border-zinc-200 dark:border-zinc-700 shadow-xl"
         aria-label="Conversation history"
       >
-        <div className="flex items-center justify-between shrink-0 py-4 px-4 border-b border-zinc-200 dark:border-zinc-700">
-          <h2 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-            Conversation history
-          </h2>
+        <div className="flex items-center gap-2 shrink-0 py-4 px-4 border-b border-zinc-200 dark:border-zinc-700">
           <button
             type="button"
             onClick={onClose}
@@ -93,6 +90,9 @@ export function ChatHistoryPanel({
               <path d="m6 6 12 12" />
             </svg>
           </button>
+          <h2 className="ml-auto text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+            Conversation history
+          </h2>
         </div>
         <div className="flex-1 overflow-y-auto py-6 px-4">
           {userMessages.length === 0 ? (
