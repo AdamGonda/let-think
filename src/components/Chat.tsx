@@ -117,7 +117,7 @@ export function Chat({
     breakRemainingFormatted
       ? `Wake up in ${breakRemainingFormatted}`
       : sessionId
-        ? "Type a message..."
+        ? "Type..."
         : "Select a chat to start";
 
   const showInteractionCount =
