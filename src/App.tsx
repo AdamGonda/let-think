@@ -52,6 +52,7 @@ function AppContent() {
   const [overlayDismissed, setOverlayDismissed] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
+  const [selectedBatchIndex, setSelectedBatchIndex] = useState(0);
   const { breakRemainingMs } = useSessionManager(activeSessionId);
   const isInBreak = breakRemainingMs !== null && breakRemainingMs > 0;
   const [draftInput, setDraftInput] = useState("");
@@ -111,10 +112,25 @@ function AppContent() {
     }
   }, [projectsWithSessions]);
 
-  // Reset selected nodes when switching sessions
+  // Reset selected nodes and batch index when switching sessions
   useEffect(() => {
     setSelectedNodeIds(new Set());
+    setSelectedBatchIndex(0);
   }, [activeSessionId]);
+
+  // When graph batches grow, jump to the latest (controlled graph navigation)
+  const batches = conceptGraph?.batches ?? [];
+  const prevBatchesLengthRef = useRef(0);
+  useEffect(() => {
+    if (batches.length === 0) return;
+    const prevLen = prevBatchesLengthRef.current;
+    prevBatchesLengthRef.current = batches.length;
+    if (batches.length > prevLen) {
+      setSelectedBatchIndex(batches.length - 1);
+    } else {
+      setSelectedBatchIndex((i) => Math.min(i, batches.length - 1));
+    }
+  }, [batches.length]);
 
   // Load draft and thinking notes from Convex when session changes or when stored data loads (e.g. after refresh)
   useEffect(() => {
@@ -344,6 +360,8 @@ function AppContent() {
                 modalContainerRef={mainContentRef}
                 isLoading={isLoading}
                 isDark={isDark}
+                selectedBatchIndex={selectedBatchIndex}
+                onSelectedBatchIndexChange={setSelectedBatchIndex}
               />
             ) : (
               <div className="flex flex-1 items-center justify-center text-zinc-600 dark:text-zinc-400 text-base py-6 px-6 text-center">
@@ -370,6 +388,11 @@ function AppContent() {
           isOpen={historyPanelOpen}
           onClose={() => setHistoryPanelOpen(false)}
           messages={messages ?? []}
+          batches={batches}
+          onNavigateToStep={(batchIndex: number) => {
+            setSelectedBatchIndex(batchIndex);
+            setHistoryPanelOpen(false);
+          }}
         />
       </main>
       </div>

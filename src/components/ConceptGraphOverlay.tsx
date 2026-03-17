@@ -39,6 +39,9 @@ interface ConceptGraphOverlayProps {
   modalContainerRef?: RefObject<HTMLDivElement | null>;
   isLoading?: boolean;
   isDark?: boolean;
+  /** Controlled batch index – when provided, navigation is controlled from parent */
+  selectedBatchIndex?: number;
+  onSelectedBatchIndexChange?: (index: number) => void;
 }
 
 export function ConceptGraphOverlay({
@@ -49,6 +52,8 @@ export function ConceptGraphOverlay({
   modalContainerRef,
   isLoading: _isLoading = false,
   isDark = false,
+  selectedBatchIndex: controlledBatchIndex,
+  onSelectedBatchIndexChange,
 }: ConceptGraphOverlayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphViewportRef = useRef<HTMLDivElement>(null);
@@ -57,7 +62,13 @@ export function ConceptGraphOverlay({
   const [dimensions, setDimensions] = useState({ width: 400, height: 300 });
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [batchModalIndex, setBatchModalIndex] = useState<number | null>(null);
-  const [selectedBatchIndex, setSelectedBatchIndex] = useState<number>(0);
+  const [internalBatchIndex, setInternalBatchIndex] = useState<number>(0);
+
+  const isControlled = controlledBatchIndex !== undefined && onSelectedBatchIndexChange != null;
+  const selectedBatchIndex = isControlled ? controlledBatchIndex : internalBatchIndex;
+  const setSelectedBatchIndex = isControlled
+    ? onSelectedBatchIndexChange
+    : setInternalBatchIndex;
 
   // Align modal x with graph viewport center (fixes offset when portaled to main content)
   const [modalLeft, setModalLeft] = useState<number | null>(null);
@@ -106,18 +117,18 @@ export function ConceptGraphOverlay({
     return m;
   }, [graph?.nodes]);
 
-  // When a new batch arrives, jump to it to show the most up-to-date batch
+  // When a new batch arrives, jump to it to show the most up-to-date batch (uncontrolled only)
   const prevBatchesLengthRef = useRef(0);
   useEffect(() => {
-    if (batches.length === 0) return;
+    if (batches.length === 0 || isControlled) return;
     const prevLen = prevBatchesLengthRef.current;
     prevBatchesLengthRef.current = batches.length;
     if (batches.length > prevLen) {
       setSelectedBatchIndex(batches.length - 1);
     } else {
-      setSelectedBatchIndex((i) => Math.min(i, batches.length - 1));
+      setSelectedBatchIndex(Math.min(selectedBatchIndex, batches.length - 1));
     }
-  }, [batches.length]);
+  }, [batches.length, isControlled, selectedBatchIndex]);
 
   const hasBatches = batches.length > 0;
   const canGoPrev = selectedBatchIndex > 0;

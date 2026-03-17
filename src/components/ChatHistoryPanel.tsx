@@ -18,17 +18,34 @@ interface UserMessage {
   createdAt?: number;
 }
 
+type Batch = {
+  id: string;
+  nodeIds: string[];
+  promptSummary?: string;
+  description?: string;
+};
+
 interface ChatHistoryPanelProps {
   isOpen: boolean;
   onClose: () => void;
   /** All messages – we filter to user only and display in order */
   messages: UserMessage[];
+  /** Graph batches – used to match messages to steps for navigation */
+  batches?: Batch[];
+  /** Navigate to the given batch/step in the graph view and close panel */
+  onNavigateToStep?: (batchIndex: number) => void;
+}
+
+function normalizeForMatch(s: string): string {
+  return s.trim().replace(/\s+/g, " ");
 }
 
 export function ChatHistoryPanel({
   isOpen,
   onClose,
   messages,
+  batches = [],
+  onNavigateToStep,
 }: ChatHistoryPanelProps) {
   const userMessages = messages.filter((m) => m.role === "user");
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -93,6 +110,16 @@ export function ChatHistoryPanel({
                     ? msg.content
                     : truncateAtWord(msg.content, COLLAPSE_THRESHOLD) + "…";
 
+                  // Match message to batch by description (user content)
+                  const msgNorm = normalizeForMatch(msg.content);
+                  const batchIndex =
+                    msgNorm !== ""
+                      ? batches.findIndex(
+                          (b) => b.description && normalizeForMatch(b.description) === msgNorm
+                        )
+                      : -1;
+                  const hasStep = batchIndex >= 0;
+
                   return (
                     <li
                       key={key}
@@ -106,18 +133,38 @@ export function ChatHistoryPanel({
                       {/* Message bubble */}
                       <div className="flex-1 min-w-0 pl-4">
                         <div className="rounded-2xl rounded-tl-md px-4 py-3 bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 text-[0.95rem] leading-relaxed shadow-sm border border-zinc-200/50 dark:border-zinc-700/50">
+                          {(hasStep && onNavigateToStep) || isLong ? (
+                            <div className="flex flex-wrap items-center justify-end gap-2 -mt-1 mb-2">
+                              {hasStep && onNavigateToStep && (
+                                <button
+                                  type="button"
+                                  onClick={() => onNavigateToStep(batchIndex)}
+                                  className="flex items-center gap-1.5 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                                  title="Go to this step in the graph"
+                                  aria-label={`Go to step ${batchIndex + 1} in graph`}
+                                >
+                                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M15 3h6v6" />
+                                    <path d="M10 14 21 3" />
+                                    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                                  </svg>
+                                  Go to step
+                                </button>
+                              )}
+                              {isLong && (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleExpanded(key)}
+                                  className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                                >
+                                  {isExpanded ? "Show less" : "Show more"}
+                                </button>
+                              )}
+                            </div>
+                          ) : null}
                           <p className="whitespace-pre-wrap break-words m-0">
                             {displayContent}
                           </p>
-                          {isLong && (
-                            <button
-                              type="button"
-                              onClick={() => toggleExpanded(key)}
-                              className="mt-2 text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
-                            >
-                              {isExpanded ? "Show less" : "Show more"}
-                            </button>
-                          )}
                         </div>
                       </div>
                     </li>
