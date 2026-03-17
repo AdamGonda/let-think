@@ -261,8 +261,8 @@ function AppContent() {
               </svg>
             </button>
           )}
-          <div className="shrink-0 py-6 flex flex-col items-center gap-1">
-            <span className="text-zinc-500 dark:text-zinc-400 text-2xl font-medium uppercase tracking-widest">
+          <div className="shrink-0 py-8 flex flex-col items-center gap-1">
+            <span className="text-zinc-500 dark:text-zinc-400 text-2xl font-medium uppercase tracking-[0.25em]">
               Wake up
             </span>
             {breakRemainingMs != null && breakRemainingMs > 0 && !editorOpen && (
