@@ -3,7 +3,7 @@ import { mutation, query, type MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
-const BREAK_MS = 25 * 60 * 1000;
+const BREAK_MS = 10 * 60 * 1000;
 
 /** Returns a random limit between 1 and 3 (used when creating after break reset). */
 function pickRandomLimit(): number {
@@ -104,11 +104,11 @@ export const startBreakOptimistically = mutation({
   },
 });
 
-/** Reset or delete interaction session when break ends (fresh start). */
+/** Reset interaction session when break ends (fresh start with new limit). */
 export const resetAfterBreak = mutation({
   args: { sessionId: v.id("sessions") },
   handler: async (ctx, { sessionId }) => {
-    await requireSessionOwner(ctx, sessionId);
+    const { userId } = await requireSessionOwner(ctx, sessionId);
     const existing = await ctx.db
       .query("interactionSessions")
       .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
@@ -116,5 +116,14 @@ export const resetAfterBreak = mutation({
     if (existing) {
       await ctx.db.delete(existing._id);
     }
+    const now = Date.now();
+    const limit = pickRandomLimit();
+    await ctx.db.insert("interactionSessions", {
+      sessionId,
+      userId,
+      limit,
+      used: 0,
+      createdAt: now,
+    });
   },
 });
