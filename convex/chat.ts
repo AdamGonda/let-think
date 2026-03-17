@@ -1,7 +1,7 @@
 "use node";
 
-import { action } from "./_generated/server";
-import { api } from "./_generated/api";
+import { action, internalAction } from "./_generated/server";
+import { api, internal } from "./_generated/api";
 import { v } from "convex/values";
 import { generateText } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
@@ -20,23 +20,51 @@ async function generatePromptSummary(
   model: ReturnType<typeof createGoogleGenerativeAI>
 ): Promise<string> {
   const trimmed = userContent.trim();
-  if (!trimmed) return "—";
-  try {
-    const { text } = await generateText({
-      model: model("gemini-2.0-flash"),
-      prompt: `Summarize the following in one short phrase (max 8–12 words). Reply with only that phrase, nothing else.
+  if (!trimmed) return "";
+  const prompt = `Summarize the following in one short phrase (max 8–12 words). Reply with only that phrase, nothing else.
 
 User prompt:
-${trimmed.slice(0, 500)}`,
-    });
-    const sentence = text.trim().replace(/\n+/g, " ").slice(0, 100);
-    if (!sentence) return "—";
-    return sentence.charAt(0).toUpperCase() + sentence.slice(1);
-  } catch {
-    const firstSentence = trimmed.split(/[.!?]/)[0]?.trim();
-    return firstSentence?.slice(0, 100) ?? trimmed.slice(0, 100) ?? "—";
+${trimmed.slice(0, 500)}`;
+
+  // Use main model first (known to work); fall back to flash models if needed
+  const modelsToTry = ["gemini-3.1-pro-preview", "gemini-2.5-flash", "gemini-2.0-flash"];
+  for (const modelId of modelsToTry) {
+    try {
+      const { text } = await generateText({
+        model: model(modelId),
+        prompt,
+      });
+      const raw = text.trim().replace(/\n+/g, " ").slice(0, 100);
+      const sentence = raw.replace(/^["'`]\s*|["'`]\s*$/g, "").trim();
+      if (sentence && sentence !== "—") {
+        return sentence.charAt(0).toUpperCase() + sentence.slice(1);
+      }
+    } catch (err) {
+      console.warn(`[generatePromptSummary] ${modelId} failed:`, err);
+    }
   }
+  return "";
 }
+
+/** Runs when a user message is inserted – generates AI summary and patches the message. */
+export const generateTopicForMessage = internalAction({
+  args: {
+    messageId: v.id("messages"),
+    userContent: v.string(),
+  },
+  handler: async (ctx, { messageId, userContent }) => {
+    const google = createGoogleGenerativeAI({
+      apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+    });
+    const topic = await generatePromptSummary(userContent, google);
+    if (topic) {
+      await ctx.runMutation(internal.sessions.updateMessageTopic, {
+        messageId,
+        topic,
+      });
+    }
+  },
+});
 
 function toModelMessages(
   messages: Array<{ role: string; content?: string }>
@@ -94,15 +122,12 @@ export const send = action({
       meta: {},
     });
 
-    // 2. Call LLM (main response) and generate single-word summary in parallel
-    const [result, promptSummary] = await Promise.all([
-      generateText({
-        model: google("gemini-3.1-pro-preview"),
-        system: "You are a helpful assistant.",
-        messages: modelMessages,
-      }),
-      generatePromptSummary(userContent, google),
-    ]);
+    // 2. Call LLM (main response); topic is generated separately when message is inserted
+    const result = await generateText({
+      model: google("gemini-3.1-pro-preview"),
+      system: "You are a helpful assistant.",
+      messages: modelMessages,
+    });
 
     // 3. Extract concept graph from raw response (before stripping)
     const extractedGraph = extractConceptGraph(result.text);
@@ -113,12 +138,11 @@ export const send = action({
       meta: {},
     });
 
-    // 5. Persist messages and update graph (topic = short summary for history bubbles)
+    // 5. Persist messages (addMessages schedules topic generation on insert)
     await ctx.runMutation(api.sessions.addMessages, {
       sessionId,
       userContent,
       assistantContent: processedContent,
-      userTopic: promptSummary,
     });
 
     let finalGraph: ConceptGraph | null = existingGraph;
@@ -141,7 +165,7 @@ export const send = action({
               {
                 id: `batch-${Date.now()}`,
                 nodeIds: newNodeIds,
-                promptSummary,
+                promptSummary: userContent.slice(0, 60).trim() + (userContent.length > 60 ? "…" : "") || undefined,
                 description: userContent.trim() || undefined,
               },
             ]

@@ -1,7 +1,8 @@
 import { v } from "convex/values";
-import { mutation, query, type MutationCtx } from "./_generated/server";
+import { mutation, internalMutation, query, type MutationCtx } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { internal } from "./_generated/api";
 
 export const list = query({
   args: {},
@@ -143,23 +144,31 @@ export const getMessages = query({
   },
 });
 
+/** Internal: set topic on a user message (called by generateTopicForMessage action). */
+export const updateMessageTopic = internalMutation({
+  args: { messageId: v.id("messages"), topic: v.string() },
+  handler: async (ctx, { messageId, topic }) => {
+    const msg = await ctx.db.get(messageId);
+    if (msg?.role === "user") {
+      await ctx.db.patch(messageId, { topic: topic.trim() });
+    }
+  },
+});
+
 export const addMessages = mutation({
   args: {
     sessionId: v.id("sessions"),
     userContent: v.string(),
     assistantContent: v.string(),
-    /** Short topic for the user message (e.g. AI-generated summary) */
-    userTopic: v.optional(v.string()),
   },
-  handler: async (ctx, { sessionId, userContent, assistantContent, userTopic }) => {
+  handler: async (ctx, { sessionId, userContent, assistantContent }) => {
     await requireSessionOwner(ctx, sessionId);
     const now = Date.now();
-    await ctx.db.insert("messages", {
+    const userMessageId = await ctx.db.insert("messages", {
       sessionId,
       role: "user",
       content: userContent,
       createdAt: now,
-      ...(userTopic != null && userTopic.trim() !== "" ? { topic: userTopic.trim() } : {}),
     });
     await ctx.db.insert("messages", {
       sessionId,
@@ -167,6 +176,13 @@ export const addMessages = mutation({
       content: assistantContent,
       createdAt: now + 1,
     });
+    // Schedule topic generation to run when message is in DB (reactive trigger)
+    if (userContent.trim()) {
+      await ctx.scheduler.runAfter(0, internal.chat.generateTopicForMessage, {
+        messageId: userMessageId,
+        userContent,
+      });
+    }
     // Update title from first message if still "New chat"
     const session = await ctx.db.get(sessionId);
     if (session?.title === "New chat" && userContent.trim()) {
