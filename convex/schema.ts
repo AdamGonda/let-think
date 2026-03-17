@@ -30,8 +30,6 @@ export default defineSchema({
             id: v.string(),
             name: v.string(),
             description: v.optional(v.string()),
-            /** "new" = newly introduced concept; "derived" = built from existing graph nodes */
-            origin: v.optional(v.union(v.literal("new"), v.literal("derived"))),
           })
         ),
         edges: v.array(

@@ -1,13 +1,7 @@
 import type { ModelMessage } from "ai";
 
 export type ConceptGraph = {
-  nodes: Array< {
-    id: string;
-    name: string;
-    description?: string;
-    /** "new" = newly introduced; "derived" = built from existing graph nodes */
-    origin?: "new" | "derived";
-  } >;
+  nodes: Array< { id: string; name: string; description?: string } >;
   edges: Array< { source: string; target: string } >;
   /** Batches for UI traversal – nodeIds per batch */
   batches?: Array< {
@@ -37,20 +31,17 @@ export function extractConceptGraph(text: string): ConceptGraph | null {
       Array.isArray((parsed as ConceptGraph).edges)
     ) {
       const g = parsed as ConceptGraph;
-      const validOrigins = new Set(["new", "derived"]);
       return {
         nodes: g.nodes.filter(
           (n) =>
             n &&
             typeof n.id === "string" &&
             typeof n.name === "string" &&
-            (n.description === undefined || typeof n.description === "string") &&
-            (n.origin === undefined || validOrigins.has(n.origin))
+            (n.description === undefined || typeof n.description === "string")
         ).map((n) => ({
           id: n.id,
           name: n.name,
           ...(n.description != null ? { description: n.description } : {}),
-          ...(n.origin != null ? { origin: n.origin } : {}),
         })),
         edges: g.edges.filter(
           (e) =>
@@ -117,19 +108,15 @@ Add new nodes to the CONCEPT GRAPH based on ideas in your response.
 
 Rules:
 - The user has set BRANCHING to ${n}. Generate 1 to ${n} concepts (nodes) based on ideas in your response. Not 0.
-- Each node must have: id (unique string), name (short label, 1–3 words), description (a clear 1–2 sentence explanation of the concept—not just a single word), and origin.
-- ORIGIN: Tag each node as "new" or "derived":
-  - "new": A concept you are introducing for the first time; it does not build on or extend concepts already in the existing graph.
-  - "derived": A concept that builds on, extends, refines, or is connected to concepts already present in the existing graph.
-- When NO EXISTING CONCEPT GRAPH is provided, all nodes are "new".
-- When an EXISTING CONCEPT GRAPH is provided, compare each new node: if it directly extends or refines ideas from existing nodes, tag it "derived"; otherwise "new".
+- Each node must have: id (unique string), name (short label, 1–3 words), and description (a clear 1–2 sentence explanation of the concept—not just a single word).
 - Connect nodes with edges so the graph stays connected.
 - You MUST end your response with the CONCEPT GRAPH as valid JSON in a code block. No exceptions.
+- Example: if your answer discusses "graph" and "Convex", create nodes with descriptive explanations and link them.
 
 Put this EXACTLY at the very end of your reply (after all other text):
 
 \`\`\`json
-{"nodes":[{"id":"1","name":"Graph","description":"A data structure representing nodes and connections between them, used for modeling relationships.","origin":"new"},{"id":"2","name":"Convex","description":"A serverless backend platform providing real-time database and backend functions.","origin":"new"}],"edges":[{"source":"1","target":"2"}]}
+{"nodes":[{"id":"1","name":"Graph","description":"A data structure representing nodes and connections between them, used for modeling relationships."},{"id":"2","name":"Convex","description":"A serverless backend platform providing real-time database and backend functions."}],"edges":[{"source":"1","target":"2"}]}
 \`\`\`
 ${graphContext}
 ${selectedContext}
