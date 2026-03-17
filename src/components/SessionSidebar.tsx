@@ -62,11 +62,10 @@ export function SessionSidebar({
   }, [data, activeSessionId]);
 
   const allSessions = data?.flatMap((g: ProjectWithSessions) => g.sessions) ?? [];
-  const hasProjects = (data?.some((g: ProjectWithSessions) => g.project != null) ?? false);
-  const isInboxSelected = activeProjectId === null && hasProjects;
 
   const handleNewChat = async (projectId?: Id<"projects">) => {
-    const targetProjectId = projectId ?? activeProjectId ?? undefined;
+    // Main "New chat" button creates in inbox; per-project + creates in that project
+    const targetProjectId = projectId;
     const id = await createSession({ projectId: targetProjectId ?? undefined });
     onSelectSession(id);
     if (targetProjectId) {
@@ -215,11 +214,9 @@ export function SessionSidebar({
               <div key={projectId ?? "inbox"} className="flex flex-col gap-1">
                 {project ? (
                   <div
-                    className={`flex items-center gap-1 group/project rounded-lg border transition-colors py-1.5 px-3 ${
-                      activeProjectId === project._id
-                        ? "bg-zinc-100 dark:bg-zinc-700/50 border-zinc-300 dark:border-zinc-600 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-                        : "border-transparent hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
-                    } ${dragOverProjectId === project._id ? "ring-2 ring-zinc-400 dark:ring-zinc-500 ring-inset" : ""}`}
+                    className={`flex items-center gap-1 group/project rounded-lg border border-zinc-300 dark:border-zinc-600 transition-colors py-1.5 px-3 ${
+                      dragOverProjectId === project._id ? "ring-2 ring-zinc-400 dark:ring-zinc-500 ring-inset" : ""
+                    }`}
                     onDragOver={(e) => {
                       e.preventDefault();
                       e.dataTransfer.dropEffect = "move";
@@ -279,11 +276,7 @@ export function SessionSidebar({
                           e.stopPropagation();
                           setEditingProjectId(project._id);
                         }}
-                        className={`flex-1 min-w-0 py-1 px-2 text-left rounded truncate font-medium text-sm ${
-                          activeProjectId === project._id
-                            ? "text-zinc-900 dark:text-zinc-100"
-                            : "text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-                        }`}
+                        className="flex-1 min-w-0 py-1 px-2 text-left rounded truncate font-medium text-sm text-zinc-700 dark:text-zinc-300"
                       >
                         {project.name}
                       </button>
@@ -360,11 +353,9 @@ export function SessionSidebar({
                   </div>
                 ) : (
                   <div
-                    className={`flex items-center gap-1 rounded-lg border transition-colors py-1.5 px-3 ${
-                      isInboxSelected
-                        ? "bg-zinc-100 dark:bg-zinc-700/50 border-zinc-300 dark:border-zinc-600 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-                        : "border-transparent"
-                    } ${dragOverProjectId === "inbox" ? "ring-2 ring-zinc-400 dark:ring-zinc-500 ring-inset" : ""}`}
+                    className={`flex items-center gap-1 rounded-lg border transition-colors py-1.5 px-3 border-transparent ${
+                      dragOverProjectId === "inbox" ? "ring-2 ring-zinc-400 dark:ring-zinc-500 ring-inset" : ""
+                    }`}
                     onDragOver={(e) => {
                       e.preventDefault();
                       e.dataTransfer.dropEffect = "move";
@@ -383,11 +374,7 @@ export function SessionSidebar({
                     <button
                       type="button"
                       onClick={() => onSelectProject(null)}
-                      className={`flex-1 min-w-0 py-1 px-2 text-left rounded text-sm font-medium truncate ${
-                        isInboxSelected
-                          ? "text-zinc-900 dark:text-zinc-100"
-                          : "text-zinc-500 dark:text-zinc-400"
-                      }`}
+                      className="flex-1 min-w-0 py-1 px-2 text-left rounded text-sm font-medium truncate text-zinc-500 dark:text-zinc-400"
                     >
                       Inbox
                     </button>
