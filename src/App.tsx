@@ -347,6 +347,24 @@ function AppContent() {
                   >
                     <ChevronLeft size={20} strokeWidth={2} />
                   </button>
+                  <div className="flex items-center gap-1.5" role="tablist" aria-label="Step navigation">
+                    {batches.map((_, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        role="tab"
+                        aria-selected={i === selectedBatchIndex}
+                        aria-label={`Go to step ${i + 1}`}
+                        title={`Step ${i + 1}`}
+                        onClick={() => setSelectedBatchIndex(i)}
+                        className={`w-2.5 h-2.5 rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-[#16171d] ${
+                          i === selectedBatchIndex
+                            ? "bg-red-500"
+                            : "bg-white hover:opacity-80"
+                        }`}
+                      />
+                    ))}
+                  </div>
                   <button
                     type="button"
                     onClick={() => setSelectedBatchIndex((i) => Math.min(batches.length - 1, i + 1))}
