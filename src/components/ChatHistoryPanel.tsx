@@ -126,7 +126,7 @@ export function ChatHistoryPanel({
                   const isSelectedStep = hasStep && batchIndex === selectedBatchIndex;
 
                   const dotBase = "absolute left-[7px] top-3 w-3 h-3 -translate-x-1/2 shrink-0 ring-4 ring-white dark:ring-[#1a1b22] z-10 rounded-full";
-                  const dotSelected = "bg-red-500";
+                  const dotSelected = "bg-blue-500";
                   const dotRest = "bg-zinc-900 dark:bg-zinc-100";
 
                   return (
