@@ -221,7 +221,7 @@ export function Chat({
         </p>
       )}
       <form className="flex gap-2 items-end" onSubmit={handleSubmit}>
-        <div className="flex-1 relative min-h-[48px] max-h-[240px] rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-[#16171d] overflow-hidden">
+        <div className="flex-1 flex relative min-h-[48px] max-h-[240px] rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-[#16171d] overflow-hidden">
           <div
             ref={mirrorRef}
             className="absolute inset-0 z-0 py-3 px-4 pr-10 overflow-y-auto pointer-events-none whitespace-pre-wrap break-words text-[0.95rem] leading-[1.5] text-zinc-950 dark:text-zinc-100"
