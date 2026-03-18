@@ -59,15 +59,17 @@ export function NotesListPanel({ onSelectSession }: NotesListPanelProps) {
   return (
     <div className="flex flex-1 flex-col min-h-0 bg-(--color-surface)">
       <div className="shrink-0 px-6 py-3 border-b border-border">
-        <div className="relative max-w-2xl mx-auto px-4">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-          <Input
-            type="search"
-            placeholder="Search sessions by title…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-9 rounded-lg bg-muted/30 border-border/80 focus-visible:ring-2 focus-visible:ring-ring/40 transition-shadow hover:bg-muted/50"
-          />
+        <div className="max-w-2xl mx-auto px-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
+            <Input
+              type="search"
+              placeholder="Search sessions by title…"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 h-9 rounded-lg bg-muted/30 border-border/80 focus-visible:ring-2 focus-visible:ring-ring/40 transition-shadow hover:bg-muted/50"
+            />
+          </div>
         </div>
       </div>
       <div className="flex-1 overflow-y-auto">
