@@ -199,7 +199,7 @@ export function Chat({
       ? `Wake up in ${breakRemainingFormatted}`
       : sessionId
         ? numberedConcepts.length > 0
-          ? "Type... (use @1, @2, etc. to reference concepts)"
+          ? "Type, @ ref concepts"
           : "Type..."
         : "Select a chat to start";
 
