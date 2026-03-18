@@ -3,7 +3,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Doc } from "../../convex/_generated/dataModel";
 import { Input } from "@/components/ui/input";
-import { Search, FileText } from "lucide-react";
+import { Search, FileText, ArrowRight } from "lucide-react";
 
 function formatRelativeTime(ms: number): string {
   const diff = Date.now() - ms;
@@ -19,9 +19,10 @@ function formatRelativeTime(ms: number): string {
 
 interface NotesListPanelProps {
   onSelectSession: (session: Doc<"sessions">) => void;
+  onJumpToSession?: (session: Doc<"sessions">) => void;
 }
 
-export function NotesListPanel({ onSelectSession }: NotesListPanelProps) {
+export function NotesListPanel({ onSelectSession, onJumpToSession }: NotesListPanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const sessions = useQuery(api.sessions.list);
 
@@ -87,20 +88,36 @@ export function NotesListPanel({ onSelectSession }: NotesListPanelProps) {
             <ul className="flex flex-col gap-1.5">
               {filteredSessions.map((session: Doc<"sessions">) => (
                 <li key={session._id}>
-                  <button
-                    type="button"
-                    onClick={() => onSelectSession(session)}
-                    className="w-full text-left group rounded-lg border border-border/60 bg-card/50 hover:bg-muted/50 hover:border-border hover:shadow-sm transition-all duration-150 px-3 py-2.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-medium text-foreground leading-snug line-clamp-2 group-hover:text-foreground">
-                        {session.title}
-                      </p>
-                      <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
-                        {formatRelativeTime(session.createdAt)}
-                      </span>
-                    </div>
-                  </button>
+                  <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-card/50 hover:bg-muted/50 hover:border-border hover:shadow-sm transition-all duration-150 group">
+                    <button
+                      type="button"
+                      onClick={() => onSelectSession(session)}
+                      className="flex-1 min-w-0 text-left px-3 py-2.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-l-lg"
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-medium text-foreground leading-snug line-clamp-2 group-hover:text-foreground">
+                          {session.title}
+                        </p>
+                        <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
+                          {formatRelativeTime(session.createdAt)}
+                        </span>
+                      </div>
+                    </button>
+                    {onJumpToSession && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onJumpToSession(session);
+                        }}
+                        className="shrink-0 p-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-r-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        title="Jump to session"
+                        aria-label="Jump to session"
+                      >
+                        <ArrowRight className="size-4" />
+                      </button>
+                    )}
+                  </div>
                 </li>
               ))}
             </ul>
