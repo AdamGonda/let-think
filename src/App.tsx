@@ -127,14 +127,15 @@ function AppContent() {
   }, [projectsWithSessions]);
 
   // Reset selected nodes and batch index when switching sessions
-  useEffect(() => {
-    setSelectedNodeIds(new Set());
-    setSelectedBatchIndex(0);
-  }, [activeSessionId]);
-
-  // When graph batches grow, jump to the latest (controlled graph navigation)
   const batches = conceptGraph?.batches ?? [];
   const prevBatchesLengthRef = useRef(0);
+
+  useEffect(() => {
+    setSelectedNodeIds(new Set());
+    prevBatchesLengthRef.current = 0; // Reset so we default to last step when new batches load
+  }, [activeSessionId]);
+
+  // When graph batches load or grow, jump to the latest (controlled graph navigation)
   useEffect(() => {
     if (batches.length === 0) return;
     const prevLen = prevBatchesLengthRef.current;

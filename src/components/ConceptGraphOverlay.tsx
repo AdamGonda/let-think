@@ -155,6 +155,12 @@ export function ConceptGraphOverlay({
   // Compute a STABLE full rail layout for ALL batches. Cluster positions stay fixed;
   // only translateX changes when navigating, enabling smooth CSS transition.
   const layout = useMemo(() => {
+    // Clamp selectedBatchIndex to avoid out-of-bounds access when switching sessions
+    const safeBatchIndex = Math.min(
+      Math.max(0, selectedBatchIndex),
+      Math.max(0, batches.length - 1)
+    );
+
     const gridAreaWidth = dimensions.width - 2 * VIEWPORT_PADDING - 2 * CLUSTER_PAD;
     const gridAreaHeight = dimensions.height - 32 - BATCH_HEADER - BATCH_HEADER_GAP - CLUSTER_PAD;
 
@@ -276,19 +282,21 @@ export function ConceptGraphOverlay({
     }
 
     // Only include prev, center, next for rendering (3 max)
-    const prevIdx = selectedBatchIndex - 1;
-    const nextIdx = selectedBatchIndex + 1;
+    const prevIdx = safeBatchIndex - 1;
+    const nextIdx = safeBatchIndex + 1;
     const indicesToRender = [
       ...(prevIdx >= 0 ? [prevIdx] : []),
       selectedBatchIndex,
       ...(nextIdx < batches.length ? [nextIdx] : []),
     ];
-    const clusters = indicesToRender.map((i) => allClusters[i]!);
+    const clusters = indicesToRender
+      .map((i) => allClusters[i])
+      .filter((c): c is NonNullable<typeof c> => c != null);
 
     const contentMaxX = allClusters.length > 0 ? allClusters[allClusters.length - 1]!.x + allClusters[allClusters.length - 1]!.width : dimensions.width;
     const totalWidth = Math.max(dimensions.width, contentMaxX + VIEWPORT_PADDING);
 
-    const centerCluster = allClusters[selectedBatchIndex];
+    const centerCluster = allClusters[safeBatchIndex];
     const centerClusterCenter = centerCluster ? centerCluster.x + centerCluster.width / 2 : viewportCenterX;
     const translateX = viewportCenterX - centerClusterCenter;
 
