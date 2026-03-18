@@ -32,15 +32,40 @@ interface ChatProps {
 
 export type Mention = { start: number; end: number; conceptId: string; name: string };
 
-/** Parse @N references from user input, resolve to concept names, and build mentions. */
-function resolveAtReferences(
-  userContent: string,
+/** Parse raw input into segments - @N that match a concept become styled tokens. */
+function parseInputTokens(
+  raw: string,
   numberedConcepts: NumberedConcept[]
-): {
-  resolvedContent: string;
-  referencedConcepts: NumberedConcept[];
-  mentions: Mention[];
-} {
+): Array<{ type: "text" | "token"; content: string; name?: string }> {
+  const conceptByNumber = new Map(numberedConcepts.map((c) => [c.number, c]));
+  const refRegex = /@(\d+)\b/g;
+  const segments: Array<{ type: "text" | "token"; content: string; name?: string }> = [];
+  let lastIndex = 0;
+  let m: RegExpExecArray | null;
+  while ((m = refRegex.exec(raw)) !== null) {
+    const num = parseInt(m[1]!, 10);
+    const concept = conceptByNumber.get(num);
+    if (lastIndex < m.index) {
+      segments.push({ type: "text", content: raw.slice(lastIndex, m.index) });
+    }
+    segments.push({
+      type: "token",
+      content: m[0]!,
+      name: concept?.name,
+    });
+    lastIndex = m.index + m[0]!.length;
+  }
+  if (lastIndex < raw.length) {
+    segments.push({ type: "text", content: raw.slice(lastIndex) });
+  }
+  return segments.length > 0 ? segments : [{ type: "text", content: "" }];
+}
+
+/** Parse @N from raw input, resolve to concept names for LLM/store, build mentions. */
+function resolveAtReferences(
+  rawContent: string,
+  numberedConcepts: NumberedConcept[]
+): { resolvedContent: string; referencedConcepts: NumberedConcept[]; mentions: Mention[] } {
   const conceptByNumber = new Map(numberedConcepts.map((c) => [c.number, c]));
   const refRegex = /@(\d+)\b/g;
   let resolvedContent = "";
@@ -48,22 +73,21 @@ function resolveAtReferences(
   let lastIndex = 0;
   let m: RegExpExecArray | null;
 
-  while ((m = refRegex.exec(userContent)) !== null) {
+  while ((m = refRegex.exec(rawContent)) !== null) {
     const num = parseInt(m[1]!, 10);
     const concept = conceptByNumber.get(num);
     if (!concept) {
-      resolvedContent += userContent.slice(lastIndex, m.index + m[0].length);
-      lastIndex = m.index + m[0].length;
+      resolvedContent += rawContent.slice(lastIndex, m.index + m[0]!.length);
+      lastIndex = m.index + m[0]!.length;
       continue;
     }
-    resolvedContent += userContent.slice(lastIndex, m.index);
+    resolvedContent += rawContent.slice(lastIndex, m.index);
     const start = resolvedContent.length;
     resolvedContent += concept.name;
-    const end = resolvedContent.length;
-    mentions.push({ start, end, conceptId: concept.id, name: concept.name });
-    lastIndex = m.index + m[0].length;
+    mentions.push({ start, end: resolvedContent.length, conceptId: concept.id, name: concept.name });
+    lastIndex = m.index + m[0]!.length;
   }
-  resolvedContent += userContent.slice(lastIndex);
+  resolvedContent += rawContent.slice(lastIndex);
 
   const referencedIds = new Set(mentions.map((x) => x.conceptId));
   const referencedConcepts = numberedConcepts.filter((c) => referencedIds.has(c.id));
@@ -85,6 +109,7 @@ export function Chat({
   const setInput =
     setDraftInput !== undefined ? setDraftInput : setInternalInput;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const mirrorRef = useRef<HTMLDivElement>(null);
   const sendMessage = useAction(api.chat.send);
   const {
     canSend,
@@ -103,6 +128,12 @@ export function Chat({
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 240)}px`;
   }, [input]);
+
+  const handleScroll = () => {
+    const ta = textareaRef.current;
+    const mirror = mirrorRef.current;
+    if (ta && mirror) mirror.scrollTop = ta.scrollTop;
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -189,16 +220,45 @@ export function Chat({
         </p>
       )}
       <form className="flex gap-2 items-end" onSubmit={handleSubmit}>
-        <textarea
-          ref={textareaRef}
-          rows={1}
-          className="flex-1 min-h-[48px] max-h-[240px] py-3 px-4 border border-zinc-300 dark:border-zinc-700 rounded-lg bg-white dark:bg-[#16171d] text-zinc-950 dark:text-zinc-100 font-inherit text-[0.95rem] placeholder:text-zinc-500 dark:placeholder:text-zinc-500 placeholder:opacity-70 focus:outline-none focus:border-white dark:focus:border-[#16171d] transition-colors disabled:opacity-60 disabled:cursor-not-allowed resize-none overflow-y-auto"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          disabled={isDisabled}
-        />
+        <div className="flex-1 relative min-h-[48px] max-h-[240px] rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-[#16171d] overflow-hidden">
+          <div
+            ref={mirrorRef}
+            className="absolute inset-0 z-0 py-3 px-4 overflow-y-auto pointer-events-none whitespace-pre-wrap break-words text-[0.95rem] leading-[1.5] text-zinc-950 dark:text-zinc-100"
+            aria-hidden
+          >
+            {input ? (
+              parseInputTokens(input, numberedConcepts).map((seg, i) =>
+                seg.type === "token" && seg.name ? (
+                  <span
+                    key={i}
+                    className="rounded-sm bg-zinc-300/70 dark:bg-zinc-600/70 text-inherit"
+                    title={seg.name}
+                  >
+                    {seg.content}
+                  </span>
+                ) : (
+                  seg.content
+                )
+              )
+            ) : (
+              <span className="text-zinc-500 dark:text-zinc-500 opacity-70">
+                {placeholder}
+              </span>
+            )}
+          </div>
+          <textarea
+            ref={textareaRef}
+            rows={1}
+            className="relative z-10 w-full min-h-[48px] max-h-[240px] py-3 px-4 bg-transparent text-transparent caret-zinc-900 dark:caret-zinc-100 font-inherit text-[0.95rem] leading-[1.5] placeholder:transparent focus:outline-none focus:ring-0 disabled:opacity-60 disabled:cursor-not-allowed resize-none overflow-y-auto"
+            style={{ color: "transparent" }}
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onScroll={handleScroll}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            disabled={isDisabled}
+          />
+        </div>
         <button
           type="submit"
           className="py-3 px-5 h-[44px] mb-[4px] border-none rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-inherit font-medium cursor-pointer transition-opacity duration-150 hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:opacity-60 flex items-center justify-center gap-2 min-w-[72px]"
