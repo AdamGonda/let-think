@@ -370,7 +370,10 @@ export function SessionSidebar({
                       </Button>
                     )}
                     {confirmDeleteProjectId === project._id ? (
-                      <div className="flex items-center gap-0.5 h-7 shrink-0">
+                      <div
+                        className="flex items-center gap-0.5 h-7 shrink-0"
+                        onMouseLeave={() => setConfirmDeleteProjectId(null)}
+                      >
                         <Button
                           variant="destructive"
                           size="icon-xs"
@@ -469,7 +472,10 @@ export function SessionSidebar({
                         </div>
                       )}
                       {confirmDeleteSessionId === session._id ? (
-                        <div className="flex items-center gap-0.5 h-7 shrink-0">
+                        <div
+                          className="flex items-center gap-0.5 h-7 shrink-0"
+                          onMouseLeave={() => setConfirmDeleteSessionId(null)}
+                        >
                           <Button
                             variant="destructive"
                             size="icon-xs"
@@ -598,7 +604,10 @@ export function SessionSidebar({
                 </div>
                 )}
                 {confirmDeleteSessionId === session._id ? (
-                  <div className="flex items-center gap-0.5 h-7 shrink-0">
+                  <div
+                    className="flex items-center gap-0.5 h-7 shrink-0"
+                    onMouseLeave={() => setConfirmDeleteSessionId(null)}
+                  >
                     <Button
                       variant="destructive"
                       size="icon-xs"
