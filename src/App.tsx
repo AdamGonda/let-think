@@ -24,7 +24,7 @@ import { MarkdownEditor } from "./components/MarkdownEditor";
 import { SignIn } from "./components/SignIn";
 import { Toaster } from "./components/ui/sonner";
 import { Button } from "./components/ui/button";
-import { ChevronLeft, ChevronRight, FileText, History, Sigma, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, History, Loader2, Sigma, X } from "lucide-react";
 
 function App() {
   return (
@@ -362,9 +362,12 @@ function AppContent() {
                 {storedThinkingNotes === undefined ||
                 notesSyncedForSessionId !== activeSessionId ? (
                   <div
-                    className="flex flex-1 min-h-0 flex flex-col rounded-xl bg-[#0A0A0A]"
+                    className="flex flex-1 min-h-0 flex flex-col items-center justify-center gap-3 rounded-xl bg-[#0A0A0A]"
                     aria-label="Loading notes"
-                  />
+                  >
+                    <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Loading notes…</span>
+                  </div>
                 ) : (
                   <>
                     <MarkdownEditor
@@ -378,9 +381,12 @@ function AppContent() {
                     />
                     {!notesEditorReady && (
                       <div
-                        className="absolute inset-0 z-10 rounded-xl bg-[#0A0A0A]"
+                        className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl bg-[#0A0A0A]"
                         aria-label="Loading notes"
-                      />
+                      >
+                        <Loader2 className="size-6 animate-spin text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">Loading notes…</span>
+                      </div>
                     )}
                   </>
                 )}
