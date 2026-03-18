@@ -457,6 +457,8 @@ export function ConceptGraphOverlay({
                     const isHovered = hoveredNode?.id === node.id;
                     const showDescription = isHovered && node.description;
                     const isReferenced = referencedConceptIds?.has(node.id);
+                    const isLatestBatch = cluster.batchIndex === batches.length - 1;
+                    const showNumberBadge = isLatestBatch;
                     return (
                     <g
                       key={node.id}
@@ -478,7 +480,8 @@ export function ConceptGraphOverlay({
                         className="dark:fill-zinc-800"
                         style={isDimmed ? { opacity: 0.85 } : undefined}
                       />
-                      {/* Number badge - reference with @1, @2, etc. */}
+                      {/* Number badge - only on latest batch (reference with @1, @2) */}
+                      {showNumberBadge && (
                       <g transform={`translate(${x + w - 28}, ${y + 14})`}>
                         {isReferenced && (
                           <circle
@@ -501,6 +504,7 @@ export function ConceptGraphOverlay({
                           {number}
                         </text>
                       </g>
+                      )}
                       <g style={{ pointerEvents: "none" }}>
                         <text
                           x={x + w / 2}
