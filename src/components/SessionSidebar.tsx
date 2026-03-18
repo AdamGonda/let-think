@@ -239,8 +239,12 @@ export function SessionSidebar({
           {!isCollapsed && "New project"}
         </Button>
         <Button
-          variant={viewMode === "notesList" ? "secondary" : "ghost"}
-          className={isCollapsed ? "h-10 w-10 p-0 justify-center" : "justify-start h-10 w-full"}
+          variant="ghost"
+          className={`${isCollapsed ? "h-10 w-10 p-0 justify-center" : "justify-start h-10 w-full"} ${
+            viewMode === "notesList"
+              ? "bg-muted/50 border border-border text-foreground"
+              : ""
+          }`}
           onClick={() =>
             onViewModeChange(viewMode === "notesList" ? "graph" : "notesList")
           }
@@ -257,8 +261,8 @@ export function SessionSidebar({
         }`}
       >
           {/* Projects section */}
-          <div className="flex flex-col gap-1">
-            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground py-1 px-2">
+          <div className="flex flex-col gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/90 px-2 py-1">
               Projects
             </span>
             {data?.filter((g: ProjectWithSessions) => g.project).map((group: ProjectWithSessions) => {
@@ -525,7 +529,7 @@ export function SessionSidebar({
                 setDragOverProjectId(null);
               }}
             >
-              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground py-1">
+              <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/90 py-1 px-2">
                 Sessions
               </span>
             </div>

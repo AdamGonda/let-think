@@ -49,13 +49,13 @@
 }
 
 .dark {
-  --color-bg: #16171d;
-  --color-surface: #1a1b22;
+  --color-bg: #0a0a0a;
+  --color-surface: #0a0a0a;
   --color-border: #3f3f46;
   --color-text: #fafafa;
   --color-text-muted: #a1a1aa;
   --color-primary: #fafafa;
-  --background: oklch(0.145 0 0);
+  --background: #0a0a0a;
   --foreground: oklch(0.985 0 0);
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
