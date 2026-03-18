@@ -43,6 +43,8 @@ interface ConceptGraphOverlayProps {
   onSelectedBatchIndexChange?: (index: number) => void;
   /** Ref to assign a function that opens the batch modal for a given index (for external trigger, e.g. top bar seed button) */
   openBatchModalRef?: MutableRefObject<((batchIndex: number) => void) | null>;
+  /** Concept IDs referenced in chat (via @1, @2) – highlighted with glow */
+  referencedConceptIds?: Set<string>;
 }
 
 export function ConceptGraphOverlay({
@@ -54,6 +56,7 @@ export function ConceptGraphOverlay({
   selectedBatchIndex: controlledBatchIndex,
   onSelectedBatchIndexChange,
   openBatchModalRef,
+  referencedConceptIds,
 }: ConceptGraphOverlayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphViewportRef = useRef<HTMLDivElement>(null);
@@ -203,16 +206,20 @@ export function ConceptGraphOverlay({
         rowHeights.push(maxH);
       }
 
+      // Number nodes by position in batch.nodeIds (1-based) – must match @1, @2 in chat input
       const nodeLayouts: Array<{ node: GraphNode; x: number; y: number; w: number; h: number; number: number }> = [];
       let cy = BATCH_HEADER + BATCH_HEADER_GAP;
-      for (let i = 0; i < batchNodes.length; i++) {
-        const node = batchNodes[i]!;
-        const col = i % GRID_COLS;
-        const row = Math.floor(i / GRID_COLS);
+      let layoutIndex = 0;
+      for (let i = 0; i < batch.nodeIds.length; i++) {
+        const node = nodeMap.get(batch.nodeIds[i]!);
+        if (!node) continue;
+        const col = layoutIndex % GRID_COLS;
+        const row = Math.floor(layoutIndex / GRID_COLS);
         const x = CLUSTER_PAD + col * (cellWidth + NODE_GAP);
         const y = cy;
         const h = node.description ? Math.max(cellHeight, NODE_HEIGHT_EXPANDED) : cellHeight;
         nodeLayouts.push({ node, x, y, w: cellWidth, h, number: i + 1 });
+        layoutIndex++;
         if (col === GRID_COLS - 1) {
           cy += rowHeights[row]! + NODE_GAP;
         }
@@ -449,6 +456,7 @@ export function ConceptGraphOverlay({
                   {cluster.nodes.map(({ node, x, y, w, h, number }) => {
                     const isHovered = hoveredNode?.id === node.id;
                     const showDescription = isHovered && node.description;
+                    const isReferenced = referencedConceptIds?.has(node.id);
                     return (
                     <g
                       key={node.id}
@@ -472,6 +480,16 @@ export function ConceptGraphOverlay({
                       />
                       {/* Number badge - reference with @1, @2, etc. */}
                       <g transform={`translate(${x + w - 28}, ${y + 14})`}>
+                        {isReferenced && (
+                          <circle
+                            cx={10}
+                            cy={10}
+                            r={11}
+                            fill="none"
+                            stroke={isDark ? "rgb(52, 211, 153)" : "rgb(16, 185, 129)"}
+                            strokeWidth={2}
+                          />
+                        )}
                         <circle cx={10} cy={10} r={10} fill={isDark ? "rgba(63,63,70,0.95)" : "rgba(24,24,27,0.9)"} />
                         <text
                           x={10}

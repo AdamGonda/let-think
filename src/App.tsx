@@ -240,6 +240,25 @@ function AppContent() {
     return result;
   }, [conceptGraph?.nodes, batches, selectedBatchIndex]);
 
+  /** Concept IDs referenced in chat (sent messages + current draft) – for card highlight */
+  const referencedConceptIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const msg of messages ?? []) {
+      for (const m of msg.mentions ?? []) {
+        if (m?.conceptId) ids.add(m.conceptId);
+      }
+    }
+    // Also include concepts referenced in current draft (@1, @2, etc.)
+    const conceptByNumber = new Map(numberedConcepts.map((c) => [c.number, c]));
+    const refRegex = /@(\d+)\b/g;
+    let m: RegExpExecArray | null;
+    while ((m = refRegex.exec(draftInput ?? "")) !== null) {
+      const concept = conceptByNumber.get(parseInt(m[1]!, 10));
+      if (concept) ids.add(concept.id);
+    }
+    return ids;
+  }, [messages, draftInput, numberedConcepts]);
+
   const mainContentRef = useRef<HTMLDivElement>(null);
   const openBatchModalRef = useRef<((batchIndex: number) => void) | null>(null);
 
@@ -413,6 +432,7 @@ function AppContent() {
                 selectedBatchIndex={selectedBatchIndex}
                 onSelectedBatchIndexChange={setSelectedBatchIndex}
                 openBatchModalRef={openBatchModalRef}
+                referencedConceptIds={referencedConceptIds}
               />
             ) : (
               <div className="flex flex-1 items-center justify-center text-zinc-600 dark:text-zinc-400 text-base py-6 px-6 text-center">
