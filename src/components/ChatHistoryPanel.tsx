@@ -120,24 +120,29 @@ export function ChatHistoryPanel({
                         )
                       : -1;
                   const hasStep = batchIndex >= 0;
+                  const isFirstInList = index === 0;
+
+                  const dotBase = "absolute left-[7px] top-3 w-3 h-3 -translate-x-1/2 shrink-0 ring-4 ring-white dark:ring-[#1a1b22] z-10 rounded-full";
+                  const dotFirst = "bg-red-500";
+                  const dotRest = "bg-zinc-900 dark:bg-zinc-100";
 
                   return (
                     <li
                       key={key}
                       className="relative flex pb-6 last:pb-0"
                     >
-                      {/* Timeline dot - clickable when message has a matching step */}
+                      {/* Timeline dot - first item solid, rest outline; clickable when message has a matching step */}
                       {hasStep && onNavigateToStep ? (
                         <button
                           type="button"
                           onClick={() => onNavigateToStep(batchIndex)}
-                          className="absolute left-[7px] top-3 w-3 h-3 -translate-x-1/2 rounded-full bg-zinc-900 dark:bg-zinc-100 shrink-0 ring-4 ring-white dark:ring-[#1a1b22] z-10 cursor-pointer hover:scale-125 transition-transform focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-[#1a1b22]"
+                          className={`${dotBase} ${isFirstInList ? dotFirst : dotRest} cursor-pointer hover:scale-125 transition-transform focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-[#1a1b22]`}
                           title="Go to this step in the graph"
                           aria-label={`Go to step ${batchIndex + 1} in graph`}
                         />
                       ) : (
                         <div
-                          className="absolute left-[7px] top-3 w-3 h-3 -translate-x-1/2 rounded-full bg-zinc-900 dark:bg-zinc-100 shrink-0 ring-4 ring-white dark:ring-[#1a1b22] z-10 hover:scale-125 transition-transform"
+                          className={`${dotBase} ${isFirstInList ? dotFirst : dotRest} hover:scale-125 transition-transform`}
                           aria-hidden
                         />
                       )}
