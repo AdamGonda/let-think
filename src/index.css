@@ -199,10 +199,12 @@ body {
   min-height: 0;
 }
 /* Padding only on container; text-input uses padding:inherit so cursor aligns with text */
+/* Extra bottom padding = scroll past end (like VS Code) so cursor isn't stuck at viewport bottom */
 .md-editor-focused .w-md-editor-text {
   font-size: 22px !important;
   line-height: 1.6 !important;
   padding: 1.5rem 2rem !important;
+  padding-bottom: calc(1.5rem + 25em) !important; /* scroll past end */
   font-family: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
 }
 .md-editor-focused .w-md-editor-text-pre > code {
