@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
 
 type GraphNode = {
   id: string;
@@ -262,7 +262,7 @@ export function ConceptGraphOverlay({
                   >
                     {showNumberBadge && (
                       <div
-                        className="absolute top-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold"
+                        className="absolute top-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-10"
                         style={{
                           outline: isReferenced
                             ? isDark
@@ -275,22 +275,35 @@ export function ConceptGraphOverlay({
                         {number}
                       </div>
                     )}
-                    <CardHeader className="pr-10">
-                      <CardTitle className="text-xl">{node.name}</CardTitle>
-                    </CardHeader>
-                    {node.description ? (
-                      <CardContent
-                        className={`flex-1 min-h-0 overflow-y-auto text-muted-foreground text-base leading-relaxed transition-opacity duration-200 ${
+                    {/* Default: centered title only */}
+                    <div
+                      className={`absolute inset-0 flex items-center justify-center px-6 py-4 transition-opacity duration-200 ${
+                        showDescription ? "opacity-0 pointer-events-none" : "opacity-100"
+                      }`}
+                    >
+                      <CardTitle className="text-2xl sm:text-3xl font-semibold text-center">
+                        {node.name}
+                      </CardTitle>
+                    </div>
+                    {/* Hover overlay: title at top, description below */}
+                    {node.description && (
+                      <div
+                        className={`absolute inset-0 flex flex-col p-6 overflow-hidden transition-opacity duration-200 ${
                           showDescription ? "opacity-100" : "opacity-0 pointer-events-none"
                         }`}
-                        style={{
-                          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                        }}
                       >
-                        {node.description}
-                      </CardContent>
-                    ) : (
-                      <div className="flex-1 min-h-0" aria-hidden />
+                        <CardTitle className="text-xl font-semibold shrink-0 text-left pr-10">
+                          {node.name}
+                        </CardTitle>
+                        <CardContent
+                          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden text-muted-foreground text-base leading-relaxed pt-3 text-left px-0"
+                          style={{
+                            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                          }}
+                        >
+                          {node.description}
+                        </CardContent>
+                      </div>
                     )}
                   </Card>
                 );
