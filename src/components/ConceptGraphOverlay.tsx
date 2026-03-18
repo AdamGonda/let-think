@@ -288,8 +288,10 @@ export function ConceptGraphOverlay({
                     {/* Hover overlay: title at top, description below */}
                     {node.description && (
                       <div
-                        className={`absolute inset-0 flex flex-col p-6 overflow-hidden transition-opacity duration-200 ${
-                          showDescription ? "opacity-100" : "opacity-0 pointer-events-none"
+                        className={`absolute inset-0 flex flex-col p-6 overflow-hidden transition-all duration-200 ease-out ${
+                          showDescription
+                            ? "opacity-100 translate-y-0"
+                            : "opacity-0 pointer-events-none translate-y-2"
                         }`}
                       >
                         <CardTitle className="text-xl font-semibold shrink-0 text-left pr-10">
