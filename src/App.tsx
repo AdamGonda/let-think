@@ -342,16 +342,18 @@ function AppContent() {
         <main className="flex flex-1 flex-col min-w-0">
         <div
           ref={mainContentRef}
-          className="flex flex-1 min-h-0 flex-col relative"
+          className="flex flex-1 min-h-0 flex-col"
         >
           {!showOverlay && activeSessionId && (
-            <>
-            <PaginationDots
-              currentIndex={selectedBatchIndex}
-              totalItems={batches.length}
-              onSelect={setSelectedBatchIndex}
-            />
-            <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+            <header className="flex items-center justify-between gap-4 shrink-0 py-3 px-4 border-b border-zinc-200 dark:border-zinc-700">
+              <div className="flex-1 flex justify-center min-w-0">
+                <PaginationDots
+                  currentIndex={selectedBatchIndex}
+                  totalItems={batches.length}
+                  onSelect={setSelectedBatchIndex}
+                />
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
               {batches.length > 1 && (
                 <>
                   <button
@@ -418,8 +420,8 @@ function AppContent() {
                   <line x1="10" x2="8" y1="9" y2="9" />
                 </svg>
               </button>
-            </div>
-            </>
+              </div>
+            </header>
           )}
           <div className="flex flex-1 min-h-0 items-stretch justify-stretch">
             {activeSessionId ? (

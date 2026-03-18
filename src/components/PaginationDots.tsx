@@ -42,7 +42,7 @@ export function PaginationDots({
   const dots = Array.from({ length: totalItems }, (_, i) => i);
 
   return (
-    <div className="absolute top-10 left-1/2 -translate-x-1/2 z-10 flex items-center justify-center">
+    <div className="flex items-center justify-center">
       <div className="relative w-28 overflow-x-clip">
         <div
           className="absolute -top-0.5"

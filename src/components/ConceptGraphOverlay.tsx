@@ -21,17 +21,6 @@ export type ConceptGraphData = {
   }>;
 };
 
-const NODE_GAP = 32;
-const CLUSTER_PAD = 24;
-const CLUSTER_GAP = 120;
-const BATCH_HEADER = 40;
-const BATCH_HEADER_GAP = 56;
-const VIEWPORT_PADDING = 0;
-const NODE_HEIGHT_EXPANDED = 200;
-const GRID_COLS = 3;
-const MIN_CELL_WIDTH = 200;
-const MIN_CELL_HEIGHT = 80;
-
 interface ConceptGraphOverlayProps {
   graph: ConceptGraphData | null;
   className?: string;
@@ -60,8 +49,6 @@ export function ConceptGraphOverlay({
 }: ConceptGraphOverlayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphViewportRef = useRef<HTMLDivElement>(null);
-  const svgRef = useRef<SVGSVGElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 400, height: 300 });
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const [batchModalIndex, setBatchModalIndex] = useState<number | null>(null);
   const [internalBatchIndex, setInternalBatchIndex] = useState<number>(0);
@@ -138,6 +125,15 @@ export function ConceptGraphOverlay({
 
   // When a new batch arrives, jump to it to show the most up-to-date batch (uncontrolled only)
   const prevBatchesLengthRef = useRef(0);
+  const prevBatchIndexRef = useRef(selectedBatchIndex);
+
+  // Determine slide direction when batch changes (for animation)
+  const slideDirection =
+    selectedBatchIndex > prevBatchIndexRef.current ? "right" : "left";
+  useEffect(() => {
+    prevBatchIndexRef.current = selectedBatchIndex;
+  }, [selectedBatchIndex]);
+
   useEffect(() => {
     if (batches.length === 0 || isControlled) return;
     const prevLen = prevBatchesLengthRef.current;
@@ -151,181 +147,22 @@ export function ConceptGraphOverlay({
 
   const isEmpty = !graph?.nodes?.length;
 
-  // Compute a STABLE full rail layout for ALL batches. Cluster positions stay fixed;
-  // only translateX changes when navigating, enabling smooth CSS transition.
-  const layout = useMemo(() => {
-    // Clamp selectedBatchIndex to avoid out-of-bounds access when switching sessions
-    const safeBatchIndex = Math.min(
+  // Current batch nodes only – single-batch view
+  const currentBatchNodes = useMemo(() => {
+    const safeIndex = Math.min(
       Math.max(0, selectedBatchIndex),
       Math.max(0, batches.length - 1)
     );
+    const batch = batches[safeIndex];
+    if (!batch?.nodeIds?.length) return [];
+    return batch.nodeIds
+      .map((id) => nodeMap.get(id))
+      .filter((n): n is GraphNode => n != null)
+      .map((node, i) => ({ node, number: i + 1 }));
+  }, [batches, selectedBatchIndex, nodeMap]);
 
-    const gridAreaWidth = dimensions.width - 2 * VIEWPORT_PADDING - 2 * CLUSTER_PAD;
-    const gridAreaHeight = dimensions.height - 32 - BATCH_HEADER - BATCH_HEADER_GAP - CLUSTER_PAD;
-
-    const maxNumRows = Math.max(
-      1,
-      ...batches.map((b) => Math.ceil((b.nodeIds?.length ?? 0) / GRID_COLS))
-    );
-    const cellWidth = Math.max(
-      MIN_CELL_WIDTH,
-      (gridAreaWidth - (GRID_COLS - 1) * NODE_GAP) / GRID_COLS
-    );
-    const cellHeight = Math.max(
-      MIN_CELL_HEIGHT,
-      (gridAreaHeight - (maxNumRows - 1) * NODE_GAP) / maxNumRows
-    );
-
-    const allDims: Array<{
-      width: number;
-      height: number;
-      nodes: Array<{ node: GraphNode; x: number; y: number; w: number; h: number; number: number }>;
-    }> = [];
-
-    for (const batch of batches) {
-      const batchNodes = batch.nodeIds
-        .map((id) => nodeMap.get(id))
-        .filter((n): n is GraphNode => n != null);
-
-      if (batchNodes.length === 0) {
-        allDims.push({ width: 120, height: 80, nodes: [] });
-        continue;
-      }
-
-      const numRows = Math.ceil(batchNodes.length / GRID_COLS);
-      const rowHeights: number[] = [];
-      for (let r = 0; r < numRows; r++) {
-        let maxH = 0;
-        for (let c = 0; c < GRID_COLS; c++) {
-          const i = r * GRID_COLS + c;
-          if (i >= batchNodes.length) break;
-          const node = batchNodes[i]!;
-          const h = node.description ? Math.max(cellHeight, NODE_HEIGHT_EXPANDED) : cellHeight;
-          maxH = Math.max(maxH, h);
-        }
-        rowHeights.push(maxH);
-      }
-
-      // Number nodes by position in batch.nodeIds (1-based) – must match @1, @2 in chat input
-      const nodeLayouts: Array<{ node: GraphNode; x: number; y: number; w: number; h: number; number: number }> = [];
-      let cy = BATCH_HEADER + BATCH_HEADER_GAP;
-      let layoutIndex = 0;
-      for (let i = 0; i < batch.nodeIds.length; i++) {
-        const node = nodeMap.get(batch.nodeIds[i]!);
-        if (!node) continue;
-        const col = layoutIndex % GRID_COLS;
-        const row = Math.floor(layoutIndex / GRID_COLS);
-        const x = CLUSTER_PAD + col * (cellWidth + NODE_GAP);
-        const y = cy;
-        const h = node.description ? Math.max(cellHeight, NODE_HEIGHT_EXPANDED) : cellHeight;
-        nodeLayouts.push({ node, x, y, w: cellWidth, h, number: i + 1 });
-        layoutIndex++;
-        if (col === GRID_COLS - 1) {
-          cy += rowHeights[row]! + NODE_GAP;
-        }
-      }
-      const clusterHeight = cy - NODE_GAP + CLUSTER_PAD;
-      const clusterWidth = GRID_COLS * cellWidth + (GRID_COLS - 1) * NODE_GAP + 2 * CLUSTER_PAD;
-
-      allDims.push({
-        width: clusterWidth,
-        height: clusterHeight,
-        nodes: nodeLayouts,
-      });
-    }
-
-    if (allDims.length === 0) {
-      return {
-        clusters: [],
-        totalWidth: dimensions.width,
-        totalHeight: dimensions.height,
-        translateX: 0,
-      };
-    }
-
-    // Build full rail: fixed x positions for every batch (stable across navigation)
-    const maxHeight = Math.max(...allDims.map((d) => d.height), 100);
-    // Center the cluster in the visible content area (px-4 padding reduces the content box)
-    const contentWidth = dimensions.width - 2 * VIEWPORT_PADDING;
-    const viewportCenterX = contentWidth / 2;
-
-    const allClusters: Array<{
-      x: number;
-      y: number;
-      width: number;
-      height: number;
-      role: "prev" | "center" | "next";
-      batchIndex: number;
-      nodes: Array<{ node: GraphNode; x: number; y: number; w: number; h: number; number: number }>;
-    }> = [];
-
-    let x = VIEWPORT_PADDING;
-    for (let i = 0; i < batches.length; i++) {
-      const dims = allDims[i]!;
-      const role: "prev" | "center" | "next" =
-        i < selectedBatchIndex ? "prev" : i > selectedBatchIndex ? "next" : "center";
-      const clusterY = VIEWPORT_PADDING;
-
-      allClusters.push({
-        x,
-        y: clusterY,
-        width: dims.width,
-        height: dims.height,
-        role,
-        batchIndex: i,
-        nodes: dims.nodes.map((nl) => ({
-          ...nl,
-          x: nl.x + x,
-          y: nl.y + clusterY,
-          w: nl.w,
-          h: nl.h,
-          number: nl.number,
-        })),
-      });
-      x += dims.width + CLUSTER_GAP;
-    }
-
-    // Only include prev, center, next for rendering (3 max)
-    const prevIdx = safeBatchIndex - 1;
-    const nextIdx = safeBatchIndex + 1;
-    const indicesToRender = [
-      ...(prevIdx >= 0 ? [prevIdx] : []),
-      selectedBatchIndex,
-      ...(nextIdx < batches.length ? [nextIdx] : []),
-    ];
-    const clusters = indicesToRender
-      .map((i) => allClusters[i])
-      .filter((c): c is NonNullable<typeof c> => c != null);
-
-    const contentMaxX = allClusters.length > 0 ? allClusters[allClusters.length - 1]!.x + allClusters[allClusters.length - 1]!.width : dimensions.width;
-    const totalWidth = Math.max(dimensions.width, contentMaxX + VIEWPORT_PADDING);
-
-    const centerCluster = allClusters[safeBatchIndex];
-    const centerClusterCenter = centerCluster ? centerCluster.x + centerCluster.width / 2 : viewportCenterX;
-    const translateX = viewportCenterX - centerClusterCenter;
-
-    return {
-      clusters,
-      totalWidth,
-      totalHeight: Math.max(dimensions.height, maxHeight + CLUSTER_PAD * 2),
-      translateX,
-    };
-  }, [batches, selectedBatchIndex, nodeMap, dimensions]);
-
-  useEffect(() => {
-    const el = graphViewportRef.current ?? containerRef.current;
-    if (!el) return;
-    const updateSize = () => {
-      const target = graphViewportRef.current ?? containerRef.current;
-      if (target) {
-        setDimensions({ width: target.clientWidth, height: target.clientHeight });
-      }
-    };
-    updateSize();
-    const ro = new ResizeObserver(updateSize);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [isEmpty]);
+  const isLatestBatch =
+    batches.length > 0 && selectedBatchIndex === batches.length - 1;
 
   return (
     <div
@@ -340,233 +177,174 @@ export function ConceptGraphOverlay({
         </div>
       ) : (
         <>
-        {batchModalIndex != null &&
-          batches[batchModalIndex]?.description &&
-          typeof document !== "undefined" &&
-          (() => {
-            const portalTarget = modalContainerRef?.current ?? document.body;
-            const isInMain = portalTarget !== document.body;
-            return createPortal(
-              <>
-                <div
-                  className={`${isInMain ? "absolute" : "fixed"} inset-0 z-[9998] bg-black/40`}
-                  onClick={() => setBatchModalIndex(null)}
-                  aria-hidden
-                />
-                <div
-                  className={`${isInMain ? "absolute" : "fixed"} top-1/2 z-[9999] w-[960px] max-w-[95vw] max-h-[80vh] -translate-x-1/2 -translate-y-1/2`}
-                  style={{ left: modalLeft != null ? `${modalLeft}px` : "50%" }}
-                  role="dialog"
-                  aria-modal
-                  aria-labelledby="batch-modal-title"
-                >
+          {batchModalIndex != null &&
+            batches[batchModalIndex]?.description &&
+            typeof document !== "undefined" &&
+            (() => {
+              const portalTarget = modalContainerRef?.current ?? document.body;
+              const isInMain = portalTarget !== document.body;
+              return createPortal(
+                <>
                   <div
-                    className="flex flex-col max-h-[80vh] rounded bg-white dark:bg-zinc-800 shadow-2xl border-2 border-zinc-300 dark:border-zinc-600 animate-modal-in"
-                    onClick={(e) => e.stopPropagation()}
+                    className={`${isInMain ? "absolute" : "fixed"} inset-0 z-[9998] bg-black/40`}
+                    onClick={() => setBatchModalIndex(null)}
+                    aria-hidden
+                  />
+                  <div
+                    className={`${isInMain ? "absolute" : "fixed"} top-1/2 z-[9999] w-[960px] max-w-[95vw] max-h-[80vh] -translate-x-1/2 -translate-y-1/2`}
+                    style={{ left: modalLeft != null ? `${modalLeft}px` : "50%" }}
+                    role="dialog"
+                    aria-modal
+                    aria-labelledby="batch-modal-title"
                   >
-                    <div className="flex items-center justify-between shrink-0 px-6 py-4 border-b border-zinc-300 dark:border-zinc-600">
-                      <h2 id="batch-modal-title" className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
-                        User Input
-                      </h2>
-                      <div className="flex items-center gap-1">
-                        <button
-                          type="button"
-                          onClick={async () => {
-                            const text = batches[batchModalIndex]?.description ?? "";
-                            await navigator.clipboard.writeText(text);
-                            toast.success("Copied to clipboard");
-                            if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
-                            setCopied(true);
-                            copiedTimeoutRef.current = setTimeout(() => {
-                              setCopied(false);
-                              copiedTimeoutRef.current = null;
-                            }, 2000);
-                          }}
-                          className="p-1.5 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
-                          aria-label={copied ? "Copied" : "Copy to clipboard"}
+                    <div
+                      className="flex flex-col max-h-[80vh] rounded bg-white dark:bg-zinc-800 shadow-2xl border-2 border-zinc-300 dark:border-zinc-600 animate-modal-in"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center justify-between shrink-0 px-6 py-4 border-b border-zinc-300 dark:border-zinc-600">
+                        <h2
+                          id="batch-modal-title"
+                          className="text-sm font-semibold text-zinc-700 dark:text-zinc-300"
                         >
-                          {copied ? (
-                            <Check size={20} strokeWidth={2.5} className="text-emerald-600 dark:text-emerald-400" />
-                          ) : (
-                            <Clipboard size={20} strokeWidth={2} />
-                          )}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setBatchModalIndex(null)}
-                          className="p-1.5 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
-                          aria-label="Close"
-                        >
-                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M18 6 6 18" />
-                            <path d="m6 6 12 12" />
-                          </svg>
-                        </button>
+                          User Input
+                        </h2>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const text = batches[batchModalIndex]?.description ?? "";
+                              await navigator.clipboard.writeText(text);
+                              toast.success("Copied to clipboard");
+                              if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
+                              setCopied(true);
+                              copiedTimeoutRef.current = setTimeout(() => {
+                                setCopied(false);
+                                copiedTimeoutRef.current = null;
+                              }, 2000);
+                            }}
+                            className="p-1.5 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                            aria-label={copied ? "Copied" : "Copy to clipboard"}
+                          >
+                            {copied ? (
+                              <Check
+                                size={20}
+                                strokeWidth={2.5}
+                                className="text-emerald-600 dark:text-emerald-400"
+                              />
+                            ) : (
+                              <Clipboard size={20} strokeWidth={2} />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setBatchModalIndex(null)}
+                            className="p-1.5 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
+                            aria-label="Close"
+                          >
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="20"
+                              height="20"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                              <path d="M18 6 6 18" />
+                              <path d="m6 6 12 12" />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                      <div
+                        className="overflow-y-auto overscroll-contain p-6 min-h-0"
+                        style={{
+                          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                        }}
+                      >
+                        <pre className="text-left text-zinc-800 dark:text-white/95 whitespace-pre-wrap leading-relaxed text-sm font-mono">
+                          {batches[batchModalIndex]!.description}
+                        </pre>
                       </div>
                     </div>
-                    <div
-                      className="overflow-y-auto overscroll-contain p-6 min-h-0"
-                      style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif' }}
-                    >
-                      <pre className="text-left text-zinc-800 dark:text-white/95 whitespace-pre-wrap leading-relaxed text-sm font-mono">
-                        {batches[batchModalIndex]!.description}
-                      </pre>
-                    </div>
                   </div>
-                </div>
-              </>,
-            portalTarget
-          );
-          })()}
-        <div
-          ref={graphViewportRef}
-          className="flex flex-1 min-h-0 min-w-0 overflow-hidden relative py-4 touch-none"
-        >
-          <div
-            className="inline-block"
-            style={{
-              transform: `translate3d(${layout.translateX}px, 0, 0)`,
-              transition: "transform 0.4s cubic-bezier(0.32, 0.72, 0, 1)",
-              willChange: "transform",
-            }}
-          >
-          <svg
-            ref={svgRef}
-            width={layout.totalWidth}
-            height={Math.max(dimensions.height, layout.totalHeight)}
-            className="min-h-full block"
-            style={{
-              minWidth: dimensions.width,
-            }}
-          >
-            {/* Cluster backgrounds and nodes */}
-            {layout.clusters.map((cluster) => {
-              const isCenter = cluster.role === "center";
-              const isDimmed = cluster.role !== "center";
-              return (
-                <g
-                  key={`cluster-${cluster.batchIndex}`}
-                  onClick={
-                    isDimmed
-                      ? () => setSelectedBatchIndex(cluster.batchIndex)
-                      : undefined
-                  }
-                  style={isDimmed ? { cursor: "pointer" } : undefined}
-                >
-                  {cluster.nodes.map(({ node, x, y, w, h, number }) => {
-                    const isHovered = hoveredNode?.id === node.id;
-                    const showDescription = isHovered && node.description;
-                    const isReferenced = referencedConceptIds?.has(node.id);
-                    const isLatestBatch = cluster.batchIndex === batches.length - 1;
-                    const showNumberBadge = isLatestBatch;
-                    return (
-                    <g
-                      key={node.id}
-                      onMouseEnter={() => setHoveredNode(node)}
-                      onMouseLeave={() => setHoveredNode(null)}
-                    >
-                      <rect
-                        x={x}
-                        y={y}
-                        width={w}
-                        height={h}
-                        rx={4}
-                        ry={4}
-                        fill={
-                          isCenter
-                            ? "rgba(255,255,255,0.98)"
-                            : "rgba(255,255,255,0.85)"
-                        }
-                        className="dark:fill-zinc-800"
-                        style={isDimmed ? { opacity: 0.85 } : undefined}
-                      />
-                      {/* Number badge - only on latest batch (reference with @1, @2) */}
-                      {showNumberBadge && (
-                      <g transform={`translate(${x + w - 28}, ${y + 14})`}>
-                        {isReferenced && (
-                          <circle
-                            cx={10}
-                            cy={10}
-                            r={11}
-                            fill="none"
-                            stroke={isDark ? "rgb(52, 211, 153)" : "rgb(16, 185, 129)"}
-                            strokeWidth={2}
-                          />
-                        )}
-                        <circle cx={10} cy={10} r={10} fill={isDark ? "rgba(63,63,70,0.95)" : "rgba(24,24,27,0.9)"} />
-                        <text
-                          x={10}
-                          y={10}
-                          textAnchor="middle"
-                          dominantBaseline="central"
-                          className="fill-white dark:fill-zinc-100 text-sm font-semibold"
-                        >
-                          {number}
-                        </text>
-                      </g>
-                      )}
-                      <g style={{ pointerEvents: "none" }}>
-                        <text
-                          x={x + w / 2}
-                          y={y + h / 2}
-                          textAnchor="middle"
-                          dominantBaseline="middle"
-                          className="text-xl font-semibold fill-zinc-800 dark:fill-zinc-200"
-                          style={{
-                            opacity: showDescription ? 0 : isDimmed ? 0.9 : 1,
-                            transition: "opacity 200ms ease-out",
-                          }}
-                        >
-                          {node.name}
-                        </text>
-                        <text
-                          x={x + 24}
-                          y={y + 20}
-                          textAnchor="start"
-                          dominantBaseline="hanging"
-                          className="text-xl font-semibold fill-zinc-800 dark:fill-zinc-200"
-                          style={{
-                            opacity: showDescription ? (isDimmed ? 0.9 : 1) : 0,
-                            transition: "opacity 200ms ease-out",
-                          }}
-                        >
-                          {node.name}
-                        </text>
-                      </g>
-                      {node.description && (
-                        <foreignObject
-                          x={x + 24}
-                          y={y + 44}
-                          width={w - 48}
-                          height={h - 52}
-                          className="overflow-y-auto overflow-x-hidden"
-                          style={{
-                            opacity: showDescription ? 1 : 0,
-                            transform: showDescription ? "translateY(0)" : "translateY(-8px)",
-                            transition: "opacity 200ms ease-out, transform 200ms ease-out",
-                            pointerEvents: showDescription ? "auto" : "none",
-                          }}
-                        >
-                          <div
-                            className="text-xl leading-tight text-zinc-600 dark:text-zinc-400"
-                            style={{
-                              width: "100%",
-                              fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                            }}
-                          >
-                            {node.description}
-                          </div>
-                        </foreignObject>
-                      )}
-                    </g>
-                    );
-                  })}
-                </g>
+                </>,
+                portalTarget
               );
-            })}
-          </svg>
+            })()}
+          <div
+            ref={graphViewportRef}
+            className="flex flex-1 min-h-0 min-w-0 overflow-auto relative py-4"
+          >
+            <div
+              key={selectedBatchIndex}
+              className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-4 w-full content-start ${
+                slideDirection === "right" ? "animate-batch-from-right" : "animate-batch-from-left"
+              }`}
+              style={{ minHeight: "100%" }}
+            >
+              {currentBatchNodes.map(({ node, number }) => {
+                const isHovered = hoveredNode?.id === node.id;
+                const showDescription = isHovered && node.description;
+                const isReferenced = referencedConceptIds?.has(node.id);
+                const showNumberBadge = isLatestBatch;
+
+                return (
+                  <div
+                    key={node.id}
+                    className="relative rounded-lg bg-white dark:bg-zinc-800 p-4 min-h-[80px] shadow-sm border border-zinc-200 dark:border-zinc-700 transition-all duration-200"
+                    onMouseEnter={() => setHoveredNode(node)}
+                    onMouseLeave={() => setHoveredNode(null)}
+                    style={{
+                      boxShadow: isReferenced
+                        ? isDark
+                          ? "0 0 0 2px rgb(52, 211, 153)"
+                          : "0 0 0 2px rgb(16, 185, 129)"
+                        : undefined,
+                    }}
+                  >
+                    {/* Number badge - only on latest batch (reference with @1, @2) */}
+                    {showNumberBadge && (
+                      <div
+                        className="absolute top-3 right-3 flex items-center justify-center w-8 h-8 rounded-full bg-zinc-800 dark:bg-zinc-700 text-white dark:text-zinc-100 text-sm font-semibold"
+                        style={{
+                          outline: isReferenced
+                            ? isDark
+                              ? "2px solid rgb(52, 211, 153)"
+                              : "2px solid rgb(16, 185, 129)"
+                            : undefined,
+                          outlineOffset: 2,
+                        }}
+                      >
+                        {number}
+                      </div>
+                    )}
+                    <div className="font-semibold text-zinc-800 dark:text-zinc-200 text-xl pr-10">
+                      {node.name}
+                    </div>
+                    {node.description && (
+                      <div
+                        className={`text-zinc-600 dark:text-zinc-400 text-sm mt-2 leading-tight transition-all duration-200 ${
+                          showDescription
+                            ? "opacity-100 translate-y-0"
+                            : "opacity-0 -translate-y-2 pointer-events-none h-0 overflow-hidden"
+                        }`}
+                        style={{
+                          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                        }}
+                      >
+                        <div className="overflow-y-auto max-h-[120px]">
+                          {node.description}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
-        </div>
         </>
       )}
     </div>

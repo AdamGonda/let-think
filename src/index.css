@@ -54,6 +54,37 @@
   animation: modal-in 0.2s ease-out forwards;
 }
 
+/* Batch scroll animation – slide + fade when switching batches */
+@keyframes batch-slide-in-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes batch-slide-in-from-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.animate-batch-from-right {
+  animation: batch-slide-in-from-right 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
+.animate-batch-from-left {
+  animation: batch-slide-in-from-left 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+}
+
 #root {
   width: 100%;
   max-width: 100%;
