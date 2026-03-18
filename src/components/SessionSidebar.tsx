@@ -195,10 +195,27 @@ export function SessionSidebar({
       style={{ width: isCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH }}
     >
       <div
-        className={`flex flex-col gap-1 min-w-0 transition-opacity duration-150 ${
+        className={`flex flex-col gap-1 min-w-0 transition-opacity duration-150 shrink-0 ${
           isCollapsed ? "m-2 items-center" : "m-3"
         }`}
       >
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className={isCollapsed ? "h-9 w-9" : "w-full justify-start gap-2"}
+          onClick={() => setIsCollapsed((c) => !c)}
+          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {isCollapsed ? (
+            <PanelRight className="size-5" />
+          ) : (
+            <>
+              <PanelLeftClose className="size-5" />
+              Collapse
+            </>
+          )}
+        </Button>
         <Button
           variant="ghost"
           className={isCollapsed ? "h-10 w-10 p-0 justify-center" : "justify-start h-10 w-full"}
@@ -607,23 +624,6 @@ export function SessionSidebar({
           isDark={isDark}
           compact={isCollapsed}
         />
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className={isCollapsed ? "h-9 w-9" : "w-full justify-start gap-2"}
-          onClick={() => setIsCollapsed((c) => !c)}
-          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {isCollapsed ? (
-            <PanelRight className="size-5" />
-          ) : (
-            <>
-              <PanelLeftClose className="size-5" />
-              Collapse
-            </>
-          )}
-        </Button>
       </div>
     </aside>
   );
