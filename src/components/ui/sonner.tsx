@@ -12,8 +12,8 @@ const Toaster = ({ theme = "system", ...props }: SonnerToasterProps) => {
       toastOptions={{
         classNames: {
           toast:
-            "group toast rounded-lg border border-zinc-300 dark:border-zinc-600 bg-white dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 shadow-lg",
-          description: "text-zinc-600 dark:text-zinc-400",
+            "group toast rounded-lg border border-border bg-background text-foreground shadow-lg",
+          description: "text-muted-foreground",
         },
       }}
       {...props}

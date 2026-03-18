@@ -1,23 +1,27 @@
 import { useAuthActions } from "@convex-dev/auth/react";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export function SignIn() {
   const { signIn } = useAuthActions();
 
   return (
-    <div className="flex h-screen w-screen items-center justify-center bg-white dark:bg-[#16171d] sign-in-bg">
-      <div className="flex flex-col items-center gap-6 rounded-2xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-[#1a1b22] p-10 shadow-sm max-w-md w-full mx-4">
-        <h1 className="text-2xl font-bold text-zinc-900 dark:text-zinc-100 text-center">
-          Sign in to Think
-        </h1>
-        <p className="text-zinc-600 dark:text-zinc-400 text-center max-w-xs">
-          Sign in with your Google account to access your sessions and projects.
-        </p>
-        <button
-          type="button"
-          onClick={() => void signIn("google")}
-          className="flex items-center justify-center gap-3 rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 px-6 py-3 font-medium hover:opacity-90 transition-opacity w-full"
-        >
-          <svg className="w-5 h-5" viewBox="0 0 24 24">
+    <div className="flex h-screen w-screen items-center justify-center bg-background sign-in-bg">
+      <Card className="flex flex-col items-center gap-6 p-10 shadow-sm max-w-md w-full mx-4">
+        <CardHeader className="p-0 text-center">
+          <h1 className="text-2xl font-bold text-foreground">
+            Sign in to Think
+          </h1>
+        </CardHeader>
+        <CardContent className="flex flex-col items-center gap-6 p-0">
+          <p className="text-muted-foreground text-center max-w-xs">
+            Sign in with your Google account to access your sessions and projects.
+          </p>
+          <Button
+            className="w-full gap-3"
+            onClick={() => void signIn("google")}
+          >
+            <svg className="size-5" viewBox="0 0 24 24">
             <path
               fill="currentColor"
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -35,9 +39,10 @@ export function SignIn() {
               d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
             />
           </svg>
-          Sign in with Google
-        </button>
-      </div>
+            Sign in with Google
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

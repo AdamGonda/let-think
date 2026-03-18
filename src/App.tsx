@@ -21,14 +21,15 @@ import { ConceptGraphOverlay } from "./components/ConceptGraphOverlay";
 import { MarkdownEditor } from "./components/MarkdownEditor";
 import { SignIn } from "./components/SignIn";
 import { Toaster } from "./components/ui/sonner";
-import { ChevronLeft, ChevronRight, Sprout } from "lucide-react";
+import { Button } from "./components/ui/button";
+import { ChevronLeft, ChevronRight, Sprout, FileText, History, Sigma } from "lucide-react";
 
 function App() {
   return (
     <>
       <AuthLoading>
-        <div className="flex h-screen w-screen items-center justify-center bg-[#202024]">
-          <span className="text-zinc-400">Loading…</span>
+        <div className="flex h-screen w-screen items-center justify-center bg-background">
+          <span className="text-muted-foreground">Loading…</span>
         </div>
       </AuthLoading>
       <Unauthenticated>
@@ -281,31 +282,30 @@ function AppContent() {
   };
 
   return (
-    <div className="flex h-screen bg-white dark:bg-[#16171d]">
+    <div className="flex h-screen bg-background">
       {showOverlay && (
         <div
-          className="fixed inset-0 z-[9999] flex h-screen w-screen flex-col bg-[#1e2025]"
+          className="fixed inset-0 z-[9999] flex h-screen w-screen flex-col bg-background"
           aria-busy={isLoading}
           aria-live="polite"
         >
           {canExitOverlay && (
-            <button
-              type="button"
+            <Button
+              variant="outline"
+              size="icon-sm"
+              className="absolute top-4 right-4 z-10"
               onClick={handleExitOverlay}
-              className="absolute top-4 right-4 z-10 p-2 rounded-lg border border-zinc-600 text-zinc-400 hover:text-zinc-100 hover:bg-zinc-700 transition-colors cursor-pointer"
               aria-label="Summarize and return to chat"
             >
-              <svg width="20" height="20" viewBox="0 0 24 24">
-                <text x="12" y="18" textAnchor="middle" fill="currentColor" fontSize="22" fontFamily="serif" fontWeight="600">Σ</text>
-              </svg>
-            </button>
+              <Sigma className="size-5" />
+            </Button>
           )}
           <div className="shrink-0 py-8 flex flex-col items-center gap-1">
-            <span className="text-zinc-400 text-2xl font-medium uppercase tracking-[0.25em]">
+            <span className="text-muted-foreground text-2xl font-medium uppercase tracking-[0.25em]">
               Wake up
             </span>
             {breakRemainingMs != null && breakRemainingMs > 0 && !editorOpen && (
-              <span className="text-zinc-400 text-lg font-medium tabular-nums">
+              <span className="text-muted-foreground text-lg font-medium tabular-nums">
                 {formatBreakCountdown(breakRemainingMs)}
               </span>
             )}
@@ -342,7 +342,7 @@ function AppContent() {
           className="flex flex-1 min-h-0 flex-col"
         >
           {!showOverlay && activeSessionId && (
-            <header className="flex items-center justify-between gap-4 shrink-0 py-3 px-4 border-b border-zinc-200 dark:border-zinc-700">
+            <header className="flex items-center justify-between gap-4 shrink-0 py-3 px-4 border-b border-border">
               <div className="flex-1 flex justify-center min-w-0">
                 <PaginationDots
                   currentIndex={selectedBatchIndex}
@@ -353,70 +353,61 @@ function AppContent() {
               <div className="flex items-center gap-2 shrink-0">
               {batches.length > 1 && (
                 <>
-                  <button
-                    type="button"
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
                     onClick={() =>
                       setSelectedBatchIndex((i) => Math.max(0, i - 1))
                     }
                     disabled={selectedBatchIndex <= 0}
-                    className="p-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Previous step"
                     aria-label="Previous step"
                   >
                     <ChevronLeft size={20} strokeWidth={2} />
-                  </button>
-                  <button
-                    type="button"
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
                     onClick={() =>
                       setSelectedBatchIndex((i) =>
                         Math.min(batches.length - 1, i + 1)
                       )
                     }
                     disabled={selectedBatchIndex >= batches.length - 1}
-                    className="p-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Next step"
                     aria-label="Next step"
                   >
                     <ChevronRight size={20} strokeWidth={2} />
-                  </button>
+                  </Button>
                 </>
               )}
-              <button
-                type="button"
+              <Button
+                variant="outline"
+                size="icon-sm"
                 onClick={() => setHistoryPanelOpen(true)}
-                className="p-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
                 title="Conversation history"
                 aria-label="Conversation history"
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 8v4l3 3" />
-                  <circle cx="12" cy="12" r="10" />
-                </svg>
-              </button>
-              <button
-                type="button"
+                <History className="size-5" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon-sm"
                 onClick={() => openBatchModalRef.current?.(selectedBatchIndex)}
-                className="p-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
                 title="View user input for this step"
                 aria-label="View user input for this step"
               >
-                <Sprout size={20} strokeWidth={2} />
-              </button>
-              <button
-                type="button"
+                <Sprout className="size-5" />
+              </Button>
+              <Button
+                variant="outline"
+                size="icon-sm"
                 onClick={() => setEditorOpen(true)}
-                className="p-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer"
                 title="Open notes"
                 aria-label="Open notes"
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-                  <polyline points="14 2 14 8 20 8" />
-                  <line x1="16" x2="8" y1="13" y2="13" />
-                  <line x1="16" x2="8" y1="17" y2="17" />
-                  <line x1="10" x2="8" y1="9" y2="9" />
-                </svg>
-              </button>
+                <FileText className="size-5" />
+              </Button>
               </div>
             </header>
           )}
@@ -425,7 +416,6 @@ function AppContent() {
               <ConceptGraphOverlay
                 key={activeSessionId}
                 graph={conceptGraph ?? null}
-                modalContainerRef={mainContentRef}
                 isLoading={isLoading}
                 isDark={isDark}
                 selectedBatchIndex={selectedBatchIndex}
@@ -434,7 +424,7 @@ function AppContent() {
                 referencedConceptIds={referencedConceptIds}
               />
             ) : (
-              <div className="flex flex-1 items-center justify-center text-zinc-600 dark:text-zinc-400 text-base py-6 px-6 text-center">
+              <div className="flex flex-1 items-center justify-center text-muted-foreground text-base py-6 px-6 text-center">
                 Select a chat or create a new one to get started
               </div>
             )}

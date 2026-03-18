@@ -2,7 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id, Doc } from "../../convex/_generated/dataModel";
+import { Plus, FolderPlus, ChevronDown, Trash2, X } from "lucide-react";
 import { UserCard } from "./UserCard";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type ProjectWithSessions = {
   project: Doc<"projects"> | null;
@@ -167,41 +170,33 @@ export function SessionSidebar({
 
   return (
     <aside
-      className="shrink-0 flex flex-col h-screen overflow-hidden bg-zinc-50 dark:bg-[#1a1b22] border-r border-zinc-300 dark:border-zinc-700"
+      className="shrink-0 flex flex-col h-screen overflow-hidden bg-muted/30 border-r border-border"
       style={{ width: SIDEBAR_WIDTH }}
     >
       <div className="flex flex-col m-3 gap-1 min-w-0">
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          className="justify-start h-10 w-full"
           onClick={() => handleNewChat()}
           aria-label="New chat"
-          className="flex items-center gap-2 rounded-lg text-zinc-600 h-[40px] dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer shrink-0 w-full py-2.5 px-3"
         >
-          <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M12 5v14" />
-            <path d="M5 12h14" />
-          </svg>
-          <span>New chat</span>
-        </button>
-        <button
-          type="button"
+          <Plus className="size-5 shrink-0" />
+          New chat
+        </Button>
+        <Button
+          variant="ghost"
+          className="justify-start h-10 w-full"
           onClick={handleNewProject}
           aria-label="New project"
-          className="flex items-center gap-2 rounded-lg text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer shrink-0 w-full py-2.5 px-3"
         >
-          <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-            <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-            <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-            <path d="M12 11v6" />
-            <path d="M9 14h6" />
-          </svg>
-          <span>New project</span>
-        </button>
+          <FolderPlus className="size-5 shrink-0" />
+          New project
+        </Button>
       </div>
       <nav className="flex-1 overflow-y-auto py-3 px-3 flex flex-col gap-3">
           {/* Projects section */}
           <div className="flex flex-col gap-1">
-            <span className="text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400 py-1 px-2">
+            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground py-1 px-2">
               Projects
             </span>
             {data?.filter((g: ProjectWithSessions) => g.project).map((group: ProjectWithSessions) => {
@@ -213,8 +208,8 @@ export function SessionSidebar({
             return (
               <div key={projectId} className="flex flex-col gap-1">
                   <div
-                    className={`flex items-center gap-1 group/project rounded-lg border border-zinc-300 dark:border-zinc-600 transition-colors px-3 pl-0 ${
-                      dragOverProjectId === project._id ? "ring-2 ring-zinc-400 dark:ring-zinc-500 ring-inset" : ""
+                    className={`flex items-center gap-1 group/project rounded-lg border border-border transition-colors px-3 pl-0 ${
+                      dragOverProjectId === project._id ? "ring-2 ring-ring ring-inset" : ""
                     }`}
                     onDragOver={(e) => {
                       e.preventDefault();
@@ -232,11 +227,11 @@ export function SessionSidebar({
                     }}
                   >
                     {editingProjectId === project._id ? (
-                      <input
+                      <Input
                         ref={projectInputRef}
                         type="text"
                         defaultValue={project.name}
-                        className="flex-1 min-w-0 py-1 px-2 text-left rounded text-sm font-medium bg-white dark:bg-zinc-800 border border-zinc-400 dark:border-zinc-500 text-zinc-900 dark:text-zinc-100 outline-none focus:border-white dark:focus:border-zinc-800 transition-colors"
+                        className="flex-1 min-w-0 h-8 py-1 px-2 text-left text-sm font-medium"
                         onKeyDown={(e) => {
                           if (e.key === "Enter") {
                             handleRenameProject(project._id, (e.target as HTMLInputElement).value);
@@ -277,89 +272,69 @@ export function SessionSidebar({
                         className="flex-1 min-w-0 flex items-center gap-1 py-2.5 pr-2 pl-1.5 text-left rounded font-medium text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer"
                       >
                         {sessions.length > 0 && (
-                          <span className="shrink-0 flex items-center justify-center w-6 text-zinc-500">
-                            <svg
-                              className={`w-4 h-4 transition-transform ${isExpanded ? "" : "-rotate-90"}`}
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                            >
-                              <path d="m6 9 6 6 6-6" />
-                            </svg>
+                          <span className="shrink-0 flex items-center justify-center w-6 text-muted-foreground">
+                            <ChevronDown
+                              className={`size-4 transition-transform ${isExpanded ? "" : "-rotate-90"}`}
+                            />
                           </span>
                         )}
                         <span className="flex-1 min-w-0 truncate">{project.name}</span>
                       </button>
                     )}
                     {confirmDeleteProjectId !== project._id && (
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        className="opacity-0 group-hover/project:opacity-100 group-hover/project:pointer-events-auto pointer-events-none h-7 shrink-0"
                         onClick={(e) => {
                           e.stopPropagation();
                           handleNewChat(project._id);
                         }}
-                        className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover/project:opacity-100 group-hover/project:pointer-events-auto pointer-events-none hover:bg-zinc-200 dark:hover:bg-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-100 h-7 shrink-0 flex items-center justify-center"
                         aria-label="New chat in project"
                       >
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M12 5v14" />
-                          <path d="M5 12h14" />
-                        </svg>
-                      </button>
+                        <Plus className="size-4" />
+                      </Button>
                     )}
                     {confirmDeleteProjectId === project._id ? (
                       <div className="flex items-center gap-0.5 h-7 shrink-0">
-                        <button
-                          type="button"
+                        <Button
+                          variant="destructive"
+                          size="icon-xs"
+                          className="h-7 w-7"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDeleteProject(project._id);
                           }}
-                          className="p-1 rounded bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/30 cursor-pointer"
                           aria-label="Confirm delete"
                         >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M3 6h18" />
-                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                            <line x1="10" x2="10" y1="11" y2="17" />
-                            <line x1="14" x2="14" y1="11" y2="17" />
-                          </svg>
-                        </button>
-                        <button
-                          type="button"
+                          <Trash2 className="size-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          className="h-7 w-7"
                           onClick={(e) => {
                             e.stopPropagation();
                             setConfirmDeleteProjectId(null);
                           }}
-                          className="p-1 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600 cursor-pointer"
                           aria-label="Cancel delete"
                         >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M18 6 6 18" />
-                            <path d="m6 6 12 12" />
-                          </svg>
-                        </button>
+                          <X className="size-4" />
+                        </Button>
                       </div>
                     ) : (
-                      <button
-                        type="button"
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        className="opacity-0 group-hover/project:opacity-100 group-hover/project:pointer-events-auto pointer-events-none hover:bg-destructive/20 hover:text-destructive h-7 shrink-0"
                         onClick={(e) => {
                           e.stopPropagation();
                           setConfirmDeleteProjectId(project._id);
                         }}
-                        className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover/project:opacity-100 group-hover/project:pointer-events-auto pointer-events-none hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 h-7 shrink-0 flex items-center justify-center"
                         aria-label="Delete project"
                       >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M3 6h18" />
-                          <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                          <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                          <line x1="10" x2="10" y1="11" y2="17" />
-                          <line x1="14" x2="14" y1="11" y2="17" />
-                        </svg>
-                      </button>
+                        <Trash2 className="size-4" />
+                      </Button>
                     )}
                   </div>
                 {isExpanded &&
@@ -385,16 +360,16 @@ export function SessionSidebar({
                       }}
                       className={`group flex items-center gap-1 py-1.5 px-3 ml-4 rounded-lg border transition-colors cursor-grab active:cursor-grabbing select-none ${
                         activeSessionId === session._id
-                          ? "bg-zinc-100 dark:bg-zinc-700/50 border-zinc-300 dark:border-zinc-600 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-                          : "border-transparent hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
+                          ? "bg-muted/50 border-border hover:bg-muted"
+                          : "border-transparent hover:bg-muted hover:border-border"
                       }`}
                     >
                       {editingSessionId === session._id ? (
-                        <input
+                        <Input
                           ref={sessionInputRef}
                           type="text"
                           defaultValue={session.title}
-                          className="flex-1 min-w-0 py-1 px-2 text-left rounded text-sm bg-white dark:bg-zinc-800 border border-zinc-400 dark:border-zinc-500 text-zinc-900 dark:text-zinc-100 outline-none focus:border-white dark:focus:border-zinc-800 transition-colors"
+                          className="flex-1 min-w-0 h-8 py-1 px-2 text-left text-sm"
                           onKeyDown={(e) => {
                             if (e.key === "Enter") {
                               handleRename(session._id, (e.target as HTMLInputElement).value);
@@ -412,8 +387,8 @@ export function SessionSidebar({
                         <div
                           className={`flex-1 min-w-0 text-left truncate pointer-events-none text-sm py-0.5 ${
                             activeSessionId === session._id
-                              ? "text-zinc-900 dark:text-zinc-100"
-                              : "text-zinc-600 dark:text-zinc-400"
+                              ? "text-foreground"
+                              : "text-muted-foreground"
                           }`}
                         >
                           {session.title}
@@ -421,56 +396,44 @@ export function SessionSidebar({
                       )}
                       {confirmDeleteSessionId === session._id ? (
                         <div className="flex items-center gap-0.5 h-7 shrink-0">
-                          <button
-                            type="button"
+                          <Button
+                            variant="destructive"
+                            size="icon-xs"
+                            className="h-7 w-7"
                             onClick={(e) => {
                               e.stopPropagation();
                               handleDelete(session._id);
                             }}
-                            className="p-1 rounded bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/30 cursor-pointer"
                             aria-label="Confirm delete"
                           >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M3 6h18" />
-                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                              <line x1="10" x2="10" y1="11" y2="17" />
-                              <line x1="14" x2="14" y1="11" y2="17" />
-                            </svg>
-                          </button>
-                          <button
-                            type="button"
+                            <Trash2 className="size-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-xs"
+                            className="h-7 w-7"
                             onClick={(e) => {
                               e.stopPropagation();
                               setConfirmDeleteSessionId(null);
                             }}
-                            className="p-1 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600 cursor-pointer"
                             aria-label="Cancel delete"
                           >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M18 6 6 18" />
-                              <path d="m6 6 12 12" />
-                            </svg>
-                          </button>
+                            <X className="size-4" />
+                          </Button>
                         </div>
                       ) : (
-                        <button
-                          type="button"
+                        <Button
+                          variant="ghost"
+                          size="icon-xs"
+                          className="opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto pointer-events-none hover:bg-destructive/20 hover:text-destructive h-7 shrink-0"
                           onClick={(e) => {
                             e.stopPropagation();
                             setConfirmDeleteSessionId(session._id);
                           }}
-                          className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto pointer-events-none hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 h-7 shrink-0 flex items-center justify-center"
                           aria-label="Delete session"
                         >
-                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                            <path d="M3 6h18" />
-                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                            <line x1="10" x2="10" y1="11" y2="17" />
-                            <line x1="14" x2="14" y1="11" y2="17" />
-                          </svg>
-                        </button>
+                          <Trash2 className="size-4" />
+                        </Button>
                       )}
                     </div>
                   ))}
@@ -482,8 +445,8 @@ export function SessionSidebar({
           {/* Sessions section (sessions without a project) */}
           <div className="flex flex-col gap-1">
             <div
-              className={`flex items-center gap-1 rounded-lg border transition-colors py-1.5 px-0 border-transparent ${
-                dragOverProjectId === "inbox" ? "ring-2 ring-zinc-400 dark:ring-zinc-500 ring-inset" : ""
+                className={`flex items-center gap-1 rounded-lg border transition-colors py-1.5 px-0 border-transparent ${
+                dragOverProjectId === "inbox" ? "ring-2 ring-ring ring-inset" : ""
               }`}
               onDragOver={(e) => {
                 e.preventDefault();
@@ -500,7 +463,7 @@ export function SessionSidebar({
                 setDragOverProjectId(null);
               }}
             >
-              <span className="text-xs font-medium uppercase tracking-wider text-zinc-500 dark:text-zinc-400 py-1">
+              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground py-1">
                 Sessions
               </span>
             </div>
@@ -526,16 +489,16 @@ export function SessionSidebar({
                 }}
                 className={`group flex items-center gap-1 py-1.5 px-3 rounded-lg border transition-colors cursor-grab active:cursor-grabbing select-none ${
                   activeSessionId === session._id
-                    ? "bg-zinc-100 dark:bg-zinc-700/50 border-zinc-300 dark:border-zinc-600 hover:bg-zinc-200 dark:hover:bg-zinc-700"
-                    : "border-transparent hover:bg-zinc-200 dark:hover:bg-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600"
+                    ? "bg-muted/50 border-border hover:bg-muted"
+                    : "border-transparent hover:bg-muted hover:border-border"
                 }`}
               >
                 {editingSessionId === session._id ? (
-                  <input
+                  <Input
                     ref={sessionInputRef}
                     type="text"
                     defaultValue={session.title}
-                    className="flex-1 min-w-0 py-1 px-2 text-left rounded text-sm bg-white dark:bg-zinc-800 border border-zinc-400 dark:border-zinc-500 text-zinc-900 dark:text-zinc-100 outline-none focus:border-white dark:focus:border-zinc-800 transition-colors"
+                    className="flex-1 min-w-0 h-8 py-1 px-2 text-left text-sm"
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         handleRename(session._id, (e.target as HTMLInputElement).value);
@@ -553,8 +516,8 @@ export function SessionSidebar({
                   <div
                     className={`flex-1 min-w-0 text-left truncate pointer-events-none text-sm py-0.5 ${
                       activeSessionId === session._id
-                        ? "text-zinc-900 dark:text-zinc-100"
-                        : "text-zinc-600 dark:text-zinc-400"
+                        ? "text-foreground"
+                        : "text-muted-foreground"
                     }`}
                   >
                     {session.title}
@@ -562,62 +525,50 @@ export function SessionSidebar({
                 )}
                 {confirmDeleteSessionId === session._id ? (
                   <div className="flex items-center gap-0.5 h-7 shrink-0">
-                    <button
-                      type="button"
+                    <Button
+                      variant="destructive"
+                      size="icon-xs"
+                      className="h-7 w-7"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleDelete(session._id);
                       }}
-                      className="p-1 rounded bg-red-500/20 text-red-600 dark:text-red-400 hover:bg-red-500/30 cursor-pointer"
                       aria-label="Confirm delete"
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M3 6h18" />
-                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                        <line x1="10" x2="10" y1="11" y2="17" />
-                        <line x1="14" x2="14" y1="11" y2="17" />
-                      </svg>
-                    </button>
-                    <button
-                      type="button"
+                      <Trash2 className="size-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      className="h-7 w-7"
                       onClick={(e) => {
                         e.stopPropagation();
                         setConfirmDeleteSessionId(null);
                       }}
-                      className="p-1 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600 cursor-pointer"
                       aria-label="Cancel delete"
                     >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M18 6 6 18" />
-                        <path d="m6 6 12 12" />
-                      </svg>
-                    </button>
+                      <X className="size-4" />
+                    </Button>
                   </div>
                 ) : (
-                  <button
-                    type="button"
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    className="opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto pointer-events-none hover:bg-destructive/20 hover:text-destructive h-7 shrink-0"
                     onClick={(e) => {
                       e.stopPropagation();
                       setConfirmDeleteSessionId(session._id);
                     }}
-                    className="p-1 rounded cursor-pointer text-zinc-500 dark:text-zinc-400 opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto pointer-events-none hover:bg-red-500/20 hover:text-red-600 dark:hover:text-red-400 h-7 shrink-0 flex items-center justify-center"
                     aria-label="Delete session"
                   >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M3 6h18" />
-                      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-                      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-                      <line x1="10" x2="10" y1="11" y2="17" />
-                      <line x1="14" x2="14" y1="11" y2="17" />
-                    </svg>
-                  </button>
+                    <Trash2 className="size-4" />
+                  </Button>
                 )}
               </div>
             ))}
           </div>
       </nav>
-      <div className="flex flex-col gap-2 p-3 border-t border-zinc-300 dark:border-zinc-700">
+      <div className="flex flex-col gap-2 p-3 border-t border-border">
         <UserCard onToggleTheme={onToggleTheme} isDark={isDark} />
       </div>
     </aside>

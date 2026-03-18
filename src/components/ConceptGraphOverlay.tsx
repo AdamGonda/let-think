@@ -1,8 +1,15 @@
 import { useRef, useEffect, useState, useMemo } from "react";
-import { createPortal } from "react-dom";
-import type { RefObject, MutableRefObject } from "react";
-import { Check, Clipboard } from "lucide-react";
+import type { MutableRefObject } from "react";
+import { Check, Clipboard, X } from "lucide-react";
 import { toast } from "sonner";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type GraphNode = {
   id: string;
@@ -24,7 +31,6 @@ export type ConceptGraphData = {
 interface ConceptGraphOverlayProps {
   graph: ConceptGraphData | null;
   className?: string;
-  modalContainerRef?: RefObject<HTMLDivElement | null>;
   isLoading?: boolean;
   isDark?: boolean;
   /** Controlled batch index – when provided, navigation is controlled from parent */
@@ -39,7 +45,6 @@ interface ConceptGraphOverlayProps {
 export function ConceptGraphOverlay({
   graph,
   className,
-  modalContainerRef,
   isLoading: _isLoading = false,
   isDark = false,
   selectedBatchIndex: controlledBatchIndex,
@@ -63,42 +68,6 @@ export function ConceptGraphOverlay({
   const setSelectedBatchIndex = isControlled
     ? onSelectedBatchIndexChange
     : setInternalBatchIndex;
-
-  // Align modal x with graph viewport center (fixes offset when portaled to main content)
-  const [modalLeft, setModalLeft] = useState<number | null>(null);
-  // Portal target must not be read from ref during render – store in state, sync in effect
-  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
-  useEffect(() => {
-    if (batchModalIndex == null) {
-      setPortalTarget(null);
-      return;
-    }
-    setPortalTarget(modalContainerRef?.current ?? document.body);
-  }, [batchModalIndex, modalContainerRef]);
-
-  useEffect(() => {
-    if (batchModalIndex == null || !graphViewportRef.current) {
-      setModalLeft(null);
-      return;
-    }
-    const updatePosition = () => {
-      const viewport = graphViewportRef.current;
-      const container = modalContainerRef?.current;
-      if (!viewport) return;
-      const rect = viewport.getBoundingClientRect();
-      const centerX = rect.left + rect.width / 2;
-      const left =
-        container && document.body.contains(container)
-          ? centerX - container.getBoundingClientRect().left
-          : centerX;
-      setModalLeft(left);
-    };
-    updatePosition();
-    const ro = new ResizeObserver(updatePosition);
-    ro.observe(graphViewportRef.current);
-    if (modalContainerRef?.current) ro.observe(modalContainerRef.current);
-    return () => ro.disconnect();
-  }, [batchModalIndex, modalContainerRef]);
 
   // Build batches: use graph.batches, or fallback to single batch with all nodes
   const batches = useMemo(() => {
@@ -197,104 +166,63 @@ export function ConceptGraphOverlay({
         </div>
       ) : (
         <>
-          {batchModalIndex != null &&
-            batches[batchModalIndex]?.description &&
-            typeof document !== "undefined" &&
-            portalTarget &&
-            (() => {
-              const target = portalTarget;
-              const isInMain = target !== document.body;
-              return createPortal(
-                <>
-                  <div
-                    className={`${isInMain ? "absolute" : "fixed"} inset-0 z-[9998] bg-black/40`}
-                    onClick={() => setBatchModalIndex(null)}
-                    aria-hidden
-                  />
-                  <div
-                    className={`${isInMain ? "absolute" : "fixed"} top-1/2 z-[9999] w-[960px] max-w-[95vw] max-h-[80vh] -translate-x-1/2 -translate-y-1/2`}
-                    style={{ left: modalLeft != null ? `${modalLeft}px` : "50%" }}
-                    role="dialog"
-                    aria-modal
-                    aria-labelledby="batch-modal-title"
-                  >
-                    <div
-                      className="flex flex-col max-h-[80vh] rounded bg-white dark:bg-zinc-800 shadow-2xl border-2 border-zinc-300 dark:border-zinc-600 animate-modal-in"
-                      onClick={(e) => e.stopPropagation()}
+          {batchModalIndex != null && batches[batchModalIndex]?.description && (
+            <Dialog
+              open
+              onOpenChange={(open) => !open && setBatchModalIndex(null)}
+            >
+              <DialogContent
+                className="w-[960px] max-w-[95vw] max-h-[80vh] flex flex-col p-0 gap-0"
+                showCloseButton={false}
+              >
+                <DialogHeader className="flex flex-row items-center justify-between shrink-0 px-6 py-4 border-b border-border">
+                  <DialogTitle id="batch-modal-title">User Input</DialogTitle>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={async () => {
+                        const text = batches[batchModalIndex]?.description ?? "";
+                        await navigator.clipboard.writeText(text);
+                        toast.success("Copied to clipboard");
+                        if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
+                        setCopied(true);
+                        copiedTimeoutRef.current = setTimeout(() => {
+                          setCopied(false);
+                          copiedTimeoutRef.current = null;
+                        }, 2000);
+                      }}
+                      aria-label={copied ? "Copied" : "Copy to clipboard"}
                     >
-                      <div className="flex items-center justify-between shrink-0 px-6 py-4 border-b border-zinc-300 dark:border-zinc-600">
-                        <h2
-                          id="batch-modal-title"
-                          className="text-sm font-semibold text-zinc-700 dark:text-zinc-300"
-                        >
-                          User Input
-                        </h2>
-                        <div className="flex items-center gap-1">
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              const text = batches[batchModalIndex]?.description ?? "";
-                              await navigator.clipboard.writeText(text);
-                              toast.success("Copied to clipboard");
-                              if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
-                              setCopied(true);
-                              copiedTimeoutRef.current = setTimeout(() => {
-                                setCopied(false);
-                                copiedTimeoutRef.current = null;
-                              }, 2000);
-                            }}
-                            className="p-1.5 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
-                            aria-label={copied ? "Copied" : "Copy to clipboard"}
-                          >
-                            {copied ? (
-                              <Check
-                                size={20}
-                                strokeWidth={2.5}
-                                className="text-emerald-600 dark:text-emerald-400"
-                              />
-                            ) : (
-                              <Clipboard size={20} strokeWidth={2} />
-                            )}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setBatchModalIndex(null)}
-                            className="p-1.5 rounded text-zinc-500 hover:bg-zinc-200 dark:hover:bg-zinc-600 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors cursor-pointer"
-                            aria-label="Close"
-                          >
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="20"
-                              height="20"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                            >
-                              <path d="M18 6 6 18" />
-                              <path d="m6 6 12 12" />
-                            </svg>
-                          </button>
-                        </div>
-                      </div>
-                      <div
-                        className="overflow-y-auto overscroll-contain p-6 min-h-0"
-                        style={{
-                          fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                        }}
-                      >
-                        <pre className="text-left text-zinc-800 dark:text-white/95 whitespace-pre-wrap leading-relaxed text-sm font-mono">
-                          {batches[batchModalIndex]!.description}
-                        </pre>
-                      </div>
-                    </div>
+                      {copied ? (
+                        <Check size={20} strokeWidth={2.5} className="text-emerald-600 dark:text-emerald-400" />
+                      ) : (
+                        <Clipboard size={20} strokeWidth={2} />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => setBatchModalIndex(null)}
+                      aria-label="Close"
+                    >
+                      <X size={20} strokeWidth={2} />
+                    </Button>
                   </div>
-                </>,
-                target
-              );
-            })()}
+                </DialogHeader>
+                <div
+                  className="overflow-y-auto overscroll-contain p-6 min-h-0"
+                  style={{
+                    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+                  }}
+                >
+                  <pre className="text-left text-foreground whitespace-pre-wrap leading-relaxed text-sm font-mono">
+                    {batches[batchModalIndex]!.description}
+                  </pre>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
           <div
             ref={graphViewportRef}
             className="flex flex-1 min-h-0 min-w-0 overflow-auto relative py-4"
@@ -318,9 +246,10 @@ export function ConceptGraphOverlay({
                 const showNumberBadge = isLatestBatch;
 
                 return (
-                  <div
+                  <Card
                     key={node.id}
-                    className="relative flex min-h-[200px] flex-col rounded-lg bg-white dark:bg-zinc-800 p-4 shadow-sm border border-zinc-200 dark:border-zinc-700 transition-colors duration-200 h-full"
+                    size="sm"
+                    className="relative flex min-h-[200px] flex-col h-full transition-colors duration-200"
                     onMouseEnter={() => setHoveredNode(node)}
                     onMouseLeave={() => setHoveredNode(null)}
                     style={{
@@ -331,10 +260,9 @@ export function ConceptGraphOverlay({
                         : undefined,
                     }}
                   >
-                    {/* Number badge - only on latest batch (reference with @1, @2) */}
                     {showNumberBadge && (
                       <div
-                        className="absolute top-3 right-3 flex items-center justify-center w-8 h-8 rounded-full bg-zinc-800 dark:bg-zinc-700 text-white dark:text-zinc-100 text-sm font-semibold"
+                        className="absolute top-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold"
                         style={{
                           outline: isReferenced
                             ? isDark
@@ -347,12 +275,12 @@ export function ConceptGraphOverlay({
                         {number}
                       </div>
                     )}
-                    <div className="shrink-0 font-semibold text-zinc-800 dark:text-zinc-200 text-xl pr-10">
-                      {node.name}
-                    </div>
+                    <CardHeader className="pr-10">
+                      <CardTitle className="text-xl">{node.name}</CardTitle>
+                    </CardHeader>
                     {node.description ? (
-                      <div
-                        className={`flex-1 min-h-0 mt-2 overflow-y-auto text-zinc-600 dark:text-zinc-400 text-base leading-relaxed transition-opacity duration-200 ${
+                      <CardContent
+                        className={`flex-1 min-h-0 overflow-y-auto text-muted-foreground text-base leading-relaxed transition-opacity duration-200 ${
                           showDescription ? "opacity-100" : "opacity-0 pointer-events-none"
                         }`}
                         style={{
@@ -360,11 +288,11 @@ export function ConceptGraphOverlay({
                         }}
                       >
                         {node.description}
-                      </div>
+                      </CardContent>
                     ) : (
                       <div className="flex-1 min-h-0" aria-hidden />
                     )}
-                  </div>
+                  </Card>
                 );
               })}
             </div>
