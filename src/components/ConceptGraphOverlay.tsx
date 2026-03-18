@@ -281,7 +281,7 @@ export function ConceptGraphOverlay({
                         showDescription ? "opacity-0 pointer-events-none" : "opacity-100"
                       }`}
                     >
-                      <CardTitle className="text-2xl sm:text-3xl font-semibold text-center">
+                      <CardTitle className="text-xl sm:text-2xl font-semibold text-center">
                         {node.name}
                       </CardTitle>
                     </div>
@@ -294,11 +294,11 @@ export function ConceptGraphOverlay({
                             : "opacity-0 pointer-events-none translate-y-2"
                         }`}
                       >
-                        <CardTitle className="text-xl font-semibold shrink-0 text-left pr-10">
+                        <CardTitle className="text-lg sm:text-xl font-semibold shrink-0 text-left pr-10">
                           {node.name}
                         </CardTitle>
                         <CardContent
-                          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden text-muted-foreground text-base leading-relaxed pt-3 text-left px-0"
+                          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden text-muted-foreground text-sm leading-relaxed pt-4 text-left px-0"
                           style={{
                             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
                           }}
