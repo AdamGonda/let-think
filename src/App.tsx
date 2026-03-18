@@ -14,6 +14,7 @@ import {
   formatBreakCountdown,
 } from "./hooks/useSessionManager";
 import { SessionSidebar } from "./components/SessionSidebar";
+import { NotesListPanel } from "./components/NotesListPanel";
 import { Chat } from "./components/Chat";
 import { ChatHistoryPanel } from "./components/ChatHistoryPanel";
 import { PaginationDots } from "./components/PaginationDots";
@@ -56,6 +57,7 @@ function AppContent() {
   const [overlayDismissed, setOverlayDismissed] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<"graph" | "notesList">("graph");
   const [selectedBatchIndex, setSelectedBatchIndex] = useState(0);
   const { breakRemainingMs } = useSessionManager(activeSessionId);
   const isInBreak = breakRemainingMs !== null && breakRemainingMs > 0;
@@ -331,16 +333,33 @@ function AppContent() {
         <SessionSidebar
           activeSessionId={activeSessionId}
           activeProjectId={activeProjectId}
-          onSelectSession={setActiveSessionId}
+          onSelectSession={(id) => {
+            setActiveSessionId(id);
+            if (viewMode === "notesList") setViewMode("graph");
+          }}
           onSelectProject={setActiveProjectId}
           onToggleTheme={toggleTheme}
           isDark={isDark}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
         />
         <main className="flex flex-1 flex-col min-w-0">
         <div
           ref={mainContentRef}
           className="flex flex-1 min-h-0 flex-col"
         >
+          {viewMode === "notesList" ? (
+            <NotesListPanel
+              onSelectSession={(session) => {
+                setActiveSessionId(session._id);
+                if (session.projectId) setActiveProjectId(session.projectId);
+                else setActiveProjectId(null);
+                setEditorOpen(true);
+                setViewMode("graph");
+              }}
+            />
+          ) : (
+          <>
           {!showOverlay && activeSessionId && (
             <header className="flex items-center justify-between gap-4 shrink-0 py-3 px-4 border-b border-border">
               <div className="flex-1 flex justify-center min-w-0">
@@ -429,8 +448,10 @@ function AppContent() {
               </div>
             )}
           </div>
+          </>
+          )}
         </div>
-        {!showOverlay &&
+        {!showOverlay && viewMode === "graph" &&
           (batches.length === 0 ||
             selectedBatchIndex === batches.length - 1) && (
             <Chat
@@ -445,6 +466,7 @@ function AppContent() {
               setDraftInput={setDraftInput}
             />
           )}
+        {viewMode === "graph" && (
         <ChatHistoryPanel
           isOpen={historyPanelOpen}
           onClose={() => setHistoryPanelOpen(false)}
@@ -456,6 +478,7 @@ function AppContent() {
             setHistoryPanelOpen(false);
           }}
         />
+        )}
       </main>
       </div>
       <Toaster theme={isDark ? "dark" : "light"} />

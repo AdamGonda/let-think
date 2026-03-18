@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id, Doc } from "../../convex/_generated/dataModel";
-import { Plus, FolderPlus, ChevronDown, Trash2, X, PanelLeftClose, PanelRight } from "lucide-react";
+import { Plus, FolderPlus, ChevronDown, Trash2, X, PanelLeftClose, PanelRight, FileText } from "lucide-react";
 import { UserCard } from "./UserCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,6 +33,8 @@ interface SessionSidebarProps {
   onSelectProject: (id: Id<"projects"> | null) => void;
   onToggleTheme: () => void;
   isDark: boolean;
+  viewMode: "graph" | "notesList";
+  onViewModeChange: (mode: "graph" | "notesList") => void;
 }
 
 export function SessionSidebar({
@@ -42,6 +44,8 @@ export function SessionSidebar({
   onSelectProject,
   onToggleTheme,
   isDark,
+  viewMode,
+  onViewModeChange,
 }: SessionSidebarProps) {
   const data = useQuery(api.projects.listWithSessions);
   const createSession = useMutation(api.sessions.create);
@@ -233,6 +237,18 @@ export function SessionSidebar({
         >
           <FolderPlus className="size-5 shrink-0" />
           {!isCollapsed && "New project"}
+        </Button>
+        <Button
+          variant={viewMode === "notesList" ? "secondary" : "ghost"}
+          className={isCollapsed ? "h-10 w-10 p-0 justify-center" : "justify-start h-10 w-full"}
+          onClick={() =>
+            onViewModeChange(viewMode === "notesList" ? "graph" : "notesList")
+          }
+          aria-label="View thinking notes"
+          aria-pressed={viewMode === "notesList"}
+        >
+          <FileText className="size-5 shrink-0" />
+          {!isCollapsed && "Notes"}
         </Button>
       </div>
       <nav
