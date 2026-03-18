@@ -137,12 +137,22 @@ export function ConceptGraphOverlay({
   const prevBatchesLengthRef = useRef(0);
   const prevBatchIndexRef = useRef(selectedBatchIndex);
 
-  // Determine slide direction when batch changes (for animation)
-  const slideDirection =
-    selectedBatchIndex > prevBatchIndexRef.current ? "right" : "left";
+  // Slide animation – only during batch transition, removed after so hover can't replay it
+  const [isAnimating, setIsAnimating] = useState(false);
+  const slideDirectionRef = useRef<"left" | "right">("left");
   useEffect(() => {
-    prevBatchIndexRef.current = selectedBatchIndex;
+    const prev = prevBatchIndexRef.current;
+    if (selectedBatchIndex !== prev) {
+      slideDirectionRef.current =
+        selectedBatchIndex > prev ? "right" : "left";
+      prevBatchIndexRef.current = selectedBatchIndex;
+      setIsAnimating(true);
+    }
   }, [selectedBatchIndex]);
+
+  const handleBatchAnimationEnd = () => {
+    setIsAnimating(false);
+  };
 
   useEffect(() => {
     if (batches.length === 0 || isControlled) return;
@@ -292,9 +302,14 @@ export function ConceptGraphOverlay({
             <div
               key={selectedBatchIndex}
               className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-4 w-full h-full ${
-                slideDirection === "right" ? "animate-batch-from-right" : "animate-batch-from-left"
+                isAnimating
+                  ? slideDirectionRef.current === "right"
+                    ? "animate-batch-from-right"
+                    : "animate-batch-from-left"
+                  : ""
               }`}
               style={{ gridAutoRows: "minmax(200px, 1fr)" }}
+              onAnimationEnd={handleBatchAnimationEnd}
             >
               {currentBatchNodes.map(({ node, number }) => {
                 const isHovered = hoveredNode?.id === node.id;
