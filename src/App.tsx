@@ -23,7 +23,7 @@ import { MarkdownEditor } from "./components/MarkdownEditor";
 import { SignIn } from "./components/SignIn";
 import { Toaster } from "./components/ui/sonner";
 import { Button } from "./components/ui/button";
-import { ChevronLeft, ChevronRight, Sprout, FileText, History, Sigma, X, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sprout, FileText, History, Sigma, X } from "lucide-react";
 
 function App() {
   return (
@@ -90,6 +90,8 @@ function AppContent() {
   const prevSessionIdRef = useRef<Id<"sessions"> | null>(null);
   const appliedStoredForSessionRef = useRef<Id<"sessions"> | null>(null);
   const hasEverHadSelectionRef = useRef(false);
+  const [notesEditorReady, setNotesEditorReady] = useState(false);
+  const [notesSyncedForSessionId, setNotesSyncedForSessionId] = useState<Id<"sessions"> | null>(null);
 
   useEffect(() => {
     if (activeSessionId) hasEverHadSelectionRef.current = true;
@@ -160,16 +162,17 @@ function AppContent() {
 
     if (sessionChanged) {
       appliedStoredForSessionRef.current = null;
+      setNotesSyncedForSessionId(null);
       setDraftInput(activeSessionId == null ? "" : (storedDraft ?? ""));
-      setNotes(
-        activeSessionId == null ? "" : (storedThinkingNotes ?? ""),
-      );
+      setNotes("");
       if (
         activeSessionId != null &&
         storedDraft !== undefined &&
         storedThinkingNotes !== undefined
       ) {
         appliedStoredForSessionRef.current = activeSessionId;
+        setNotes(storedThinkingNotes ?? "");
+        setNotesSyncedForSessionId(activeSessionId);
       }
     } else if (
       activeSessionId != null &&
@@ -177,10 +180,10 @@ function AppContent() {
       storedDraft !== undefined &&
       storedThinkingNotes !== undefined
     ) {
-      // Stored data just loaded for current session (e.g. page refresh)
       setDraftInput(storedDraft ?? "");
       setNotes(storedThinkingNotes ?? "");
       appliedStoredForSessionRef.current = activeSessionId;
+      setNotesSyncedForSessionId(activeSessionId);
     }
   }, [
     activeSessionId,
@@ -275,6 +278,23 @@ function AppContent() {
 
   const canExitOverlay = !isLoading && !isInBreak;
 
+  // Reset notes editor ready when overlay closes so we show loading on next open
+  useEffect(() => {
+    if (!editorOpen) {
+      setNotesEditorReady(false);
+    }
+  }, [editorOpen]);
+
+  // Show loading until data is loaded AND we've painted at least one frame (avoids flicker when opening from graph with cached data)
+  useEffect(() => {
+    if (!editorOpen || !activeSessionId || storedThinkingNotes === undefined)
+      return;
+    const id = requestAnimationFrame(() => {
+      requestAnimationFrame(() => setNotesEditorReady(true));
+    });
+    return () => cancelAnimationFrame(id);
+  }, [editorOpen, activeSessionId, storedThinkingNotes]);
+
   const handleExitOverlay = () => {
     if (!canExitOverlay) return;
     setOverlayDismissed(true);
@@ -319,13 +339,13 @@ function AppContent() {
           {activeSessionId && (
             <div className="flex-1 min-h-0 flex flex-col items-center px-6 pb-8 overflow-hidden">
               <div className="w-full max-w-[720px] flex-1 min-h-0 flex flex-col">
-                {storedThinkingNotes === undefined ? (
-                  <div className="flex flex-1 min-h-0 items-center justify-center">
-                    <Loader2
-                      className="size-12 animate-spin text-chart-1"
-                      aria-label="Loading notes"
-                    />
-                  </div>
+                {storedThinkingNotes === undefined ||
+                !notesEditorReady ||
+                notesSyncedForSessionId !== activeSessionId ? (
+                  <div
+                    className="flex flex-1 min-h-0 flex flex-col rounded-xl bg-[#0A0A0A]"
+                    aria-label="Loading notes"
+                  />
                 ) : (
                   <MarkdownEditor
                     value={notes}
