@@ -334,20 +334,9 @@ function AppContent() {
           className="flex flex-1 min-h-0 flex-col relative"
         >
           {!showOverlay && activeSessionId && (
-            <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
-              {batches.length > 1 && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setSelectedBatchIndex((i) => Math.max(0, i - 1))}
-                    disabled={selectedBatchIndex <= 0}
-                    className="p-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:opacity-50"
-                    title="Previous step"
-                    aria-label="Previous step"
-                  >
-                    <ChevronLeft size={20} strokeWidth={2} />
-                  </button>
-                  <div className="flex items-center gap-1.5" role="tablist" aria-label="Step navigation">
+            <>
+            <div className="absolute top-4 left-4 z-10">
+              <div className="flex items-center gap-1.5" role="tablist" aria-label="Step navigation">
                     {batches.map((_, i) => (
                       <button
                         key={i}
@@ -365,6 +354,20 @@ function AppContent() {
                       />
                     ))}
                   </div>
+            </div>
+            <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+              {batches.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedBatchIndex((i) => Math.max(0, i - 1))}
+                    disabled={selectedBatchIndex <= 0}
+                    className="p-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:opacity-50"
+                    title="Previous step"
+                    aria-label="Previous step"
+                  >
+                    <ChevronLeft size={20} strokeWidth={2} />
+                  </button>
                   <button
                     type="button"
                     onClick={() => setSelectedBatchIndex((i) => Math.min(batches.length - 1, i + 1))}
@@ -414,6 +417,7 @@ function AppContent() {
                 </svg>
               </button>
             </div>
+            </>
           )}
           <div className="flex flex-1 min-h-0 items-stretch justify-stretch">
             {activeSessionId ? (
