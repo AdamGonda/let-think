@@ -1,14 +1,4 @@
 import { useRef, useEffect, useState, useMemo } from "react";
-import type { MutableRefObject } from "react";
-import { Check, Clipboard, X } from "lucide-react";
-import { toast } from "sonner";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 
 type GraphNode = {
@@ -36,8 +26,6 @@ interface ConceptGraphOverlayProps {
   /** Controlled batch index – when provided, navigation is controlled from parent */
   selectedBatchIndex?: number;
   onSelectedBatchIndexChange?: (index: number) => void;
-  /** Ref to assign a function that opens the batch modal for a given index (for external trigger, e.g. top bar seed button) */
-  openBatchModalRef?: MutableRefObject<((batchIndex: number) => void) | null>;
   /** Concept IDs referenced in chat (via @1, @2) – highlighted with glow */
   referencedConceptIds?: Set<string>;
 }
@@ -49,19 +37,12 @@ export function ConceptGraphOverlay({
   isDark = false,
   selectedBatchIndex: controlledBatchIndex,
   onSelectedBatchIndexChange,
-  openBatchModalRef,
   referencedConceptIds,
 }: ConceptGraphOverlayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphViewportRef = useRef<HTMLDivElement>(null);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
-  const [batchModalIndex, setBatchModalIndex] = useState<number | null>(null);
   const [internalBatchIndex, setInternalBatchIndex] = useState<number>(0);
-  const [copied, setCopied] = useState(false);
-  const copiedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => {
-    if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
-  }, []);
 
   const isControlled = controlledBatchIndex !== undefined && onSelectedBatchIndexChange != null;
   const selectedBatchIndex = isControlled ? controlledBatchIndex : internalBatchIndex;
@@ -89,18 +70,6 @@ export function ConceptGraphOverlay({
     graph?.nodes?.forEach((n) => m.set(n.id, n));
     return m;
   }, [graph?.nodes]);
-
-  useEffect(() => {
-    if (!openBatchModalRef) return;
-    openBatchModalRef.current = (batchIndex: number) => {
-      if (batches[batchIndex]?.description) {
-        setBatchModalIndex(batchIndex);
-      }
-    };
-    return () => {
-      openBatchModalRef.current = null;
-    };
-  }, [openBatchModalRef, batches]);
 
   // When a new batch arrives, jump to it to show the most up-to-date batch (uncontrolled only)
   const prevBatchesLengthRef = useRef(0);
@@ -166,63 +135,6 @@ export function ConceptGraphOverlay({
         </div>
       ) : (
         <>
-          {batchModalIndex != null && batches[batchModalIndex]?.description && (
-            <Dialog
-              open
-              onOpenChange={(open) => !open && setBatchModalIndex(null)}
-            >
-              <DialogContent
-                className="w-[960px] max-w-[95vw] max-h-[80vh] flex flex-col p-0 gap-0"
-                showCloseButton={false}
-              >
-                <DialogHeader className="flex flex-row items-center justify-between shrink-0 px-6 py-4 border-b border-border">
-                  <DialogTitle id="batch-modal-title">User Input</DialogTitle>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={async () => {
-                        const text = batches[batchModalIndex]?.description ?? "";
-                        await navigator.clipboard.writeText(text);
-                        toast.success("Copied to clipboard");
-                        if (copiedTimeoutRef.current) clearTimeout(copiedTimeoutRef.current);
-                        setCopied(true);
-                        copiedTimeoutRef.current = setTimeout(() => {
-                          setCopied(false);
-                          copiedTimeoutRef.current = null;
-                        }, 2000);
-                      }}
-                      aria-label={copied ? "Copied" : "Copy to clipboard"}
-                    >
-                      {copied ? (
-                        <Check size={20} strokeWidth={2.5} className="text-emerald-600 dark:text-emerald-400" />
-                      ) : (
-                        <Clipboard size={20} strokeWidth={2} />
-                      )}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => setBatchModalIndex(null)}
-                      aria-label="Close"
-                    >
-                      <X size={20} strokeWidth={2} />
-                    </Button>
-                  </div>
-                </DialogHeader>
-                <div
-                  className="overflow-y-auto overscroll-contain p-6 min-h-0"
-                  style={{
-                    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                  }}
-                >
-                  <pre className="text-left text-foreground whitespace-pre-wrap leading-relaxed text-sm font-mono">
-                    {batches[batchModalIndex]!.description}
-                  </pre>
-                </div>
-              </DialogContent>
-            </Dialog>
-          )}
           <div
             ref={graphViewportRef}
             className="flex flex-1 min-h-0 min-w-0 overflow-auto relative py-4"

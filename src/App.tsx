@@ -23,7 +23,7 @@ import { MarkdownEditor } from "./components/MarkdownEditor";
 import { SignIn } from "./components/SignIn";
 import { Toaster } from "./components/ui/sonner";
 import { Button } from "./components/ui/button";
-import { ChevronLeft, ChevronRight, Sprout, FileText, History, Sigma, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, History, Sigma, X } from "lucide-react";
 
 function App() {
   return (
@@ -263,7 +263,6 @@ function AppContent() {
   }, [isLatestBatch, draftInput, numberedConcepts]);
 
   const mainContentRef = useRef<HTMLDivElement>(null);
-  const openBatchModalRef = useRef<((batchIndex: number) => void) | null>(null);
 
   const overlayActive =
     isLoading || isInBreak || editorOpen || modelRespondedAwaitingDismissal;
@@ -463,15 +462,6 @@ function AppContent() {
               <Button
                 variant="outline"
                 size="icon-sm"
-                onClick={() => openBatchModalRef.current?.(selectedBatchIndex)}
-                title="View user input for this step"
-                aria-label="View user input for this step"
-              >
-                <Sprout className="size-5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon-sm"
                 onClick={() => setEditorOpen(true)}
                 title="Open notes"
                 aria-label="Open notes"
@@ -490,7 +480,6 @@ function AppContent() {
                 isDark={isDark}
                 selectedBatchIndex={selectedBatchIndex}
                 onSelectedBatchIndexChange={setSelectedBatchIndex}
-                openBatchModalRef={openBatchModalRef}
                 referencedConceptIds={referencedConceptIds}
               />
             ) : (
