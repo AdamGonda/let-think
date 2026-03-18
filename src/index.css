@@ -119,11 +119,11 @@
   animation: modal-in 0.2s ease-out forwards;
 }
 
-/* Batch scroll animation – slide + fade when switching batches */
-@keyframes batch-slide-in-from-right {
+/* Batch pagination – swipe in from direction of travel */
+@keyframes batch-swipe-from-right {
   from {
     opacity: 0;
-    transform: translateX(24px);
+    transform: translateX(48px);
   }
   to {
     opacity: 1;
@@ -131,10 +131,10 @@
   }
 }
 
-@keyframes batch-slide-in-from-left {
+@keyframes batch-swipe-from-left {
   from {
     opacity: 0;
-    transform: translateX(-24px);
+    transform: translateX(-48px);
   }
   to {
     opacity: 1;
@@ -142,12 +142,12 @@
   }
 }
 
-.animate-batch-from-right {
-  animation: batch-slide-in-from-right 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+.animate-batch-swipe-right {
+  animation: batch-swipe-from-right 0.3s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
-.animate-batch-from-left {
-  animation: batch-slide-in-from-left 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+.animate-batch-swipe-left {
+  animation: batch-swipe-from-left 0.3s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
 #root {

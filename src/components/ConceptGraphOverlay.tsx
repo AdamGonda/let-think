@@ -75,13 +75,13 @@ export function ConceptGraphOverlay({
   const prevBatchesLengthRef = useRef(0);
   const prevBatchIndexRef = useRef(selectedBatchIndex);
 
-  // Slide animation – only during batch transition, removed after so hover can't replay it
+  // Swipe on batch transition – direction matches nav (next = from right, prev = from left)
   const [isAnimating, setIsAnimating] = useState(false);
-  const slideDirectionRef = useRef<"left" | "right">("left");
+  const swipeDirectionRef = useRef<"left" | "right">("right");
   useEffect(() => {
     const prev = prevBatchIndexRef.current;
     if (selectedBatchIndex !== prev) {
-      slideDirectionRef.current =
+      swipeDirectionRef.current =
         selectedBatchIndex > prev ? "right" : "left";
       prevBatchIndexRef.current = selectedBatchIndex;
       setIsAnimating(true);
@@ -122,6 +122,13 @@ export function ConceptGraphOverlay({
   const isLatestBatch =
     batches.length > 0 && selectedBatchIndex === batches.length - 1;
 
+  // Clear animation state when batch has no nodes (nothing to animate)
+  useEffect(() => {
+    if (isAnimating && currentBatchNodes.length === 0) {
+      setIsAnimating(false);
+    }
+  }, [isAnimating, currentBatchNodes.length]);
+
   return (
     <div
       ref={containerRef}
@@ -143,9 +150,9 @@ export function ConceptGraphOverlay({
               key={selectedBatchIndex}
               className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-4 w-full h-full ${
                 isAnimating
-                  ? slideDirectionRef.current === "right"
-                    ? "animate-batch-from-right"
-                    : "animate-batch-from-left"
+                  ? swipeDirectionRef.current === "right"
+                    ? "animate-batch-swipe-right"
+                    : "animate-batch-swipe-left"
                   : ""
               }`}
               style={{ gridAutoRows: "minmax(200px, 1fr)" }}
