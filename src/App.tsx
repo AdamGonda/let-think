@@ -289,6 +289,27 @@ function AppContent() {
 
   const canExitOverlay = !isLoading && !isInBreak;
 
+  const chatShouldBeVisible =
+    !showOverlay &&
+    viewMode === "graph" &&
+    (batches.length === 0 || selectedBatchIndex === batches.length - 1);
+
+  type ChatVisibility = "hidden" | "entering" | "visible";
+  const [chatVisibility, setChatVisibility] =
+    useState<ChatVisibility>("hidden");
+
+  useEffect(() => {
+    if (chatShouldBeVisible && chatVisibility === "hidden") {
+      setChatVisibility("entering");
+    } else if (!chatShouldBeVisible && chatVisibility !== "hidden") {
+      setChatVisibility("hidden");
+    }
+  }, [chatShouldBeVisible, chatVisibility]);
+
+  const handleChatEnterEnd = () => {
+    setChatVisibility((v) => (v === "entering" ? "visible" : v));
+  };
+
   // Reset notes editor ready when overlay closes so we show loading on next open
   useEffect(() => {
     if (!editorOpen) {
@@ -527,21 +548,30 @@ function AppContent() {
           </>
           )}
         </div>
-        {!showOverlay && viewMode === "graph" &&
-          (batches.length === 0 ||
-            selectedBatchIndex === batches.length - 1) && (
-            <Chat
-              key={activeSessionId ?? "empty"}
-              sessionId={activeSessionId}
-              messageHistory={messages ?? []}
-              isLoading={isLoading}
-              setIsLoading={setIsLoading}
-              onModelResponded={() => setModelRespondedAwaitingDismissal(true)}
-              numberedConcepts={numberedConcepts}
-              draftInput={draftInput}
-              setDraftInput={setDraftInput}
-            />
-          )}
+        {chatVisibility !== "hidden" && viewMode === "graph" && (
+          <div className="overflow-hidden shrink-0">
+            <div
+              className={
+                chatVisibility === "entering" ? "chat-input-slide-in" : ""
+              }
+              onAnimationEnd={
+                chatVisibility === "entering" ? handleChatEnterEnd : undefined
+              }
+            >
+              <Chat
+                key={activeSessionId ?? "empty"}
+                sessionId={activeSessionId}
+                messageHistory={messages ?? []}
+                isLoading={isLoading}
+                setIsLoading={setIsLoading}
+                onModelResponded={() => setModelRespondedAwaitingDismissal(true)}
+                numberedConcepts={numberedConcepts}
+                draftInput={draftInput}
+                setDraftInput={setDraftInput}
+              />
+            </div>
+          </div>
+        )}
         {viewMode === "graph" && (
         <ChatHistoryPanel
           isOpen={historyPanelOpen}
