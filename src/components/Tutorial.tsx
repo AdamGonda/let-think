@@ -37,11 +37,11 @@ function getSteps(): DriveStep[] {
       },
     },
     {
-      element: "[data-tour='new-chat']",
+      element: "[data-tour='new-session']",
       popover: {
-        title: "New chat",
+        title: "New session",
         description:
-          "Start a new thinking session. Each chat builds a concept graph from your ideas. Click here whenever you want to begin fresh.",
+          "Start a new thinking session. Each session builds a concept graph from your ideas. Click here whenever you want to begin fresh.",
         side: "right",
         align: "center",
       },
@@ -51,7 +51,7 @@ function getSteps(): DriveStep[] {
       popover: {
         title: "Projects",
         description:
-          "Create projects to organize related chats. Drag and drop chats between projects. Double-click to rename.",
+          "Create projects to organize related sessions. Drag and drop sessions between projects. Double-click to rename.",
         side: "right",
         align: "center",
       },
@@ -80,10 +80,10 @@ function getSteps(): DriveStep[] {
     },
     {
       element: () =>
-        document.querySelector("[data-tour='chat-input']") ??
+        document.querySelector("[data-tour='session-input']") ??
         document.querySelector("[data-tour='main-content']")!,
       popover: {
-        title: "Chat input",
+        title: "Session input",
         description:
           "Type your thoughts here and press Enter to send. Use <strong>@1</strong>, <strong>@2</strong>, etc. to reference concepts from the latest step—this gives the AI context about what you're building on.",
         side: "top",
@@ -119,7 +119,7 @@ function getSteps(): DriveStep[] {
       popover: {
         title: "You're ready!",
         description:
-          "Create a chat, type something, and watch your ideas take shape. You can always replay this tutorial from the sidebar.",
+          "Create a session, type something, and watch your ideas take shape. You can always replay this tutorial from the sidebar.",
         side: "bottom",
         align: "center",
       },

@@ -201,7 +201,7 @@ export function Chat({
         ? numberedConcepts.length > 0
           ? "Type, @ ref concepts"
           : "Type..."
-        : "Select a chat to start";
+        : "Select a session to start";
 
   const showInteractionCount =
     sessionId && breakRemainingMs === null && remaining !== null && limit !== null;
@@ -209,7 +209,7 @@ export function Chat({
     sessionId && breakRemainingMs === null && remaining === null && limit === null;
 
   return (
-    <div className="flex flex-col gap-2 py-3 px-6 pb-4 border-t border-zinc-300 dark:border-zinc-700 bg-white dark:bg-[#16171d] shrink-0" data-tour="chat-input">
+    <div className="flex flex-col gap-2 py-3 px-6 pb-4 border-t border-zinc-300 dark:border-zinc-700 bg-white dark:bg-[#16171d] shrink-0" data-tour="session-input">
       {showInteractionCount && (
         <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
           {remaining} interactions until long break

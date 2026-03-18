@@ -94,8 +94,8 @@ export function SessionSidebar({
 
   const allSessions = data?.flatMap((g: ProjectWithSessions) => g.sessions) ?? [];
 
-  const handleNewChat = async (projectId?: Id<"projects">) => {
-    // Main "New chat" button creates in inbox; per-project + creates in that project
+  const handleNewSession = async (projectId?: Id<"projects">) => {
+    // Main "New session" button creates in inbox; per-project + creates in that project
     const targetProjectId = projectId;
     const id = await createSession({ projectId: targetProjectId ?? undefined });
     onSelectSession(id);
@@ -224,12 +224,12 @@ export function SessionSidebar({
         <Button
           variant="ghost"
           className={isCollapsed ? "h-10 w-10 p-0 justify-center" : "justify-start h-10 w-full"}
-          onClick={() => handleNewChat()}
-          aria-label="New chat"
-          data-tour="new-chat"
+          onClick={() => handleNewSession()}
+          aria-label="New session"
+          data-tour="new-session"
         >
           <Plus className="size-5 shrink-0" />
-          {!isCollapsed && "New chat"}
+          {!isCollapsed && "New session"}
         </Button>
         <Button
           variant="ghost"
@@ -362,9 +362,9 @@ export function SessionSidebar({
                         className="opacity-0 group-hover/project:opacity-100 group-hover/project:pointer-events-auto pointer-events-none h-7 shrink-0"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleNewChat(project._id);
+                          handleNewSession(project._id);
                         }}
-                        aria-label="New chat in project"
+                        aria-label="New session in project"
                       >
                         <Plus className="size-4" />
                       </Button>
@@ -432,7 +432,7 @@ export function SessionSidebar({
                           setEditingSessionId(session._id);
                         }
                       }}
-                      className={`group flex items-center gap-1 py-1.5 px-3 ml-4 rounded-r-lg border-y border-r border-transparent transition-colors cursor-grab active:cursor-grabbing select-none ${
+                      className={`group flex items-center gap-1 py-1.5 px-3 ml-4 rounded-r-lg border-y border-r border-transparent transition-colors cursor-pointer select-none ${
                         viewMode !== "notesList" && activeSessionId === session._id
                           ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent"
                           : "border-l-2 border-l-transparent hover:bg-muted/50 hover:border-border"
@@ -561,7 +561,7 @@ export function SessionSidebar({
                     setEditingSessionId(session._id);
                   }
                 }}
-                className={`group flex items-center gap-1 py-1.5 px-3 rounded-r-lg border-y border-r border-transparent transition-colors cursor-grab active:cursor-grabbing select-none ${
+                className={`group flex items-center gap-1 py-1.5 px-3 rounded-r-lg border-y border-r border-transparent transition-colors cursor-pointer select-none ${
                   viewMode !== "notesList" && activeSessionId === session._id
                     ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent"
                     : "border-l-2 border-l-transparent hover:bg-muted/50 hover:border-border"

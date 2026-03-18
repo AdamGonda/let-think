@@ -51,7 +51,7 @@ export function NotesListPanel({ onSelectSession, onJumpToSession }: NotesListPa
         </div>
         <p className="font-medium text-foreground">No sessions yet</p>
         <p className="text-sm max-w-[240px]">
-          Create a chat to start taking thinking notes
+          Create a session to start taking thinking notes
         </p>
       </div>
     );

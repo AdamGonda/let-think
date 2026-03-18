@@ -56,7 +56,7 @@ export const create = mutation({
     const id = await ctx.db.insert("sessions", {
       userId,
       projectId,
-      title: "New chat",
+      title: "New session",
       createdAt: now,
     });
     // Create interaction session upfront so user sees count before first message
@@ -196,9 +196,9 @@ export const addMessages = mutation({
         userContent,
       });
     }
-    // Update title from first message if still "New chat"
+    // Update title from first message if still "New session"
     const session = await ctx.db.get(sessionId);
-    if (session?.title === "New chat" && userContent.trim()) {
+    if (session?.title === "New session" && userContent.trim()) {
       const title = userContent.slice(0, 50) + (userContent.length > 50 ? "…" : "");
       await ctx.db.patch(sessionId, { title });
     }

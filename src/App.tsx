@@ -113,7 +113,7 @@ function AppContent() {
   }, [sessions, activeSessionId]);
 
   // Select inbox by default when empty (no projects, inbox empty) so the user
-  // understands they're viewing the inbox and can create a new chat
+  // understands they're viewing the inbox and can create a new session
   useEffect(() => {
     if (!projectsWithSessions) return;
     const hasProjects = projectsWithSessions.some(
@@ -328,7 +328,7 @@ function AppContent() {
               size="icon-sm"
               className="absolute top-4 right-4 z-10"
               onClick={handleExitOverlay}
-              aria-label={viewMode === "notesList" ? "Close" : "Summarize and return to chat"}
+              aria-label={viewMode === "notesList" ? "Close" : "Summarize and return to session"}
             >
               {viewMode === "notesList" ? (
                 <X className="size-5" />
@@ -498,7 +498,7 @@ function AppContent() {
               />
             ) : (
               <div className="flex flex-1 items-center justify-center text-muted-foreground text-base py-6 px-6 text-center">
-                Select a chat or create a new one to get started
+                Select a session or create a new one to get started
               </div>
             )}
           </div>
