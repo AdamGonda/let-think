@@ -267,7 +267,9 @@ function AppContent() {
 
   const overlayActive =
     isLoading || isInBreak || editorOpen || modelRespondedAwaitingDismissal;
-  const showOverlay = overlayActive && !overlayDismissed;
+  // Don't show overlay when there's no session - would show only "Wake up" with no content/exit
+  const showOverlay =
+    overlayActive && !overlayDismissed && activeSessionId != null;
 
   useEffect(() => {
     if (!overlayActive) {
@@ -275,6 +277,15 @@ function AppContent() {
       setModelRespondedAwaitingDismissal(false);
     }
   }, [overlayActive]);
+
+  // When session is cleared, reset overlay state to avoid stuck "Wake up" with no escape
+  useEffect(() => {
+    if (!activeSessionId) {
+      setIsLoading(false);
+      setEditorOpen(false);
+      setModelRespondedAwaitingDismissal(false);
+    }
+  }, [activeSessionId]);
 
   const canExitOverlay = !isLoading && !isInBreak;
 
