@@ -275,7 +275,7 @@ export function SessionSidebar({
               <div key={projectId} className="flex flex-col gap-1">
                   <div
                     className={`flex items-center gap-1 group/project rounded-lg transition-colors px-3 pl-0 ${
-                      activeProjectId === projectId
+                      viewMode !== "notesList" && activeProjectId === projectId
                         ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent/40"
                         : ""
                     } ${
@@ -429,7 +429,7 @@ export function SessionSidebar({
                         }
                       }}
                       className={`group flex items-center gap-1 py-1.5 px-3 ml-4 rounded-r-lg border-y border-r border-transparent transition-colors cursor-grab active:cursor-grabbing select-none ${
-                        activeSessionId === session._id
+                        viewMode !== "notesList" && activeSessionId === session._id
                           ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent"
                           : "border-l-2 border-l-transparent hover:bg-muted/50 hover:border-border"
                       }`}
@@ -456,7 +456,7 @@ export function SessionSidebar({
                       ) : (
                         <div
                           className={`flex-1 min-w-0 text-left truncate pointer-events-none text-sm py-0.5 ${
-                            activeSessionId === session._id
+                            viewMode !== "notesList" && activeSessionId === session._id
                               ? "text-foreground"
                               : "text-muted-foreground"
                           }`}
@@ -558,7 +558,7 @@ export function SessionSidebar({
                   }
                 }}
                 className={`group flex items-center gap-1 py-1.5 px-3 rounded-r-lg border-y border-r border-transparent transition-colors cursor-grab active:cursor-grabbing select-none ${
-                  activeSessionId === session._id
+                  viewMode !== "notesList" && activeSessionId === session._id
                     ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent"
                     : "border-l-2 border-l-transparent hover:bg-muted/50 hover:border-border"
                 }`}
@@ -583,15 +583,15 @@ export function SessionSidebar({
                     onMouseDown={(e) => e.stopPropagation()}
                   />
                 ) : (
-                  <div
-                    className={`flex-1 min-w-0 text-left truncate pointer-events-none text-sm py-0.5 ${
-                      activeSessionId === session._id
-                        ? "text-foreground"
-                        : "text-muted-foreground"
-                    }`}
-                  >
-                    {session.title}
-                  </div>
+                <div
+                  className={`flex-1 min-w-0 text-left truncate pointer-events-none text-sm py-0.5 ${
+                    viewMode !== "notesList" && activeSessionId === session._id
+                      ? "text-foreground"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {session.title}
+                </div>
                 )}
                 {confirmDeleteSessionId === session._id ? (
                   <div className="flex items-center gap-0.5 h-7 shrink-0">
