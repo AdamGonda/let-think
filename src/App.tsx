@@ -296,15 +296,24 @@ function AppContent() {
     }
   }, [editorOpen]);
 
-  // Show loading until data is loaded AND we've painted at least one frame (avoids flicker when opening from graph with cached data)
+  // When data loads, set a short delay then reveal the editor (overlay hides so user sees settled content)
+  const NOTES_REVEAL_DELAY_MS = 200;
   useEffect(() => {
-    if (!editorOpen || !activeSessionId || storedThinkingNotes === undefined)
+    if (
+      !editorOpen ||
+      !activeSessionId ||
+      storedThinkingNotes === undefined ||
+      notesSyncedForSessionId !== activeSessionId
+    )
       return;
-    const id = requestAnimationFrame(() => {
-      requestAnimationFrame(() => setNotesEditorReady(true));
-    });
-    return () => cancelAnimationFrame(id);
-  }, [editorOpen, activeSessionId, storedThinkingNotes]);
+    const id = setTimeout(() => setNotesEditorReady(true), NOTES_REVEAL_DELAY_MS);
+    return () => clearTimeout(id);
+  }, [
+    editorOpen,
+    activeSessionId,
+    storedThinkingNotes,
+    notesSyncedForSessionId,
+  ]);
 
   const handleExitOverlay = () => {
     if (!canExitOverlay) return;
@@ -349,24 +358,31 @@ function AppContent() {
           </div>
           {activeSessionId && (
             <div className="flex-1 min-h-0 flex flex-col items-center px-6 pb-8 overflow-hidden">
-              <div className="w-full max-w-[720px] flex-1 min-h-0 flex flex-col">
+              <div className="relative w-full max-w-[720px] flex-1 min-h-0 flex flex-col">
                 {storedThinkingNotes === undefined ||
-                !notesEditorReady ||
                 notesSyncedForSessionId !== activeSessionId ? (
                   <div
                     className="flex flex-1 min-h-0 flex flex-col rounded-xl bg-[#0A0A0A]"
                     aria-label="Loading notes"
                   />
                 ) : (
-                  <MarkdownEditor
-                    value={notes}
-                    onChange={(v) => setNotes(v ?? "")}
-                    placeholder="Take notes…"
-                    variant="focused"
-                    dark={true}
-                    autoFocus
-                    autoFocusEnd
-                  />
+                  <>
+                    <MarkdownEditor
+                      value={notes}
+                      onChange={(v) => setNotes(v ?? "")}
+                      placeholder="Take notes…"
+                      variant="focused"
+                      dark={true}
+                      autoFocus
+                      autoFocusEnd
+                    />
+                    {!notesEditorReady && (
+                      <div
+                        className="absolute inset-0 z-10 rounded-xl bg-[#0A0A0A]"
+                        aria-label="Loading notes"
+                      />
+                    )}
+                  </>
                 )}
               </div>
             </div>
