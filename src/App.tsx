@@ -23,7 +23,7 @@ import { MarkdownEditor } from "./components/MarkdownEditor";
 import { SignIn } from "./components/SignIn";
 import { Toaster } from "./components/ui/sonner";
 import { Button } from "./components/ui/button";
-import { ChevronLeft, ChevronRight, Sprout, FileText, History, Sigma, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sprout, FileText, History, Sigma, X, Loader2 } from "lucide-react";
 
 function App() {
   return (
@@ -319,15 +319,24 @@ function AppContent() {
           {activeSessionId && (
             <div className="flex-1 min-h-0 flex flex-col items-center px-6 pb-8 overflow-hidden">
               <div className="w-full max-w-[720px] flex-1 min-h-0 flex flex-col">
-                <MarkdownEditor
-                  value={notes}
-                  onChange={(v) => setNotes(v ?? "")}
-                  placeholder="Take notes…"
-                  variant="focused"
-                  dark={true}
-                  autoFocus
-                  autoFocusEnd
-                />
+                {storedThinkingNotes === undefined ? (
+                  <div className="flex flex-1 min-h-0 items-center justify-center">
+                    <Loader2
+                      className="size-12 animate-spin text-chart-1"
+                      aria-label="Loading notes"
+                    />
+                  </div>
+                ) : (
+                  <MarkdownEditor
+                    value={notes}
+                    onChange={(v) => setNotes(v ?? "")}
+                    placeholder="Take notes…"
+                    variant="focused"
+                    dark={true}
+                    autoFocus
+                    autoFocusEnd
+                  />
+                )}
               </div>
             </div>
           )}
