@@ -441,19 +441,21 @@ function AppContent() {
             )}
           </div>
         </div>
-        {!showOverlay && (
-          <Chat
-            key={activeSessionId ?? "empty"}
-            sessionId={activeSessionId}
-            messageHistory={messages ?? []}
-            isLoading={isLoading}
-            setIsLoading={setIsLoading}
-            onModelResponded={() => setModelRespondedAwaitingDismissal(true)}
-            numberedConcepts={numberedConcepts}
-            draftInput={draftInput}
-            setDraftInput={setDraftInput}
-          />
-        )}
+        {!showOverlay &&
+          (batches.length === 0 ||
+            selectedBatchIndex === batches.length - 1) && (
+            <Chat
+              key={activeSessionId ?? "empty"}
+              sessionId={activeSessionId}
+              messageHistory={messages ?? []}
+              isLoading={isLoading}
+              setIsLoading={setIsLoading}
+              onModelResponded={() => setModelRespondedAwaitingDismissal(true)}
+              numberedConcepts={numberedConcepts}
+              draftInput={draftInput}
+              setDraftInput={setDraftInput}
+            />
+          )}
         <ChatHistoryPanel
           isOpen={historyPanelOpen}
           onClose={() => setHistoryPanelOpen(false)}
