@@ -2,6 +2,53 @@ import { useRef, useEffect } from "react";
 import MDEditor from "@uiw/react-md-editor";
 import "@uiw/react-md-editor/markdown-editor.css";
 
+/** Pixel offset of caret from top of content (for scroll-into-view) */
+function getCaretOffset(textarea: HTMLTextAreaElement): number {
+  const style = getComputedStyle(textarea);
+  const mirror = document.createElement("div");
+  Object.assign(mirror.style, {
+    position: "absolute",
+    left: "-9999px",
+    top: "0",
+    width: `${textarea.offsetWidth}px`,
+    padding: style.padding,
+    font: style.font,
+    fontSize: style.fontSize,
+    lineHeight: style.lineHeight,
+    fontFamily: style.fontFamily,
+    whiteSpace: style.whiteSpace,
+    wordWrap: style.wordWrap,
+    overflowWrap: style.overflowWrap,
+    wordBreak: style.wordBreak,
+    boxSizing: style.boxSizing,
+  });
+  const text = textarea.value.substring(0, textarea.selectionStart);
+  const span = document.createElement("span");
+  span.innerHTML = "&#8203;"; /* zero-width space */
+  mirror.textContent = text;
+  mirror.appendChild(span);
+  document.body.appendChild(mirror);
+  const offset = span.offsetTop;
+  document.body.removeChild(mirror);
+  return offset;
+}
+
+function scrollCaretToEyeLevel(
+  textarea: HTMLTextAreaElement,
+  scrollArea: HTMLElement
+) {
+  const caretOffset = getCaretOffset(textarea);
+  const visibleHeight = scrollArea.clientHeight;
+  const scrollHeight = scrollArea.scrollHeight;
+  /* Keep caret at ~1/3 from top (eye level) */
+  const targetScrollTop = caretOffset - visibleHeight / 3;
+  const clamped = Math.max(
+    0,
+    Math.min(targetScrollTop, scrollHeight - visibleHeight)
+  );
+  scrollArea.scrollTop = clamped;
+}
+
 interface MarkdownEditorProps {
   value: string;
   onChange: (value: string | undefined) => void;
@@ -45,6 +92,23 @@ export function MarkdownEditor({
     const id = requestAnimationFrame(() => focusInput());
     return () => cancelAnimationFrame(id);
   }, [autoFocus]);
+
+  /* Auto-scroll to keep cursor at eye level when content changes (e.g. Enter, typing) */
+  useEffect(() => {
+    if (!isFocused) return;
+    const id = requestAnimationFrame(() => {
+      const textarea = wrapperRef.current?.querySelector(
+        ".w-md-editor-text-input"
+      ) as HTMLTextAreaElement | null;
+      const scrollArea = wrapperRef.current?.querySelector(
+        ".w-md-editor-area"
+      ) as HTMLElement | null;
+      if (textarea && scrollArea && document.activeElement === textarea) {
+        scrollCaretToEyeLevel(textarea, scrollArea);
+      }
+    });
+    return () => cancelAnimationFrame(id);
+  }, [value, isFocused]);
 
   const handleWrapperClick = () => {
     const input = wrapperRef.current?.querySelector(
