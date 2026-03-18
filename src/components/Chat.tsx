@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { CornerDownLeft } from "lucide-react";
 import { useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -223,7 +224,7 @@ export function Chat({
         <div className="flex-1 relative min-h-[48px] max-h-[240px] rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-[#16171d] overflow-hidden">
           <div
             ref={mirrorRef}
-            className="absolute inset-0 z-0 py-3 px-4 overflow-y-auto pointer-events-none whitespace-pre-wrap break-words text-[0.95rem] leading-[1.5] text-zinc-950 dark:text-zinc-100"
+            className="absolute inset-0 z-0 py-3 px-4 pr-10 overflow-y-auto pointer-events-none whitespace-pre-wrap break-words text-[0.95rem] leading-[1.5] text-zinc-950 dark:text-zinc-100"
             aria-hidden
           >
             {input ? (
@@ -249,7 +250,7 @@ export function Chat({
           <textarea
             ref={textareaRef}
             rows={1}
-            className="relative z-10 w-full min-h-[48px] max-h-[240px] py-3 px-4 bg-transparent text-transparent caret-zinc-900 dark:caret-zinc-100 font-inherit text-[0.95rem] leading-[1.5] placeholder:transparent focus:outline-none focus:ring-0 disabled:opacity-60 disabled:cursor-not-allowed resize-none overflow-y-auto"
+            className="relative z-10 w-full min-h-[48px] max-h-[240px] py-3 px-4 pr-10 bg-transparent text-transparent caret-zinc-900 dark:caret-zinc-100 font-inherit text-[0.95rem] leading-[1.5] placeholder:transparent focus:outline-none focus:ring-0 disabled:opacity-60 disabled:cursor-not-allowed resize-none overflow-y-auto"
             style={{ color: "transparent" }}
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -258,20 +259,18 @@ export function Chat({
             placeholder={placeholder}
             disabled={isDisabled}
           />
+          <div
+            className="absolute right-3 top-1/2 -translate-y-1/2 z-20 pointer-events-none flex items-center"
+            title="Press Enter to send"
+            aria-hidden
+          >
+            <CornerDownLeft
+              size={18}
+              className="text-zinc-400 dark:text-zinc-500"
+              strokeWidth={2}
+            />
+          </div>
         </div>
-        <button
-          type="submit"
-          className="py-3 px-5 h-[44px] mb-[4px] border-none rounded-lg bg-zinc-900 dark:bg-zinc-100 text-white dark:text-zinc-900 font-inherit font-medium cursor-pointer transition-opacity duration-150 hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:opacity-60 flex items-center justify-center gap-2 min-w-[72px]"
-          disabled={isDisabled}
-        >
-          {isLoading ? (
-            <span className="text-lg uppercase">Wake up</span>
-          ) : breakRemainingFormatted ? (
-            breakRemainingFormatted
-          ) : (
-            "Send"
-          )}
-        </button>
       </form>
     </div>
   );

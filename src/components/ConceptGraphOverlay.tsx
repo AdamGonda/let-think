@@ -471,7 +471,7 @@ export function ConceptGraphOverlay({
                         style={isDimmed ? { opacity: 0.85 } : undefined}
                       />
                       {/* Number badge - reference with @1, @2, etc. */}
-                      <g transform={`translate(${x + 12}, ${y + 14})`}>
+                      <g transform={`translate(${x + w - 28}, ${y + 14})`}>
                         <circle cx={10} cy={10} r={10} fill={isDark ? "rgba(63,63,70,0.95)" : "rgba(24,24,27,0.9)"} />
                         <text
                           x={10}
