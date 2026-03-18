@@ -150,20 +150,6 @@
   animation: batch-swipe-from-left 0.3s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
-/* Chat input slide in/out */
-@keyframes chat-input-slide-in {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
-}
-
-.chat-input-slide-in {
-  animation: chat-input-slide-in 0.25s cubic-bezier(0.32, 0.72, 0, 1) forwards;
-}
-
 #root {
   width: 100%;
   max-width: 100%;

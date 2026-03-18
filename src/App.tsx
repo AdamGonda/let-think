@@ -289,26 +289,10 @@ function AppContent() {
 
   const canExitOverlay = !isLoading && !isInBreak;
 
-  const chatShouldBeVisible =
+  const chatVisible =
     !showOverlay &&
     viewMode === "graph" &&
     (batches.length === 0 || selectedBatchIndex === batches.length - 1);
-
-  type ChatVisibility = "hidden" | "entering" | "visible";
-  const [chatVisibility, setChatVisibility] =
-    useState<ChatVisibility>("hidden");
-
-  useEffect(() => {
-    if (chatShouldBeVisible && chatVisibility === "hidden") {
-      setChatVisibility("entering");
-    } else if (!chatShouldBeVisible && chatVisibility !== "hidden") {
-      setChatVisibility("hidden");
-    }
-  }, [chatShouldBeVisible, chatVisibility]);
-
-  const handleChatEnterEnd = () => {
-    setChatVisibility((v) => (v === "entering" ? "visible" : v));
-  };
 
   // Reset notes editor ready when overlay closes so we show loading on next open
   useEffect(() => {
@@ -548,17 +532,8 @@ function AppContent() {
           </>
           )}
         </div>
-        {chatVisibility !== "hidden" && viewMode === "graph" && (
-          <div className="overflow-hidden shrink-0">
-            <div
-              className={
-                chatVisibility === "entering" ? "chat-input-slide-in" : ""
-              }
-              onAnimationEnd={
-                chatVisibility === "entering" ? handleChatEnterEnd : undefined
-              }
-            >
-              <Chat
+        {chatVisible && (
+          <Chat
                 key={activeSessionId ?? "empty"}
                 sessionId={activeSessionId}
                 messageHistory={messages ?? []}
@@ -569,8 +544,6 @@ function AppContent() {
                 draftInput={draftInput}
                 setDraftInput={setDraftInput}
               />
-            </div>
-          </div>
         )}
         {viewMode === "graph" && (
         <ChatHistoryPanel
