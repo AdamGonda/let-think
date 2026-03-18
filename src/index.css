@@ -177,10 +177,18 @@ body {
 }
 
 /* Loading screen editor - document-style typography & proportions */
+.md-editor-focused {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
 .md-editor-focused .w-md-editor {
   flex: 1;
   min-height: 0;
   background-color: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 .md-editor-focused .w-md-editor-content {
   flex: 1;
@@ -207,6 +215,21 @@ body {
   line-height: 1.6 !important;
   font-family: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
   /* Do NOT override padding - keep inherit so cursor aligns with visible text */
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+.md-editor-focused .w-md-editor-text-input:focus,
+.md-editor-focused .w-md-editor-text-input:focus-visible {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+.md-editor-focused .w-md-editor-area,
+.md-editor-focused .w-md-editor-content {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 /* Light theme for focused editor */
 .md-editor-focused:not(.md-editor-dark) .w-md-editor {
