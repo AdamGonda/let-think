@@ -335,7 +335,7 @@ function AppContent() {
         >
           {!showOverlay && activeSessionId && (
             <>
-            <div className="absolute top-4 left-4 z-10">
+            <div className="absolute top-10 left-1/2 -translate-x-1/2 z-10">
               <div className="flex items-center gap-1.5" role="tablist" aria-label="Step navigation">
                     {batches.map((_, i) => (
                       <button
@@ -459,6 +459,7 @@ function AppContent() {
           onClose={() => setHistoryPanelOpen(false)}
           messages={messages ?? []}
           batches={batches}
+          selectedBatchIndex={selectedBatchIndex}
           onNavigateToStep={(batchIndex: number) => {
             setSelectedBatchIndex(batchIndex);
             setHistoryPanelOpen(false);
