@@ -66,6 +66,16 @@ export function ConceptGraphOverlay({
 
   // Align modal x with graph viewport center (fixes offset when portaled to main content)
   const [modalLeft, setModalLeft] = useState<number | null>(null);
+  // Portal target must not be read from ref during render – store in state, sync in effect
+  const [portalTarget, setPortalTarget] = useState<HTMLElement | null>(null);
+  useEffect(() => {
+    if (batchModalIndex == null) {
+      setPortalTarget(null);
+      return;
+    }
+    setPortalTarget(modalContainerRef?.current ?? document.body);
+  }, [batchModalIndex, modalContainerRef]);
+
   useEffect(() => {
     if (batchModalIndex == null || !graphViewportRef.current) {
       setModalLeft(null);
@@ -180,9 +190,10 @@ export function ConceptGraphOverlay({
           {batchModalIndex != null &&
             batches[batchModalIndex]?.description &&
             typeof document !== "undefined" &&
+            portalTarget &&
             (() => {
-              const portalTarget = modalContainerRef?.current ?? document.body;
-              const isInMain = portalTarget !== document.body;
+              const target = portalTarget;
+              const isInMain = target !== document.body;
               return createPortal(
                 <>
                   <div
@@ -271,7 +282,7 @@ export function ConceptGraphOverlay({
                     </div>
                   </div>
                 </>,
-                portalTarget
+                target
               );
             })()}
           <div
@@ -280,10 +291,10 @@ export function ConceptGraphOverlay({
           >
             <div
               key={selectedBatchIndex}
-              className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-4 w-full content-start ${
+              className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-4 w-full h-full ${
                 slideDirection === "right" ? "animate-batch-from-right" : "animate-batch-from-left"
               }`}
-              style={{ minHeight: "100%" }}
+              style={{ gridAutoRows: "minmax(200px, 1fr)" }}
             >
               {currentBatchNodes.map(({ node, number }) => {
                 const isHovered = hoveredNode?.id === node.id;
@@ -294,7 +305,7 @@ export function ConceptGraphOverlay({
                 return (
                   <div
                     key={node.id}
-                    className="relative rounded-lg bg-white dark:bg-zinc-800 p-4 min-h-[80px] shadow-sm border border-zinc-200 dark:border-zinc-700 transition-all duration-200"
+                    className="relative flex min-h-[200px] flex-col rounded-lg bg-white dark:bg-zinc-800 p-4 shadow-sm border border-zinc-200 dark:border-zinc-700 transition-colors duration-200 h-full"
                     onMouseEnter={() => setHoveredNode(node)}
                     onMouseLeave={() => setHoveredNode(null)}
                     style={{
@@ -321,24 +332,22 @@ export function ConceptGraphOverlay({
                         {number}
                       </div>
                     )}
-                    <div className="font-semibold text-zinc-800 dark:text-zinc-200 text-xl pr-10">
+                    <div className="shrink-0 font-semibold text-zinc-800 dark:text-zinc-200 text-xl pr-10">
                       {node.name}
                     </div>
-                    {node.description && (
+                    {node.description ? (
                       <div
-                        className={`text-zinc-600 dark:text-zinc-400 text-sm mt-2 leading-tight transition-all duration-200 ${
-                          showDescription
-                            ? "opacity-100 translate-y-0"
-                            : "opacity-0 -translate-y-2 pointer-events-none h-0 overflow-hidden"
+                        className={`flex-1 min-h-0 mt-2 overflow-y-auto text-zinc-600 dark:text-zinc-400 text-base leading-relaxed transition-opacity duration-200 ${
+                          showDescription ? "opacity-100" : "opacity-0 pointer-events-none"
                         }`}
                         style={{
                           fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
                         }}
                       >
-                        <div className="overflow-y-auto max-h-[120px]">
-                          {node.description}
-                        </div>
+                        {node.description}
                       </div>
+                    ) : (
+                      <div className="flex-1 min-h-0" aria-hidden />
                     )}
                   </div>
                 );
