@@ -43,9 +43,9 @@ export function PaginationDots({
 
   return (
     <div className="flex items-center justify-center">
-      <div className="relative w-28 overflow-x-clip">
+      <div className="relative w-28 h-7 overflow-x-clip flex items-center">
         <div
-          className="absolute -top-0.5"
+          className="absolute top-1/2 -translate-y-1/2"
           style={{
             left:
               totalItems < 5 ? 56 - (totalItems * DOT_STEP) / 2 : 0,

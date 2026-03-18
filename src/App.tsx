@@ -393,45 +393,53 @@ function AppContent() {
           ) : (
           <>
           {!showOverlay && activeSessionId && (
-            <header className="flex items-center justify-between gap-4 shrink-0 py-3 px-4 border-b border-border">
-              <div className="flex-1 flex justify-center min-w-0">
-                <PaginationDots
-                  currentIndex={selectedBatchIndex}
-                  totalItems={batches.length}
-                  onSelect={setSelectedBatchIndex}
-                />
+            <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 shrink-0 py-3 px-4 border-b border-border">
+              <div className="min-w-0" />
+              <div className="flex justify-center">
+                {batches.length > 1 && (
+                  <div
+                    data-slot="button-group"
+                    className="flex items-center border border-border rounded-lg overflow-hidden bg-background dark:bg-input/30"
+                  >
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      className="rounded-none border-0 border-r border-border"
+                      onClick={() =>
+                        setSelectedBatchIndex((i) => Math.max(0, i - 1))
+                      }
+                      disabled={selectedBatchIndex <= 0}
+                      title="Previous step"
+                      aria-label="Previous step"
+                    >
+                      <ChevronLeft size={20} strokeWidth={2} />
+                    </Button>
+                    <div className="h-7 px-2 min-w-28 flex items-center justify-center shrink-0">
+                      <PaginationDots
+                        currentIndex={selectedBatchIndex}
+                        totalItems={batches.length}
+                        onSelect={setSelectedBatchIndex}
+                      />
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="icon-sm"
+                      className="rounded-none border-0"
+                      onClick={() =>
+                        setSelectedBatchIndex((i) =>
+                          Math.min(batches.length - 1, i + 1)
+                        )
+                      }
+                      disabled={selectedBatchIndex >= batches.length - 1}
+                      title="Next step"
+                      aria-label="Next step"
+                    >
+                      <ChevronRight size={20} strokeWidth={2} />
+                    </Button>
+                  </div>
+                )}
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-              {batches.length > 1 && (
-                <>
-                  <Button
-                    variant="outline"
-                    size="icon-sm"
-                    onClick={() =>
-                      setSelectedBatchIndex((i) => Math.max(0, i - 1))
-                    }
-                    disabled={selectedBatchIndex <= 0}
-                    title="Previous step"
-                    aria-label="Previous step"
-                  >
-                    <ChevronLeft size={20} strokeWidth={2} />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="icon-sm"
-                    onClick={() =>
-                      setSelectedBatchIndex((i) =>
-                        Math.min(batches.length - 1, i + 1)
-                      )
-                    }
-                    disabled={selectedBatchIndex >= batches.length - 1}
-                    title="Next step"
-                    aria-label="Next step"
-                  >
-                    <ChevronRight size={20} strokeWidth={2} />
-                  </Button>
-                </>
-              )}
+              <div className="flex items-center justify-end gap-2">
               <Button
                 variant="outline"
                 size="icon-sm"
