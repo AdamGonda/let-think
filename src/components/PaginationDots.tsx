@@ -65,12 +65,11 @@ export function PaginationDots({
                     title={`Step ${index + 1}`}
                     className={`h-3 w-3 shrink-0 rounded-full transition-colors duration-300 cursor-pointer focus:outline-none ${
                       isActive
-                        ? "bg-blue-500"
+                        ? "bg-green-500"
                         : "bg-white dark:bg-white/80 hover:opacity-80"
                     }`}
                     style={{
                       opacity: isActive ? 1 : 0.5,
-                      transform: `scale(${isActive ? 1.2 : 1})`,
                     }}
                   />
                 );
