@@ -3,8 +3,8 @@
 import { animated, useSpring } from "@react-spring/web";
 import { useEffect, useState } from "react";
 
-const DOT_SIZE = 8;
-const GAP = 8;
+const DOT_SIZE = 12;
+const GAP = 10;
 const DOT_STEP = DOT_SIZE + GAP;
 
 export function PaginationDots({
@@ -43,16 +43,16 @@ export function PaginationDots({
 
   return (
     <div className="absolute top-10 left-1/2 -translate-x-1/2 z-10 flex items-center justify-center">
-      <div className="relative w-20 overflow-x-clip">
+      <div className="relative w-28 overflow-x-clip">
         <div
           className="absolute -top-0.5"
           style={{
             left:
-              totalItems < 5 ? 40 - (totalItems * DOT_STEP) / 2 : 0,
+              totalItems < 5 ? 56 - (totalItems * DOT_STEP) / 2 : 0,
           }}
         >
           <animated.div style={springProps}>
-            <div className="flex gap-2 pl-1">
+            <div className="flex gap-2.5 pl-1">
               {dots.map((index) => {
                 const isActive = index === currentIndex;
                 return (
@@ -63,7 +63,7 @@ export function PaginationDots({
                     aria-label={`Go to step ${index + 1}`}
                     aria-selected={isActive}
                     title={`Step ${index + 1}`}
-                    className={`h-2 w-2 shrink-0 rounded-full transition-colors duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-[#16171d] ${
+                    className={`h-3 w-3 shrink-0 rounded-full transition-colors duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-[#16171d] ${
                       isActive
                         ? "bg-red-500"
                         : "bg-white dark:bg-white/80 hover:opacity-80"
