@@ -240,15 +240,12 @@ function AppContent() {
     return result;
   }, [conceptGraph?.nodes, batches, selectedBatchIndex]);
 
-  /** Concept IDs referenced in chat (sent messages + current draft) – for card highlight */
+  /** Concept IDs referenced in current draft (@1, @2) – for card highlight. Only on latest batch. */
+  const isLatestBatch =
+    batches.length > 0 && selectedBatchIndex === batches.length - 1;
   const referencedConceptIds = useMemo(() => {
+    if (!isLatestBatch) return new Set<string>();
     const ids = new Set<string>();
-    for (const msg of messages ?? []) {
-      for (const m of msg.mentions ?? []) {
-        if (m?.conceptId) ids.add(m.conceptId);
-      }
-    }
-    // Also include concepts referenced in current draft (@1, @2, etc.)
     const conceptByNumber = new Map(numberedConcepts.map((c) => [c.number, c]));
     const refRegex = /@(\d+)\b/g;
     let m: RegExpExecArray | null;
@@ -257,7 +254,7 @@ function AppContent() {
       if (concept) ids.add(concept.id);
     }
     return ids;
-  }, [messages, draftInput, numberedConcepts]);
+  }, [isLatestBatch, draftInput, numberedConcepts]);
 
   const mainContentRef = useRef<HTMLDivElement>(null);
   const openBatchModalRef = useRef<((batchIndex: number) => void) | null>(null);
