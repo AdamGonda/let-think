@@ -23,7 +23,7 @@ import { MarkdownEditor } from "./components/MarkdownEditor";
 import { SignIn } from "./components/SignIn";
 import { Toaster } from "./components/ui/sonner";
 import { Button } from "./components/ui/button";
-import { ChevronLeft, ChevronRight, Sprout, FileText, History, Sigma } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sprout, FileText, History, Sigma, X } from "lucide-react";
 
 function App() {
   return (
@@ -297,9 +297,13 @@ function AppContent() {
               size="icon-sm"
               className="absolute top-4 right-4 z-10"
               onClick={handleExitOverlay}
-              aria-label="Summarize and return to chat"
+              aria-label={viewMode === "notesList" ? "Close" : "Summarize and return to chat"}
             >
-              <Sigma className="size-5" />
+              {viewMode === "notesList" ? (
+                <X className="size-5" />
+              ) : (
+                <Sigma className="size-5" />
+              )}
             </Button>
           )}
           <div className="shrink-0 py-8 flex flex-col items-center gap-1">
