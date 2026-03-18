@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id, Doc } from "../../convex/_generated/dataModel";
-import { Plus, FolderPlus, ChevronDown, Trash2, X, PanelLeftClose, PanelRight, FileText } from "lucide-react";
+import { Plus, FolderPlus, ChevronDown, Circle, Trash2, X, PanelLeftClose, PanelRight, FileText } from "lucide-react";
 import { UserCard } from "./UserCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -346,11 +346,15 @@ export function SessionSidebar({
                         className="flex-1 min-w-0 flex items-center gap-1 py-2.5 pr-2 pl-1.5 text-left rounded font-medium text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer"
                       >
                         <span className="shrink-0 flex items-center justify-center w-6 text-muted-foreground">
-                          <ChevronDown
-                            className={`size-4 transition-transform ${
-                              sessions.length > 0 && isExpanded ? "" : "-rotate-90"
-                            }`}
-                          />
+                          {sessions.length === 0 ? (
+                            <Circle className="size-1.5 fill-current" strokeWidth={0} />
+                          ) : (
+                            <ChevronDown
+                              className={`size-4 transition-transform ${
+                                isExpanded ? "" : "-rotate-90"
+                              }`}
+                            />
+                          )}
                         </span>
                         <span className="flex-1 min-w-0 truncate">{project.name}</span>
                       </button>
