@@ -103,8 +103,18 @@ export const send = action({
         })
       )
     ),
+    mentions: v.optional(
+      v.array(
+        v.object({
+          start: v.number(),
+          end: v.number(),
+          conceptId: v.string(),
+          name: v.string(),
+        })
+      )
+    ),
   },
-  handler: async (ctx, { messages, sessionId, userContent, selectedNodeContext }): Promise<{ content: string; conceptGraph: ConceptGraph | null }> => {
+  handler: async (ctx, { messages, sessionId, userContent, selectedNodeContext, mentions }): Promise<{ content: string; conceptGraph: ConceptGraph | null }> => {
     const google = createGoogleGenerativeAI({
       apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
     });
@@ -143,6 +153,7 @@ export const send = action({
       sessionId,
       userContent,
       assistantContent: processedContent,
+      mentions,
     });
 
     let finalGraph: ConceptGraph | null = existingGraph;

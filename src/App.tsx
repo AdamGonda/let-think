@@ -64,9 +64,6 @@ function AppContent() {
   const notesRef = useRef(notes);
   draftInputRef.current = draftInput;
   notesRef.current = notes;
-  const [selectedNodeIds, setSelectedNodeIds] = useState<Set<string>>(
-    new Set(),
-  );
   const sessions = useQuery(api.sessions.list);
   const projectsWithSessions = useQuery(api.projects.listWithSessions);
   const messages = useQuery(
@@ -126,14 +123,11 @@ function AppContent() {
     }
   }, [projectsWithSessions]);
 
-  // Reset selected nodes and batch index when switching sessions
-  const batches = conceptGraph?.batches ?? [];
+  const batches = useMemo(
+    () => conceptGraph?.batches ?? [],
+    [conceptGraph?.batches]
+  );
   const prevBatchesLengthRef = useRef(0);
-
-  useEffect(() => {
-    setSelectedNodeIds(new Set());
-    prevBatchesLengthRef.current = 0; // Reset so we default to last step when new batches load
-  }, [activeSessionId]);
 
   // When graph batches load or grow, jump to the latest (controlled graph navigation)
   useEffect(() => {
@@ -230,25 +224,21 @@ function AppContent() {
     return () => clearTimeout(timer);
   }, [activeSessionId, notes, saveThinkingNotes]);
 
-  const selectedNodes = useMemo(() => {
+  /** Numbered concepts for the current batch - used to resolve @1, @2 in chat input */
+  const numberedConcepts = useMemo(() => {
     if (!conceptGraph?.nodes) return [];
-    return conceptGraph.nodes.filter((n: { id: string }) =>
-      selectedNodeIds.has(n.id),
+    const batch = batches[selectedBatchIndex];
+    if (!batch?.nodeIds?.length) return [];
+    const nodeMap = new Map(
+      conceptGraph.nodes.map((n: { id: string; name: string; description?: string }) => [n.id, n])
     );
-  }, [conceptGraph?.nodes, selectedNodeIds]);
-
-  const handleToggleNodeSelection = (nodeId: string) => {
-    setSelectedNodeIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(nodeId)) next.delete(nodeId);
-      else next.add(nodeId);
-      return next;
-    });
-  };
-
-  const handleClearSelectedNodes = () => {
-    setSelectedNodeIds(new Set());
-  };
+    const result: Array<{ id: string; name: string; description?: string; number: number }> = [];
+    for (let i = 0; i < batch.nodeIds.length; i++) {
+      const node = nodeMap.get(batch.nodeIds[i]!);
+      if (node) result.push({ ...node, number: i + 1 });
+    }
+    return result;
+  }, [conceptGraph?.nodes, batches, selectedBatchIndex]);
 
   const mainContentRef = useRef<HTMLDivElement>(null);
   const openBatchModalRef = useRef<((batchIndex: number) => void) | null>(null);
@@ -417,8 +407,6 @@ function AppContent() {
               <ConceptGraphOverlay
                 key={activeSessionId}
                 graph={conceptGraph ?? null}
-                selectedNodeIds={selectedNodeIds}
-                onToggleNodeSelection={handleToggleNodeSelection}
                 modalContainerRef={mainContentRef}
                 isLoading={isLoading}
                 isDark={isDark}
@@ -441,8 +429,7 @@ function AppContent() {
             isLoading={isLoading}
             setIsLoading={setIsLoading}
             onModelResponded={() => setModelRespondedAwaitingDismissal(true)}
-            selectedNodes={selectedNodes}
-            onMessageSent={handleClearSelectedNodes}
+            numberedConcepts={numberedConcepts}
             draftInput={draftInput}
             setDraftInput={setDraftInput}
           />

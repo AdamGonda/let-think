@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type { ReactNode } from "react";
 import type { Id } from "../../convex/_generated/dataModel";
 
 const COLLAPSE_THRESHOLD = 180;
@@ -13,6 +14,74 @@ function truncateAtWord(content: string, maxLen: number): string {
   return cut.slice(0, end).trim();
 }
 
+/** Render content with mention spans styled as pills. */
+function renderContentWithMentions(
+  content: string,
+  mentions?: Mention[],
+  truncateLen?: number
+): ReactNode {
+  const truncated = truncateLen && content.length > truncateLen;
+  const display = truncated
+    ? truncateAtWord(content, truncateLen) + "…"
+    : content;
+  const contentEnd = truncated ? display.length - 1 : display.length;
+
+  if (!mentions?.length) return display;
+
+  const sorted = [...mentions].sort((a, b) => a.start - b.start);
+  const segments: Array<{ type: "text" | "mention"; content: string; name: string }> = [];
+  let pos = 0;
+  for (const m of sorted) {
+    if (m.start > pos) {
+      segments.push({
+        type: "text",
+        content: display.slice(pos, Math.min(m.start, contentEnd)),
+        name: "",
+      });
+    }
+    if (m.start < contentEnd) {
+      const end = Math.min(m.end, contentEnd);
+      segments.push({
+        type: "mention",
+        content: display.slice(m.start, end),
+        name: m.name,
+      });
+    }
+    pos = Math.max(pos, m.end);
+  }
+  if (pos < contentEnd) {
+    segments.push({ type: "text", content: display.slice(pos, contentEnd), name: "" });
+  }
+  if (truncated) {
+    segments.push({ type: "text", content: "…", name: "" });
+  }
+
+  return (
+    <>
+      {segments.map((s, i) =>
+        s.type === "mention" ? (
+          <span
+            key={`${s.name}-${i}`}
+            className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-zinc-300/80 dark:bg-zinc-600/80 text-zinc-800 dark:text-zinc-200 border border-zinc-400/60 dark:border-zinc-500/60"
+            title={s.name}
+          >
+            {s.content}
+          </span>
+        ) : (
+          s.content
+        )
+      )}
+    </>
+  );
+}
+
+interface Mention {
+  start: number;
+  end: number;
+  conceptId: string;
+  name: string;
+}
+
 interface UserMessage {
   _id?: Id<"messages">;
   role: "user" | "assistant";
@@ -21,6 +90,8 @@ interface UserMessage {
   topic?: string;
   /** @deprecated Legacy field, use topic */
   subject?: string;
+  /** Mention spans (user messages) – for styling @ references */
+  mentions?: Mention[];
 }
 
 type Batch = {
@@ -110,9 +181,6 @@ export function ChatHistoryPanel({
                   const isLong = msg.content.length > COLLAPSE_THRESHOLD;
                   const isExpanded = expandedIds.has(key);
                   const showFull = !isLong || isExpanded;
-                  const displayContent = showFull
-                    ? msg.content
-                    : truncateAtWord(msg.content, COLLAPSE_THRESHOLD) + "…";
 
                   // Match message to batch by description (user content)
                   const msgNorm = normalizeForMatch(msg.content);
@@ -216,7 +284,11 @@ export function ChatHistoryPanel({
                             </div>
                           ) : null}
                           <p className="whitespace-pre-wrap break-words m-0">
-                            {displayContent}
+                            {renderContentWithMentions(
+                              msg.content,
+                              msg.mentions,
+                              showFull ? undefined : COLLAPSE_THRESHOLD
+                            )}
                           </p>
                         </div>
                       </div>

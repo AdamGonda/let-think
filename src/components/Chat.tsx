@@ -4,10 +4,11 @@ import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useSessionManager } from "../hooks/useSessionManager";
 
-interface SelectedNode {
+interface NumberedConcept {
   id: string;
   name: string;
   description?: string;
+  number: number;
 }
 
 interface ChatProps {
@@ -20,10 +21,8 @@ interface ChatProps {
   }>;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
-  /** Nodes selected by user to add as context to the next prompt */
-  selectedNodes?: SelectedNode[];
-  /** Called after a message is sent successfully (e.g. to clear selections) */
-  onMessageSent?: () => void;
+  /** Numbered concepts from the current batch - reference with @1, @2, etc. */
+  numberedConcepts?: NumberedConcept[];
   /** Controlled draft input (shared with overlay during loading/break) */
   draftInput?: string;
   setDraftInput?: (value: string) => void;
@@ -31,13 +30,52 @@ interface ChatProps {
   onModelResponded?: () => void;
 }
 
+export type Mention = { start: number; end: number; conceptId: string; name: string };
+
+/** Parse @N references from user input, resolve to concept names, and build mentions. */
+function resolveAtReferences(
+  userContent: string,
+  numberedConcepts: NumberedConcept[]
+): {
+  resolvedContent: string;
+  referencedConcepts: NumberedConcept[];
+  mentions: Mention[];
+} {
+  const conceptByNumber = new Map(numberedConcepts.map((c) => [c.number, c]));
+  const refRegex = /@(\d+)\b/g;
+  let resolvedContent = "";
+  const mentions: Mention[] = [];
+  let lastIndex = 0;
+  let m: RegExpExecArray | null;
+
+  while ((m = refRegex.exec(userContent)) !== null) {
+    const num = parseInt(m[1]!, 10);
+    const concept = conceptByNumber.get(num);
+    if (!concept) {
+      resolvedContent += userContent.slice(lastIndex, m.index + m[0].length);
+      lastIndex = m.index + m[0].length;
+      continue;
+    }
+    resolvedContent += userContent.slice(lastIndex, m.index);
+    const start = resolvedContent.length;
+    resolvedContent += concept.name;
+    const end = resolvedContent.length;
+    mentions.push({ start, end, conceptId: concept.id, name: concept.name });
+    lastIndex = m.index + m[0].length;
+  }
+  resolvedContent += userContent.slice(lastIndex);
+
+  const referencedIds = new Set(mentions.map((x) => x.conceptId));
+  const referencedConcepts = numberedConcepts.filter((c) => referencedIds.has(c.id));
+  return { resolvedContent, referencedConcepts, mentions };
+}
+
 export function Chat({
   sessionId,
   messageHistory,
   isLoading,
   setIsLoading,
-  selectedNodes = [],
-  onMessageSent,
+  numberedConcepts = [],
   draftInput,
   setDraftInput,
   onModelResponded,
@@ -77,7 +115,11 @@ export function Chat({
     e.preventDefault();
     if (!input.trim() || !sessionId || !canSend) return;
 
-    const userContent = input.trim();
+    const rawContent = input.trim();
+    const { resolvedContent, referencedConcepts, mentions } = resolveAtReferences(
+      rawContent,
+      numberedConcepts
+    );
     setInput("");
     if (remaining === 1 || remaining === null) {
       startBreakOptimistically();
@@ -90,23 +132,30 @@ export function Chat({
           role: m.role,
           content: m.content,
         })),
-        { role: "user" as const, content: userContent },
+        { role: "user" as const, content: resolvedContent },
       ];
 
       await sendMessage({
         messages,
         sessionId,
-        userContent,
-        selectedNodeContext: selectedNodes.length > 0 ? selectedNodes : undefined,
+        userContent: resolvedContent,
+        selectedNodeContext:
+          referencedConcepts.length > 0
+            ? referencedConcepts.map(({ id, name, description }) => ({
+                id,
+                name,
+                description,
+              }))
+            : undefined,
+        mentions: mentions.length > 0 ? mentions : undefined,
       });
       onInteractionComplete();
-      onMessageSent?.();
       setIsLoading(false);
       onModelResponded?.();
     } catch (err) {
       console.error("Chat error:", err);
       // Put the input back on error
-      setInput(userContent);
+      setInput(rawContent);
       setIsLoading(false);
     }
   };
@@ -117,7 +166,9 @@ export function Chat({
     breakRemainingFormatted
       ? `Wake up in ${breakRemainingFormatted}`
       : sessionId
-        ? "Type..."
+        ? numberedConcepts.length > 0
+          ? "Type... (use @1, @2, etc. to reference concepts)"
+          : "Type..."
         : "Select a chat to start";
 
   const showInteractionCount =

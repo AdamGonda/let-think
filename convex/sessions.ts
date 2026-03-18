@@ -155,13 +155,25 @@ export const updateMessageTopic = internalMutation({
   },
 });
 
+const mentionValidator = v.optional(
+  v.array(
+    v.object({
+      start: v.number(),
+      end: v.number(),
+      conceptId: v.string(),
+      name: v.string(),
+    })
+  )
+);
+
 export const addMessages = mutation({
   args: {
     sessionId: v.id("sessions"),
     userContent: v.string(),
     assistantContent: v.string(),
+    mentions: mentionValidator,
   },
-  handler: async (ctx, { sessionId, userContent, assistantContent }) => {
+  handler: async (ctx, { sessionId, userContent, assistantContent, mentions }) => {
     await requireSessionOwner(ctx, sessionId);
     const now = Date.now();
     const userMessageId = await ctx.db.insert("messages", {
@@ -169,6 +181,7 @@ export const addMessages = mutation({
       role: "user",
       content: userContent,
       createdAt: now,
+      ...(mentions && mentions.length > 0 ? { mentions } : {}),
     });
     await ctx.db.insert("messages", {
       sessionId,

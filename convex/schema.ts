@@ -62,6 +62,17 @@ export default defineSchema({
     createdAt: v.number(),
     /** Short topic/summary for user messages – shown above bubble in history (max ~2 lines) */
     topic: v.optional(v.string()),
+    /** Mention spans in content (user messages only) – for styling @ references in history */
+    mentions: v.optional(
+      v.array(
+        v.object({
+          start: v.number(),
+          end: v.number(),
+          conceptId: v.string(),
+          name: v.string(),
+        })
+      )
+    ),
   }).index("by_session", ["sessionId"]),
 
   /** Tracks interaction limits per chat session (limit, used, breakEndsAt). */

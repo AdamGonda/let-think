@@ -35,8 +35,6 @@ const MIN_CELL_HEIGHT = 80;
 interface ConceptGraphOverlayProps {
   graph: ConceptGraphData | null;
   className?: string;
-  selectedNodeIds?: Set<string>;
-  onToggleNodeSelection?: (nodeId: string) => void;
   modalContainerRef?: RefObject<HTMLDivElement | null>;
   isLoading?: boolean;
   isDark?: boolean;
@@ -50,8 +48,6 @@ interface ConceptGraphOverlayProps {
 export function ConceptGraphOverlay({
   graph,
   className,
-  selectedNodeIds = new Set(),
-  onToggleNodeSelection,
   modalContainerRef,
   isLoading: _isLoading = false,
   isDark = false,
@@ -180,7 +176,7 @@ export function ConceptGraphOverlay({
     const allDims: Array<{
       width: number;
       height: number;
-      nodes: Array<{ node: GraphNode; x: number; y: number; w: number; h: number }>;
+      nodes: Array<{ node: GraphNode; x: number; y: number; w: number; h: number; number: number }>;
     }> = [];
 
     for (const batch of batches) {
@@ -207,7 +203,7 @@ export function ConceptGraphOverlay({
         rowHeights.push(maxH);
       }
 
-      const nodeLayouts: Array<{ node: GraphNode; x: number; y: number; w: number; h: number }> = [];
+      const nodeLayouts: Array<{ node: GraphNode; x: number; y: number; w: number; h: number; number: number }> = [];
       let cy = BATCH_HEADER + BATCH_HEADER_GAP;
       for (let i = 0; i < batchNodes.length; i++) {
         const node = batchNodes[i]!;
@@ -216,7 +212,7 @@ export function ConceptGraphOverlay({
         const x = CLUSTER_PAD + col * (cellWidth + NODE_GAP);
         const y = cy;
         const h = node.description ? Math.max(cellHeight, NODE_HEIGHT_EXPANDED) : cellHeight;
-        nodeLayouts.push({ node, x, y, w: cellWidth, h });
+        nodeLayouts.push({ node, x, y, w: cellWidth, h, number: i + 1 });
         if (col === GRID_COLS - 1) {
           cy += rowHeights[row]! + NODE_GAP;
         }
@@ -253,7 +249,7 @@ export function ConceptGraphOverlay({
       height: number;
       role: "prev" | "center" | "next";
       batchIndex: number;
-      nodes: Array<{ node: GraphNode; x: number; y: number; w: number; h: number }>;
+      nodes: Array<{ node: GraphNode; x: number; y: number; w: number; h: number; number: number }>;
     }> = [];
 
     let x = VIEWPORT_PADDING;
@@ -276,6 +272,7 @@ export function ConceptGraphOverlay({
           y: nl.y + clusterY,
           w: nl.w,
           h: nl.h,
+          number: nl.number,
         })),
       });
       x += dims.width + CLUSTER_GAP;
@@ -449,8 +446,7 @@ export function ConceptGraphOverlay({
                   }
                   style={isDimmed ? { cursor: "pointer" } : undefined}
                 >
-                  {cluster.nodes.map(({ node, x, y, w, h }) => {
-                    const isSelected = selectedNodeIds.has(node.id);
+                  {cluster.nodes.map(({ node, x, y, w, h, number }) => {
                     const isHovered = hoveredNode?.id === node.id;
                     const showDescription = isHovered && node.description;
                     return (
@@ -458,26 +454,7 @@ export function ConceptGraphOverlay({
                       key={node.id}
                       onMouseEnter={() => setHoveredNode(node)}
                       onMouseLeave={() => setHoveredNode(null)}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onToggleNodeSelection?.(node.id);
-                      }}
-                      style={{ cursor: onToggleNodeSelection ? "pointer" : undefined }}
                     >
-                      {isSelected && (
-                        <rect
-                          x={x - 3}
-                          y={y - 3}
-                          width={w + 6}
-                          height={h + 6}
-                          rx={6}
-                          ry={6}
-                          fill="none"
-                          stroke={isDark ? "rgba(250,250,250,0.9)" : "rgba(24,24,27,0.9)"}
-                          strokeWidth={4}
-                          style={{ filter: isDark ? "drop-shadow(0 0 8px rgba(250,250,250,0.4))" : "drop-shadow(0 0 8px rgba(24,24,27,0.5))" }}
-                        />
-                      )}
                       <rect
                         x={x}
                         y={y}
@@ -486,41 +463,36 @@ export function ConceptGraphOverlay({
                         rx={4}
                         ry={4}
                         fill={
-                          isSelected
-                            ? (isDark ? "rgba(63,63,70,0.95)" : "rgba(24,24,27,0.95)")
-                            : isCenter
-                              ? "rgba(255,255,255,0.98)"
-                              : "rgba(255,255,255,0.85)"
+                          isCenter
+                            ? "rgba(255,255,255,0.98)"
+                            : "rgba(255,255,255,0.85)"
                         }
-                        stroke={isSelected ? (isDark ? "rgba(161,161,170,1)" : "rgba(24,24,27,1)") : "none"}
-                        strokeWidth={isSelected ? 4 : 0}
-                        className={isSelected ? "" : "dark:fill-zinc-800"}
-                        style={isDimmed && !isSelected ? { opacity: 0.85 } : undefined}
+                        className="dark:fill-zinc-800"
+                        style={isDimmed ? { opacity: 0.85 } : undefined}
                       />
-                      {isSelected && (
-                        <g transform={`translate(${x + w - 28}, ${y + 12})`}>
-                          <circle cx={14} cy={10} r={12} fill={isDark ? "rgba(250,250,250,1)" : "rgba(24,24,27,1)"} />
-                          <path
-                            d="M8 10l4 4 8-8"
-                            fill="none"
-                            stroke={isDark ? "rgb(24,24,27)" : "white"}
-                            strokeWidth={2.5}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </g>
-                      )}
+                      {/* Number badge - reference with @1, @2, etc. */}
+                      <g transform={`translate(${x + 12}, ${y + 14})`}>
+                        <circle cx={10} cy={10} r={10} fill={isDark ? "rgba(63,63,70,0.95)" : "rgba(24,24,27,0.9)"} />
+                        <text
+                          x={10}
+                          y={10}
+                          textAnchor="middle"
+                          dominantBaseline="central"
+                          className="fill-white dark:fill-zinc-100 text-sm font-semibold"
+                        >
+                          {number}
+                        </text>
+                      </g>
                       <g style={{ pointerEvents: "none" }}>
                         <text
                           x={x + w / 2}
                           y={y + h / 2}
                           textAnchor="middle"
                           dominantBaseline="middle"
-                          className={`text-xl font-semibold ${isSelected ? "fill-white" : "fill-zinc-800 dark:fill-zinc-200"}`}
+                          className="text-xl font-semibold fill-zinc-800 dark:fill-zinc-200"
                           style={{
-                            opacity: showDescription ? 0 : isDimmed && !isSelected ? 0.9 : 1,
+                            opacity: showDescription ? 0 : isDimmed ? 0.9 : 1,
                             transition: "opacity 200ms ease-out",
-                            ...(isSelected ? { textShadow: "0 1px 2px rgba(0,0,0,0.4)" } : {}),
                           }}
                         >
                           {node.name}
@@ -530,11 +502,10 @@ export function ConceptGraphOverlay({
                           y={y + 20}
                           textAnchor="start"
                           dominantBaseline="hanging"
-                          className={`text-xl font-semibold ${isSelected ? "fill-white" : "fill-zinc-800 dark:fill-zinc-200"}`}
+                          className="text-xl font-semibold fill-zinc-800 dark:fill-zinc-200"
                           style={{
-                            opacity: showDescription ? (isDimmed && !isSelected ? 0.9 : 1) : 0,
+                            opacity: showDescription ? (isDimmed ? 0.9 : 1) : 0,
                             transition: "opacity 200ms ease-out",
-                            ...(isSelected ? { textShadow: "0 1px 2px rgba(0,0,0,0.4)" } : {}),
                           }}
                         >
                           {node.name}
@@ -555,7 +526,7 @@ export function ConceptGraphOverlay({
                           }}
                         >
                           <div
-                            className={`text-xl leading-tight ${isSelected ? "text-white/90" : "text-zinc-600 dark:text-zinc-400"}`}
+                            className="text-xl leading-tight text-zinc-600 dark:text-zinc-400"
                             style={{
                               width: "100%",
                               fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
