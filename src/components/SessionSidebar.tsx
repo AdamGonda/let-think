@@ -105,7 +105,6 @@ export function SessionSidebar({
 
   const handleNewProject = async () => {
     const id = await createProject();
-    onSelectProject(id);
     setExpandedProjectIds((prev) => new Set([...prev, id]));
   };
 
@@ -341,13 +340,13 @@ export function SessionSidebar({
                         aria-label={`${project.name}, click to ${isExpanded ? "collapse" : "expand"}`}
                         className="flex-1 min-w-0 flex items-center gap-1 py-2.5 pr-2 pl-1.5 text-left rounded font-medium text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer"
                       >
-                        {sessions.length > 0 && (
-                          <span className="shrink-0 flex items-center justify-center w-6 text-muted-foreground">
-                            <ChevronDown
-                              className={`size-4 transition-transform ${isExpanded ? "" : "-rotate-90"}`}
-                            />
-                          </span>
-                        )}
+                        <span className="shrink-0 flex items-center justify-center w-6 text-muted-foreground">
+                          <ChevronDown
+                            className={`size-4 transition-transform ${
+                              sessions.length > 0 && isExpanded ? "" : "-rotate-90"
+                            }`}
+                          />
+                        </span>
                         <span className="flex-1 min-w-0 truncate">{project.name}</span>
                       </button>
                     )}
