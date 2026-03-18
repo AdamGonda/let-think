@@ -3,7 +3,7 @@ import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Doc } from "../../convex/_generated/dataModel";
 import { Input } from "@/components/ui/input";
-import { Search, FileText, ArrowRight } from "lucide-react";
+import { Search, FileText } from "lucide-react";
 
 function formatRelativeTime(ms: number): string {
   const diff = Date.now() - ms;
@@ -88,20 +88,18 @@ export function NotesListPanel({ onSelectSession, onJumpToSession }: NotesListPa
             <ul className="flex flex-col gap-1.5">
               {filteredSessions.map((session: Doc<"sessions">) => (
                 <li key={session._id}>
-                  <div className="flex items-center gap-1 rounded-lg border border-border/60 bg-card/50 hover:bg-muted/50 hover:border-border hover:shadow-sm transition-all duration-150 group">
+                  <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-card/50 hover:bg-muted/50 hover:border-border hover:shadow-sm transition-colors duration-150 group">
                     <button
                       type="button"
                       onClick={() => onSelectSession(session)}
-                      className="flex-1 min-w-0 text-left px-3 py-2.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-l-lg"
+                      className="flex-1 min-w-0 text-left px-3 py-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-l-lg flex items-center gap-3"
                     >
-                      <div className="flex items-center justify-between gap-3">
-                        <p className="text-sm font-medium text-foreground leading-snug line-clamp-2 group-hover:text-foreground">
-                          {session.title}
-                        </p>
-                        <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
-                          {formatRelativeTime(session.createdAt)}
-                        </span>
-                      </div>
+                      <p className="flex-1 min-w-0 text-sm font-medium text-foreground leading-snug line-clamp-2 group-hover:text-foreground">
+                        {session.title}
+                      </p>
+                      <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
+                        {formatRelativeTime(session.createdAt)}
+                      </span>
                     </button>
                     {onJumpToSession && (
                       <button
@@ -110,11 +108,10 @@ export function NotesListPanel({ onSelectSession, onJumpToSession }: NotesListPa
                           e.stopPropagation();
                           onJumpToSession(session);
                         }}
-                        className="shrink-0 p-2 text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-r-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                        title="Jump to session"
-                        aria-label="Jump to session"
+                        className="shrink-0 max-w-0 overflow-hidden opacity-0 group-hover:max-w-[7rem] group-hover:opacity-100 group-hover:overflow-visible px-0 group-hover:px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-r-lg whitespace-nowrap transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        aria-label="Go to session"
                       >
-                        <ArrowRight className="size-4" />
+                        Go to session
                       </button>
                     )}
                   </div>
