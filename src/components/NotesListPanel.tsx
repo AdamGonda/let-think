@@ -58,22 +58,22 @@ export function NotesListPanel({ onSelectSession }: NotesListPanelProps) {
 
   return (
     <div className="flex flex-1 flex-col min-h-0 bg-(--color-surface)">
-      <div className="shrink-0 px-6 py-5 border-b border-border">
-        <div className="relative max-w-xl">
+      <div className="shrink-0 px-6 py-3 border-b border-border">
+        <div className="relative max-w-2xl mx-auto px-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
           <Input
             type="search"
             placeholder="Search sessions by title…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9 h-10 rounded-xl bg-muted/30 border-border/80 focus-visible:ring-2 focus-visible:ring-ring/40 transition-shadow hover:bg-muted/50"
+            className="pl-9 h-9 rounded-lg bg-muted/30 border-border/80 focus-visible:ring-2 focus-visible:ring-ring/40 transition-shadow hover:bg-muted/50"
           />
         </div>
       </div>
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-2xl px-4 py-6">
+        <div className="mx-auto max-w-2xl px-4 py-4">
           {filteredSessions.length === 0 ? (
-            <div className="py-12 text-center">
+            <div className="py-8 text-center">
               <p className="text-muted-foreground text-sm">
                 No sessions match &quot;{searchQuery}&quot;
               </p>
@@ -82,15 +82,15 @@ export function NotesListPanel({ onSelectSession }: NotesListPanelProps) {
               </p>
             </div>
           ) : (
-            <ul className="flex flex-col gap-2">
+            <ul className="flex flex-col gap-1.5">
               {filteredSessions.map((session: Doc<"sessions">) => (
                 <li key={session._id}>
                   <button
                     type="button"
                     onClick={() => onSelectSession(session)}
-                    className="w-full text-left group rounded-xl border border-border/60 bg-card/50 hover:bg-muted/50 hover:border-border hover:shadow-sm transition-all duration-150 px-4 py-3.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                    className="w-full text-left group rounded-lg border border-border/60 bg-card/50 hover:bg-muted/50 hover:border-border hover:shadow-sm transition-all duration-150 px-3 py-2.5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   >
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center justify-between gap-3">
                       <p className="text-sm font-medium text-foreground leading-snug line-clamp-2 group-hover:text-foreground">
                         {session.title}
                       </p>
