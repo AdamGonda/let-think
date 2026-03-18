@@ -242,8 +242,8 @@ export function SessionSidebar({
           variant="ghost"
           className={`${isCollapsed ? "h-10 w-10 p-0 justify-center" : "justify-start h-10 w-full"} ${
             viewMode === "notesList"
-              ? "bg-muted/50 border border-border text-foreground"
-              : ""
+              ? "bg-sidebar-accent text-sidebar-accent-foreground ring-1 ring-sidebar-border"
+              : "hover:bg-muted/50"
           }`}
           onClick={() =>
             onViewModeChange(viewMode === "notesList" ? "graph" : "notesList")
@@ -274,7 +274,11 @@ export function SessionSidebar({
             return (
               <div key={projectId} className="flex flex-col gap-1">
                   <div
-                    className={`flex items-center gap-1 group/project rounded-lg border border-border transition-colors px-3 pl-0 ${
+                    className={`flex items-center gap-1 group/project rounded-lg transition-colors px-3 pl-0 ${
+                      activeProjectId === projectId
+                        ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent/40"
+                        : ""
+                    } ${
                       dragOverProjectId === project._id ? "ring-2 ring-ring ring-inset" : ""
                     }`}
                     onDragOver={(e) => {
@@ -424,10 +428,10 @@ export function SessionSidebar({
                           setEditingSessionId(session._id);
                         }
                       }}
-                      className={`group flex items-center gap-1 py-1.5 px-3 ml-4 rounded-lg border transition-colors cursor-grab active:cursor-grabbing select-none ${
+                      className={`group flex items-center gap-1 py-1.5 px-3 ml-4 rounded-r-lg border-y border-r border-transparent transition-colors cursor-grab active:cursor-grabbing select-none ${
                         activeSessionId === session._id
-                          ? "bg-muted/50 border-border hover:bg-muted"
-                          : "border-transparent hover:bg-muted hover:border-border"
+                          ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent"
+                          : "border-l-2 border-l-transparent hover:bg-muted/50 hover:border-border"
                       }`}
                     >
                       {editingSessionId === session._id ? (
@@ -553,10 +557,10 @@ export function SessionSidebar({
                     setEditingSessionId(session._id);
                   }
                 }}
-                className={`group flex items-center gap-1 py-1.5 px-3 rounded-lg border transition-colors cursor-grab active:cursor-grabbing select-none ${
+                className={`group flex items-center gap-1 py-1.5 px-3 rounded-r-lg border-y border-r border-transparent transition-colors cursor-grab active:cursor-grabbing select-none ${
                   activeSessionId === session._id
-                    ? "bg-muted/50 border-border hover:bg-muted"
-                    : "border-transparent hover:bg-muted hover:border-border"
+                    ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent"
+                    : "border-l-2 border-l-transparent hover:bg-muted/50 hover:border-border"
                 }`}
               >
                 {editingSessionId === session._id ? (
