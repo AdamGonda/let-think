@@ -155,17 +155,18 @@ export function ChatHistoryPanel({
         showCloseButton={false}
       >
         <SheetHeader className="flex flex-row items-center gap-2 shrink-0 py-4 px-4 border-b border-border">
+          <SheetTitle className="text-lg font-semibold">
+            Conversation history
+          </SheetTitle>
           <Button
             variant="ghost"
             size="icon-sm"
             aria-label="Close history"
             onClick={onClose}
+            className="ml-auto"
           >
             <X className="size-5" />
           </Button>
-          <SheetTitle className="ml-auto text-lg font-semibold">
-            Conversation history
-          </SheetTitle>
         </SheetHeader>
         <div className="flex-1 overflow-y-auto py-6 px-4">
           {userMessages.length === 0 ? (
