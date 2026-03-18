@@ -66,7 +66,6 @@ export function useSessionManager(sessionId: Id<"sessions"> | null) {
     (!state || state.used < state.limit);
 
   const remaining = state ? Math.max(0, state.limit - state.used) : null;
-  const limit = state?.limit ?? null;
 
   const onInteractionComplete = useCallback(async () => {
     if (!sessionId) return;
@@ -81,7 +80,6 @@ export function useSessionManager(sessionId: Id<"sessions"> | null) {
   return {
     canSend,
     remaining,
-    limit,
     breakRemainingMs,
     breakRemainingFormatted:
       breakRemainingMs !== null && breakRemainingMs > 0
