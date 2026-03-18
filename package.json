@@ -16,6 +16,7 @@
     "@ai-sdk/react": "^3.0.118",
     "@auth/core": "^0.37.0",
     "@convex-dev/auth": "^0.0.91",
+    "@react-spring/web": "^10.0.3",
     "@uiw/react-md-editor": "^4.0.11",
     "ai": "^6.0.116",
     "convex": "^1.33.1",

@@ -16,11 +16,12 @@ import {
 import { SessionSidebar } from "./components/SessionSidebar";
 import { Chat } from "./components/Chat";
 import { ChatHistoryPanel } from "./components/ChatHistoryPanel";
+import { PaginationDots } from "./components/PaginationDots";
 import { ConceptGraphOverlay } from "./components/ConceptGraphOverlay";
 import { MarkdownEditor } from "./components/MarkdownEditor";
 import { SignIn } from "./components/SignIn";
 import { Toaster } from "./components/ui/sonner";
-import { Sprout, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sprout } from "lucide-react";
 
 function App() {
   return (
@@ -335,34 +336,21 @@ function AppContent() {
         >
           {!showOverlay && activeSessionId && (
             <>
-            <div className="absolute top-10 left-1/2 -translate-x-1/2 z-10">
-              <div className="flex items-center gap-1.5" role="tablist" aria-label="Step navigation">
-                    {batches.map((_, i) => (
-                      <button
-                        key={i}
-                        type="button"
-                        role="tab"
-                        aria-selected={i === selectedBatchIndex}
-                        aria-label={`Go to step ${i + 1}`}
-                        title={`Step ${i + 1}`}
-                        onClick={() => setSelectedBatchIndex(i)}
-                        className={`w-2.5 h-2.5 rounded-full transition-colors cursor-pointer focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-[#16171d] ${
-                          i === selectedBatchIndex
-                            ? "bg-red-500"
-                            : "bg-white hover:opacity-80"
-                        }`}
-                      />
-                    ))}
-                  </div>
-            </div>
+            <PaginationDots
+              currentIndex={selectedBatchIndex}
+              totalItems={batches.length}
+              onSelect={setSelectedBatchIndex}
+            />
             <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
               {batches.length > 1 && (
                 <>
                   <button
                     type="button"
-                    onClick={() => setSelectedBatchIndex((i) => Math.max(0, i - 1))}
+                    onClick={() =>
+                      setSelectedBatchIndex((i) => Math.max(0, i - 1))
+                    }
                     disabled={selectedBatchIndex <= 0}
-                    className="p-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:opacity-50"
+                    className="p-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Previous step"
                     aria-label="Previous step"
                   >
@@ -370,9 +358,13 @@ function AppContent() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => setSelectedBatchIndex((i) => Math.min(batches.length - 1, i + 1))}
+                    onClick={() =>
+                      setSelectedBatchIndex((i) =>
+                        Math.min(batches.length - 1, i + 1)
+                      )
+                    }
                     disabled={selectedBatchIndex >= batches.length - 1}
-                    className="p-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:opacity-50"
+                    className="p-2 rounded-lg border border-zinc-300 dark:border-zinc-600 text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-100 dark:hover:bg-zinc-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                     title="Next step"
                     aria-label="Next step"
                   >
