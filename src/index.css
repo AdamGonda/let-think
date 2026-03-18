@@ -305,3 +305,35 @@ body {
     @apply font-sans;
   }
 }
+
+/* Tutorial (driver.js) – match app theme in dark mode */
+.dark .driver-popover {
+  background-color: var(--popover) !important;
+  color: var(--popover-foreground) !important;
+  border: 1px solid var(--border);
+}
+.dark .driver-popover-title,
+.dark .driver-popover-description {
+  color: var(--popover-foreground);
+}
+.dark .driver-popover-progress-text {
+  color: var(--muted-foreground);
+}
+.dark .driver-popover-footer button {
+  background-color: var(--secondary) !important;
+  color: var(--secondary-foreground) !important;
+  border-color: var(--border) !important;
+}
+.dark .driver-popover-footer button:hover,
+.dark .driver-popover-footer button:focus {
+  background-color: var(--accent) !important;
+}
+.dark .driver-popover-close-btn {
+  color: var(--muted-foreground);
+}
+.dark .driver-popover-close-btn:hover {
+  color: var(--foreground);
+}
+.dark .driver-popover-arrow {
+  border-color: var(--popover) !important;
+}

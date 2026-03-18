@@ -35,6 +35,7 @@ interface SessionSidebarProps {
   isDark: boolean;
   viewMode: "graph" | "notesList";
   onViewModeChange: (mode: "graph" | "notesList") => void;
+  onRunTutorial?: () => void;
 }
 
 export function SessionSidebar({
@@ -46,6 +47,7 @@ export function SessionSidebar({
   isDark,
   viewMode,
   onViewModeChange,
+  onRunTutorial,
 }: SessionSidebarProps) {
   const data = useQuery(api.projects.listWithSessions);
   const createSession = useMutation(api.sessions.create);
@@ -224,6 +226,7 @@ export function SessionSidebar({
           className={isCollapsed ? "h-10 w-10 p-0 justify-center" : "justify-start h-10 w-full"}
           onClick={() => handleNewChat()}
           aria-label="New chat"
+          data-tour="new-chat"
         >
           <Plus className="size-5 shrink-0" />
           {!isCollapsed && "New chat"}
@@ -233,6 +236,7 @@ export function SessionSidebar({
           className={isCollapsed ? "h-10 w-10 p-0 justify-center" : "justify-start h-10 w-full"}
           onClick={handleNewProject}
           aria-label="New project"
+          data-tour="new-project"
         >
           <FolderPlus className="size-5 shrink-0" />
           {!isCollapsed && "New project"}
@@ -249,6 +253,7 @@ export function SessionSidebar({
           }
           aria-label="View thinking notes"
           aria-pressed={viewMode === "notesList"}
+          data-tour="notes-toggle"
         >
           <FileText className="size-5 shrink-0" />
           {!isCollapsed && "Notes"}
@@ -646,6 +651,7 @@ export function SessionSidebar({
           onToggleTheme={onToggleTheme}
           isDark={isDark}
           compact={isCollapsed}
+          onRunTutorial={onRunTutorial}
         />
       </div>
     </aside>

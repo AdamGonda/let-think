@@ -16,6 +16,7 @@ import {
 import { SessionSidebar } from "./components/SessionSidebar";
 import { NotesListPanel } from "./components/NotesListPanel";
 import { Chat } from "./components/Chat";
+import { Tutorial, runTutorial, getTutorialCompleted } from "./components/Tutorial";
 import { ChatHistoryPanel } from "./components/ChatHistoryPanel";
 import { PaginationDots } from "./components/PaginationDots";
 import { ConceptGraphOverlay } from "./components/ConceptGraphOverlay";
@@ -372,6 +373,10 @@ function AppContent() {
           )}
         </div>
       )}
+      <Tutorial
+        autoStart={!getTutorialCompleted()}
+        onComplete={() => {}}
+      />
       <div className="flex flex-1 min-w-0" inert={showOverlay}>
         <SessionSidebar
           activeSessionId={activeSessionId}
@@ -385,8 +390,9 @@ function AppContent() {
           isDark={isDark}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
+          onRunTutorial={runTutorial}
         />
-        <main className="flex flex-1 flex-col min-w-0">
+        <main className="flex flex-1 flex-col min-w-0" data-tour="main-content">
         <div
           ref={mainContentRef}
           className="flex flex-1 min-h-0 flex-col"
@@ -462,6 +468,7 @@ function AppContent() {
                 onClick={() => setHistoryPanelOpen(true)}
                 title="Conversation history"
                 aria-label="Conversation history"
+                data-tour="history-btn"
               >
                 <History className="size-5" />
               </Button>
@@ -471,13 +478,14 @@ function AppContent() {
                 onClick={() => setEditorOpen(true)}
                 title="Open notes"
                 aria-label="Open notes"
+                data-tour="notes-btn"
               >
                 <FileText className="size-5" />
               </Button>
               </div>
             </header>
           )}
-          <div className="flex flex-1 min-h-0 items-stretch justify-stretch">
+          <div className="flex flex-1 min-h-0 items-stretch justify-stretch" data-tour="graph-area">
             {activeSessionId ? (
               <ConceptGraphOverlay
                 key={activeSessionId}

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { Sun, Moon, LogOut, MoreHorizontal } from "lucide-react";
+import { Sun, Moon, LogOut, MoreHorizontal, HelpCircle } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,19 +25,27 @@ interface UserCardProps {
   onToggleTheme: () => void;
   isDark: boolean;
   compact?: boolean;
+  onRunTutorial?: () => void;
 }
 
 const menuContent = (
   onToggleTheme: () => void,
   isDark: boolean,
   signOut: () => void,
-  compact?: boolean
+  compact?: boolean,
+  onRunTutorial?: () => void
 ) => (
   <DropdownMenuContent
     side={compact ? "right" : "top"}
     align={compact ? "start" : "end"}
     sideOffset={8}
   >
+    {onRunTutorial && (
+      <DropdownMenuItem onSelect={() => onRunTutorial()}>
+        <HelpCircle className="size-4" />
+        Replay tutorial
+      </DropdownMenuItem>
+    )}
     <DropdownMenuItem onSelect={() => onToggleTheme()}>
       {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
       {isDark ? "Light mode" : "Dark mode"}
@@ -49,7 +57,7 @@ const menuContent = (
   </DropdownMenuContent>
 );
 
-export function UserCard({ onToggleTheme, isDark, compact = false }: UserCardProps) {
+export function UserCard({ onToggleTheme, isDark, compact = false, onRunTutorial }: UserCardProps) {
   const user = useQuery(api.users.currentUser);
   const { signOut } = useAuthActions();
   const [imageError, setImageError] = useState(false);
@@ -94,7 +102,7 @@ export function UserCard({ onToggleTheme, isDark, compact = false }: UserCardPro
               </button>
             }
           />
-          {menuContent(onToggleTheme, isDark, signOut, true)}
+          {menuContent(onToggleTheme, isDark, signOut, true, onRunTutorial)}
         </DropdownMenu>
       </div>
     );
@@ -117,7 +125,7 @@ export function UserCard({ onToggleTheme, isDark, compact = false }: UserCardPro
             </Button>
           }
         />
-        {menuContent(onToggleTheme, isDark, signOut, false)}
+        {menuContent(onToggleTheme, isDark, signOut, false, onRunTutorial)}
       </DropdownMenu>
     </div>
   );
