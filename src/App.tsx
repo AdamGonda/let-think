@@ -56,6 +56,7 @@ function AppContent() {
   const [modelRespondedAwaitingDismissal, setModelRespondedAwaitingDismissal] =
     useState(false);
   const [overlayDismissed, setOverlayDismissed] = useState(false);
+  const [isExitingOverlay, setIsExitingOverlay] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"graph" | "notesList">("graph");
@@ -284,6 +285,7 @@ function AppContent() {
       setIsLoading(false);
       setEditorOpen(false);
       setModelRespondedAwaitingDismissal(false);
+      setIsExitingOverlay(false);
     }
   }, [activeSessionId]);
 
@@ -320,19 +322,30 @@ function AppContent() {
     notesSyncedForSessionId,
   ]);
 
+  const WAKE_UP_EXIT_DURATION_MS = 300;
   const handleExitOverlay = () => {
     if (!canExitOverlay) return;
-    setOverlayDismissed(true);
-    setIsLoading(false);
-    setEditorOpen(false);
-    setModelRespondedAwaitingDismissal(false);
+    setIsExitingOverlay(true);
   };
+  useEffect(() => {
+    if (!isExitingOverlay) return;
+    const id = setTimeout(() => {
+      setOverlayDismissed(true);
+      setIsLoading(false);
+      setEditorOpen(false);
+      setModelRespondedAwaitingDismissal(false);
+      setIsExitingOverlay(false);
+    }, WAKE_UP_EXIT_DURATION_MS);
+    return () => clearTimeout(id);
+  }, [isExitingOverlay]);
 
   return (
     <div className="flex h-screen bg-background">
-      {showOverlay && (
+      {(showOverlay || isExitingOverlay) && (
         <div
-          className="fixed inset-0 z-[9999] flex h-screen w-screen flex-col bg-background"
+          className={`fixed inset-0 z-[9999] flex h-screen w-screen flex-col bg-background ${
+            isExitingOverlay ? "animate-wake-up-out" : "animate-wake-up-in"
+          }`}
           aria-busy={isLoading}
           aria-live="polite"
         >
@@ -404,7 +417,7 @@ function AppContent() {
         autoStart={!getTutorialCompleted()}
         onComplete={() => {}}
       />
-      <div className="flex flex-1 min-w-0" inert={showOverlay}>
+      <div className="flex flex-1 min-w-0" inert={showOverlay || isExitingOverlay}>
         <SessionSidebar
           activeSessionId={activeSessionId}
           activeProjectId={activeProjectId}
