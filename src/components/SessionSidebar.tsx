@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id, Doc } from "../../convex/_generated/dataModel";
-import { Plus, FolderPlus, ChevronDown, Trash2, X } from "lucide-react";
+import { Plus, FolderPlus, ChevronDown, Trash2, X, PanelLeftClose, PanelRight } from "lucide-react";
 import { UserCard } from "./UserCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,18 @@ type ProjectWithSessions = {
 };
 
 const SIDEBAR_WIDTH = 260;
+const SIDEBAR_COLLAPSED_WIDTH = 56;
+
+const STORAGE_KEY_SIDEBAR = "think-sidebar-collapsed";
+
+function getStoredCollapsed(): boolean {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY_SIDEBAR);
+    return stored === "true";
+  } catch {
+    return false;
+  }
+}
 
 interface SessionSidebarProps {
   activeSessionId: Id<"sessions"> | null;
@@ -48,6 +60,15 @@ export function SessionSidebar({
   const sessionInputRef = useRef<HTMLInputElement>(null);
   const projectInputRef = useRef<HTMLInputElement>(null);
   const projectClickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(getStoredCollapsed);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_SIDEBAR, String(isCollapsed));
+    } catch {
+      /* ignore */
+    }
+  }, [isCollapsed]);
 
   // Expand project containing active session by default
   useEffect(() => {
@@ -170,30 +191,38 @@ export function SessionSidebar({
 
   return (
     <aside
-      className="shrink-0 flex flex-col h-screen overflow-hidden bg-muted/30 border-r border-border"
-      style={{ width: SIDEBAR_WIDTH }}
+      className="shrink-0 flex flex-col h-screen overflow-hidden bg-muted/30 border-r border-border transition-[width] duration-200 ease-in-out"
+      style={{ width: isCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH }}
     >
-      <div className="flex flex-col m-3 gap-1 min-w-0">
+      <div
+        className={`flex flex-col gap-1 min-w-0 transition-opacity duration-150 ${
+          isCollapsed ? "m-2 items-center" : "m-3"
+        }`}
+      >
         <Button
           variant="ghost"
-          className="justify-start h-10 w-full"
+          className={isCollapsed ? "h-10 w-10 p-0 justify-center" : "justify-start h-10 w-full"}
           onClick={() => handleNewChat()}
           aria-label="New chat"
         >
           <Plus className="size-5 shrink-0" />
-          New chat
+          {!isCollapsed && "New chat"}
         </Button>
         <Button
           variant="ghost"
-          className="justify-start h-10 w-full"
+          className={isCollapsed ? "h-10 w-10 p-0 justify-center" : "justify-start h-10 w-full"}
           onClick={handleNewProject}
           aria-label="New project"
         >
           <FolderPlus className="size-5 shrink-0" />
-          New project
+          {!isCollapsed && "New project"}
         </Button>
       </div>
-      <nav className="flex-1 overflow-y-auto py-3 px-3 flex flex-col gap-3">
+      <nav
+        className={`flex-1 overflow-y-auto py-3 flex flex-col gap-3 ${
+          isCollapsed ? "hidden" : "px-3"
+        }`}
+      >
           {/* Projects section */}
           <div className="flex flex-col gap-1">
             <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground py-1 px-2">
@@ -568,8 +597,33 @@ export function SessionSidebar({
             ))}
           </div>
       </nav>
-      <div className="flex flex-col gap-2 p-3 border-t border-border">
-        <UserCard onToggleTheme={onToggleTheme} isDark={isDark} />
+      <div
+        className={`flex flex-col gap-2 border-t border-border transition-[padding] duration-200 ${
+          isCollapsed ? "p-2 items-center" : "p-3"
+        }`}
+      >
+        <UserCard
+          onToggleTheme={onToggleTheme}
+          isDark={isDark}
+          compact={isCollapsed}
+        />
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          className={isCollapsed ? "h-9 w-9" : "w-full justify-start gap-2"}
+          onClick={() => setIsCollapsed((c) => !c)}
+          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {isCollapsed ? (
+            <PanelRight className="size-5" />
+          ) : (
+            <>
+              <PanelLeftClose className="size-5" />
+              Collapse
+            </>
+          )}
+        </Button>
       </div>
     </aside>
   );
