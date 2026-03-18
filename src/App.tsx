@@ -355,7 +355,6 @@ function AppContent() {
                 if (session.projectId) setActiveProjectId(session.projectId);
                 else setActiveProjectId(null);
                 setEditorOpen(true);
-                setViewMode("graph");
               }}
             />
           ) : (
