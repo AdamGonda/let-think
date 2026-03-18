@@ -63,7 +63,7 @@ export function PaginationDots({
                     aria-label={`Go to step ${index + 1}`}
                     aria-selected={isActive}
                     title={`Step ${index + 1}`}
-                    className={`h-3 w-3 shrink-0 rounded-full transition-colors duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-zinc-400 dark:focus:ring-zinc-500 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-[#16171d] ${
+                    className={`h-3 w-3 shrink-0 rounded-full transition-colors duration-300 cursor-pointer focus:outline-none ${
                       isActive
                         ? "bg-blue-500"
                         : "bg-white dark:bg-white/80 hover:opacity-80"
