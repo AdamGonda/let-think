@@ -45,7 +45,7 @@ export function StepNavigator({
       >
         <ChevronLeft size={18} strokeWidth={2} />
       </Button>
-      <div className="h-7 px-4 min-w-28 flex items-center justify-center shrink-0">
+      <div className="h-7 px-2 min-w-20 flex items-center justify-center shrink-0">
         <PaginationDots
           currentIndex={selectedIndex}
           totalItems={totalSteps}
