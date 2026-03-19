@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { ReactNode } from "react";
 import type { Id } from "../../convex/_generated/dataModel";
 import { toast } from "sonner";
-import { Loader2, X, Copy } from "lucide-react";
+import { Loader2, X, Copy, Check } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -138,10 +138,13 @@ export function ChatHistoryPanel({
   const userMessages = messages.filter((m) => m.role === "user");
   const displayOrder = [...userMessages].reverse();
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  const handleCopy = (e: React.MouseEvent, content: string) => {
+  const handleCopy = (e: React.MouseEvent, content: string, key: string) => {
     e.stopPropagation();
     navigator.clipboard.writeText(content);
+    setCopiedKey(key);
+    setTimeout(() => setCopiedKey(null), 2000);
     toast.success("Copied to clipboard");
   };
 
@@ -240,11 +243,15 @@ export function ChatHistoryPanel({
                               variant="ghost"
                               size="icon-sm"
                               className="absolute right-1 top-1 h-7 w-7 opacity-0 group-hover/card:opacity-100 transition-opacity z-10 bg-background/80 rounded-md"
-                              onClick={(e) => handleCopy(e, msg.content)}
+                              onClick={(e) => handleCopy(e, msg.content, key)}
                               aria-label="Copy message"
                               title="Copy message"
                             >
-                              <Copy className="size-3.5" />
+                              {copiedKey === key ? (
+                                <Check className="size-3.5 text-green-600" />
+                              ) : (
+                                <Copy className="size-3.5" />
+                              )}
                             </Button>
                           )}
                             {isPendingTopic ? (
