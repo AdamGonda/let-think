@@ -22,6 +22,7 @@ import { SignIn } from "./components/SignIn";
 import { Toaster } from "./components/ui/sonner";
 import { Button } from "./components/ui/button";
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, FileText, History, Sigma, X } from "lucide-react";
+import { StepNavigator } from "./components/StepNavigator";
 
 function App() {
   return (
@@ -507,72 +508,11 @@ function AppContentBody({
             <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 shrink-0 py-3 px-4 border-b border-border">
               <div className="min-w-0" />
               <div className="flex justify-center">
-                {batches.length > 1 && (
-                  <div
-                    data-slot="button-group"
-                    className="flex items-center border border-border rounded-lg overflow-hidden bg-background dark:bg-input/30"
-                  >
-                    {selectedBatchIndex > 0 && (
-                      <Button
-                        variant="outline"
-                        size="icon-sm"
-                        className="rounded-l-lg rounded-r-none border-0 border-r border-border"
-                        onClick={() => setSelectedBatchIndex(0)}
-                        title="First step"
-                        aria-label="First step"
-                      >
-                        <ChevronsLeft size={20} strokeWidth={2} />
-                      </Button>
-                    )}
-                    <Button
-                      variant="outline"
-                      size="icon-sm"
-                      className={`rounded-none border-0 border-r border-border ${selectedBatchIndex <= 0 ? "rounded-l-lg" : ""}`}
-                      onClick={() =>
-                        setSelectedBatchIndex((i) => Math.max(0, i - 1))
-                      }
-                      disabled={selectedBatchIndex <= 0}
-                      title="Previous step"
-                      aria-label="Previous step"
-                    >
-                      <ChevronLeft size={20} strokeWidth={2} />
-                    </Button>
-                    <div className="h-7 px-2 min-w-28 flex items-center justify-center shrink-0">
-                      <PaginationDots
-                        currentIndex={selectedBatchIndex}
-                        totalItems={batches.length}
-                        onSelect={setSelectedBatchIndex}
-                      />
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="icon-sm"
-                      className={selectedBatchIndex >= batches.length - 1 ? "rounded-r-lg rounded-l-none border-0" : "rounded-none border-0 border-r border-border"}
-                      onClick={() =>
-                        setSelectedBatchIndex((i) =>
-                          Math.min(batches.length - 1, i + 1)
-                        )
-                      }
-                      disabled={selectedBatchIndex >= batches.length - 1}
-                      title="Next step"
-                      aria-label="Next step"
-                    >
-                      <ChevronRight size={20} strokeWidth={2} />
-                    </Button>
-                    {selectedBatchIndex < batches.length - 1 && (
-                      <Button
-                        variant="outline"
-                        size="icon-sm"
-                        className="rounded-r-lg rounded-l-none border-0"
-                        onClick={() => setSelectedBatchIndex(batches.length - 1)}
-                        title="Last step"
-                        aria-label="Last step"
-                      >
-                        <ChevronsRight size={20} strokeWidth={2} />
-                      </Button>
-                    )}
-                  </div>
-                )}
+                <StepNavigator
+                  totalSteps={batches.length}
+                  selectedIndex={selectedBatchIndex}
+                  onSelect={(index) => setSelectedBatchIndex(index)}
+                />
               </div>
               <div className="flex items-center justify-end gap-2">
               <Button
