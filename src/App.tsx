@@ -9,11 +9,18 @@ import {
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import { formatBreakCountdown } from "./hooks/useSessionManager";
-import { SessionDataProvider, useSessionData } from "./contexts/SessionDataContext";
+import {
+  SessionDataProvider,
+  useSessionData,
+} from "./contexts/SessionDataContext";
 import { SessionSidebar } from "./components/SessionSidebar";
 import { NotesListPanel } from "./components/NotesListPanel";
 import { Chat } from "./components/Chat";
-import { Tutorial, runTutorial, getTutorialCompleted } from "./components/Tutorial";
+import {
+  Tutorial,
+  runTutorial,
+  getTutorialCompleted,
+} from "./components/Tutorial";
 import { ChatHistoryPanel } from "./components/ChatHistoryPanel";
 import { ConceptGraphOverlay } from "./components/ConceptGraphOverlay";
 import { MarkdownEditor } from "./components/MarkdownEditor";
@@ -320,12 +327,8 @@ function AppContentBody({
   setNotes: (v: string) => void;
   mainContentRef: React.RefObject<HTMLDivElement | null>;
 }) {
-  const {
-    conceptGraph,
-    messages,
-    batches,
-    breakRemainingMs,
-  } = useSessionData();
+  const { conceptGraph, messages, batches, breakRemainingMs } =
+    useSessionData();
   const isInBreak = breakRemainingMs !== null && breakRemainingMs > 0;
   const prevBatchesLengthRef = useRef(0);
 
@@ -345,9 +348,16 @@ function AppContentBody({
     const batch = batches[selectedBatchIndex];
     if (!batch?.nodeIds?.length) return [];
     const nodeMap = new Map(
-      conceptGraph.nodes.map((n: { id: string; name: string; description?: string }) => [n.id, n])
+      conceptGraph.nodes.map(
+        (n: { id: string; name: string; description?: string }) => [n.id, n],
+      ),
     );
-    const result: Array<{ id: string; name: string; description?: string; number: number }> = [];
+    const result: Array<{
+      id: string;
+      name: string;
+      description?: string;
+      number: number;
+    }> = [];
     for (let i = 0; i < batch.nodeIds.length; i++) {
       const node = nodeMap.get(batch.nodeIds[i]!);
       if (node) result.push({ ...node, number: i + 1 });
@@ -423,7 +433,11 @@ function AppContentBody({
                 size="icon-sm"
                 className="absolute top-4 right-4 z-10"
                 onClick={handleExitOverlay}
-                aria-label={viewMode === "notesList" ? "Close" : "Summarize and return to session"}
+                aria-label={
+                  viewMode === "notesList"
+                    ? "Close"
+                    : "Summarize and return to session"
+                }
               >
                 {viewMode === "notesList" ? (
                   <X className="size-5" />
@@ -433,14 +447,13 @@ function AppContentBody({
               </Button>
             )}
             <div className="shrink-0 py-8 flex flex-col items-center gap-1">
-              <span className="text-muted-foreground text-2xl font-medium uppercase tracking-[0.25em]">
-                Wake up
-              </span>
-              {breakRemainingMs != null && breakRemainingMs > 0 && !editorOpen && (
-                <span className="text-muted-foreground text-lg font-medium tabular-nums">
-                  {formatBreakCountdown(breakRemainingMs)}
-                </span>
-              )}
+              {breakRemainingMs != null &&
+                breakRemainingMs > 0 &&
+                !editorOpen && (
+                  <span className="text-muted-foreground text-lg font-medium tabular-nums">
+                    {formatBreakCountdown(breakRemainingMs)}
+                  </span>
+                )}
             </div>
             {activeSessionId && (
               <div className="flex-1 min-h-0 flex flex-col items-center px-6 pb-8 overflow-hidden">
@@ -464,11 +477,11 @@ function AppContentBody({
           </div>
         </div>
       )}
-      <Tutorial
-        autoStart={!getTutorialCompleted()}
-        onComplete={() => {}}
-      />
-      <div className="flex flex-1 min-w-0" inert={showOverlay || isExitingOverlay}>
+      <Tutorial autoStart={!getTutorialCompleted()} onComplete={() => {}} />
+      <div
+        className="flex flex-1 min-w-0"
+        inert={showOverlay || isExitingOverlay}
+      >
         <SessionSidebar
           activeSessionId={activeSessionId}
           activeProjectId={activeProjectId}
@@ -482,108 +495,105 @@ function AppContentBody({
           onRunTutorial={runTutorial}
         />
         <main className="flex flex-1 flex-col min-w-0" data-tour="main-content">
-        <div
-          ref={mainContentRef}
-          className="flex flex-1 min-h-0 flex-col"
-        >
-          {viewMode === "notesList" ? (
-            <NotesListPanel
-              onSelectSession={(session) => {
-                setActiveSessionId(session._id);
-                if (session.projectId) setActiveProjectId(session.projectId);
-                else setActiveProjectId(null);
-                setEditorOpen(true);
-              }}
-              onJumpToSession={(session) => {
-                setActiveSessionId(session._id);
-                if (session.projectId) setActiveProjectId(session.projectId);
-                else setActiveProjectId(null);
-                setViewMode("graph");
-              }}
-            />
-          ) : (
-          <>
-          {activeSessionId && (
-            <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 shrink-0 py-3 px-4 border-b border-border">
-              <div className="min-w-0" />
-              <div className="flex justify-center">
-                <StepNavigator
-                  totalSteps={batches.length}
-                  selectedIndex={selectedBatchIndex}
-                  onSelect={(index) => setSelectedBatchIndex(index)}
-                />
-              </div>
-              <div className="flex items-center justify-end gap-2">
-              <Button
-                variant="outline"
-                size="icon-sm"
-                onClick={() => setHistoryPanelOpen(true)}
-                title="Conversation history"
-                aria-label="Conversation history"
-                data-tour="history-btn"
-              >
-                <History className="size-5" />
-              </Button>
-              <Button
-                variant="outline"
-                size="icon-sm"
-                onClick={() => setEditorOpen(true)}
-                title="Open notes"
-                aria-label="Open notes"
-                data-tour="notes-btn"
-              >
-                <FileText className="size-5" />
-              </Button>
-              </div>
-            </header>
-          )}
-          {/* Past steps hide chat; cap graph height so card rows match the usual graph+input layout. */}
-          <div
-            className={`flex w-full flex-1 min-h-0 items-stretch justify-stretch ${
-              !chatVisible ? "max-h-[calc(100dvh-13rem)]" : ""
-            }`}
-            data-tour="graph-area"
-          >
-            <ConceptGraphOverlay
-              key={activeSessionId ?? "empty"}
-              graph={conceptGraph ?? null}
-              isLoading={isLoading}
-              selectedBatchIndex={selectedBatchIndex}
-              onSelectedBatchIndexChange={setSelectedBatchIndex}
-              referencedConceptIds={referencedConceptIds}
-            />
-          </div>
-          </>
-          )}
-        </div>
-        {chatVisible && (
-          <Chat
-                key={activeSessionId ?? "empty"}
-                sessionId={activeSessionId}
-                messageHistory={messages ?? []}
-                isLoading={isLoading}
-                setIsLoading={setIsLoading}
-                onModelResponded={() => setModelRespondedAwaitingDismissal(true)}
-                numberedConcepts={numberedConcepts}
-                draftInput={draftInput}
-                setDraftInput={setDraftInput}
-                onCreateSession={onCreateSessionForFirstMessage}
+          <div ref={mainContentRef} className="flex flex-1 min-h-0 flex-col">
+            {viewMode === "notesList" ? (
+              <NotesListPanel
+                onSelectSession={(session) => {
+                  setActiveSessionId(session._id);
+                  if (session.projectId) setActiveProjectId(session.projectId);
+                  else setActiveProjectId(null);
+                  setEditorOpen(true);
+                }}
+                onJumpToSession={(session) => {
+                  setActiveSessionId(session._id);
+                  if (session.projectId) setActiveProjectId(session.projectId);
+                  else setActiveProjectId(null);
+                  setViewMode("graph");
+                }}
               />
-        )}
-        {viewMode === "graph" && (
-        <ChatHistoryPanel
-          isOpen={historyPanelOpen}
-          onClose={() => setHistoryPanelOpen(false)}
-          messages={messages ?? []}
-          batches={batches}
-          selectedBatchIndex={selectedBatchIndex}
-          onNavigateToStep={(batchIndex: number) => {
-            setSelectedBatchIndex(batchIndex);
-            setHistoryPanelOpen(false);
-          }}
-        />
-        )}
-      </main>
+            ) : (
+              <>
+                {activeSessionId && (
+                  <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 shrink-0 py-3 px-4 border-b border-border">
+                    <div className="min-w-0" />
+                    <div className="flex justify-center">
+                      <StepNavigator
+                        totalSteps={batches.length}
+                        selectedIndex={selectedBatchIndex}
+                        onSelect={(index) => setSelectedBatchIndex(index)}
+                      />
+                    </div>
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        onClick={() => setHistoryPanelOpen(true)}
+                        title="Conversation history"
+                        aria-label="Conversation history"
+                        data-tour="history-btn"
+                      >
+                        <History className="size-5" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        onClick={() => setEditorOpen(true)}
+                        title="Open notes"
+                        aria-label="Open notes"
+                        data-tour="notes-btn"
+                      >
+                        <FileText className="size-5" />
+                      </Button>
+                    </div>
+                  </header>
+                )}
+                {/* Past steps hide chat; cap graph height so card rows match the usual graph+input layout. */}
+                <div
+                  className={`flex w-full flex-1 min-h-0 items-stretch justify-stretch ${
+                    !chatVisible ? "max-h-[calc(100dvh-13rem)]" : ""
+                  }`}
+                  data-tour="graph-area"
+                >
+                  <ConceptGraphOverlay
+                    key={activeSessionId ?? "empty"}
+                    graph={conceptGraph ?? null}
+                    isLoading={isLoading}
+                    selectedBatchIndex={selectedBatchIndex}
+                    onSelectedBatchIndexChange={setSelectedBatchIndex}
+                    referencedConceptIds={referencedConceptIds}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+          {chatVisible && (
+            <Chat
+              key={activeSessionId ?? "empty"}
+              sessionId={activeSessionId}
+              messageHistory={messages ?? []}
+              isLoading={isLoading}
+              setIsLoading={setIsLoading}
+              onModelResponded={() => setModelRespondedAwaitingDismissal(true)}
+              numberedConcepts={numberedConcepts}
+              draftInput={draftInput}
+              setDraftInput={setDraftInput}
+              onCreateSession={onCreateSessionForFirstMessage}
+            />
+          )}
+          {viewMode === "graph" && (
+            <ChatHistoryPanel
+              isOpen={historyPanelOpen}
+              onClose={() => setHistoryPanelOpen(false)}
+              messages={messages ?? []}
+              batches={batches}
+              selectedBatchIndex={selectedBatchIndex}
+              onNavigateToStep={(batchIndex: number) => {
+                setSelectedBatchIndex(batchIndex);
+                setHistoryPanelOpen(false);
+              }}
+            />
+          )}
+        </main>
       </div>
       <Toaster theme="dark" />
     </div>
