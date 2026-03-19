@@ -8,7 +8,6 @@ import {
 } from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
-import { useTheme } from "./hooks/useTheme";
 import { formatBreakCountdown } from "./hooks/useSessionManager";
 import { SessionDataProvider, useSessionData } from "./contexts/SessionDataContext";
 import { SessionSidebar } from "./components/SessionSidebar";
@@ -43,7 +42,6 @@ function App() {
 }
 
 function AppContent() {
-  const { toggleTheme, isDark } = useTheme();
   const [activeSessionId, setActiveSessionId] = useState<Id<"sessions"> | null>(
     null,
   );
@@ -261,8 +259,6 @@ function AppContent() {
         setDraftInput={setDraftInput}
         notes={notes}
         setNotes={setNotes}
-        toggleTheme={toggleTheme}
-        isDark={isDark}
         mainContentRef={mainContentRef}
       />
     </SessionDataProvider>
@@ -295,8 +291,6 @@ function AppContentBody({
   setDraftInput,
   notes,
   setNotes,
-  toggleTheme,
-  isDark,
   mainContentRef,
 }: {
   onCreateSessionForFirstMessage?: () => Promise<Id<"sessions">>;
@@ -324,8 +318,6 @@ function AppContentBody({
   setDraftInput: (v: string) => void;
   notes: string;
   setNotes: (v: string) => void;
-  toggleTheme: () => void;
-  isDark: boolean;
   mainContentRef: React.RefObject<HTMLDivElement | null>;
 }) {
   const {
@@ -485,8 +477,6 @@ function AppContentBody({
             if (viewMode === "notesList") setViewMode("graph");
           }}
           onSelectProject={setActiveProjectId}
-          onToggleTheme={toggleTheme}
-          isDark={isDark}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           onRunTutorial={runTutorial}
@@ -613,7 +603,6 @@ function AppContentBody({
               key={activeSessionId ?? "empty"}
               graph={conceptGraph ?? null}
               isLoading={isLoading}
-              isDark={isDark}
               selectedBatchIndex={selectedBatchIndex}
               onSelectedBatchIndexChange={setSelectedBatchIndex}
               referencedConceptIds={referencedConceptIds}
@@ -651,7 +640,7 @@ function AppContentBody({
         )}
       </main>
       </div>
-      <Toaster theme={isDark ? "dark" : "light"} />
+      <Toaster theme="dark" />
     </div>
   );
 }

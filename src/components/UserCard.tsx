@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { Sun, Moon, LogOut, MoreHorizontal, HelpCircle } from "lucide-react";
+import { LogOut, MoreHorizontal, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -17,8 +17,6 @@ function getInitials(name: string | undefined | null): string {
 }
 
 interface UserCardProps {
-  onToggleTheme: () => void;
-  isDark: boolean;
   compact?: boolean;
   onRunTutorial?: () => void;
 }
@@ -28,8 +26,6 @@ function UserMenu({
   onClose,
   anchorRef,
   compact,
-  onToggleTheme,
-  isDark,
   signOut,
   onRunTutorial,
 }: {
@@ -37,8 +33,6 @@ function UserMenu({
   onClose: () => void;
   anchorRef: React.RefObject<HTMLElement | null>;
   compact: boolean;
-  onToggleTheme: () => void;
-  isDark: boolean;
   signOut: () => void;
   onRunTutorial?: () => void;
 }) {
@@ -118,18 +112,6 @@ function UserMenu({
         role="menuitem"
         className={menuItemClass}
         onClick={() => {
-          onToggleTheme();
-          onClose();
-        }}
-      >
-        {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
-        {isDark ? "Light mode" : "Dark mode"}
-      </button>
-      <button
-        type="button"
-        role="menuitem"
-        className={menuItemClass}
-        onClick={() => {
           void signOut();
           onClose();
         }}
@@ -143,12 +125,12 @@ function UserMenu({
   return createPortal(content, document.body);
 }
 
-export function UserCard({ onToggleTheme, isDark, compact = false, onRunTutorial }: UserCardProps) {
+export function UserCard({ compact = false, onRunTutorial }: UserCardProps) {
   const user = useQuery(api.users.currentUser);
   const { signOut } = useAuthActions();
   const [imageError, setImageError] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement>(null);
+  const triggerRef = useRef<HTMLButtonElement | HTMLDivElement | null>(null);
 
   useEffect(() => {
     setImageError(false);
@@ -179,7 +161,7 @@ export function UserCard({ onToggleTheme, isDark, compact = false, onRunTutorial
     return (
       <div className="flex flex-col items-center py-2">
         <button
-          ref={triggerRef}
+          ref={triggerRef as React.RefObject<HTMLButtonElement | null>}
           type="button"
           className="flex items-center justify-center rounded-md hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
           aria-label="Open menu"
@@ -194,8 +176,6 @@ export function UserCard({ onToggleTheme, isDark, compact = false, onRunTutorial
           onClose={() => setMenuOpen(false)}
           anchorRef={triggerRef}
           compact={true}
-          onToggleTheme={onToggleTheme}
-          isDark={isDark}
           signOut={signOut}
           onRunTutorial={onRunTutorial}
         />
@@ -210,7 +190,7 @@ export function UserCard({ onToggleTheme, isDark, compact = false, onRunTutorial
         <p className="truncate text-sm font-medium text-foreground">{displayName}</p>
         <p className="truncate text-xs text-muted-foreground">Free plan</p>
       </div>
-      <div ref={triggerRef} className="shrink-0">
+      <div ref={triggerRef as React.RefObject<HTMLDivElement | null>} className="shrink-0">
         <Button
           variant="ghost"
           size="icon-sm"
@@ -227,8 +207,6 @@ export function UserCard({ onToggleTheme, isDark, compact = false, onRunTutorial
         onClose={() => setMenuOpen(false)}
         anchorRef={triggerRef}
         compact={false}
-        onToggleTheme={onToggleTheme}
-        isDark={isDark}
         signOut={signOut}
         onRunTutorial={onRunTutorial}
       />

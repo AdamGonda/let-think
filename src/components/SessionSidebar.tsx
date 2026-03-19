@@ -31,8 +31,6 @@ interface SessionSidebarProps {
   activeProjectId: Id<"projects"> | null;
   onSelectSession: (id: Id<"sessions"> | null) => void;
   onSelectProject: (id: Id<"projects"> | null) => void;
-  onToggleTheme: () => void;
-  isDark: boolean;
   viewMode: "graph" | "notesList";
   onViewModeChange: (mode: "graph" | "notesList") => void;
   onRunTutorial?: () => void;
@@ -43,8 +41,6 @@ export function SessionSidebar({
   activeProjectId,
   onSelectSession,
   onSelectProject,
-  onToggleTheme,
-  isDark,
   viewMode,
   onViewModeChange,
   onRunTutorial,
@@ -675,8 +671,6 @@ export function SessionSidebar({
         }`}
       >
         <UserCard
-          onToggleTheme={onToggleTheme}
-          isDark={isDark}
           compact={isCollapsed}
           onRunTutorial={onRunTutorial}
         />

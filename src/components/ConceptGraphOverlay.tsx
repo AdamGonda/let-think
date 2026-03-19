@@ -22,7 +22,6 @@ interface ConceptGraphOverlayProps {
   graph: ConceptGraphData | null;
   className?: string;
   isLoading?: boolean;
-  isDark?: boolean;
   /** Controlled batch index – when provided, navigation is controlled from parent */
   selectedBatchIndex?: number;
   onSelectedBatchIndexChange?: (index: number) => void;
@@ -34,7 +33,6 @@ export function ConceptGraphOverlay({
   graph,
   className,
   isLoading: _isLoading = false,
-  isDark: _isDark = false,
   selectedBatchIndex: controlledBatchIndex,
   onSelectedBatchIndexChange,
   referencedConceptIds,
