@@ -387,6 +387,17 @@ function AppContentBody({
     viewMode === "graph" &&
     (batches.length === 0 || selectedBatchIndex === batches.length - 1);
 
+  // Delay revealing the editor until after it has rendered and scrolled to caret
+  const [editorRevealReady, setEditorRevealReady] = useState(false);
+  useEffect(() => {
+    if (!showOverlay || isExitingOverlay) {
+      setEditorRevealReady(false);
+      return;
+    }
+    const id = setTimeout(() => setEditorRevealReady(true), 50);
+    return () => clearTimeout(id);
+  }, [showOverlay, isExitingOverlay]);
+
   const handleExitOverlay = () => {
     if (!canExitOverlay) return;
     setIsExitingOverlay(true);
@@ -441,7 +452,11 @@ function AppContentBody({
             </div>
             {activeSessionId && (
               <div className="flex-1 min-h-0 flex flex-col items-center px-6 pb-8 overflow-hidden">
-                <div className="relative w-full max-w-[720px] flex-1 min-h-0 flex flex-col">
+                <div
+                  className={`relative w-full max-w-[720px] flex-1 min-h-0 flex flex-col transition-opacity duration-150 ${
+                    editorRevealReady ? "opacity-100" : "opacity-0"
+                  }`}
+                >
                   <MarkdownEditor
                     value={notes}
                     onChange={(v) => setNotes(v ?? "")}
