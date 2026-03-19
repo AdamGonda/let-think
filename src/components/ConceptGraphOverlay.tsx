@@ -142,18 +142,17 @@ export function ConceptGraphOverlay({
         <>
           <div
             ref={graphViewportRef}
-            className="flex flex-1 min-h-0 min-w-0 overflow-auto relative py-4"
+            className="flex flex-1 min-h-0 min-w-0 overflow-auto relative py-4 items-start"
           >
             <div
               key={selectedBatchIndex}
-              className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 p-4 w-full h-full ${
+              className={`grid min-h-full w-full grid-cols-1 gap-6 p-4 auto-rows-[minmax(200px,calc((100%-7.5rem)/6))] sm:grid-cols-2 sm:auto-rows-[minmax(200px,calc((100%-3rem)/3))] lg:grid-cols-3 lg:auto-rows-[minmax(200px,calc((100%-1.5rem)/2))] ${
                 isAnimating
                   ? swipeDirectionRef.current === "right"
                     ? "animate-batch-swipe-right"
                     : "animate-batch-swipe-left"
                   : ""
               }`}
-              style={{ gridAutoRows: "minmax(200px, 1fr)" }}
               onAnimationEnd={handleBatchAnimationEnd}
             >
               {currentBatchNodes.map(({ node, number }) => {
@@ -166,7 +165,7 @@ export function ConceptGraphOverlay({
                   <Card
                     key={node.id}
                     size="sm"
-                    className="relative flex min-h-[200px] flex-col h-full transition-colors duration-200"
+                    className="relative flex h-full min-h-[200px] flex-col transition-colors duration-200"
                     onMouseEnter={() => setHoveredNode(node)}
                     onMouseLeave={() => setHoveredNode(null)}
                     style={{
