@@ -22,7 +22,7 @@ import { MarkdownEditor } from "./components/MarkdownEditor";
 import { SignIn } from "./components/SignIn";
 import { Toaster } from "./components/ui/sonner";
 import { Button } from "./components/ui/button";
-import { ChevronLeft, ChevronRight, FileText, History, Sigma, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, FileText, History, Sigma, X } from "lucide-react";
 
 function App() {
   return (
@@ -500,10 +500,22 @@ function AppContentBody({
                     data-slot="button-group"
                     className="flex items-center border border-border rounded-lg overflow-hidden bg-background dark:bg-input/30"
                   >
+                    {selectedBatchIndex > 0 && (
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        className="rounded-l-lg rounded-r-none border-0 border-r border-border"
+                        onClick={() => setSelectedBatchIndex(0)}
+                        title="First step"
+                        aria-label="First step"
+                      >
+                        <ChevronsLeft size={20} strokeWidth={2} />
+                      </Button>
+                    )}
                     <Button
                       variant="outline"
                       size="icon-sm"
-                      className="rounded-none border-0 border-r border-border"
+                      className={`rounded-none border-0 border-r border-border ${selectedBatchIndex <= 0 ? "rounded-l-lg" : ""}`}
                       onClick={() =>
                         setSelectedBatchIndex((i) => Math.max(0, i - 1))
                       }
@@ -523,7 +535,7 @@ function AppContentBody({
                     <Button
                       variant="outline"
                       size="icon-sm"
-                      className="rounded-none border-0"
+                      className={selectedBatchIndex >= batches.length - 1 ? "rounded-r-lg rounded-l-none border-0" : "rounded-none border-0 border-r border-border"}
                       onClick={() =>
                         setSelectedBatchIndex((i) =>
                           Math.min(batches.length - 1, i + 1)
@@ -535,6 +547,18 @@ function AppContentBody({
                     >
                       <ChevronRight size={20} strokeWidth={2} />
                     </Button>
+                    {selectedBatchIndex < batches.length - 1 && (
+                      <Button
+                        variant="outline"
+                        size="icon-sm"
+                        className="rounded-r-lg rounded-l-none border-0"
+                        onClick={() => setSelectedBatchIndex(batches.length - 1)}
+                        title="Last step"
+                        aria-label="Last step"
+                      >
+                        <ChevronsRight size={20} strokeWidth={2} />
+                      </Button>
+                    )}
                   </div>
                 )}
               </div>
