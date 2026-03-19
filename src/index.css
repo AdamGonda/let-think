@@ -122,22 +122,18 @@
 /* Batch pagination – swipe in from direction of travel */
 @keyframes batch-swipe-from-right {
   from {
-    opacity: 0;
     transform: translateX(348px);
   }
   to {
-    opacity: 1;
     transform: translateX(0);
   }
 }
 
 @keyframes batch-swipe-from-left {
   from {
-    opacity: 0;
     transform: translateX(-348px);
   }
   to {
-    opacity: 1;
     transform: translateX(0);
   }
 }
