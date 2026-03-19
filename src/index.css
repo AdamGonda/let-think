@@ -49,42 +49,42 @@
 }
 
 .dark {
-  --color-bg: #0a0a0a;
-  --color-surface: #0a0a0a;
-  --color-border: #3f3f46;
+  --color-bg: #262624;
+  --color-surface: #262624;
+  --color-border: #454542;
   --color-text: #fafafa;
   --color-text-muted: #a1a1aa;
   --color-primary: #fafafa;
-  --background: #0a0a0a;
+  --background: #262624;
   --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
+  --card: #2e2e2c;
   --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
+  --popover: #2e2e2c;
   --popover-foreground: oklch(0.985 0 0);
   --primary: oklch(0.922 0 0);
   --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
+  --secondary: #353532;
   --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
+  --muted: #353532;
   --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
+  --accent: #353532;
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
+  --border: rgb(69 69 66 / 0.5);
+  --input: rgb(255 255 255 / 12%);
   --ring: oklch(0.556 0 0);
   --chart-1: oklch(0.809 0.105 251.813);
   --chart-2: oklch(0.623 0.214 259.815);
   --chart-3: oklch(0.546 0.245 262.881);
   --chart-4: oklch(0.488 0.243 264.376);
   --chart-5: oklch(0.424 0.199 265.638);
-  --sidebar: oklch(0.205 0 0);
+  --sidebar: #262624;
   --sidebar-foreground: oklch(0.985 0 0);
   --sidebar-primary: oklch(0.488 0.243 264.376);
   --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent: #353532;
   --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-border: rgb(69 69 66 / 0.5);
   --sidebar-ring: oklch(0.556 0 0);
 }
 
@@ -101,7 +101,7 @@
   background-size: 24px 24px;
 }
 .dark .sign-in-bg {
-  background-image: radial-gradient(circle at 1px 1px, rgb(63 63 70 / 0.5) 1px, transparent 0);
+  background-image: radial-gradient(circle at 1px 1px, rgb(56 56 53 / 0.5) 1px, transparent 0);
 }
 
 @keyframes modal-in {
