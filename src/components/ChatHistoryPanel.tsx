@@ -192,7 +192,7 @@ export function ChatHistoryPanel({
                   const hasStep = batchIndex >= 0;
                   const isSelectedStep = hasStep && batchIndex === selectedBatchIndex;
 
-                  const dotBase = "size-3 shrink-0 ring-4 ring-background rounded-full";
+                  const dotBase = "absolute left-[7px] top-3 size-3 -translate-x-1/2 shrink-0 ring-4 ring-background z-10 rounded-full";
                   const dotSelected = "bg-[#1447E6]";
                   const dotRest = "bg-foreground";
 
@@ -201,6 +201,20 @@ export function ChatHistoryPanel({
                       key={key}
                       className="relative flex pb-6 last:pb-0"
                     >
+                      {hasStep && onNavigateToStep ? (
+                        <button
+                          type="button"
+                          onClick={() => onNavigateToStep(batchIndex)}
+                          className={`${dotBase} ${isSelectedStep ? dotSelected : dotRest} cursor-pointer hover:scale-125 transition-transform focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background`}
+                          title="Go to this step in the graph"
+                          aria-label={`Go to step ${batchIndex + 1} in graph`}
+                        />
+                      ) : (
+                        <div
+                          className={`${dotBase} ${isSelectedStep ? dotSelected : dotRest} hover:scale-125 transition-transform`}
+                          aria-hidden
+                        />
+                      )}
                       <div className="flex-1 min-w-0 pl-2">
                         <div className="rounded-2xl rounded-tl-md px-4 py-3 bg-muted text-foreground text-[0.95rem] leading-relaxed shadow-sm border border-border">
                           {(() => {
@@ -211,62 +225,44 @@ export function ChatHistoryPanel({
                               msg.createdAt != null &&
                               Date.now() - msg.createdAt < TOPIC_LOADING_TIMEOUT_MS;
                             const topic = topicOrSubject || truncateAtWord(msg.content, 60) + (msg.content.length > 60 ? "…" : "");
-
-                            const headerClassName = "rounded-t-md -mx-4 -mt-3 mb-3 px-4 py-2 bg-muted/80 border-b border-border flex items-center gap-2 -ml-2";
-
-                            const headerInner = (
-                              <>
-                                <span
-                                  className={`${dotBase} ${isSelectedStep ? dotSelected : dotRest}`}
-                                  aria-hidden={!hasStep}
-                                />
-                                {isPendingTopic ? (
-                                  <>
-                                    <Loader2 className="size-3.5 animate-spin text-muted-foreground shrink-0" />
-                                    <span className="text-[0.7rem] font-medium text-muted-foreground">
-                                      Generating summary…
-                                    </span>
-                                  </>
-                                ) : topic ? (
-                                  <span
-                                    className="text-[0.7rem] font-bold text-foreground/80 uppercase tracking-wider line-clamp-2 flex-1 min-w-0"
-                                    title={topicOrSubject ?? msg.content}
-                                  >
-                                    {topic}
-                                  </span>
-                                ) : null}
-                              </>
-                            );
-
-                            if (hasStep && onNavigateToStep) {
-                              return (
-                                <button
-                                  type="button"
-                                  onClick={() => onNavigateToStep(batchIndex)}
-                                  className={`${headerClassName} w-full text-left cursor-pointer hover:bg-muted/90 transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background`}
-                                  title="Go to this step in the graph"
-                                  aria-label={`Go to step ${batchIndex + 1} in graph`}
-                                >
-                                  {headerInner}
-                                </button>
-                              );
-                            }
-                            if (isPendingTopic || topic) {
+                            const headerClassName = "rounded-t-md -mx-4 -mt-3 mb-3 px-4 py-2 bg-muted/80 border-b border-border";
+                            if (isPendingTopic) {
                               return (
                                 <div
-                                  className={headerClassName}
-                                  role={isPendingTopic ? "status" : undefined}
-                                  aria-label={isPendingTopic ? "Generating summary" : undefined}
+                                  className={`${headerClassName} flex items-center gap-2`}
+                                  role="status"
+                                  aria-label="Generating summary"
                                 >
-                                  {headerInner}
+                                  <Loader2 className="size-3.5 animate-spin text-muted-foreground shrink-0" />
+                                  <span className="text-[0.7rem] font-medium text-muted-foreground">
+                                    Generating summary…
+                                  </span>
                                 </div>
                               );
                             }
-                            return (
-                              <div className={headerClassName}>
-                                <span className={`${dotBase} ${isSelectedStep ? dotSelected : dotRest}`} aria-hidden />
-                              </div>
-                            );
+                            if (topic) {
+                              const headerContent = (
+                                <p className="text-[0.7rem] font-bold text-foreground/80 uppercase tracking-wider line-clamp-2 m-0">
+                                  {topic}
+                                </p>
+                              );
+                              return hasStep && onNavigateToStep ? (
+                                <button
+                                  type="button"
+                                  onClick={() => onNavigateToStep(batchIndex)}
+                                  className={`${headerClassName} w-full text-left cursor-pointer hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background`}
+                                  title="Go to this step in the graph"
+                                  aria-label={`Go to step ${batchIndex + 1} in graph`}
+                                >
+                                  {headerContent}
+                                </button>
+                              ) : (
+                                <div className={headerClassName} title={topicOrSubject ?? msg.content}>
+                                  {headerContent}
+                                </div>
+                              );
+                            }
+                            return null;
                           })()}
                           {isLong ? (
                             <div className="flex flex-wrap items-center justify-end gap-2 -mt-1 mb-2">
