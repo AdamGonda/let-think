@@ -667,8 +667,8 @@ export function SessionSidebar({
           </div>
       </nav>
       <div
-        className={`flex flex-col gap-2 border-t border-border transition-[padding] duration-200 ${
-          isCollapsed ? "p-2 items-center" : "p-3"
+        className={`flex flex-col gap-2 border-t border-border transition-[padding] duration-200 shrink-0 ${
+          isCollapsed ? "p-2 items-center mt-auto" : "p-3"
         }`}
       >
         <UserCard
