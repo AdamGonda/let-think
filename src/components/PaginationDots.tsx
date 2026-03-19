@@ -66,7 +66,7 @@ export function PaginationDots({
                     className={`h-3 w-3 shrink-0 rounded-full transition-colors duration-300 cursor-pointer focus:outline-none ${
                       isActive
                         ? "bg-[#1447E6]"
-                        : "bg-white dark:bg-white/80 hover:opacity-80"
+                        : "bg-zinc-300 dark:bg-white/80 hover:opacity-80"
                     }`}
                     style={{
                       opacity: isActive ? 1 : 0.5,
