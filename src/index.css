@@ -377,10 +377,11 @@ body {
   background-color: var(--accent) !important;
 }
 .dark .driver-popover-close-btn {
-  color: var(--muted-foreground);
+  color: var(--popover-foreground);
 }
-.dark .driver-popover-close-btn:hover {
-  color: var(--foreground);
+.dark .driver-popover-close-btn:hover,
+.dark .driver-popover-close-btn:focus {
+  color: var(--popover-foreground);
 }
 .dark .driver-popover-arrow {
   border-color: var(--popover) !important;
