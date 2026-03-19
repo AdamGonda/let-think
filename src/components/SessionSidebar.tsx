@@ -204,23 +204,34 @@ export function SessionSidebar({
           isCollapsed ? "m-2 items-center" : "m-3"
         }`}
       >
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          className={isCollapsed ? "h-9 w-9" : "w-full justify-start gap-2"}
-          onClick={() => setIsCollapsed((c) => !c)}
-          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        <div
+          className={`flex items-center gap-2 shrink-0 mb-2 ${
+            isCollapsed ? "justify-center" : "w-full"
+          }`}
         >
-          {isCollapsed ? (
-            <PanelRight className="size-5" />
-          ) : (
-            <>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            className="h-9 w-9 shrink-0"
+            onClick={() => setIsCollapsed((c) => !c)}
+            aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {isCollapsed ? (
+              <PanelRight className="size-5" />
+            ) : (
               <PanelLeftClose className="size-5" />
-              Collapse
+            )}
+          </Button>
+          {!isCollapsed && (
+            <>
+              <span className="font-brand text-[11px] font-semibold uppercase tracking-[0.05em] text-sidebar-foreground flex-1 text-center">
+                LET THINK
+              </span>
+              <div className="w-9 shrink-0" aria-hidden />
             </>
           )}
-        </Button>
+        </div>
         <Button
           variant="secondary"
           className={isCollapsed ? "h-10 w-10 p-0 justify-center ring-1 ring-border/50 shadow-sm" : "justify-start h-10 w-full gap-2 ring-1 ring-border/50 shadow-sm"}
