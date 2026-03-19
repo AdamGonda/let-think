@@ -143,11 +143,11 @@
 }
 
 .animate-batch-swipe-right {
-  animation: batch-swipe-from-right 0.3s cubic-bezier(0.32, 0.72, 0, 1) both;
+  animation: batch-swipe-from-right 0.5s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
 .animate-batch-swipe-left {
-  animation: batch-swipe-from-left 0.3s cubic-bezier(0.32, 0.72, 0, 1) both;
+  animation: batch-swipe-from-left 0.5s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
 /* Wake up overlay – dissolve in / out */
