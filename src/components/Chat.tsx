@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { CornerDownLeft } from "lucide-react";
-import { useAction } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useSessionData } from "../contexts/SessionDataContext";
@@ -15,6 +15,8 @@ interface NumberedConcept {
 
 interface ChatProps {
   sessionId: Id<"sessions"> | null;
+  /** When provided and sessionId is null, creates a session on first submit */
+  onCreateSession?: () => Promise<Id<"sessions">>;
   /** Conversation history for context and display */
   messageHistory: Array<{
     _id?: Id<"messages">;
@@ -98,6 +100,7 @@ function resolveAtReferences(
 
 export function Chat({
   sessionId,
+  onCreateSession,
   messageHistory,
   isLoading,
   setIsLoading,
@@ -113,6 +116,7 @@ export function Chat({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mirrorRef = useRef<HTMLDivElement>(null);
   const sendMessage = useAction(api.chat.send);
+  const recordInteraction = useMutation(api.interactionSessions.recordInteraction);
   const {
     canSend,
     remaining,
@@ -148,7 +152,15 @@ export function Chat({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim() || !sessionId || !canSend) return;
+    if (!input.trim()) return;
+
+    let effectiveSessionId = sessionId;
+    const createdViaCallback = !sessionId && onCreateSession;
+    if (!effectiveSessionId && onCreateSession) {
+      effectiveSessionId = await onCreateSession();
+    }
+    if (!effectiveSessionId) return;
+    if (!createdViaCallback && !canSend) return;
 
     const rawContent = input.trim();
     const { resolvedContent, referencedConcepts, mentions } = resolveAtReferences(
@@ -172,7 +184,7 @@ export function Chat({
 
       await sendMessage({
         messages,
-        sessionId,
+        sessionId: effectiveSessionId,
         userContent: resolvedContent,
         selectedNodeContext:
           referencedConcepts.length > 0
@@ -184,7 +196,11 @@ export function Chat({
             : undefined,
         mentions: mentions.length > 0 ? mentions : undefined,
       });
-      onInteractionComplete();
+      if (createdViaCallback) {
+        await recordInteraction({ sessionId: effectiveSessionId });
+      } else {
+        onInteractionComplete();
+      }
       setIsLoading(false);
       onModelResponded?.();
     } catch (err) {
@@ -195,12 +211,13 @@ export function Chat({
     }
   };
 
-  const isDisabled = isLoading || !sessionId || !canSend;
+  const canSubmit = sessionId ? canSend : !!onCreateSession;
+  const isDisabled = isLoading || !canSubmit;
 
   const placeholder =
     breakRemainingFormatted
       ? `Wake up in ${breakRemainingFormatted}`
-      : sessionId
+      : sessionId || onCreateSession
         ? numberedConcepts.length > 0
           ? "Type, @ ref concepts"
           : "Type..."

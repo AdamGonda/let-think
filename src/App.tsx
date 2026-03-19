@@ -67,7 +67,7 @@ function AppContent() {
   notesRef.current = notes;
   const sessions = useQuery(api.sessions.list);
   const projectsWithSessions = useQuery(api.projects.listWithSessions);
-  const createSession = useMutation(api.sessions.create);
+  const createSessionMutation = useMutation(api.sessions.create);
   const storedDraft = useQuery(
     api.sessions.getDraft,
     activeSessionId ? { sessionId: activeSessionId } : "skip",
@@ -81,22 +81,10 @@ function AppContent() {
   const prevSessionIdRef = useRef<Id<"sessions"> | null>(null);
   const appliedStoredForSessionRef = useRef<Id<"sessions"> | null>(null);
   const hasEverHadSelectionRef = useRef(false);
-  const isAutoCreatingRef = useRef(false);
 
   useEffect(() => {
     if (activeSessionId) hasEverHadSelectionRef.current = true;
   }, [activeSessionId]);
-
-  // Auto-create a session when user has none
-  useEffect(() => {
-    if (!sessions || sessions.length > 0 || isAutoCreatingRef.current) return;
-    isAutoCreatingRef.current = true;
-    createSession({}).then((id) => {
-      setActiveSessionId(id);
-      setActiveProjectId(null);
-      hasEverHadSelectionRef.current = true;
-    });
-  }, [sessions, createSession]);
 
   useEffect(() => {
     if (
@@ -111,6 +99,14 @@ function AppContent() {
       hasEverHadSelectionRef.current = true;
     }
   }, [sessions, activeSessionId]);
+
+  const handleCreateSessionForFirstMessage = useCallback(async () => {
+    const id = await createSessionMutation({});
+    setActiveSessionId(id);
+    setActiveProjectId(null);
+    hasEverHadSelectionRef.current = true;
+    return id;
+  }, [createSessionMutation, setActiveSessionId, setActiveProjectId]);
 
   // Select inbox by default when empty (no projects, inbox empty) so the user
   // understands they're viewing the inbox and can create a new session
@@ -238,6 +234,9 @@ function AppContent() {
   return (
     <SessionDataProvider sessionId={activeSessionId}>
       <AppContentBody
+        onCreateSessionForFirstMessage={
+          !activeSessionId ? handleCreateSessionForFirstMessage : undefined
+        }
         activeSessionId={activeSessionId}
         activeProjectId={activeProjectId}
         setActiveSessionId={setActiveSessionId}
@@ -271,6 +270,7 @@ function AppContent() {
 }
 
 function AppContentBody({
+  onCreateSessionForFirstMessage,
   activeSessionId,
   activeProjectId,
   setActiveSessionId,
@@ -299,6 +299,7 @@ function AppContentBody({
   isDark,
   mainContentRef,
 }: {
+  onCreateSessionForFirstMessage?: () => Promise<Id<"sessions">>;
   activeSessionId: Id<"sessions"> | null;
   activeProjectId: Id<"projects"> | null;
   setActiveSessionId: (id: Id<"sessions"> | null) => void;
@@ -562,21 +563,15 @@ function AppContentBody({
             </header>
           )}
           <div className="flex flex-1 min-h-0 items-stretch justify-stretch" data-tour="graph-area">
-            {activeSessionId ? (
-              <ConceptGraphOverlay
-                key={activeSessionId}
-                graph={conceptGraph ?? null}
-                isLoading={isLoading}
-                isDark={isDark}
-                selectedBatchIndex={selectedBatchIndex}
-                onSelectedBatchIndexChange={setSelectedBatchIndex}
-                referencedConceptIds={referencedConceptIds}
-              />
-            ) : (
-              <div className="flex flex-1 items-center justify-center text-muted-foreground text-base py-6 px-6 text-center">
-                Select a session or create a new one to get started
-              </div>
-            )}
+            <ConceptGraphOverlay
+              key={activeSessionId ?? "empty"}
+              graph={conceptGraph ?? null}
+              isLoading={isLoading}
+              isDark={isDark}
+              selectedBatchIndex={selectedBatchIndex}
+              onSelectedBatchIndexChange={setSelectedBatchIndex}
+              referencedConceptIds={referencedConceptIds}
+            />
           </div>
           </>
           )}
@@ -592,6 +587,7 @@ function AppContentBody({
                 numberedConcepts={numberedConcepts}
                 draftInput={draftInput}
                 setDraftInput={setDraftInput}
+                onCreateSession={onCreateSessionForFirstMessage}
               />
         )}
         {viewMode === "graph" && (
