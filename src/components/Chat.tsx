@@ -209,14 +209,15 @@ export function Chat({
   const showInteractionLine = sessionId && breakRemainingMs === null;
 
   return (
-    <div className="flex flex-col gap-2 py-3 px-6 pb-4 border-t border-border bg-background shrink-0" data-tour="session-input">
-      {showInteractionLine && (
-        <p className="text-sm font-medium text-muted-foreground">
-          {remaining ?? "$"} interactions until long break
-        </p>
-      )}
-      <form className="flex gap-2 items-end" onSubmit={handleSubmit}>
-        <div className="flex-1 flex relative min-h-[48px] max-h-[240px] rounded-lg border border-input bg-background overflow-hidden">
+    <div className="flex flex-col items-center px-4 pt-4 shrink-0" data-tour="session-input">
+      <div className="w-full max-w-[720px] flex flex-col gap-3 rounded-t-2xl border border-b-0 border-border shadow-lg px-4 py-3 pb-4" style={{ backgroundColor: "#2B2B28" }}>
+        {showInteractionLine && (
+          <p className="text-sm font-medium text-muted-foreground">
+            {remaining ?? "$"} interactions until long break
+          </p>
+        )}
+        <form className="flex gap-2 items-end" onSubmit={handleSubmit}>
+          <div className="flex-1 flex relative min-h-[48px] max-h-[240px] rounded-xl border border-input bg-background overflow-hidden">
           <div
             ref={mirrorRef}
             className="absolute inset-0 z-0 py-3 px-4 pr-10 overflow-y-auto pointer-events-none whitespace-pre-wrap break-words text-[0.95rem] leading-[1.5] text-zinc-950 dark:text-zinc-100"
@@ -267,6 +268,7 @@ export function Chat({
           </div>
         </div>
       </form>
+      </div>
     </div>
   );
 }
