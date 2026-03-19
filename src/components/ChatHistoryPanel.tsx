@@ -212,13 +212,13 @@ export function ChatHistoryPanel({
                         <button
                           type="button"
                           onClick={() => onNavigateToStep(batchIndex)}
-                          className={`${dotBase} ${isSelectedStep ? dotSelected : dotRest} cursor-pointer hover:scale-125 transition-transform focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background`}
+                          className={`${dotBase} ${isSelectedStep ? dotSelected : dotRest} cursor-pointer hover:scale-125 [li:has(.header-section:hover)_&]:scale-125 transition-transform focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background`}
                           title="Go to this step in the graph"
                           aria-label={`Go to step ${batchIndex + 1} in graph`}
                         />
                       ) : (
                         <div
-                          className={`${dotBase} ${isSelectedStep ? dotSelected : dotRest} hover:scale-125 transition-transform`}
+                          className={`${dotBase} ${isSelectedStep ? dotSelected : dotRest} hover:scale-125 [li:has(.header-section:hover)_&]:scale-125 transition-transform`}
                           aria-hidden
                         />
                       )}
@@ -249,7 +249,7 @@ export function ChatHistoryPanel({
                           )}
                             {isPendingTopic ? (
                               <div
-                                className={`${headerClassName} flex items-center gap-2`}
+                                className={`header-section ${headerClassName} flex items-center gap-2`}
                                 role="status"
                                 aria-label="Generating summary"
                               >
@@ -262,7 +262,7 @@ export function ChatHistoryPanel({
                               hasStep && onNavigateToStep ? (
                                 <button
                                   type="button"
-                                  className={`${headerClassName} w-full text-left cursor-pointer hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background`}
+                                  className={`header-section ${headerClassName} w-full text-left cursor-pointer hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background`}
                                   title="Go to this step in the graph"
                                   aria-label={`Go to step ${batchIndex + 1} in graph`}
                                   onClick={() => onNavigateToStep(batchIndex)}
@@ -272,7 +272,7 @@ export function ChatHistoryPanel({
                                   </p>
                                 </button>
                               ) : (
-                                <div className={headerClassName} title={topicOrSubject ?? msg.content}>
+                                <div className={`header-section ${headerClassName}`} title={topicOrSubject ?? msg.content}>
                                   <p className="text-[0.7rem] font-bold text-foreground/80 uppercase tracking-wider line-clamp-2 m-0">
                                     {topic}
                                   </p>
