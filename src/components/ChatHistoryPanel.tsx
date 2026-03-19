@@ -1,7 +1,8 @@
 import { useState } from "react";
 import type { ReactNode } from "react";
 import type { Id } from "../../convex/_generated/dataModel";
-import { Loader2, X } from "lucide-react";
+import { toast } from "sonner";
+import { Loader2, X, Copy } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -138,6 +139,12 @@ export function ChatHistoryPanel({
   const displayOrder = [...userMessages].reverse();
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
 
+  const handleCopy = (e: React.MouseEvent, content: string) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(content);
+    toast.success("Copied to clipboard");
+  };
+
   const toggleExpanded = (key: string) => {
     setExpandedIds((prev) => {
       const next = new Set(prev);
@@ -216,8 +223,7 @@ export function ChatHistoryPanel({
                         />
                       )}
                       <div className="flex-1 min-w-0 pl-2">
-                        <div className="rounded-2xl rounded-tl-md px-4 py-3 bg-muted text-foreground text-[0.95rem] leading-relaxed shadow-sm border border-border">
-                          {(() => {
+                        {(() => {
                             const topicOrSubject = (msg.topic ?? msg.subject)?.trim();
                             const isPendingTopic =
                               !topicOrSubject &&
@@ -225,45 +231,54 @@ export function ChatHistoryPanel({
                               msg.createdAt != null &&
                               Date.now() - msg.createdAt < TOPIC_LOADING_TIMEOUT_MS;
                             const topic = topicOrSubject || truncateAtWord(msg.content, 60) + (msg.content.length > 60 ? "…" : "");
+                            const hasHeader = isPendingTopic || !!topic;
                             const headerClassName = "rounded-t-md -mx-4 -mt-3 mb-3 px-4 py-2 bg-muted/80 border-b border-border";
-                            if (isPendingTopic) {
-                              return (
-                                <div
-                                  className={`${headerClassName} flex items-center gap-2`}
-                                  role="status"
-                                  aria-label="Generating summary"
-                                >
-                                  <Loader2 className="size-3.5 animate-spin text-muted-foreground shrink-0" />
-                                  <span className="text-[0.7rem] font-medium text-muted-foreground">
-                                    Generating summary…
-                                  </span>
-                                </div>
-                              );
-                            }
-                            if (topic) {
-                              const headerContent = (
-                                <p className="text-[0.7rem] font-bold text-foreground/80 uppercase tracking-wider line-clamp-2 m-0">
-                                  {topic}
-                                </p>
-                              );
-                              return hasStep && onNavigateToStep ? (
+                            return (
+                        <div className="group/card relative rounded-2xl rounded-tl-md px-4 py-3 bg-muted text-foreground text-[0.95rem] leading-relaxed shadow-sm border border-border">
+                          {hasHeader && (
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className="absolute right-1 top-1 h-7 w-7 opacity-0 group-hover/card:opacity-100 transition-opacity z-10 bg-background/80 rounded-md"
+                              onClick={(e) => handleCopy(e, msg.content)}
+                              aria-label="Copy message"
+                              title="Copy message"
+                            >
+                              <Copy className="size-3.5" />
+                            </Button>
+                          )}
+                            {isPendingTopic ? (
+                              <div
+                                className={`${headerClassName} flex items-center gap-2`}
+                                role="status"
+                                aria-label="Generating summary"
+                              >
+                                <Loader2 className="size-3.5 animate-spin text-muted-foreground shrink-0" />
+                                <span className="text-[0.7rem] font-medium text-muted-foreground">
+                                  Generating summary…
+                                </span>
+                              </div>
+                            ) : topic ? (
+                              hasStep && onNavigateToStep ? (
                                 <button
                                   type="button"
-                                  onClick={() => onNavigateToStep(batchIndex)}
                                   className={`${headerClassName} w-full text-left cursor-pointer hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background`}
                                   title="Go to this step in the graph"
                                   aria-label={`Go to step ${batchIndex + 1} in graph`}
+                                  onClick={() => onNavigateToStep(batchIndex)}
                                 >
-                                  {headerContent}
+                                  <p className="text-[0.7rem] font-bold text-foreground/80 uppercase tracking-wider line-clamp-2 m-0">
+                                    {topic}
+                                  </p>
                                 </button>
                               ) : (
                                 <div className={headerClassName} title={topicOrSubject ?? msg.content}>
-                                  {headerContent}
+                                  <p className="text-[0.7rem] font-bold text-foreground/80 uppercase tracking-wider line-clamp-2 m-0">
+                                    {topic}
+                                  </p>
                                 </div>
-                              );
-                            }
-                            return null;
-                          })()}
+                              )
+                            ) : null}
                           {isLong ? (
                             <div className="flex flex-wrap items-center justify-end gap-2 -mt-1 mb-2">
                               <Button
@@ -284,6 +299,8 @@ export function ChatHistoryPanel({
                             )}
                           </p>
                         </div>
+                            );
+                          })()}
                       </div>
                     </li>
                   );
