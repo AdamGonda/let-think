@@ -232,7 +232,7 @@ export function SessionSidebar({
           {!isCollapsed && "New session"}
         </Button>
         <Button
-          variant="secondary"
+          variant="ghost"
           className={isCollapsed ? "h-10 w-10 p-0 justify-center ring-1 ring-border/50 shadow-sm" : "justify-start h-10 w-full gap-2 ring-1 ring-border/50 shadow-sm"}
           onClick={handleNewProject}
           aria-label="New project"
