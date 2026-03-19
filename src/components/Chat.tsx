@@ -3,7 +3,8 @@ import { CornerDownLeft } from "lucide-react";
 import { useAction } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
-import { useSessionManager } from "../hooks/useSessionManager";
+import { useSessionData } from "../contexts/SessionDataContext";
+import { formatBreakCountdown } from "../hooks/useSessionManager";
 
 interface NumberedConcept {
   id: string;
@@ -116,10 +117,13 @@ export function Chat({
     canSend,
     remaining,
     breakRemainingMs,
-    breakRemainingFormatted,
     onInteractionComplete,
     startBreakOptimistically,
-  } = useSessionManager(sessionId);
+  } = useSessionData();
+  const breakRemainingFormatted =
+    breakRemainingMs != null && breakRemainingMs > 0
+      ? formatBreakCountdown(breakRemainingMs)
+      : null;
 
   // Auto-resize textarea as user types
   useEffect(() => {

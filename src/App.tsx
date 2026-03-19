@@ -9,10 +9,8 @@ import {
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import { useTheme } from "./hooks/useTheme";
-import {
-  useSessionManager,
-  formatBreakCountdown,
-} from "./hooks/useSessionManager";
+import { formatBreakCountdown } from "./hooks/useSessionManager";
+import { SessionDataProvider, useSessionData } from "./contexts/SessionDataContext";
 import { SessionSidebar } from "./components/SessionSidebar";
 import { NotesListPanel } from "./components/NotesListPanel";
 import { Chat } from "./components/Chat";
@@ -61,8 +59,6 @@ function AppContent() {
   const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
   const [viewMode, setViewMode] = useState<"graph" | "notesList">("graph");
   const [selectedBatchIndex, setSelectedBatchIndex] = useState(0);
-  const { breakRemainingMs } = useSessionManager(activeSessionId);
-  const isInBreak = breakRemainingMs !== null && breakRemainingMs > 0;
   const [draftInput, setDraftInput] = useState("");
   const [notes, setNotes] = useState("");
   const draftInputRef = useRef(draftInput);
@@ -71,14 +67,6 @@ function AppContent() {
   notesRef.current = notes;
   const sessions = useQuery(api.sessions.list);
   const projectsWithSessions = useQuery(api.projects.listWithSessions);
-  const messages = useQuery(
-    api.sessions.getMessages,
-    activeSessionId ? { sessionId: activeSessionId } : "skip",
-  );
-  const conceptGraph = useQuery(
-    api.sessions.getConceptGraph,
-    activeSessionId ? { sessionId: activeSessionId } : "skip",
-  );
   const storedDraft = useQuery(
     api.sessions.getDraft,
     activeSessionId ? { sessionId: activeSessionId } : "skip",
@@ -127,24 +115,6 @@ function AppContent() {
       setActiveSessionId(null);
     }
   }, [projectsWithSessions]);
-
-  const batches = useMemo(
-    () => conceptGraph?.batches ?? [],
-    [conceptGraph?.batches]
-  );
-  const prevBatchesLengthRef = useRef(0);
-
-  // When graph batches load or grow, jump to the latest (controlled graph navigation)
-  useEffect(() => {
-    if (batches.length === 0) return;
-    const prevLen = prevBatchesLengthRef.current;
-    prevBatchesLengthRef.current = batches.length;
-    if (batches.length > prevLen) {
-      setSelectedBatchIndex(batches.length - 1);
-    } else {
-      setSelectedBatchIndex((i) => Math.min(i, batches.length - 1));
-    }
-  }, [batches.length]);
 
   // Load draft and thinking notes from Convex when session changes or when stored data loads (e.g. after refresh)
   useEffect(() => {
@@ -227,7 +197,143 @@ function AppContent() {
     return () => clearTimeout(timer);
   }, [activeSessionId, notes, saveThinkingNotes]);
 
-  /** Numbered concepts for the current batch - used to resolve @1, @2 in chat input */
+  const mainContentRef = useRef<HTMLDivElement>(null);
+
+  // When session is cleared, reset overlay state to avoid stuck "Wake up" with no escape
+  useEffect(() => {
+    if (!activeSessionId) {
+      setIsLoading(false);
+      setEditorOpen(false);
+      setModelRespondedAwaitingDismissal(false);
+      setIsExitingOverlay(false);
+    }
+  }, [activeSessionId]);
+
+  const WAKE_UP_EXIT_DURATION_MS = 300;
+  useEffect(() => {
+    if (!isExitingOverlay) return;
+    const id = setTimeout(() => {
+      setOverlayDismissed(true);
+      setIsLoading(false);
+      setEditorOpen(false);
+      setModelRespondedAwaitingDismissal(false);
+      setIsExitingOverlay(false);
+    }, WAKE_UP_EXIT_DURATION_MS);
+    return () => clearTimeout(id);
+  }, [isExitingOverlay]);
+
+  return (
+    <SessionDataProvider sessionId={activeSessionId}>
+      <AppContentBody
+        activeSessionId={activeSessionId}
+        activeProjectId={activeProjectId}
+        setActiveSessionId={setActiveSessionId}
+        setActiveProjectId={setActiveProjectId}
+        isLoading={isLoading}
+        setIsLoading={setIsLoading}
+        modelRespondedAwaitingDismissal={modelRespondedAwaitingDismissal}
+        setModelRespondedAwaitingDismissal={setModelRespondedAwaitingDismissal}
+        overlayDismissed={overlayDismissed}
+        setOverlayDismissed={setOverlayDismissed}
+        isExitingOverlay={isExitingOverlay}
+        setIsExitingOverlay={setIsExitingOverlay}
+        editorOpen={editorOpen}
+        setEditorOpen={setEditorOpen}
+        historyPanelOpen={historyPanelOpen}
+        setHistoryPanelOpen={setHistoryPanelOpen}
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        selectedBatchIndex={selectedBatchIndex}
+        setSelectedBatchIndex={setSelectedBatchIndex}
+        draftInput={draftInput}
+        setDraftInput={setDraftInput}
+        notes={notes}
+        setNotes={setNotes}
+        toggleTheme={toggleTheme}
+        isDark={isDark}
+        mainContentRef={mainContentRef}
+      />
+    </SessionDataProvider>
+  );
+}
+
+function AppContentBody({
+  activeSessionId,
+  activeProjectId,
+  setActiveSessionId,
+  setActiveProjectId,
+  isLoading,
+  setIsLoading,
+  modelRespondedAwaitingDismissal,
+  setModelRespondedAwaitingDismissal,
+  overlayDismissed,
+  setOverlayDismissed,
+  isExitingOverlay,
+  setIsExitingOverlay,
+  editorOpen,
+  setEditorOpen,
+  historyPanelOpen,
+  setHistoryPanelOpen,
+  viewMode,
+  setViewMode,
+  selectedBatchIndex,
+  setSelectedBatchIndex,
+  draftInput,
+  setDraftInput,
+  notes,
+  setNotes,
+  toggleTheme,
+  isDark,
+  mainContentRef,
+}: {
+  activeSessionId: Id<"sessions"> | null;
+  activeProjectId: Id<"projects"> | null;
+  setActiveSessionId: (id: Id<"sessions"> | null) => void;
+  setActiveProjectId: (id: Id<"projects"> | null) => void;
+  isLoading: boolean;
+  setIsLoading: (v: boolean) => void;
+  modelRespondedAwaitingDismissal: boolean;
+  setModelRespondedAwaitingDismissal: (v: boolean) => void;
+  overlayDismissed: boolean;
+  setOverlayDismissed: (v: boolean) => void;
+  isExitingOverlay: boolean;
+  setIsExitingOverlay: (v: boolean) => void;
+  editorOpen: boolean;
+  setEditorOpen: (v: boolean) => void;
+  historyPanelOpen: boolean;
+  setHistoryPanelOpen: (v: boolean) => void;
+  viewMode: "graph" | "notesList";
+  setViewMode: (v: "graph" | "notesList") => void;
+  selectedBatchIndex: number;
+  setSelectedBatchIndex: React.Dispatch<React.SetStateAction<number>>;
+  draftInput: string;
+  setDraftInput: (v: string) => void;
+  notes: string;
+  setNotes: (v: string) => void;
+  toggleTheme: () => void;
+  isDark: boolean;
+  mainContentRef: React.RefObject<HTMLDivElement | null>;
+}) {
+  const {
+    conceptGraph,
+    messages,
+    batches,
+    breakRemainingMs,
+  } = useSessionData();
+  const isInBreak = breakRemainingMs !== null && breakRemainingMs > 0;
+  const prevBatchesLengthRef = useRef(0);
+
+  useEffect(() => {
+    if (batches.length === 0) return;
+    const prevLen = prevBatchesLengthRef.current;
+    prevBatchesLengthRef.current = batches.length;
+    if (batches.length > prevLen) {
+      setSelectedBatchIndex(batches.length - 1);
+    } else {
+      setSelectedBatchIndex((i) => Math.min(i, batches.length - 1));
+    }
+  }, [batches.length, setSelectedBatchIndex]);
+
   const numberedConcepts = useMemo(() => {
     if (!conceptGraph?.nodes) return [];
     const batch = batches[selectedBatchIndex];
@@ -243,7 +349,6 @@ function AppContent() {
     return result;
   }, [conceptGraph?.nodes, batches, selectedBatchIndex]);
 
-  /** Concept IDs referenced in current draft (@1, @2) – for card highlight. Only on latest batch. */
   const isLatestBatch =
     batches.length > 0 && selectedBatchIndex === batches.length - 1;
   const referencedConceptIds = useMemo(() => {
@@ -259,54 +364,26 @@ function AppContent() {
     return ids;
   }, [isLatestBatch, draftInput, numberedConcepts]);
 
-  const mainContentRef = useRef<HTMLDivElement>(null);
-
   const overlayActive =
     isLoading || isInBreak || editorOpen || modelRespondedAwaitingDismissal;
-  // Don't show overlay when there's no session - would show only "Wake up" with no content/exit
   const showOverlay =
     overlayActive && !overlayDismissed && activeSessionId != null;
-
-  useEffect(() => {
-    if (!overlayActive) {
-      setOverlayDismissed(false);
-      setModelRespondedAwaitingDismissal(false);
-    }
-  }, [overlayActive]);
-
-  // When session is cleared, reset overlay state to avoid stuck "Wake up" with no escape
-  useEffect(() => {
-    if (!activeSessionId) {
-      setIsLoading(false);
-      setEditorOpen(false);
-      setModelRespondedAwaitingDismissal(false);
-      setIsExitingOverlay(false);
-    }
-  }, [activeSessionId]);
-
   const canExitOverlay = !isLoading && !isInBreak;
-
   const chatVisible =
     !showOverlay &&
     viewMode === "graph" &&
     (batches.length === 0 || selectedBatchIndex === batches.length - 1);
 
-  const WAKE_UP_EXIT_DURATION_MS = 300;
   const handleExitOverlay = () => {
     if (!canExitOverlay) return;
     setIsExitingOverlay(true);
   };
   useEffect(() => {
-    if (!isExitingOverlay) return;
-    const id = setTimeout(() => {
-      setOverlayDismissed(true);
-      setIsLoading(false);
-      setEditorOpen(false);
+    if (!overlayActive) {
+      setOverlayDismissed(false);
       setModelRespondedAwaitingDismissal(false);
-      setIsExitingOverlay(false);
-    }, WAKE_UP_EXIT_DURATION_MS);
-    return () => clearTimeout(id);
-  }, [isExitingOverlay]);
+    }
+  }, [overlayActive, setOverlayDismissed, setModelRespondedAwaitingDismissal]);
 
   return (
     <div className="flex h-screen bg-background">

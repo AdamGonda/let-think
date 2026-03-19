@@ -34,7 +34,7 @@ export function ConceptGraphOverlay({
   graph,
   className,
   isLoading: _isLoading = false,
-  isDark = false,
+  isDark: _isDark = false,
   selectedBatchIndex: controlledBatchIndex,
   onSelectedBatchIndexChange,
   referencedConceptIds,
