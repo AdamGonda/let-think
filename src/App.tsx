@@ -537,7 +537,13 @@ function AppContentBody({
               </div>
             </header>
           )}
-          <div className="flex flex-1 min-h-0 items-stretch justify-stretch" data-tour="graph-area">
+          {/* Past steps hide chat; cap graph height so card rows match the usual graph+input layout. */}
+          <div
+            className={`flex w-full flex-1 min-h-0 items-stretch justify-stretch ${
+              !chatVisible ? "max-h-[calc(100dvh-13rem)]" : ""
+            }`}
+            data-tour="graph-area"
+          >
             <ConceptGraphOverlay
               key={activeSessionId ?? "empty"}
               graph={conceptGraph ?? null}

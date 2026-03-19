@@ -21,6 +21,11 @@ export function StepNavigator({
   selectedIndex,
   onSelect,
 }: StepNavigatorProps) {
+
+  if (totalSteps <= 1) {
+    return null;
+  }
+  
   return (
     <div className="grid grid-cols-[1fr_auto_1fr] items-center overflow-hidden rounded-lg border border-border bg-muted/30 dark:bg-input/20">
       <div className="flex items-center justify-end">
