@@ -67,6 +67,7 @@ function AppContent() {
   notesRef.current = notes;
   const sessions = useQuery(api.sessions.list);
   const projectsWithSessions = useQuery(api.projects.listWithSessions);
+  const createSession = useMutation(api.sessions.create);
   const storedDraft = useQuery(
     api.sessions.getDraft,
     activeSessionId ? { sessionId: activeSessionId } : "skip",
@@ -80,10 +81,22 @@ function AppContent() {
   const prevSessionIdRef = useRef<Id<"sessions"> | null>(null);
   const appliedStoredForSessionRef = useRef<Id<"sessions"> | null>(null);
   const hasEverHadSelectionRef = useRef(false);
+  const isAutoCreatingRef = useRef(false);
 
   useEffect(() => {
     if (activeSessionId) hasEverHadSelectionRef.current = true;
   }, [activeSessionId]);
+
+  // Auto-create a session when user has none
+  useEffect(() => {
+    if (!sessions || sessions.length > 0 || isAutoCreatingRef.current) return;
+    isAutoCreatingRef.current = true;
+    createSession({}).then((id) => {
+      setActiveSessionId(id);
+      setActiveProjectId(null);
+      hasEverHadSelectionRef.current = true;
+    });
+  }, [sessions, createSession]);
 
   useEffect(() => {
     if (

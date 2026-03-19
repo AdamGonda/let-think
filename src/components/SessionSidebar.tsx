@@ -102,6 +102,8 @@ export function SessionSidebar({
     if (targetProjectId) {
       onSelectProject(targetProjectId);
       setExpandedProjectIds((prev) => new Set([...prev, targetProjectId]));
+    } else {
+      onSelectProject(null);
     }
   };
 
@@ -149,6 +151,7 @@ export function SessionSidebar({
   }, [editingProjectId]);
 
   const handleDelete = async (id: Id<"sessions">) => {
+    if (allSessions.length <= 1) return;
     setConfirmDeleteSessionId(null);
     const wasActive = activeSessionId === id;
     const deletedSession = allSessions.find((s: Doc<"sessions">) => s._id === id);
@@ -516,7 +519,7 @@ export function SessionSidebar({
                             <X className="size-4" />
                           </Button>
                         </div>
-                      ) : (
+                      ) : allSessions.length > 1 ? (
                         <Button
                           variant="ghost"
                           size="icon-xs"
@@ -529,7 +532,7 @@ export function SessionSidebar({
                         >
                           <Trash2 className="size-4" />
                         </Button>
-                      )}
+                      ) : null}
                     </div>
                   ))}
               </div>
@@ -648,7 +651,7 @@ export function SessionSidebar({
                       <X className="size-4" />
                     </Button>
                   </div>
-                ) : (
+                ) : allSessions.length > 1 ? (
                   <Button
                     variant="ghost"
                     size="icon-xs"
@@ -661,7 +664,7 @@ export function SessionSidebar({
                   >
                     <Trash2 className="size-4" />
                   </Button>
-                )}
+                ) : null}
               </div>
             ))}
           </div>
