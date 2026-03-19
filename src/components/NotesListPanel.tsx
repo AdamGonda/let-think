@@ -108,7 +108,7 @@ export function NotesListPanel({ onSelectSession, onJumpToSession }: NotesListPa
                           e.stopPropagation();
                           onJumpToSession(session);
                         }}
-                        className="shrink-0 max-w-0 overflow-hidden opacity-0 group-hover:max-w-[7rem] group-hover:opacity-100 group-hover:overflow-visible px-0 group-hover:px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-r-lg whitespace-nowrap transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        className="shrink-0 max-w-0 overflow-hidden opacity-0 group-hover:max-w-[7rem] group-hover:opacity-100 group-hover:overflow-visible px-0 group-hover:px-3 py-2 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-r-lg whitespace-nowrap transition-all duration-200 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer"
                         aria-label="Go to session"
                       >
                         Go to session
