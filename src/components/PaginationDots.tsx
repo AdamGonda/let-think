@@ -41,43 +41,45 @@ export function PaginationDots({
 
   const dots = Array.from({ length: totalItems }, (_, i) => i);
 
+  const dotButton = (index: number) => {
+    const isActive = index === currentIndex;
+    return (
+      <button
+        key={index}
+        type="button"
+        onClick={() => onSelect?.(index)}
+        aria-label={`Go to step ${index + 1}`}
+        aria-selected={isActive}
+        title={`Step ${index + 1}`}
+        className={`shrink-0 rounded-full transition-colors duration-300 cursor-pointer focus:outline-none ${
+          isActive
+            ? "bg-[#1447E6]"
+            : "bg-zinc-300 dark:bg-white/80 hover:opacity-80"
+        }`}
+        style={{
+          width: DOT_SIZE,
+          height: DOT_SIZE,
+          opacity: isActive ? 1 : 0.5,
+        }}
+      />
+    );
+  };
+
+  if (totalItems <= 5) {
+    return (
+      <div className="flex h-7 items-center justify-center" style={{ gap: GAP }}>
+        {dots.map((index) => dotButton(index))}
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center justify-center">
-      <div className="relative w-20 h-7 overflow-x-clip flex items-center">
-        <div
-          className="absolute top-1/2 -translate-y-1/2"
-          style={{
-            left:
-              totalItems <= 5
-                ? 40 - (totalItems * DOT_STEP - GAP) / 2
-                : 0,
-          }}
-        >
+      <div className="relative flex h-7 w-20 items-center overflow-x-clip">
+        <div className="absolute top-1/2 left-0 -translate-y-1/2">
           <animated.div style={springProps}>
-            <div className="flex pl-0.5" style={{ gap: GAP }}>
-              {dots.map((index) => {
-                const isActive = index === currentIndex;
-                return (
-                  <button
-                    key={index}
-                    type="button"
-                    onClick={() => onSelect?.(index)}
-                    aria-label={`Go to step ${index + 1}`}
-                    aria-selected={isActive}
-                    title={`Step ${index + 1}`}
-                    className={`shrink-0 rounded-full transition-colors duration-300 cursor-pointer focus:outline-none ${
-                      isActive
-                        ? "bg-[#1447E6]"
-                        : "bg-zinc-300 dark:bg-white/80 hover:opacity-80"
-                    }`}
-                    style={{
-                      width: DOT_SIZE,
-                      height: DOT_SIZE,
-                      opacity: isActive ? 1 : 0.5,
-                    }}
-                  />
-                );
-              })}
+            <div className="flex" style={{ gap: GAP }}>
+              {dots.map((index) => dotButton(index))}
             </div>
           </animated.div>
         </div>

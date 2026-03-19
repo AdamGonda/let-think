@@ -15,13 +15,12 @@ import { NotesListPanel } from "./components/NotesListPanel";
 import { Chat } from "./components/Chat";
 import { Tutorial, runTutorial, getTutorialCompleted } from "./components/Tutorial";
 import { ChatHistoryPanel } from "./components/ChatHistoryPanel";
-import { PaginationDots } from "./components/PaginationDots";
 import { ConceptGraphOverlay } from "./components/ConceptGraphOverlay";
 import { MarkdownEditor } from "./components/MarkdownEditor";
 import { SignIn } from "./components/SignIn";
 import { Toaster } from "./components/ui/sonner";
 import { Button } from "./components/ui/button";
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, FileText, History, Sigma, X } from "lucide-react";
+import { FileText, History, Sigma, X } from "lucide-react";
 import { StepNavigator } from "./components/StepNavigator";
 
 function App() {
