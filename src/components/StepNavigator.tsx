@@ -72,7 +72,7 @@ export function StepNavigator({
         <Button
           variant="outline"
           size="icon-sm"
-          className="rounded-r-lg rounded-l-none border-0"
+          className="absolute right-[-28px] rounded-r-lg rounded-l-none border-0 border-l border-border"
           onClick={() => onSelect(totalSteps - 1)}
           title="Last step"
           aria-label="Last step"
