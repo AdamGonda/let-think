@@ -170,11 +170,11 @@
 }
 
 .animate-wake-up-in {
-  animation: wake-up-dissolve-in 0.4s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  animation: wake-up-dissolve-in 0.4s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
 .animate-wake-up-out {
-  animation: wake-up-dissolve-out 0.3s cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  animation: wake-up-dissolve-out 0.3s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
 #root {

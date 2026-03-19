@@ -408,46 +408,53 @@ function AppContentBody({
           aria-busy={isLoading}
           aria-live="polite"
         >
-          {canExitOverlay && (
-            <Button
-              variant="outline"
-              size="icon-sm"
-              className="absolute top-4 right-4 z-10"
-              onClick={handleExitOverlay}
-              aria-label={viewMode === "notesList" ? "Close" : "Summarize and return to session"}
-            >
-              {viewMode === "notesList" ? (
-                <X className="size-5" />
-              ) : (
-                <Sigma className="size-5" />
-              )}
-            </Button>
-          )}
-          <div className="shrink-0 py-8 flex flex-col items-center gap-1">
-            <span className="text-muted-foreground text-2xl font-medium uppercase tracking-[0.25em]">
-              Wake up
-            </span>
-            {breakRemainingMs != null && breakRemainingMs > 0 && !editorOpen && (
-              <span className="text-muted-foreground text-lg font-medium tabular-nums">
-                {formatBreakCountdown(breakRemainingMs)}
+          {/* Hide overlay content immediately when exiting to avoid text/cards overlap during fade */}
+          <div
+            className={`flex flex-1 min-h-0 flex-col transition-opacity duration-75 ${
+              isExitingOverlay ? "opacity-0" : "opacity-100"
+            }`}
+          >
+            {canExitOverlay && (
+              <Button
+                variant="outline"
+                size="icon-sm"
+                className="absolute top-4 right-4 z-10"
+                onClick={handleExitOverlay}
+                aria-label={viewMode === "notesList" ? "Close" : "Summarize and return to session"}
+              >
+                {viewMode === "notesList" ? (
+                  <X className="size-5" />
+                ) : (
+                  <Sigma className="size-5" />
+                )}
+              </Button>
+            )}
+            <div className="shrink-0 py-8 flex flex-col items-center gap-1">
+              <span className="text-muted-foreground text-2xl font-medium uppercase tracking-[0.25em]">
+                Wake up
               </span>
+              {breakRemainingMs != null && breakRemainingMs > 0 && !editorOpen && (
+                <span className="text-muted-foreground text-lg font-medium tabular-nums">
+                  {formatBreakCountdown(breakRemainingMs)}
+                </span>
+              )}
+            </div>
+            {activeSessionId && (
+              <div className="flex-1 min-h-0 flex flex-col items-center px-6 pb-8 overflow-hidden">
+                <div className="relative w-full max-w-[720px] flex-1 min-h-0 flex flex-col">
+                  <MarkdownEditor
+                    value={notes}
+                    onChange={(v) => setNotes(v ?? "")}
+                    placeholder="Take notes…"
+                    variant="focused"
+                    dark={true}
+                    autoFocus
+                    autoFocusEnd
+                  />
+                </div>
+              </div>
             )}
           </div>
-          {activeSessionId && (
-            <div className="flex-1 min-h-0 flex flex-col items-center px-6 pb-8 overflow-hidden">
-              <div className="relative w-full max-w-[720px] flex-1 min-h-0 flex flex-col">
-                <MarkdownEditor
-                  value={notes}
-                  onChange={(v) => setNotes(v ?? "")}
-                  placeholder="Take notes…"
-                  variant="focused"
-                  dark={true}
-                  autoFocus
-                  autoFocusEnd
-                />
-              </div>
-            </div>
-          )}
         </div>
       )}
       <Tutorial
