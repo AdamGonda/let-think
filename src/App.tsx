@@ -24,7 +24,7 @@ import { MarkdownEditor } from "./components/MarkdownEditor";
 import { SignIn } from "./components/SignIn";
 import { Toaster } from "./components/ui/sonner";
 import { Button } from "./components/ui/button";
-import { ChevronLeft, ChevronRight, FileText, History, Loader2, Sigma, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileText, History, Sigma, X } from "lucide-react";
 
 function App() {
   return (
@@ -92,8 +92,6 @@ function AppContent() {
   const prevSessionIdRef = useRef<Id<"sessions"> | null>(null);
   const appliedStoredForSessionRef = useRef<Id<"sessions"> | null>(null);
   const hasEverHadSelectionRef = useRef(false);
-  const [notesEditorReady, setNotesEditorReady] = useState(false);
-  const [notesSyncedForSessionId, setNotesSyncedForSessionId] = useState<Id<"sessions"> | null>(null);
 
   useEffect(() => {
     if (activeSessionId) hasEverHadSelectionRef.current = true;
@@ -164,7 +162,6 @@ function AppContent() {
 
     if (sessionChanged) {
       appliedStoredForSessionRef.current = null;
-      setNotesSyncedForSessionId(null);
       setDraftInput(activeSessionId == null ? "" : (storedDraft ?? ""));
       setNotes("");
       if (
@@ -174,7 +171,6 @@ function AppContent() {
       ) {
         appliedStoredForSessionRef.current = activeSessionId;
         setNotes(storedThinkingNotes ?? "");
-        setNotesSyncedForSessionId(activeSessionId);
       }
     } else if (
       activeSessionId != null &&
@@ -185,7 +181,6 @@ function AppContent() {
       setDraftInput(storedDraft ?? "");
       setNotes(storedThinkingNotes ?? "");
       appliedStoredForSessionRef.current = activeSessionId;
-      setNotesSyncedForSessionId(activeSessionId);
     }
   }, [
     activeSessionId,
@@ -296,32 +291,6 @@ function AppContent() {
     viewMode === "graph" &&
     (batches.length === 0 || selectedBatchIndex === batches.length - 1);
 
-  // Reset notes editor ready when overlay closes so we show loading on next open
-  useEffect(() => {
-    if (!editorOpen) {
-      setNotesEditorReady(false);
-    }
-  }, [editorOpen]);
-
-  // When data loads, set a short delay then reveal the editor (overlay hides so user sees settled content)
-  const NOTES_REVEAL_DELAY_MS = 200;
-  useEffect(() => {
-    if (
-      !editorOpen ||
-      !activeSessionId ||
-      storedThinkingNotes === undefined ||
-      notesSyncedForSessionId !== activeSessionId
-    )
-      return;
-    const id = setTimeout(() => setNotesEditorReady(true), NOTES_REVEAL_DELAY_MS);
-    return () => clearTimeout(id);
-  }, [
-    editorOpen,
-    activeSessionId,
-    storedThinkingNotes,
-    notesSyncedForSessionId,
-  ]);
-
   const WAKE_UP_EXIT_DURATION_MS = 300;
   const handleExitOverlay = () => {
     if (!canExitOverlay) return;
@@ -377,37 +346,15 @@ function AppContent() {
           {activeSessionId && (
             <div className="flex-1 min-h-0 flex flex-col items-center px-6 pb-8 overflow-hidden">
               <div className="relative w-full max-w-[720px] flex-1 min-h-0 flex flex-col">
-                {storedThinkingNotes === undefined ||
-                notesSyncedForSessionId !== activeSessionId ? (
-                  <div
-                    className="flex flex-1 min-h-0 flex flex-col items-center justify-center gap-3 rounded-xl bg-[#0A0A0A]"
-                    aria-label="Loading notes"
-                  >
-                    <Loader2 className="size-6 animate-spin text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground">Loading notes…</span>
-                  </div>
-                ) : (
-                  <>
-                    <MarkdownEditor
-                      value={notes}
-                      onChange={(v) => setNotes(v ?? "")}
-                      placeholder="Take notes…"
-                      variant="focused"
-                      dark={true}
-                      autoFocus
-                      autoFocusEnd
-                    />
-                    {!notesEditorReady && (
-                      <div
-                        className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 rounded-xl bg-[#0A0A0A]"
-                        aria-label="Loading notes"
-                      >
-                        <Loader2 className="size-6 animate-spin text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">Loading notes…</span>
-                      </div>
-                    )}
-                  </>
-                )}
+                <MarkdownEditor
+                  value={notes}
+                  onChange={(v) => setNotes(v ?? "")}
+                  placeholder="Take notes…"
+                  variant="focused"
+                  dark={true}
+                  autoFocus
+                  autoFocusEnd
+                />
               </div>
             </div>
           )}
