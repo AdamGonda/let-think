@@ -209,14 +209,14 @@ export function Chat({
   const showInteractionLine = sessionId && breakRemainingMs === null;
 
   return (
-    <div className="flex flex-col gap-2 py-3 px-6 pb-4 border-t border-zinc-300 dark:border-zinc-700 bg-white dark:bg-[#16171d] shrink-0" data-tour="session-input">
+    <div className="flex flex-col gap-2 py-3 px-6 pb-4 border-t border-border bg-background dark:bg-[#16171d] shrink-0" data-tour="session-input">
       {showInteractionLine && (
-        <p className="text-sm font-medium text-zinc-600 dark:text-zinc-300">
+        <p className="text-sm font-medium text-muted-foreground">
           {remaining ?? "$"} interactions until long break
         </p>
       )}
       <form className="flex gap-2 items-end" onSubmit={handleSubmit}>
-        <div className="flex-1 flex relative min-h-[48px] max-h-[240px] rounded-lg border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-[#16171d] overflow-hidden">
+        <div className="flex-1 flex relative min-h-[48px] max-h-[240px] rounded-lg border border-input bg-background dark:bg-[#16171d] overflow-hidden">
           <div
             ref={mirrorRef}
             className="absolute inset-0 z-0 py-3 px-4 pr-10 overflow-y-auto pointer-events-none whitespace-pre-wrap break-words text-[0.95rem] leading-[1.5] text-zinc-950 dark:text-zinc-100"
@@ -237,7 +237,7 @@ export function Chat({
                 )
               )
             ) : (
-              <span className="text-zinc-500 dark:text-zinc-500 opacity-70">
+              <span className="text-muted-foreground">
                 {placeholder}
               </span>
             )}
@@ -245,7 +245,7 @@ export function Chat({
           <textarea
             ref={textareaRef}
             rows={1}
-            className="relative z-10 w-full min-h-[48px] max-h-[240px] py-3 px-4 pr-10 bg-transparent text-transparent caret-zinc-900 dark:caret-zinc-100 font-inherit text-[0.95rem] leading-[1.5] placeholder:transparent focus:outline-none focus:ring-0 disabled:opacity-60 disabled:cursor-not-allowed resize-none overflow-y-auto"
+            className="relative z-10 w-full min-h-[48px] max-h-[240px] py-3 px-4 pr-10 bg-transparent text-transparent caret-foreground font-inherit text-[0.95rem] leading-[1.5] placeholder:transparent focus:outline-none focus:ring-0 disabled:opacity-60 disabled:cursor-not-allowed resize-none overflow-y-auto"
             style={{ color: "transparent" }}
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -261,7 +261,7 @@ export function Chat({
           >
             <CornerDownLeft
               size={18}
-              className="text-zinc-400 dark:text-zinc-500"
+              className="text-muted-foreground"
               strokeWidth={2}
             />
           </div>
