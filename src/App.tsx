@@ -370,7 +370,6 @@ function AppContentBody({
     overlayActive && !overlayDismissed && activeSessionId != null;
   const canExitOverlay = !isLoading && !isInBreak;
   const chatVisible =
-    !showOverlay &&
     viewMode === "graph" &&
     (batches.length === 0 || selectedBatchIndex === batches.length - 1);
 
@@ -478,7 +477,7 @@ function AppContentBody({
             />
           ) : (
           <>
-          {!showOverlay && activeSessionId && (
+          {activeSessionId && (
             <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 shrink-0 py-3 px-4 border-b border-border">
               <div className="min-w-0" />
               <div className="flex justify-center">
