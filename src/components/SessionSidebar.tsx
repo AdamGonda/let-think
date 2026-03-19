@@ -345,7 +345,7 @@ export function SessionSidebar({
                         aria-label={`${project.name}, click to ${isExpanded ? "collapse" : "expand"}`}
                         className="flex-1 min-w-0 flex items-center gap-1 py-2.5 pr-2 pl-1.5 text-left rounded font-medium text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer"
                       >
-                        <span className="shrink-0 flex items-center justify-center w-6 text-muted-foreground">
+                        <span className={`shrink-0 flex items-center justify-center w-6 ${sessions.length === 0 ? "text-sidebar-primary" : "text-muted-foreground"}`}>
                           {sessions.length === 0 ? (
                             <Circle className="size-1.5 fill-current" strokeWidth={0} />
                           ) : (
