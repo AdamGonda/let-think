@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import type { Id } from "../../convex/_generated/dataModel";
 import { toast } from "sonner";
@@ -135,8 +135,32 @@ export function ChatHistoryPanel({
   selectedBatchIndex = 0,
   onNavigateToStep,
 }: ChatHistoryPanelProps) {
-  const userMessages = messages.filter((m) => m.role === "user");
+  const userMessages = useMemo(
+    () => messages.filter((m) => m.role === "user"),
+    [messages],
+  );
   const displayOrder = [...userMessages].reverse();
+
+  /** Map each chronological user message index → graph batch index (subsequence match; duplicate prompts get distinct batches). */
+  const batchIndexByChronoIndex = useMemo(() => {
+    const result = new Array<number>(userMessages.length).fill(-1);
+    const usedMessageIndices = new Set<number>();
+    for (let b = 0; b < batches.length; b++) {
+      const raw = batches[b]?.description;
+      if (!raw) continue;
+      const norm = normalizeForMatch(raw);
+      if (!norm) continue;
+      const idx = userMessages.findIndex(
+        (m, i) =>
+          !usedMessageIndices.has(i) && normalizeForMatch(m.content) === norm,
+      );
+      if (idx >= 0) {
+        result[idx] = b;
+        usedMessageIndices.add(idx);
+      }
+    }
+    return result;
+  }, [userMessages, batches]);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
@@ -192,13 +216,8 @@ export function ChatHistoryPanel({
                   const isExpanded = expandedIds.has(key);
                   const showFull = !isLong || isExpanded;
 
-                  const msgNorm = normalizeForMatch(msg.content);
-                  const batchIndex =
-                    msgNorm !== ""
-                      ? batches.findIndex(
-                          (b) => b.description && normalizeForMatch(b.description) === msgNorm
-                        )
-                      : -1;
+                  const chronoIndex = userMessages.length - 1 - index;
+                  const batchIndex = batchIndexByChronoIndex[chronoIndex] ?? -1;
                   const hasStep = batchIndex >= 0;
                   const isSelectedStep = hasStep && batchIndex === selectedBatchIndex;
 
