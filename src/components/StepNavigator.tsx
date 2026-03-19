@@ -13,10 +13,6 @@ export function StepNavigator({
   selectedIndex,
   onSelect,
 }: StepNavigatorProps) {
-  if (totalSteps <= 1) {
-    return null;
-  }
-
   return (
     <>
       <div
