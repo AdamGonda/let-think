@@ -17,12 +17,6 @@ interface ChatProps {
   sessionId: Id<"sessions"> | null;
   /** When provided and sessionId is null, creates a session on first submit */
   onCreateSession?: () => Promise<Id<"sessions">>;
-  /** Conversation history for context and display */
-  messageHistory: Array<{
-    _id?: Id<"messages">;
-    role: "user" | "assistant";
-    content: string;
-  }>;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
   /** Numbered concepts from the current batch - reference with @1, @2, etc. */
@@ -101,7 +95,6 @@ function resolveAtReferences(
 export function Chat({
   sessionId,
   onCreateSession,
-  messageHistory,
   isLoading,
   setIsLoading,
   numberedConcepts = [],
@@ -174,16 +167,7 @@ export function Chat({
     setIsLoading(true);
 
     try {
-      const messages = [
-        ...messageHistory.map((m) => ({
-          role: m.role,
-          content: m.content,
-        })),
-        { role: "user" as const, content: resolvedContent },
-      ];
-
       await sendMessage({
-        messages,
         sessionId: effectiveSessionId,
         userContent: resolvedContent,
         selectedNodeContext:

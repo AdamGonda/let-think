@@ -8,6 +8,8 @@
     "dev:convex": "npx convex dev",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "convex:migrate-graphs": "npx convex run sessions:migrateLegacyConceptGraphs '{}' --push",
+    "convex:migrate-graphs:prod": "npx convex run sessions:migrateLegacyConceptGraphs '{}' --prod",
     "preview": "vite preview"
   },
   "dependencies": {

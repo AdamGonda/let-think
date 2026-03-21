@@ -1,5 +1,11 @@
-import { createContext, useContext, useMemo, type ReactNode } from "react";
-import { useQuery } from "convex/react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  type ReactNode,
+} from "react";
+import { usePaginatedQuery, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useSessionManager } from "../hooks/useSessionManager";
@@ -15,15 +21,31 @@ export type ConceptGraphData = {
   }>;
 };
 
+export type SessionMessage = {
+  _id?: Id<"messages">;
+  role: "user" | "assistant";
+  content: string;
+  createdAt?: number;
+  topic?: string;
+  mentions?: Array<{
+    start: number;
+    end: number;
+    conceptId: string;
+    name: string;
+  }>;
+};
+
 export type SessionDataContextValue = {
   /** Concept graph for the active session (reactive, always subscribed when sessionId set) */
   conceptGraph: ConceptGraphData | null | undefined;
-  /** Message history for the active session */
-  messages: Array<{
-    _id?: Id<"messages">;
-    role: "user" | "assistant";
-    content: string;
-  }>;
+  /** Message history for the active session (paginated, chronological) */
+  messages: SessionMessage[];
+  /** Load older messages (history panel / long threads) */
+  loadOlderMessages: (count?: number) => void;
+  /** True while first page of messages is loading */
+  messagesLoading: boolean;
+  /** More older messages available via loadOlderMessages */
+  canLoadOlderMessages: boolean;
   /** Batches derived from concept graph */
   batches: NonNullable<ConceptGraphData["batches"]>;
   /** Interactions remaining until long break */
@@ -49,10 +71,39 @@ export function SessionDataProvider({
     api.sessions.getConceptGraph,
     sessionId ? { sessionId } : "skip"
   );
-  const messages = useQuery(
-    api.sessions.getMessages,
-    sessionId ? { sessionId } : "skip"
+  const {
+    results: messageResults,
+    status: messagesStatus,
+    loadMore,
+  } = usePaginatedQuery(
+    api.sessions.listMessagesPaginated,
+    sessionId ? { sessionId } : "skip",
+    { initialNumItems: 60 }
   );
+
+  const messages = useMemo((): SessionMessage[] => {
+    return [...messageResults]
+      .reverse()
+      .map((m) => ({
+        _id: m._id,
+        role: m.role,
+        content: m.content,
+        createdAt: m.createdAt,
+        topic: m.topic,
+        mentions: m.mentions,
+      }));
+  }, [messageResults]);
+
+  const loadOlderMessages = useCallback(
+    (count = 60) => {
+      loadMore(count);
+    },
+    [loadMore]
+  );
+
+  const messagesLoading = messagesStatus === "LoadingFirstPage";
+  const canLoadOlderMessages = messagesStatus === "CanLoadMore";
+
   const {
     remaining,
     breakRemainingMs,
@@ -69,7 +120,10 @@ export function SessionDataProvider({
   const value = useMemo<SessionDataContextValue>(
     () => ({
       conceptGraph: conceptGraph ?? null,
-      messages: messages ?? [],
+      messages,
+      loadOlderMessages,
+      messagesLoading,
+      canLoadOlderMessages,
       batches,
       remaining,
       breakRemainingMs,
@@ -80,6 +134,9 @@ export function SessionDataProvider({
     [
       conceptGraph,
       messages,
+      loadOlderMessages,
+      messagesLoading,
+      canLoadOlderMessages,
       batches,
       remaining,
       breakRemainingMs,

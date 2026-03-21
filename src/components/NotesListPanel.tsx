@@ -1,6 +1,4 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
 import type { Doc } from "../../convex/_generated/dataModel";
 import { Input } from "@/components/ui/input";
 import { Search, FileText } from "lucide-react";
@@ -18,13 +16,18 @@ function formatRelativeTime(ms: number): string {
 }
 
 interface NotesListPanelProps {
+  /** All sessions (e.g. flattened from workspace), newest first */
+  sessions: Doc<"sessions">[] | undefined;
   onSelectSession: (session: Doc<"sessions">) => void;
   onJumpToSession?: (session: Doc<"sessions">) => void;
 }
 
-export function NotesListPanel({ onSelectSession, onJumpToSession }: NotesListPanelProps) {
+export function NotesListPanel({
+  sessions,
+  onSelectSession,
+  onJumpToSession,
+}: NotesListPanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const sessions = useQuery(api.sessions.list);
 
   const filteredSessions = useMemo(() => {
     if (!sessions) return [];
