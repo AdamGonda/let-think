@@ -362,7 +362,10 @@ export const updateDraft = mutation({
     draftInput: v.string(),
   },
   handler: async (ctx, { sessionId, draftInput }) => {
-    await requireSessionOwner(ctx, sessionId);
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return;
+    const session = await ctx.db.get(sessionId);
+    if (!session || session.userId !== userId) return;
     await ctx.db.patch(sessionId, { draftInput });
   },
 });
@@ -373,7 +376,10 @@ export const updateThinkingNotes = mutation({
     thinkingNotes: v.string(),
   },
   handler: async (ctx, { sessionId, thinkingNotes }) => {
-    await requireSessionOwner(ctx, sessionId);
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return;
+    const session = await ctx.db.get(sessionId);
+    if (!session || session.userId !== userId) return;
     await ctx.db.patch(sessionId, { thinkingNotes });
   },
 });
