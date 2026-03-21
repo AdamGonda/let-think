@@ -290,7 +290,6 @@ export const updateConceptGraph = mutation({
         graph: conceptGraph,
       });
     }
-    await ctx.db.patch(sessionId, { conceptGraph: undefined });
   },
 });
 
@@ -305,8 +304,7 @@ async function loadConceptGraphForSession(
     .query("sessionConceptGraphs")
     .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
     .first();
-  if (row) return row.graph;
-  return session.conceptGraph ?? null;
+  return row?.graph ?? null;
 }
 
 export const getConceptGraph = query({
@@ -334,39 +332,13 @@ export const internalLoadSessionForChatSend = internalQuery({
       .query("sessionConceptGraphs")
       .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
       .first();
-    const existingGraph = row?.graph ?? session.conceptGraph ?? null;
+    const existingGraph = row?.graph ?? null;
     const messages = await ctx.db
       .query("messages")
       .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
       .order("asc")
       .collect();
     return { existingGraph, messages };
-  },
-});
-
-/** One-shot: copy legacy session.conceptGraph into sessionConceptGraphs and clear session field. */
-export const migrateLegacyConceptGraphs = internalMutation({
-  args: {},
-  handler: async (ctx) => {
-    const all = await ctx.db.query("sessions").collect();
-    let migrated = 0;
-    for (const s of all) {
-      const legacy = s.conceptGraph;
-      if (!legacy) continue;
-      const existing = await ctx.db
-        .query("sessionConceptGraphs")
-        .withIndex("by_session", (q) => q.eq("sessionId", s._id))
-        .first();
-      if (!existing) {
-        await ctx.db.insert("sessionConceptGraphs", {
-          sessionId: s._id,
-          graph: legacy,
-        });
-      }
-      await ctx.db.patch(s._id, { conceptGraph: undefined });
-      migrated += 1;
-    }
-    return { migrated };
   },
 });
 

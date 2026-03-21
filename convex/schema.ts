@@ -2,7 +2,7 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { authTables } from "@convex-dev/auth/server";
 
-/** Shared shape for concept graph (also stored in sessionConceptGraphs). */
+/** Concept graph document shape for `sessionConceptGraphs.graph`. */
 const conceptGraphValue = v.object({
   nodes: v.array(
     v.object({
@@ -49,11 +49,6 @@ export default defineSchema({
     draftInput: v.optional(v.string()),
     /** Notes written during thinking/break period, separate from chat draft */
     thinkingNotes: v.optional(v.string()),
-    /**
-     * @deprecated Graphs live in `sessionConceptGraphs`. Kept optional for
-     * one-shot migration; new data must not write here.
-     */
-    conceptGraph: v.optional(conceptGraphValue),
   }).index("by_created", ["createdAt"]).index("by_project", ["projectId", "createdAt"]).index("by_user", ["userId", "createdAt"]),
 
   /** Concept graph per session — kept separate so listing sessions stays bandwidth-light. */
