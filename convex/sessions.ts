@@ -1,5 +1,13 @@
+import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { mutation, internalMutation, query, type MutationCtx } from "./_generated/server";
+import {
+  internalMutation,
+  internalQuery,
+  mutation,
+  query,
+  type MutationCtx,
+  type QueryCtx,
+} from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
@@ -59,7 +67,6 @@ export const create = mutation({
       title: "New session",
       createdAt: now,
     });
-    // Create interaction session upfront so user sees count before first message
     const limit = 5;
     await ctx.db.insert("interactionSessions", {
       sessionId: id,
@@ -78,6 +85,14 @@ async function requireSessionOwner(ctx: MutationCtx, sessionId: Id<"sessions">) 
   const session = await ctx.db.get(sessionId);
   if (!session || session.userId !== userId) throw new Error("Session not found or access denied");
   return session;
+}
+
+async function deleteConceptGraphRow(ctx: MutationCtx, sessionId: Id<"sessions">) {
+  const row = await ctx.db
+    .query("sessionConceptGraphs")
+    .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+    .first();
+  if (row) await ctx.db.delete(row._id);
 }
 
 export const updateTitle = mutation({
@@ -125,10 +140,12 @@ export const remove = mutation({
     if (interactionSession) {
       await ctx.db.delete(interactionSession._id);
     }
+    await deleteConceptGraphRow(ctx, id);
     await ctx.db.delete(id);
   },
 });
 
+/** Full message list — for actions (e.g. chat.send); avoid subscribing from UI. */
 export const getMessages = query({
   args: { sessionId: v.id("sessions") },
   handler: async (ctx, { sessionId }) => {
@@ -141,6 +158,36 @@ export const getMessages = query({
       .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
       .order("asc")
       .collect();
+  },
+});
+
+export const listMessagesPaginated = query({
+  args: {
+    sessionId: v.id("sessions"),
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, { sessionId, paginationOpts }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return {
+        page: [],
+        isDone: true,
+        continueCursor: "",
+      };
+    }
+    const session = await ctx.db.get(sessionId);
+    if (!session || session.userId !== userId) {
+      return {
+        page: [],
+        isDone: true,
+        continueCursor: "",
+      };
+    }
+    return await ctx.db
+      .query("messages")
+      .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+      .order("desc")
+      .paginate(paginationOpts);
   },
 });
 
@@ -189,14 +236,12 @@ export const addMessages = mutation({
       content: assistantContent,
       createdAt: now + 1,
     });
-    // Schedule topic generation to run when message is in DB (reactive trigger)
     if (userContent.trim()) {
       await ctx.scheduler.runAfter(0, internal.chat.generateTopicForMessage, {
         messageId: userMessageId,
         userContent,
       });
     }
-    // Update title from first message if still "New session"
     const session = await ctx.db.get(sessionId);
     if (session?.title === "New session" && userContent.trim()) {
       const title = userContent.slice(0, 50) + (userContent.length > 50 ? "…" : "");
@@ -233,29 +278,81 @@ export const updateConceptGraph = mutation({
   },
   handler: async (ctx, { sessionId, conceptGraph }) => {
     await requireSessionOwner(ctx, sessionId);
-    await ctx.db.patch(sessionId, { conceptGraph });
+    const existing = await ctx.db
+      .query("sessionConceptGraphs")
+      .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+      .first();
+    if (existing) {
+      await ctx.db.patch(existing._id, { graph: conceptGraph });
+    } else {
+      await ctx.db.insert("sessionConceptGraphs", {
+        sessionId,
+        graph: conceptGraph,
+      });
+    }
   },
 });
+
+async function loadConceptGraphForSession(
+  ctx: QueryCtx,
+  sessionId: Id<"sessions">,
+  userId: Id<"users">
+) {
+  const session = await ctx.db.get(sessionId);
+  if (!session || session.userId !== userId) return null;
+  const row = await ctx.db
+    .query("sessionConceptGraphs")
+    .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+    .first();
+  return row?.graph ?? null;
+}
 
 export const getConceptGraph = query({
   args: { sessionId: v.id("sessions") },
   handler: async (ctx, { sessionId }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
-    const session = await ctx.db.get(sessionId);
-    if (!session || session.userId !== userId) return null;
-    return session.conceptGraph ?? null;
+    return loadConceptGraphForSession(ctx, sessionId, userId);
   },
 });
 
-export const getDraft = query({
+/**
+ * Loads graph + full message history for chat.send after verifying session ownership.
+ * Actions should call with userId from getAuthUserId(ctx).
+ */
+export const internalLoadSessionForChatSend = internalQuery({
+  args: {
+    sessionId: v.id("sessions"),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, { sessionId, userId }) => {
+    const session = await ctx.db.get(sessionId);
+    if (!session || session.userId !== userId) return null;
+    const row = await ctx.db
+      .query("sessionConceptGraphs")
+      .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+      .first();
+    const existingGraph = row?.graph ?? null;
+    const messages = await ctx.db
+      .query("messages")
+      .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+      .order("asc")
+      .collect();
+    return { existingGraph, messages };
+  },
+});
+
+export const getEditorFields = query({
   args: { sessionId: v.id("sessions") },
   handler: async (ctx, { sessionId }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
     const session = await ctx.db.get(sessionId);
     if (!session || session.userId !== userId) return null;
-    return session.draftInput ?? "";
+    return {
+      draftInput: session.draftInput ?? "",
+      thinkingNotes: session.thinkingNotes ?? "",
+    };
   },
 });
 
@@ -265,19 +362,11 @@ export const updateDraft = mutation({
     draftInput: v.string(),
   },
   handler: async (ctx, { sessionId, draftInput }) => {
-    await requireSessionOwner(ctx, sessionId);
-    await ctx.db.patch(sessionId, { draftInput });
-  },
-});
-
-export const getThinkingNotes = query({
-  args: { sessionId: v.id("sessions") },
-  handler: async (ctx, { sessionId }) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) return null;
+    if (!userId) return;
     const session = await ctx.db.get(sessionId);
-    if (!session || session.userId !== userId) return null;
-    return session.thinkingNotes ?? "";
+    if (!session || session.userId !== userId) return;
+    await ctx.db.patch(sessionId, { draftInput });
   },
 });
 
@@ -287,7 +376,10 @@ export const updateThinkingNotes = mutation({
     thinkingNotes: v.string(),
   },
   handler: async (ctx, { sessionId, thinkingNotes }) => {
-    await requireSessionOwner(ctx, sessionId);
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return;
+    const session = await ctx.db.get(sessionId);
+    if (!session || session.userId !== userId) return;
     await ctx.db.patch(sessionId, { thinkingNotes });
   },
 });

@@ -7,13 +7,16 @@ import {
   Authenticated,
 } from "convex/react";
 import { api } from "../convex/_generated/api";
-import type { Id } from "../convex/_generated/dataModel";
+import type { Doc, Id } from "../convex/_generated/dataModel";
 import { formatBreakCountdown } from "./hooks/useSessionManager";
 import {
   SessionDataProvider,
   useSessionData,
 } from "./contexts/SessionDataContext";
-import { SessionSidebar } from "./components/SessionSidebar";
+import {
+  SessionSidebar,
+  type ProjectWithSessions,
+} from "./components/SessionSidebar";
 import { NotesListPanel } from "./components/NotesListPanel";
 import { Chat } from "./components/Chat";
 import {
@@ -70,17 +73,20 @@ function AppContent() {
   const notesRef = useRef(notes);
   draftInputRef.current = draftInput;
   notesRef.current = notes;
-  const sessions = useQuery(api.sessions.list);
   const projectsWithSessions = useQuery(api.projects.listWithSessions);
+  const allSessionsSorted = useMemo(() => {
+    if (!projectsWithSessions) return undefined;
+    return projectsWithSessions
+      .flatMap((g) => g.sessions)
+      .sort((a, b) => b.createdAt - a.createdAt);
+  }, [projectsWithSessions]);
   const createSessionMutation = useMutation(api.sessions.create);
-  const storedDraft = useQuery(
-    api.sessions.getDraft,
+  const storedEditor = useQuery(
+    api.sessions.getEditorFields,
     activeSessionId ? { sessionId: activeSessionId } : "skip",
   );
-  const storedThinkingNotes = useQuery(
-    api.sessions.getThinkingNotes,
-    activeSessionId ? { sessionId: activeSessionId } : "skip",
-  );
+  const storedDraft = storedEditor?.draftInput;
+  const storedThinkingNotes = storedEditor?.thinkingNotes;
   const updateDraft = useMutation(api.sessions.updateDraft);
   const updateThinkingNotes = useMutation(api.sessions.updateThinkingNotes);
   const prevSessionIdRef = useRef<Id<"sessions"> | null>(null);
@@ -93,17 +99,17 @@ function AppContent() {
 
   useEffect(() => {
     if (
-      sessions &&
-      sessions.length > 0 &&
+      allSessionsSorted &&
+      allSessionsSorted.length > 0 &&
       !activeSessionId &&
       !hasEverHadSelectionRef.current
     ) {
-      const first = sessions[0];
+      const first = allSessionsSorted[0]!;
       setActiveSessionId(first._id);
       if (first.projectId) setActiveProjectId(first.projectId);
       hasEverHadSelectionRef.current = true;
     }
-  }, [sessions, activeSessionId]);
+  }, [allSessionsSorted, activeSessionId]);
 
   const handleCreateSessionForFirstMessage = useCallback(async () => {
     const id = await createSessionMutation({});
@@ -267,6 +273,8 @@ function AppContent() {
         notes={notes}
         setNotes={setNotes}
         mainContentRef={mainContentRef}
+        workspace={projectsWithSessions}
+        allSessionsSorted={allSessionsSorted}
       />
     </SessionDataProvider>
   );
@@ -299,8 +307,12 @@ function AppContentBody({
   notes,
   setNotes,
   mainContentRef,
+  workspace,
+  allSessionsSorted,
 }: {
   onCreateSessionForFirstMessage?: () => Promise<Id<"sessions">>;
+  workspace: ProjectWithSessions[] | undefined;
+  allSessionsSorted: Doc<"sessions">[] | undefined;
   activeSessionId: Id<"sessions"> | null;
   activeProjectId: Id<"projects"> | null;
   setActiveSessionId: (id: Id<"sessions"> | null) => void;
@@ -327,8 +339,14 @@ function AppContentBody({
   setNotes: (v: string) => void;
   mainContentRef: React.RefObject<HTMLDivElement | null>;
 }) {
-  const { conceptGraph, messages, batches, breakRemainingMs } =
-    useSessionData();
+  const {
+    conceptGraph,
+    messages,
+    batches,
+    breakRemainingMs,
+    loadOlderMessages,
+    canLoadOlderMessages,
+  } = useSessionData();
   const isInBreak = breakRemainingMs !== null && breakRemainingMs > 0;
   const prevBatchesLengthRef = useRef(0);
 
@@ -483,6 +501,7 @@ function AppContentBody({
         inert={showOverlay || isExitingOverlay}
       >
         <SessionSidebar
+          workspace={workspace}
           activeSessionId={activeSessionId}
           activeProjectId={activeProjectId}
           onSelectSession={(id) => {
@@ -498,6 +517,7 @@ function AppContentBody({
           <div ref={mainContentRef} className="flex flex-1 min-h-0 flex-col">
             {viewMode === "notesList" ? (
               <NotesListPanel
+                sessions={allSessionsSorted}
                 onSelectSession={(session) => {
                   setActiveSessionId(session._id);
                   if (session.projectId) setActiveProjectId(session.projectId);
@@ -570,7 +590,6 @@ function AppContentBody({
             <Chat
               key={activeSessionId ?? "empty"}
               sessionId={activeSessionId}
-              messageHistory={messages ?? []}
               isLoading={isLoading}
               setIsLoading={setIsLoading}
               onModelResponded={() => setModelRespondedAwaitingDismissal(true)}
@@ -585,6 +604,10 @@ function AppContentBody({
               isOpen={historyPanelOpen}
               onClose={() => setHistoryPanelOpen(false)}
               messages={messages ?? []}
+              onLoadOlderMessages={
+                canLoadOlderMessages ? () => loadOlderMessages(80) : undefined
+              }
+              canLoadOlderMessages={canLoadOlderMessages}
               batches={batches}
               selectedBatchIndex={selectedBatchIndex}
               onNavigateToStep={(batchIndex: number) => {

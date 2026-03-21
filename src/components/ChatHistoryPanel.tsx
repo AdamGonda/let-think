@@ -115,6 +115,10 @@ interface ChatHistoryPanelProps {
   onClose: () => void;
   /** All messages – we filter to user only and display in order */
   messages: UserMessage[];
+  /** Load older messages (paginated history) */
+  onLoadOlderMessages?: () => void;
+  /** Whether more older messages can be loaded */
+  canLoadOlderMessages?: boolean;
   /** Graph batches – used to match messages to steps for navigation */
   batches?: Batch[];
   /** Currently selected batch/step index (synced with main view pagination) */
@@ -131,6 +135,8 @@ export function ChatHistoryPanel({
   isOpen,
   onClose,
   messages,
+  onLoadOlderMessages,
+  canLoadOlderMessages = false,
   batches = [],
   selectedBatchIndex = 0,
   onNavigateToStep,
@@ -203,6 +209,19 @@ export function ChatHistoryPanel({
           </Button>
         </SheetHeader>
         <div className="flex-1 overflow-y-auto py-6 px-4">
+          {canLoadOlderMessages && onLoadOlderMessages && (
+            <div className="flex justify-center pb-4">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="text-xs"
+                onClick={onLoadOlderMessages}
+              >
+                Load older messages
+              </Button>
+            </div>
+          )}
           {userMessages.length === 0 ? (
             <p className="text-muted-foreground text-sm text-center py-8">
               No messages yet. Start a conversation to see your history here.

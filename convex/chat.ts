@@ -2,6 +2,7 @@
 
 import { action, internalAction } from "./_generated/server";
 import { api, internal } from "./_generated/api";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { generateText } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
@@ -86,12 +87,6 @@ function toModelMessages(
  */
 export const send = action({
   args: {
-    messages: v.array(
-      v.object({
-        role: v.string(),
-        content: v.optional(v.string()),
-      })
-    ),
     sessionId: v.id("sessions"),
     userContent: v.string(),
     selectedNodeContext: v.optional(
@@ -114,17 +109,28 @@ export const send = action({
       )
     ),
   },
-  handler: async (ctx, { messages, sessionId, userContent, selectedNodeContext, mentions }): Promise<{ content: string; conceptGraph: ConceptGraph | null }> => {
+  handler: async (ctx, { sessionId, userContent, selectedNodeContext, mentions }): Promise<{ content: string; conceptGraph: ConceptGraph | null }> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Must be signed in");
+
+    const bundle = await ctx.runQuery(internal.sessions.internalLoadSessionForChatSend, {
+      sessionId,
+      userId,
+    });
+    if (!bundle) throw new Error("Session not found or access denied");
+
+    const { existingGraph: loadedGraph, messages: storedMessages } = bundle;
+    const existingGraph: ConceptGraph | null = loadedGraph;
+
     const google = createGoogleGenerativeAI({
       apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
     });
 
-    // 0. Fetch existing concept graph for this session
-    const existingGraph: ConceptGraph | null =
-      (await ctx.runQuery(api.sessions.getConceptGraph, { sessionId })) ?? null;
-
-    // 1. Convert and pre-process messages
-    let modelMessages = toModelMessages(messages);
+    // 0–1. Build model messages from DB + this user turn (avoids huge client payloads)
+    let modelMessages = toModelMessages([
+      ...storedMessages.map((m) => ({ role: m.role, content: m.content })),
+      { role: "user" as const, content: userContent },
+    ]);
     modelMessages = await preProcess(modelMessages, {
       sessionId,
       conceptGraph: existingGraph,

@@ -2,6 +2,33 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { authTables } from "@convex-dev/auth/server";
 
+/** Concept graph document shape for `sessionConceptGraphs.graph`. */
+const conceptGraphValue = v.object({
+  nodes: v.array(
+    v.object({
+      id: v.string(),
+      name: v.string(),
+      description: v.optional(v.string()),
+    })
+  ),
+  edges: v.array(
+    v.object({
+      source: v.string(),
+      target: v.string(),
+    })
+  ),
+  batches: v.optional(
+    v.array(
+      v.object({
+        id: v.string(),
+        nodeIds: v.array(v.string()),
+        promptSummary: v.optional(v.string()),
+        description: v.optional(v.string()),
+      })
+    )
+  ),
+});
+
 /**
  * Convex schema for projects, chat sessions, and messages.
  */
@@ -22,38 +49,13 @@ export default defineSchema({
     draftInput: v.optional(v.string()),
     /** Notes written during thinking/break period, separate from chat draft */
     thinkingNotes: v.optional(v.string()),
-    /** Concept graph: nodes (id, name) and edges (source, target) from preprocess prompt */
-    conceptGraph: v.optional(
-      v.object({
-        nodes: v.array(
-          v.object({
-            id: v.string(),
-            name: v.string(),
-            description: v.optional(v.string()),
-          })
-        ),
-        edges: v.array(
-          v.object({
-            source: v.string(),
-            target: v.string(),
-          })
-        ),
-        /** Batches of nodes per LLM response – for UI traversal/highlighting */
-        batches: v.optional(
-          v.array(
-            v.object({
-              id: v.string(),
-              nodeIds: v.array(v.string()),
-              /** One-word summary of the user input that drove this batch */
-              promptSummary: v.optional(v.string()),
-              /** Full user input – shown on hover, like node descriptions */
-              description: v.optional(v.string()),
-            })
-          )
-        ),
-      })
-    ),
   }).index("by_created", ["createdAt"]).index("by_project", ["projectId", "createdAt"]).index("by_user", ["userId", "createdAt"]),
+
+  /** Concept graph per session — kept separate so listing sessions stays bandwidth-light. */
+  sessionConceptGraphs: defineTable({
+    sessionId: v.id("sessions"),
+    graph: conceptGraphValue,
+  }).index("by_session", ["sessionId"]),
 
   messages: defineTable({
     sessionId: v.id("sessions"),

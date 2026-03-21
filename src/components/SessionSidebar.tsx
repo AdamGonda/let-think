@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useQuery, useMutation } from "convex/react";
+import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id, Doc } from "../../convex/_generated/dataModel";
 import { Plus, FolderPlus, ChevronDown, Circle, Trash2, X, PanelLeftClose, PanelRight, FileText } from "lucide-react";
@@ -7,7 +7,7 @@ import { UserCard } from "./UserCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-type ProjectWithSessions = {
+export type ProjectWithSessions = {
   project: Doc<"projects"> | null;
   sessions: Doc<"sessions">[];
 };
@@ -27,6 +27,7 @@ function getStoredCollapsed(): boolean {
 }
 
 interface SessionSidebarProps {
+  workspace: ProjectWithSessions[] | undefined;
   activeSessionId: Id<"sessions"> | null;
   activeProjectId: Id<"projects"> | null;
   onSelectSession: (id: Id<"sessions"> | null) => void;
@@ -37,6 +38,7 @@ interface SessionSidebarProps {
 }
 
 export function SessionSidebar({
+  workspace,
   activeSessionId,
   activeProjectId,
   onSelectSession,
@@ -45,7 +47,7 @@ export function SessionSidebar({
   onViewModeChange,
   onRunTutorial,
 }: SessionSidebarProps) {
-  const data = useQuery(api.projects.listWithSessions);
+  const data = workspace;
   const createSession = useMutation(api.sessions.create);
   const createProject = useMutation(api.projects.create);
   const removeSession = useMutation(api.sessions.remove);
