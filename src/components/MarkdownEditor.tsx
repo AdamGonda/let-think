@@ -78,6 +78,41 @@ export function MarkdownEditor({
 }: MarkdownEditorProps) {
   const isFocused = variant === "focused";
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const endCursorAppliedRef = useRef(false);
+
+  /* Replace @uiw autoFocusEnd (broken with large bottom padding) for non-empty notes */
+  useEffect(() => {
+    if (!isFocused || !autoFocusEnd) return;
+    if (value.length === 0) {
+      endCursorAppliedRef.current = false;
+      return;
+    }
+    if (endCursorAppliedRef.current) return;
+
+    const tryApply = () => {
+      const input = wrapperRef.current?.querySelector(
+        ".w-md-editor-text-input",
+      ) as HTMLTextAreaElement | null;
+      const scrollArea = wrapperRef.current?.querySelector(
+        ".w-md-editor-area",
+      ) as HTMLElement | null;
+      if (!input || !scrollArea || input.value.length === 0) return false;
+      endCursorAppliedRef.current = true;
+      const len = input.value.length;
+      input.focus();
+      input.setSelectionRange(len, len);
+      scrollCaretToEyeLevel(input, scrollArea);
+      return true;
+    };
+
+    const id = requestAnimationFrame(() => {
+      if (tryApply()) return;
+      requestAnimationFrame(() => {
+        tryApply();
+      });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [isFocused, autoFocusEnd, value]);
 
   useEffect(() => {
     if (!autoFocus) return;
@@ -103,7 +138,15 @@ export function MarkdownEditor({
       const scrollArea = wrapperRef.current?.querySelector(
         ".w-md-editor-area"
       ) as HTMLElement | null;
-      if (textarea && scrollArea && document.activeElement === textarea) {
+      if (!textarea || !scrollArea) return;
+      /* Empty / whitespace-only: stay pinned to top. @uiw/react-md-editor's autoFocusEnd
+         sets scrollTop = scrollHeight, which with our large "scroll past end" padding
+         jumps the viewport into blank space — avoid that and reset here too. */
+      if (value.trim() === "") {
+        scrollArea.scrollTop = 0;
+        return;
+      }
+      if (document.activeElement === textarea) {
         scrollCaretToEyeLevel(textarea, scrollArea);
       }
     });
@@ -135,7 +178,9 @@ export function MarkdownEditor({
         visibleDragbar={false}
         height={isFocused ? "100%" : minHeight}
         data-color-mode={dark ? "dark" : "light"}
-        autoFocusEnd={autoFocusEnd}
+        /* Library sets textareaWarp.scrollTop = scrollHeight — breaks with our huge
+           bottom padding (scroll past end). We handle caret + scroll in effects above. */
+        autoFocusEnd={false}
         textareaProps={{
           placeholder,
         }}
