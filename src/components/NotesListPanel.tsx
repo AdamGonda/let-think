@@ -326,29 +326,10 @@ export function NotesListPanel({
                             <span className="font-semibold text-foreground leading-snug line-clamp-2">
                               {session.title}
                             </span>
-                            {snippet ? (
-                              <p className="text-sm text-muted-foreground line-clamp-2">
-                                {snippet}
-                              </p>
-                            ) : (
-                              <p className="text-sm text-muted-foreground/70 italic">
-                                Empty note
-                              </p>
-                            )}
                             <p className="text-xs text-muted-foreground/90 pt-1">
                               {formatUpdatedLabel(session.createdAt)}
                             </p>
                           </button>
-                          {onJumpToSession && (
-                            <button
-                              type="button"
-                              onClick={() => onJumpToSession(session)}
-                              className="-ml-1 mt-1 flex cursor-pointer items-center gap-1.5 self-start rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground active:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                            >
-                              <MessageSquare className="size-3.5" />
-                              Open chat
-                            </button>
-                          )}
                         </div>
                       </li>
                     );
