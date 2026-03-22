@@ -42,11 +42,6 @@ function groupActivityMs(sessions: Doc<"sessions">[], projectCreated: number): n
   return Math.max(...sessions.map((s) => s.createdAt));
 }
 
-function latestSession(sessions: Doc<"sessions">[]): Doc<"sessions"> | undefined {
-  if (sessions.length === 0) return undefined;
-  return [...sessions].sort((a, b) => b.createdAt - a.createdAt)[0];
-}
-
 function groupDisplayName(group: ProjectWithSessions): string {
   return group.project?.name ?? "Inbox";
 }
@@ -108,12 +103,14 @@ export function NotesListPanel({
       });
       return copy;
     }
-    copy.sort((a, b) => {
-      const ta = groupActivityMs(a.sessions, a.project?.createdAt ?? 0);
-      const tb = groupActivityMs(b.sessions, b.project?.createdAt ?? 0);
+    const inboxGroup = copy.find((g) => g.project == null);
+    const projectGroups = copy.filter((g) => g.project != null);
+    projectGroups.sort((a, b) => {
+      const ta = groupActivityMs(a.sessions, a.project!.createdAt);
+      const tb = groupActivityMs(b.sessions, b.project!.createdAt);
       return tb - ta;
     });
-    return copy;
+    return inboxGroup ? [inboxGroup, ...projectGroups] : projectGroups;
   }, [workspace, sortMode]);
 
   const filteredGroups = useMemo(() => {
@@ -257,12 +254,12 @@ export function NotesListPanel({
                     const title = groupDisplayName(group);
                     const sessions = group.sessions;
                     const count = sessions.length;
-                    const latest = latestSession(sessions);
-                    const preview =
-                      noteSnippet(latest?.thinkingNotes) ??
-                      (count > 0
-                        ? `${count} note${count === 1 ? "" : "s"}`
-                        : "No notes yet");
+                    const sessionCountLabel =
+                      count === 0
+                        ? "No sessions yet"
+                        : count === 1
+                          ? "1 session"
+                          : `${count} sessions`;
                     const activity = groupActivityMs(
                       sessions,
                       group.project?.createdAt ?? 0,
@@ -280,7 +277,7 @@ export function NotesListPanel({
                                 : { type: "inbox" },
                             )
                           }
-                          className="flex min-h-30 w-full cursor-pointer flex-col gap-2 rounded-xl border border-border/70 bg-card p-5 text-left shadow-sm transition-colors hover:border-border hover:bg-muted/35 hover:shadow-md active:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                          className="flex min-h-30 w-full cursor-pointer flex-col gap-2 rounded-xl border-2 border-border/90 bg-transparent p-5 text-left shadow-none transition-colors hover:border-border hover:bg-muted/10 active:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                         >
                           <div className="flex items-start justify-between gap-2">
                             <span className="font-semibold text-foreground leading-snug line-clamp-2">
@@ -293,7 +290,7 @@ export function NotesListPanel({
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground line-clamp-2 flex-1">
-                            {preview}
+                            {sessionCountLabel}
                           </p>
                           <p className="text-xs text-muted-foreground/90 pt-1">
                             {emptyInbox
