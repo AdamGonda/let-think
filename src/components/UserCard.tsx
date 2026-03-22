@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -25,6 +25,53 @@ interface UserCardProps {
   activeSessionId?: Id<"sessions"> | null;
 }
 
+const USER_MENU_MARGIN = 8;
+/** Matches min-w + padding; used to clamp horizontal position before measure. */
+const USER_MENU_EST_WIDTH = 280;
+
+function getUserMenuPosition(
+  rect: DOMRect,
+  compact: boolean,
+  menuWidth: number,
+): React.CSSProperties {
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const w = Math.min(menuWidth, vw - 2 * USER_MENU_MARGIN);
+
+  if (compact) {
+    let left = rect.right + USER_MENU_MARGIN;
+    if (left + w > vw - USER_MENU_MARGIN) {
+      left = Math.max(
+        USER_MENU_MARGIN,
+        rect.left - w - USER_MENU_MARGIN,
+      );
+    }
+    let top = rect.top;
+    const estH = 240;
+    if (top + estH > vh - USER_MENU_MARGIN) {
+      top = Math.max(USER_MENU_MARGIN, vh - estH - USER_MENU_MARGIN);
+    }
+    return {
+      position: "fixed",
+      left,
+      top,
+      zIndex: 10000,
+    };
+  }
+
+  // Open to the right of the trigger (into the main content), not left-aligned under it.
+  let left = rect.right + USER_MENU_MARGIN;
+  left = Math.min(left, vw - w - USER_MENU_MARGIN);
+  left = Math.max(USER_MENU_MARGIN, left);
+
+  return {
+    position: "fixed",
+    left,
+    bottom: vh - rect.top + USER_MENU_MARGIN,
+    zIndex: 10000,
+  };
+}
+
 function UserMenu({
   open,
   onClose,
@@ -47,6 +94,43 @@ function UserMenu({
   onToggleSessionRestrict: () => void;
 }) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const [measuredStyle, setMeasuredStyle] =
+    useState<React.CSSProperties | null>(null);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setMeasuredStyle(null);
+      return;
+    }
+    const anchor = anchorRef.current;
+    if (!anchor) return;
+
+    const update = () => {
+      const rect = anchor.getBoundingClientRect();
+      const w = menuRef.current?.offsetWidth ?? USER_MENU_EST_WIDTH;
+      setMeasuredStyle(getUserMenuPosition(rect, compact, w));
+    };
+
+    update();
+    window.addEventListener("resize", update);
+    const ro =
+      typeof ResizeObserver !== "undefined" && menuRef.current
+        ? new ResizeObserver(update)
+        : null;
+    if (menuRef.current) ro?.observe(menuRef.current);
+
+    return () => {
+      window.removeEventListener("resize", update);
+      ro?.disconnect();
+    };
+  }, [
+    open,
+    compact,
+    sessionRestrictEnabled,
+    sessionRestrictDisabled,
+    onRunTutorial,
+    anchorRef,
+  ]);
 
   useEffect(() => {
     if (!open) return;
@@ -79,19 +163,9 @@ function UserMenu({
     return null;
 
   const rect = anchorRef.current.getBoundingClientRect();
-  const style: React.CSSProperties = compact
-    ? {
-        position: "fixed",
-        left: rect.right + 8,
-        top: rect.top,
-        zIndex: 10000,
-      }
-    : {
-        position: "fixed",
-        right: window.innerWidth - rect.right,
-        bottom: window.innerHeight - rect.top + 8,
-        zIndex: 10000,
-      };
+  const style =
+    measuredStyle ??
+    getUserMenuPosition(rect, compact, USER_MENU_EST_WIDTH);
 
   const menuItemClass =
     "flex w-full cursor-pointer items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground [&_svg]:size-4 [&_svg]:shrink-0";
@@ -100,7 +174,7 @@ function UserMenu({
     <div
       ref={menuRef}
       role="menu"
-      className="min-w-[260px] overflow-hidden rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
+      className="min-w-[260px] max-w-[calc(100vw-16px)] overflow-hidden rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
       style={style}
     >
       <div
