@@ -176,6 +176,8 @@ export function NotesListPanel({
 
   const drilled = drill != null;
   const drillTitle = drillGroup ? groupDisplayName(drillGroup) : "";
+  const drillHeading =
+    drilled && drillGroup ? `${drillTitle} sessions` : "Projects";
 
   const searchPlaceholderDrill =
     drill?.type === "inbox"
@@ -186,7 +188,11 @@ export function NotesListPanel({
     <div className="flex flex-1 flex-col min-h-0 bg-background">
       <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-6">
         <div className="shrink-0 border-b border-border py-6">
-          <div className="relative mb-5 flex min-h-10 items-center">
+          <div
+            className={`mb-5 flex min-h-10 items-center ${
+              drilled && drillGroup ? "gap-6" : ""
+            }`}
+          >
             {drilled && drillGroup ? (
               <button
                 type="button"
@@ -194,18 +200,14 @@ export function NotesListPanel({
                   onDrillChange(null);
                   setSearchQuery("");
                 }}
-                className="absolute left-0 top-1/2 z-10 -translate-y-1/2 cursor-pointer rounded-lg border border-border/80 bg-card p-2 text-foreground transition-colors hover:bg-muted hover:border-border active:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="shrink-0 cursor-pointer rounded-lg border border-border/80 bg-card p-2 text-foreground transition-colors hover:bg-muted hover:border-border active:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="Back to projects"
               >
                 <ChevronLeft className="size-5" />
               </button>
             ) : null}
-            <h1
-              className={`min-w-0 text-2xl font-semibold tracking-tight text-foreground ${
-                drilled && drillGroup ? "truncate pl-11" : ""
-              }`}
-            >
-              {drilled && drillGroup ? drillTitle : "Projects"}
+            <h1 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight text-foreground truncate">
+              {drillHeading}
             </h1>
           </div>
           <div className="relative mb-3 w-full">
