@@ -6,7 +6,6 @@ import {
   FileText,
   ChevronLeft,
   ChevronDown,
-  MessageSquare,
 } from "lucide-react";
 import type { ProjectWithSessions } from "./SessionSidebar";
 
@@ -27,14 +26,6 @@ function formatUpdatedLabel(ms: number): string {
   if (hours < 24) return `Updated ${hours}h ago`;
   if (days < 7) return `Updated ${days}d ago`;
   return `Updated ${new Date(ms).toLocaleDateString()}`;
-}
-
-function noteSnippet(raw: string | undefined, maxLen = 90): string | undefined {
-  if (!raw?.trim()) return undefined;
-  const line = raw.trim().split(/\n/)[0] ?? "";
-  const plain = line.replace(/[#*_`[\]]/g, "").trim();
-  if (!plain) return undefined;
-  return plain.length > maxLen ? `${plain.slice(0, maxLen - 1)}…` : plain;
 }
 
 function groupActivityMs(sessions: Doc<"sessions">[], projectCreated: number): number {
@@ -66,7 +57,6 @@ interface NotesListPanelProps {
   drill: NotesListDrill;
   onDrillChange: (drill: NotesListDrill) => void;
   onSelectSession: (session: Doc<"sessions">) => void;
-  onJumpToSession?: (session: Doc<"sessions">) => void;
 }
 
 export function NotesListPanel({
@@ -74,7 +64,6 @@ export function NotesListPanel({
   drill,
   onDrillChange,
   onSelectSession,
-  onJumpToSession,
 }: NotesListPanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("activity");
@@ -187,7 +176,7 @@ export function NotesListPanel({
                   onDrillChange(null);
                   setSearchQuery("");
                 }}
-                className="shrink-0 cursor-pointer rounded-lg border border-border/80 bg-card p-2 text-foreground transition-colors hover:bg-muted hover:border-border active:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                className="shrink-0 cursor-pointer rounded-lg border border-border/80 bg-card p-2 text-foreground transition-colors hover:border-border hover:bg-muted/10 active:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label="Back to projects"
               >
                 <ChevronLeft className="size-5" />
@@ -219,7 +208,7 @@ export function NotesListPanel({
                   onChange={(e) =>
                     setSortMode(e.target.value as SortMode)
                   }
-                  className="appearance-none cursor-pointer rounded-lg border border-border/80 bg-card py-1.5 pl-3 pr-8 text-sm text-foreground transition-colors hover:bg-muted/50 hover:border-border active:bg-muted/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="appearance-none cursor-pointer rounded-lg border border-border/80 bg-card py-1.5 pl-3 pr-8 text-sm text-foreground transition-colors hover:border-border hover:bg-muted/10 active:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <option value="activity">Last changed</option>
                   <option value="name">Name</option>
@@ -313,27 +302,26 @@ export function NotesListPanel({
                 </div>
               ) : (
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {filteredDrillSessions.map((session) => {
-                    const snippet = noteSnippet(session.thinkingNotes);
-                    return (
+                  {filteredDrillSessions.map((session) => (
                       <li key={session._id}>
-                        <div className="flex min-h-30 flex-col gap-2 rounded-xl border border-border/70 bg-card p-5 shadow-sm transition-colors hover:border-border">
-                          <button
-                            type="button"
-                            onClick={() => onSelectSession(session)}
-                            className="-m-1 flex min-w-0 flex-1 cursor-pointer flex-col gap-2 rounded-lg p-1 text-left transition-colors hover:bg-muted/40 active:bg-muted/55 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                          >
-                            <span className="font-semibold text-foreground leading-snug line-clamp-2">
-                              {session.title}
-                            </span>
-                            <p className="text-xs text-muted-foreground/90 pt-1">
-                              {formatUpdatedLabel(session.createdAt)}
-                            </p>
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          onClick={() => onSelectSession(session)}
+                          className={`flex min-h-30 w-full cursor-pointer flex-col gap-2 rounded-xl bg-transparent p-5 text-left shadow-none transition-colors hover:border-border hover:bg-muted/10 active:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                            drill?.type === "inbox"
+                              ? "border-4 border-border"
+                              : "border-2 border-border/90"
+                          }`}
+                        >
+                          <span className="font-semibold text-foreground leading-snug line-clamp-2">
+                            {session.title}
+                          </span>
+                          <p className="text-xs text-muted-foreground/90 pt-1">
+                            {formatUpdatedLabel(session.createdAt)}
+                          </p>
+                        </button>
                       </li>
-                    );
-                  })}
+                    ))}
                 </ul>
               )}
             </>

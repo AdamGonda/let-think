@@ -562,12 +562,6 @@ function AppContentBody({
                   );
                   setEditorOpen(true);
                 }}
-                onJumpToSession={(session) => {
-                  setActiveSessionId(session._id);
-                  if (session.projectId) setActiveProjectId(session.projectId);
-                  else setActiveProjectId(null);
-                  setViewMode("graph");
-                }}
               />
             ) : (
               <>

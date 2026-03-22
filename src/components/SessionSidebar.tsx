@@ -258,7 +258,7 @@ export function SessionSidebar({
           className={`${isCollapsed ? "h-10 w-10 p-0 justify-center" : "justify-start h-10 w-full"} ${
             viewMode === "notesList"
               ? "bg-sidebar-accent text-sidebar-accent-foreground ring-1 ring-sidebar-border"
-              : "hover:bg-muted/50"
+              : "hover:bg-muted/10 active:bg-muted/20"
           }`}
           onClick={() =>
             onViewModeChange(viewMode === "notesList" ? "graph" : "notesList")
@@ -293,7 +293,7 @@ export function SessionSidebar({
                     className={`flex items-center gap-1 group/project rounded-lg transition-colors px-3 pl-0 ${
                       viewMode !== "notesList" && activeProjectId === projectId
                         ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent/40"
-                        : ""
+                        : "hover:bg-muted/10 active:bg-muted/20"
                     } ${
                       dragOverProjectId === project._id ? "ring-2 ring-ring ring-inset" : ""
                     }`}
@@ -355,7 +355,7 @@ export function SessionSidebar({
                         }}
                         aria-expanded={isExpanded}
                         aria-label={`${project.name}, click to ${isExpanded ? "collapse" : "expand"}`}
-                        className="flex-1 min-w-0 flex items-center gap-1 py-2.5 pr-2 pl-1.5 text-left rounded font-medium text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer"
+                        className="flex-1 min-w-0 flex items-center gap-1 py-2.5 pr-2 pl-1.5 text-left rounded-lg font-medium text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer"
                       >
                         <span className={`shrink-0 flex items-center justify-center w-6 ${sessions.length === 0 ? "text-sidebar-primary" : "text-muted-foreground"}`}>
                           {sessions.length === 0 ? (
@@ -454,7 +454,7 @@ export function SessionSidebar({
                       className={`group flex items-center gap-1 py-1.5 px-3 ml-4 rounded-r-lg border-y border-r border-transparent transition-colors cursor-pointer select-none ${
                         viewMode !== "notesList" && activeSessionId === session._id
                           ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent"
-                          : "border-l-2 border-l-transparent hover:bg-muted/50 hover:border-border"
+                          : "border-l-2 border-l-transparent hover:border-border hover:bg-muted/10 active:bg-muted/20"
                       }`}
                     >
                       {editingSessionId === session._id ? (
@@ -586,7 +586,7 @@ export function SessionSidebar({
                 className={`group flex items-center gap-1 py-1.5 px-3 rounded-r-lg border-y border-r border-transparent transition-colors cursor-pointer select-none ${
                   viewMode !== "notesList" && activeSessionId === session._id
                     ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent"
-                    : "border-l-2 border-l-transparent hover:bg-muted/50 hover:border-border"
+                    : "border-l-2 border-l-transparent hover:border-border hover:bg-muted/10 active:bg-muted/20"
                 }`}
               >
                 {editingSessionId === session._id ? (
