@@ -254,12 +254,20 @@ export function SessionSidebar({
           {!isCollapsed && "New project"}
         </Button>
         <Button
-          variant="ghost"
-          className={`${isCollapsed ? "h-10 w-10 p-0 justify-center" : "justify-start h-10 w-full"} ${
-            viewMode === "notesList"
-              ? "bg-sidebar-accent text-sidebar-accent-foreground ring-1 ring-sidebar-border"
-              : "hover:bg-muted/50"
-          }`}
+          variant="outline"
+          className={
+            isCollapsed
+              ? `h-10 w-10 p-0 justify-center shadow-sm border-border bg-transparent! text-foreground hover:bg-transparent! active:bg-transparent! dark:border-input dark:bg-transparent! dark:hover:bg-transparent! dark:active:bg-transparent! ${
+                  viewMode === "notesList"
+                    ? "border-sidebar-primary/70"
+                    : ""
+                }`
+              : `justify-start h-10 w-full gap-2 shadow-sm border-border bg-transparent! text-foreground hover:bg-transparent! active:bg-transparent! dark:border-input dark:bg-transparent! dark:hover:bg-transparent! dark:active:bg-transparent! ${
+                  viewMode === "notesList"
+                    ? "border-sidebar-primary/70"
+                    : ""
+                }`
+          }
           onClick={() =>
             onViewModeChange(viewMode === "notesList" ? "graph" : "notesList")
           }
