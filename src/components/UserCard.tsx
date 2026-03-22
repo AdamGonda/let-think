@@ -18,6 +18,27 @@ function getInitials(name: string | undefined | null): string {
   return (name[0] ?? "?").toUpperCase();
 }
 
+function ModeBadge({
+  isWorkMode,
+  className,
+}: {
+  isWorkMode: boolean;
+  className?: string;
+}) {
+  const label = isWorkMode ? "Work" : "Think";
+  return (
+    <span
+      className={cn(
+        "inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white",
+        className,
+      )}
+      style={{ backgroundColor: "var(--session-accent)" }}
+    >
+      {label}
+    </span>
+  );
+}
+
 interface UserCardProps {
   compact?: boolean;
   onRunTutorial?: () => void;
@@ -200,13 +221,23 @@ export function UserCard({
           <button
             type="button"
             className="flex items-center justify-center rounded-md hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            aria-label="Open account menu"
+            aria-label={`Open account menu (${isWorkMode ? "Work" : "Think"} mode)`}
             aria-expanded={menuOpen}
             aria-haspopup="menu"
             aria-controls="user-card-menu"
             onClick={() => setMenuOpen((o) => !o)}
           >
-            {avatar}
+            <span className="relative inline-flex">
+              {avatar}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -bottom-0.5 -right-0.5 flex size-[18px] items-center justify-center rounded-full text-[9px] font-bold leading-none text-white shadow-sm ring-2 ring-background"
+                style={{ backgroundColor: "var(--session-accent)" }}
+                title={isWorkMode ? "Work mode" : "Think mode"}
+              >
+                {isWorkMode ? "W" : "T"}
+              </span>
+            </span>
           </button>
         </div>
         <div
@@ -247,9 +278,12 @@ export function UserCard({
       >
         {avatar}
         <div className="flex-1 min-w-0">
-          <p className="truncate text-sm font-medium text-foreground">
-            {displayName}
-          </p>
+          <div className="flex min-w-0 items-center gap-2">
+            <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
+              {displayName}
+            </p>
+            <ModeBadge isWorkMode={isWorkMode} />
+          </div>
           <p className="truncate text-xs text-muted-foreground">Free plan</p>
         </div>
         <div className="shrink-0">
