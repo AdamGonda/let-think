@@ -6,7 +6,6 @@ import { useWorkPreference } from "../contexts/WorkPreferenceContext";
 import { LogOut, MoreHorizontal, HelpCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 
 function getInitials(name: string | undefined | null): string {
@@ -18,24 +17,54 @@ function getInitials(name: string | undefined | null): string {
   return (name[0] ?? "?").toUpperCase();
 }
 
-function ModeBadge({
+function ModeToggleBadge({
   isWorkMode,
+  onToggle,
+  compact,
   className,
 }: {
   isWorkMode: boolean;
+  onToggle: () => void;
+  compact?: boolean;
   className?: string;
 }) {
   const label = isWorkMode ? "Work" : "Think";
+  const switchTo = isWorkMode ? "Think" : "Work";
+  const focusRing =
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
+
+  if (compact) {
+    return (
+      <button
+        type="button"
+        className={cn(
+          "z-10 flex size-[18px] items-center justify-center rounded-full text-[9px] font-bold leading-none text-white shadow-sm ring-2 ring-background transition-opacity hover:opacity-90",
+          focusRing,
+          className,
+        )}
+        style={{ backgroundColor: "var(--session-accent)" }}
+        onClick={onToggle}
+        aria-label={`${label} mode. Click to switch to ${switchTo}.`}
+      >
+        {isWorkMode ? "W" : "T"}
+      </button>
+    );
+  }
+
   return (
-    <span
+    <button
+      type="button"
       className={cn(
-        "inline-flex shrink-0 items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white",
+        "inline-flex shrink-0 cursor-pointer items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white transition-opacity hover:opacity-90",
+        focusRing,
         className,
       )}
       style={{ backgroundColor: "var(--session-accent)" }}
+      onClick={onToggle}
+      aria-label={`${label} mode. Click to switch to ${switchTo}.`}
     >
       {label}
-    </span>
+    </button>
   );
 }
 
@@ -48,16 +77,12 @@ type UserMenuPanelProps = {
   onClose: () => void;
   signOut: () => void | Promise<void>;
   onRunTutorial?: () => void;
-  isWorkMode: boolean;
-  setWorkMode: (work: boolean) => void;
 };
 
 function UserMenuPanel({
   onClose,
   signOut,
   onRunTutorial,
-  isWorkMode,
-  setWorkMode,
 }: UserMenuPanelProps) {
   const menuItemClass =
     "flex w-full cursor-pointer items-center gap-1.5 rounded-md px-1.5 py-1.5 text-sm outline-none hover:bg-muted/60 hover:text-foreground focus-visible:bg-muted/60 focus-visible:text-foreground [&_svg]:size-4 [&_svg]:shrink-0";
@@ -82,24 +107,6 @@ function UserMenuPanel({
         >
           <X className="size-4" />
         </Button>
-      </div>
-
-      <div className="flex w-full items-center rounded-md px-1.5 py-1.5">
-        <Switch
-          checked={isWorkMode}
-          onCheckedChange={(next) => {
-            if (next !== isWorkMode) setWorkMode(next);
-          }}
-          internalLabel={{ off: "Think", on: "Work" }}
-          offTrackClassName="bg-[var(--session-accent-think)]"
-          onTrackClassName="bg-[var(--session-accent-work)]"
-          aria-label={
-            isWorkMode
-              ? "Work (productivity mode)"
-              : "Think (thinking mode)"
-          }
-          className="shrink-0 ring-offset-background"
-        />
       </div>
 
       {onRunTutorial ? (
@@ -146,8 +153,8 @@ export function UserCard({
   const [menuOpen, setMenuOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const setWorkMode = (work: boolean) => {
-    setMode(work ? "work" : "think");
+  const toggleWorkMode = () => {
+    setMode(isWorkMode ? "think" : "work");
   };
 
   useEffect(() => {
@@ -207,7 +214,7 @@ export function UserCard({
         ref={containerRef}
         className={cn(
           "relative w-full overflow-hidden transition-[min-height] duration-200 ease-out",
-          menuOpen ? "min-h-[220px]" : "min-h-14",
+          menuOpen ? "min-h-[180px]" : "min-h-14",
         )}
       >
         <div
@@ -252,8 +259,6 @@ export function UserCard({
             onClose={() => setMenuOpen(false)}
             signOut={signOut}
             onRunTutorial={onRunTutorial}
-            isWorkMode={isWorkMode}
-            setWorkMode={setWorkMode}
           />
         </div>
       </div>
@@ -265,7 +270,7 @@ export function UserCard({
       ref={containerRef}
       className={cn(
         "relative w-full min-w-0 overflow-hidden transition-[min-height] duration-200 ease-out",
-        menuOpen ? "min-h-[180px]" : "min-h-18",
+        menuOpen ? "min-h-[145px]" : "min-h-18",
       )}
     >
       <div
@@ -281,7 +286,10 @@ export function UserCard({
             <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
               {displayName}
             </p>
-            <ModeBadge isWorkMode={isWorkMode} />
+            <ModeToggleBadge
+              isWorkMode={isWorkMode}
+              onToggle={toggleWorkMode}
+            />
           </div>
           <p className="truncate text-xs text-muted-foreground">Free plan</p>
         </div>
@@ -312,8 +320,6 @@ export function UserCard({
           onClose={() => setMenuOpen(false)}
           signOut={signOut}
           onRunTutorial={onRunTutorial}
-          isWorkMode={isWorkMode}
-          setWorkMode={setWorkMode}
         />
       </div>
     </div>
