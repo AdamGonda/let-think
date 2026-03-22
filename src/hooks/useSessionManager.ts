@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useAtomValue } from "jotai";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
+import { workPreferenceModeAtom } from "../atoms/workPreferenceAtoms";
 
 export function formatBreakCountdown(ms: number): string {
   const totalSeconds = Math.ceil(ms / 1000);
@@ -11,6 +13,9 @@ export function formatBreakCountdown(ms: number): string {
 }
 
 export function useSessionManager(sessionId: Id<"sessions"> | null) {
+  const workPreferenceMode = useAtomValue(workPreferenceModeAtom);
+  const restrictionFromPreference =
+    workPreferenceMode === "think" ? ("restrict" as const) : ("open" as const);
   const state = useQuery(
     api.interactionSessions.get,
     sessionId ? { sessionId } : "skip"
@@ -72,8 +77,11 @@ export function useSessionManager(sessionId: Id<"sessions"> | null) {
       ? Math.max(0, state.limit - state.used)
       : null;
 
+  /** Convex returns undefined while the query is loading — do not treat that as unlimited. */
+  const interactionStatePending = sessionId != null && state === undefined;
   const interactionRestriction =
-    state?.mode ?? ("open" as const);
+    state?.mode ??
+    (sessionId ? restrictionFromPreference : ("open" as const));
 
   const onInteractionComplete = useCallback(async () => {
     if (!sessionId) return;
@@ -87,6 +95,7 @@ export function useSessionManager(sessionId: Id<"sessions"> | null) {
 
   return {
     interactionRestriction,
+    interactionStatePending,
     canSend,
     remaining,
     breakRemainingMs,

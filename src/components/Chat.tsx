@@ -117,6 +117,7 @@ export function Chat({
     onInteractionComplete,
     startBreakOptimistically,
     interactionRestriction,
+    interactionStatePending,
   } = useSessionData();
   const restrictInteractions = interactionRestriction === "restrict";
   const breakRemainingFormatted =
@@ -215,15 +216,24 @@ export function Chat({
         : "Select a session to start";
 
   const showInteractionLine =
-    restrictInteractions && sessionId && breakRemainingMs === null;
+    restrictInteractions &&
+    sessionId &&
+    breakRemainingMs === null &&
+    (remaining != null || interactionStatePending);
 
   return (
     <div className="flex flex-col items-center px-4 pt-4 shrink-0" data-tour="session-input">
       <div className="w-full max-w-[720px] flex flex-col gap-3 rounded-t-2xl border border-b-0 border-border shadow-lg px-4 py-3 pb-4" style={{ backgroundColor: "#2B2B28" }}>
-        {showInteractionLine && remaining != null && (
-          <p className="text-sm font-medium text-muted-foreground">
-            {remaining} {remaining === 1 ? "interaction" : "interactions"} until
-            long break
+        {showInteractionLine && (
+          <p className="text-sm font-medium text-muted-foreground min-h-[1.25em]">
+            {interactionStatePending ? (
+              <span className="text-muted-foreground/60">…</span>
+            ) : (
+              <>
+                {remaining} {remaining === 1 ? "interaction" : "interactions"}{" "}
+                until long break
+              </>
+            )}
           </p>
         )}
         <form className="flex gap-2 items-end" onSubmit={handleSubmit}>

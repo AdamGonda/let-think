@@ -54,6 +54,8 @@ export type SessionDataContextValue = {
   breakRemainingMs: number | null;
   /** "open" = unlimited; "restrict" = capped interactions + break */
   interactionRestriction: "open" | "restrict";
+  /** True while interaction limit query for this session has not returned yet */
+  interactionStatePending: boolean;
   /** Session manager actions */
   canSend: boolean;
   onInteractionComplete: () => Promise<void>;
@@ -110,6 +112,7 @@ export function SessionDataProvider({
     remaining,
     breakRemainingMs,
     interactionRestriction,
+    interactionStatePending,
     canSend,
     onInteractionComplete,
     startBreakOptimistically,
@@ -131,6 +134,7 @@ export function SessionDataProvider({
       remaining,
       breakRemainingMs,
       interactionRestriction,
+      interactionStatePending,
       canSend,
       onInteractionComplete,
       startBreakOptimistically,
@@ -145,6 +149,7 @@ export function SessionDataProvider({
       remaining,
       breakRemainingMs,
       interactionRestriction,
+      interactionStatePending,
       canSend,
       onInteractionComplete,
       startBreakOptimistically,
