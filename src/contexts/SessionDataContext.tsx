@@ -52,6 +52,8 @@ export type SessionDataContextValue = {
   remaining: number | null;
   /** Break countdown in ms when in break */
   breakRemainingMs: number | null;
+  /** "open" = unlimited; "restrict" = capped interactions + break */
+  interactionRestriction: "open" | "restrict";
   /** Session manager actions */
   canSend: boolean;
   onInteractionComplete: () => Promise<void>;
@@ -107,6 +109,7 @@ export function SessionDataProvider({
   const {
     remaining,
     breakRemainingMs,
+    interactionRestriction,
     canSend,
     onInteractionComplete,
     startBreakOptimistically,
@@ -127,6 +130,7 @@ export function SessionDataProvider({
       batches,
       remaining,
       breakRemainingMs,
+      interactionRestriction,
       canSend,
       onInteractionComplete,
       startBreakOptimistically,
@@ -140,6 +144,7 @@ export function SessionDataProvider({
       batches,
       remaining,
       breakRemainingMs,
+      interactionRestriction,
       canSend,
       onInteractionComplete,
       startBreakOptimistically,

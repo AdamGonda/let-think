@@ -66,14 +66,7 @@ export const create = mutation({
       projectId,
       title: "New session",
       createdAt: now,
-    });
-    const limit = 3;
-    await ctx.db.insert("interactionSessions", {
-      sessionId: id,
-      userId,
-      limit,
-      used: 0,
-      createdAt: now,
+      interactionRestriction: "open",
     });
     return id;
   },
@@ -103,6 +96,39 @@ export const updateTitle = mutation({
   handler: async (ctx, { id, title }) => {
     await requireSessionOwner(ctx, id);
     await ctx.db.patch(id, { title });
+  },
+});
+
+const RESTRICT_INTERACTION_LIMIT = 3;
+
+export const setInteractionRestriction = mutation({
+  args: {
+    sessionId: v.id("sessions"),
+    mode: v.union(v.literal("open"), v.literal("restrict")),
+  },
+  handler: async (ctx, { sessionId, mode }) => {
+    const session = await requireSessionOwner(ctx, sessionId);
+    const userId = session.userId;
+    if (!userId) throw new Error("Session has no owner");
+    await ctx.db.patch(sessionId, { interactionRestriction: mode });
+    const row = await ctx.db
+      .query("interactionSessions")
+      .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+      .first();
+    if (mode === "open") {
+      if (row) await ctx.db.delete(row._id);
+      return;
+    }
+    const now = Date.now();
+    if (!row) {
+      await ctx.db.insert("interactionSessions", {
+        sessionId,
+        userId,
+        limit: RESTRICT_INTERACTION_LIMIT,
+        used: 0,
+        createdAt: now,
+      });
+    }
   },
 });
 

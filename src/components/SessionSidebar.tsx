@@ -679,6 +679,7 @@ export function SessionSidebar({
         <UserCard
           compact={isCollapsed}
           onRunTutorial={onRunTutorial}
+          activeSessionId={activeSessionId}
         />
       </div>
     </aside>

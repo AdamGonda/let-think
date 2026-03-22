@@ -116,7 +116,9 @@ export function Chat({
     breakRemainingMs,
     onInteractionComplete,
     startBreakOptimistically,
+    interactionRestriction,
   } = useSessionData();
+  const restrictInteractions = interactionRestriction === "restrict";
   const breakRemainingFormatted =
     breakRemainingMs != null && breakRemainingMs > 0
       ? formatBreakCountdown(breakRemainingMs)
@@ -161,7 +163,10 @@ export function Chat({
       numberedConcepts
     );
     setInput("");
-    if (remaining === 1 || remaining === null) {
+    if (
+      restrictInteractions &&
+      (remaining === 1 || remaining === null)
+    ) {
       startBreakOptimistically();
     }
     setIsLoading(true);
@@ -180,10 +185,12 @@ export function Chat({
             : undefined,
         mentions: mentions.length > 0 ? mentions : undefined,
       });
-      if (createdViaCallback) {
-        await recordInteraction({ sessionId: effectiveSessionId });
-      } else {
-        onInteractionComplete();
+      if (restrictInteractions) {
+        if (createdViaCallback) {
+          await recordInteraction({ sessionId: effectiveSessionId });
+        } else {
+          await onInteractionComplete();
+        }
       }
       setIsLoading(false);
       onModelResponded?.();
@@ -207,14 +214,16 @@ export function Chat({
           : "Type..."
         : "Select a session to start";
 
-  const showInteractionLine = sessionId && breakRemainingMs === null;
+  const showInteractionLine =
+    restrictInteractions && sessionId && breakRemainingMs === null;
 
   return (
     <div className="flex flex-col items-center px-4 pt-4 shrink-0" data-tour="session-input">
       <div className="w-full max-w-[720px] flex flex-col gap-3 rounded-t-2xl border border-b-0 border-border shadow-lg px-4 py-3 pb-4" style={{ backgroundColor: "#2B2B28" }}>
-        {showInteractionLine && (
+        {showInteractionLine && remaining != null && (
           <p className="text-sm font-medium text-muted-foreground">
-            {remaining ?? "$"} interactions until long break
+            {remaining} {remaining === 1 ? "interaction" : "interactions"} until
+            long break
           </p>
         )}
         <form className="flex gap-2 items-end" onSubmit={handleSubmit}>

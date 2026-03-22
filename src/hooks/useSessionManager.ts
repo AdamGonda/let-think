@@ -63,9 +63,17 @@ export function useSessionManager(sessionId: Id<"sessions"> | null) {
   const canSend =
     !!sessionId &&
     !inBreak &&
-    (!state || state.used < state.limit);
+    (state == null ||
+      state.mode === "open" ||
+      state.used < state.limit);
 
-  const remaining = state ? Math.max(0, state.limit - state.used) : null;
+  const remaining =
+    state != null && state.mode === "restrict"
+      ? Math.max(0, state.limit - state.used)
+      : null;
+
+  const interactionRestriction =
+    state?.mode ?? ("open" as const);
 
   const onInteractionComplete = useCallback(async () => {
     if (!sessionId) return;
@@ -78,6 +86,7 @@ export function useSessionManager(sessionId: Id<"sessions"> | null) {
   }, [sessionId, startBreakOptimisticallyMutation]);
 
   return {
+    interactionRestriction,
     canSend,
     remaining,
     breakRemainingMs,

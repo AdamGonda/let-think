@@ -45,6 +45,10 @@ export default defineSchema({
     projectId: v.optional(v.id("projects")),
     title: v.string(),
     createdAt: v.number(),
+    /** "open" = no interaction cap; "restrict" = 3 interactions then long break */
+    interactionRestriction: v.optional(
+      v.union(v.literal("open"), v.literal("restrict")),
+    ),
     /** User's draft for next chat message, preserved across sessions */
     draftInput: v.optional(v.string()),
     /** Notes written during thinking/break period, separate from chat draft */

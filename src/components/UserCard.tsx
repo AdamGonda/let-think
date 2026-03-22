@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { useQuery } from "convex/react";
+import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import type { Id } from "../../convex/_generated/dataModel";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { LogOut, MoreHorizontal, HelpCircle } from "lucide-react";
+import { Check, LogOut, MoreHorizontal, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
@@ -19,6 +20,7 @@ function getInitials(name: string | undefined | null): string {
 interface UserCardProps {
   compact?: boolean;
   onRunTutorial?: () => void;
+  activeSessionId?: Id<"sessions"> | null;
 }
 
 function UserMenu({
@@ -28,6 +30,9 @@ function UserMenu({
   compact,
   signOut,
   onRunTutorial,
+  sessionRestrictEnabled,
+  sessionRestrictDisabled,
+  onToggleSessionRestrict,
 }: {
   open: boolean;
   onClose: () => void;
@@ -35,6 +40,9 @@ function UserMenu({
   compact: boolean;
   signOut: () => void;
   onRunTutorial?: () => void;
+  sessionRestrictEnabled: boolean;
+  sessionRestrictDisabled: boolean;
+  onToggleSessionRestrict: () => void;
 }) {
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -90,7 +98,7 @@ function UserMenu({
     <div
       ref={menuRef}
       role="menu"
-      className="min-w-32 overflow-hidden rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
+      className="min-w-[220px] overflow-hidden rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
       style={style}
     >
       {onRunTutorial && (
@@ -109,6 +117,28 @@ function UserMenu({
       )}
       <button
         type="button"
+        role="menuitemcheckbox"
+        aria-checked={sessionRestrictEnabled}
+        disabled={sessionRestrictDisabled}
+        className={`${menuItemClass} ${sessionRestrictDisabled ? "pointer-events-none opacity-50" : ""}`}
+        onClick={() => {
+          if (sessionRestrictDisabled) return;
+          onToggleSessionRestrict();
+        }}
+      >
+        <span
+          className="flex size-4 shrink-0 items-center justify-center rounded border border-border bg-background"
+          aria-hidden
+        >
+          {sessionRestrictEnabled ? (
+            <Check className="size-3 text-foreground" strokeWidth={3} />
+          ) : null}
+        </span>
+        Restrict interactions (3 per break)
+      </button>
+      <div className="my-1 h-px bg-border" role="separator" />
+      <button
+        type="button"
         role="menuitem"
         className={menuItemClass}
         onClick={() => {
@@ -125,12 +155,33 @@ function UserMenu({
   return createPortal(content, document.body);
 }
 
-export function UserCard({ compact = false, onRunTutorial }: UserCardProps) {
+export function UserCard({
+  compact = false,
+  onRunTutorial,
+  activeSessionId = null,
+}: UserCardProps) {
   const user = useQuery(api.users.currentUser);
   const { signOut } = useAuthActions();
   const [imageError, setImageError] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement | HTMLDivElement | null>(null);
+  const interactionState = useQuery(
+    api.interactionSessions.get,
+    activeSessionId ? { sessionId: activeSessionId } : "skip",
+  );
+  const setInteractionRestriction = useMutation(
+    api.sessions.setInteractionRestriction,
+  );
+  const sessionRestrictEnabled = interactionState?.mode === "restrict";
+  const sessionRestrictDisabled = activeSessionId == null;
+
+  const onToggleSessionRestrict = () => {
+    if (!activeSessionId) return;
+    void setInteractionRestriction({
+      sessionId: activeSessionId,
+      mode: sessionRestrictEnabled ? "open" : "restrict",
+    });
+  };
 
   useEffect(() => {
     setImageError(false);
@@ -178,6 +229,9 @@ export function UserCard({ compact = false, onRunTutorial }: UserCardProps) {
           compact={true}
           signOut={signOut}
           onRunTutorial={onRunTutorial}
+          sessionRestrictEnabled={sessionRestrictEnabled}
+          sessionRestrictDisabled={sessionRestrictDisabled}
+          onToggleSessionRestrict={onToggleSessionRestrict}
         />
       </div>
     );
@@ -209,6 +263,9 @@ export function UserCard({ compact = false, onRunTutorial }: UserCardProps) {
         compact={false}
         signOut={signOut}
         onRunTutorial={onRunTutorial}
+        sessionRestrictEnabled={sessionRestrictEnabled}
+        sessionRestrictDisabled={sessionRestrictDisabled}
+        onToggleSessionRestrict={onToggleSessionRestrict}
       />
     </div>
   );

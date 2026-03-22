@@ -5,9 +5,11 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 
 const BREAK_MS = 10 * 60 * 1000;
 
+const RESTRICT_INTERACTION_LIMIT = 3;
+
 /** Returns the interaction limit (used when creating after break reset). */
 function pickRandomLimit(): number {
-  return 3;
+  return RESTRICT_INTERACTION_LIMIT;
 }
 
 async function requireSessionOwner(ctx: MutationCtx, sessionId: Id<"sessions">) {
@@ -31,8 +33,30 @@ export const get = query({
       .query("interactionSessions")
       .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
       .first();
-    if (!row) return null;
+
+    const stored = session.interactionRestriction;
+    const effectiveMode =
+      stored !== undefined ? stored : row ? "restrict" : "open";
+
+    if (effectiveMode === "open") {
+      return {
+        mode: "open" as const,
+        limit: null as null,
+        used: null as null,
+        breakEndsAt: null as null,
+      };
+    }
+
+    if (!row) {
+      return {
+        mode: "restrict" as const,
+        limit: RESTRICT_INTERACTION_LIMIT,
+        used: 0,
+        breakEndsAt: null as null,
+      };
+    }
     return {
+      mode: "restrict" as const,
       limit: row.limit,
       used: row.used,
       breakEndsAt: row.breakEndsAt ?? null,
