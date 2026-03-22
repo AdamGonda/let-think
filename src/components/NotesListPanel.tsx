@@ -129,11 +129,9 @@ export function NotesListPanel({
     const q = searchQuery.trim().toLowerCase();
     let sessions = [...drillGroup.sessions];
     if (q) {
-      sessions = sessions.filter((s) => {
-        if (s.title.toLowerCase().includes(q)) return true;
-        const notes = s.thinkingNotes?.toLowerCase() ?? "";
-        return notes.includes(q);
-      });
+      sessions = sessions.filter((s) =>
+        s.title.toLowerCase().includes(q),
+      );
     }
     if (sortMode === "name") {
       sessions.sort((a, b) =>
@@ -173,11 +171,6 @@ export function NotesListPanel({
   const drillHeading =
     drilled && drillGroup ? `${drillTitle} sessions` : "Projects";
 
-  const searchPlaceholderDrill =
-    drill?.type === "inbox"
-      ? "Search notes in inbox…"
-      : "Search notes in this project…";
-
   return (
     <div className="flex flex-1 flex-col min-h-0 bg-background">
       <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-6">
@@ -209,7 +202,7 @@ export function NotesListPanel({
             <Input
               type="search"
               placeholder={
-                drilled ? searchPlaceholderDrill : "Search projects…"
+                drilled ? "Search sessions…" : "Search projects…"
               }
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
