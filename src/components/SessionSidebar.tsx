@@ -243,6 +243,135 @@ export function SessionSidebar({
           <Plus className="size-5 shrink-0" />
           {!isCollapsed && "New session"}
         </Button>
+        {!isCollapsed && (
+          <div className="min-h-0 max-h-[min(40vh,280px)] overflow-y-auto overflow-x-hidden flex flex-col gap-1 pb-1">
+            <div
+              className={`flex items-center gap-1 rounded-lg border transition-colors py-1.5 px-0 border-transparent ${
+                dragOverProjectId === "inbox" ? "ring-2 ring-ring ring-inset" : ""
+              }`}
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = "move";
+                setDragOverProjectId("inbox");
+              }}
+              onDragLeave={() => setDragOverProjectId(null)}
+              onDrop={(e) => {
+                e.preventDefault();
+                const sessionId = e.dataTransfer.getData("text/plain") as Id<"sessions">;
+                if (sessionId) {
+                  handleMoveSession(sessionId, null);
+                }
+                setDragOverProjectId(null);
+              }}
+            >
+              <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/90 py-1 px-2">
+                Sessions
+              </span>
+            </div>
+            {(data?.find((g: ProjectWithSessions) => !g.project)?.sessions ?? []).map((session: Doc<"sessions">) => (
+              <div
+                key={session._id}
+                draggable={editingSessionId !== session._id}
+                onDragStart={(e) => {
+                  e.dataTransfer.setData("text/plain", session._id);
+                  e.dataTransfer.effectAllowed = "move";
+                }}
+                onClick={() => {
+                  if (editingSessionId !== session._id) {
+                    onSelectSession(session._id);
+                    onSelectProject(null);
+                  }
+                }}
+                onDoubleClick={(e) => {
+                  if (editingSessionId !== session._id) {
+                    e.stopPropagation();
+                    setEditingSessionId(session._id);
+                  }
+                }}
+                className={`group flex items-center gap-1 py-1.5 px-3 rounded-r-lg border-y border-r border-transparent transition-colors cursor-pointer select-none ${
+                  viewMode !== "notesList" && activeSessionId === session._id
+                    ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent"
+                    : "border-l-2 border-l-transparent hover:bg-muted/50 hover:border-border"
+                }`}
+              >
+                {editingSessionId === session._id ? (
+                  <Input
+                    ref={sessionInputRef}
+                    type="text"
+                    defaultValue={session.title}
+                    className="flex-1 min-w-0 h-8 py-1 px-2 text-left text-sm"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleRename(session._id, (e.target as HTMLInputElement).value);
+                      } else if (e.key === "Escape") {
+                        setEditingSessionId(null);
+                      }
+                    }}
+                    onBlur={(e) => {
+                      handleRename(session._id, e.target.value);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    onMouseDown={(e) => e.stopPropagation()}
+                  />
+                ) : (
+                  <div
+                    className={`flex-1 min-w-0 text-left truncate pointer-events-none text-sm py-0.5 ${
+                      viewMode !== "notesList" && activeSessionId === session._id
+                        ? "text-foreground"
+                        : "text-muted-foreground"
+                    }`}
+                  >
+                    {session.title}
+                  </div>
+                )}
+                {confirmDeleteSessionId === session._id ? (
+                  <div
+                    className="flex items-center gap-0.5 h-7 shrink-0"
+                    onMouseLeave={() => setConfirmDeleteSessionId(null)}
+                  >
+                    <Button
+                      variant="destructive"
+                      size="icon-xs"
+                      className="h-7 w-7"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(session._id);
+                      }}
+                      aria-label="Confirm delete"
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon-xs"
+                      className="h-7 w-7"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setConfirmDeleteSessionId(null);
+                      }}
+                      aria-label="Cancel delete"
+                    >
+                      <X className="size-4" />
+                    </Button>
+                  </div>
+                ) : allSessions.length > 1 ? (
+                  <Button
+                    variant="ghost"
+                    size="icon-xs"
+                    className="opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto pointer-events-none hover:bg-destructive/20 hover:text-destructive h-7 shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setConfirmDeleteSessionId(session._id);
+                    }}
+                    aria-label="Delete session"
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                ) : null}
+              </div>
+            ))}
+          </div>
+        )}
         <Button
           variant="ghost"
           className={isCollapsed ? "h-10 w-10 p-0 justify-center ring-1 ring-border/50 shadow-sm" : "justify-start h-10 w-full gap-2 ring-1 ring-border/50 shadow-sm"}
@@ -536,135 +665,6 @@ export function SessionSidebar({
               </div>
             );
           })}
-          </div>
-
-          {/* Sessions section (sessions without a project) */}
-          <div className="flex flex-col gap-1">
-            <div
-                className={`flex items-center gap-1 rounded-lg border transition-colors py-1.5 px-0 border-transparent ${
-                dragOverProjectId === "inbox" ? "ring-2 ring-ring ring-inset" : ""
-              }`}
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = "move";
-                setDragOverProjectId("inbox");
-              }}
-              onDragLeave={() => setDragOverProjectId(null)}
-              onDrop={(e) => {
-                e.preventDefault();
-                const sessionId = e.dataTransfer.getData("text/plain") as Id<"sessions">;
-                if (sessionId) {
-                  handleMoveSession(sessionId, null);
-                }
-                setDragOverProjectId(null);
-              }}
-            >
-              <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/90 py-1 px-2">
-                Sessions
-              </span>
-            </div>
-            {(data?.find((g: ProjectWithSessions) => !g.project)?.sessions ?? []).map((session: Doc<"sessions">) => (
-              <div
-                key={session._id}
-                draggable={editingSessionId !== session._id}
-                onDragStart={(e) => {
-                  e.dataTransfer.setData("text/plain", session._id);
-                  e.dataTransfer.effectAllowed = "move";
-                }}
-                onClick={() => {
-                  if (editingSessionId !== session._id) {
-                    onSelectSession(session._id);
-                    onSelectProject(null);
-                  }
-                }}
-                onDoubleClick={(e) => {
-                  if (editingSessionId !== session._id) {
-                    e.stopPropagation();
-                    setEditingSessionId(session._id);
-                  }
-                }}
-                className={`group flex items-center gap-1 py-1.5 px-3 rounded-r-lg border-y border-r border-transparent transition-colors cursor-pointer select-none ${
-                  viewMode !== "notesList" && activeSessionId === session._id
-                    ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent"
-                    : "border-l-2 border-l-transparent hover:bg-muted/50 hover:border-border"
-                }`}
-              >
-                {editingSessionId === session._id ? (
-                  <Input
-                    ref={sessionInputRef}
-                    type="text"
-                    defaultValue={session.title}
-                    className="flex-1 min-w-0 h-8 py-1 px-2 text-left text-sm"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleRename(session._id, (e.target as HTMLInputElement).value);
-                      } else if (e.key === "Escape") {
-                        setEditingSessionId(null);
-                      }
-                    }}
-                    onBlur={(e) => {
-                      handleRename(session._id, e.target.value);
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                    onMouseDown={(e) => e.stopPropagation()}
-                  />
-                ) : (
-                <div
-                  className={`flex-1 min-w-0 text-left truncate pointer-events-none text-sm py-0.5 ${
-                    viewMode !== "notesList" && activeSessionId === session._id
-                      ? "text-foreground"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {session.title}
-                </div>
-                )}
-                {confirmDeleteSessionId === session._id ? (
-                  <div
-                    className="flex items-center gap-0.5 h-7 shrink-0"
-                    onMouseLeave={() => setConfirmDeleteSessionId(null)}
-                  >
-                    <Button
-                      variant="destructive"
-                      size="icon-xs"
-                      className="h-7 w-7"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(session._id);
-                      }}
-                      aria-label="Confirm delete"
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      className="h-7 w-7"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setConfirmDeleteSessionId(null);
-                      }}
-                      aria-label="Cancel delete"
-                    >
-                      <X className="size-4" />
-                    </Button>
-                  </div>
-                ) : allSessions.length > 1 ? (
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    className="opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto pointer-events-none hover:bg-destructive/20 hover:text-destructive h-7 shrink-0"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setConfirmDeleteSessionId(session._id);
-                    }}
-                    aria-label="Delete session"
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                ) : null}
-              </div>
-            ))}
           </div>
       </nav>
       <div
