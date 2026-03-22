@@ -372,7 +372,21 @@ function AppContentBody({
     breakRemainingMs,
     loadOlderMessages,
     canLoadOlderMessages,
+    messagesLoading,
   } = useSessionData();
+  const hasChatHistory =
+    messages.length > 0 || canLoadOlderMessages;
+
+  useEffect(() => {
+    if (!historyPanelOpen || !activeSessionId || messagesLoading) return;
+    if (!hasChatHistory) setHistoryPanelOpen(false);
+  }, [
+    historyPanelOpen,
+    activeSessionId,
+    messagesLoading,
+    hasChatHistory,
+    setHistoryPanelOpen,
+  ]);
   const isInBreak = breakRemainingMs !== null && breakRemainingMs > 0;
   const prevBatchesLengthRef = useRef(0);
 
@@ -579,16 +593,18 @@ function AppContentBody({
                       />
                     </div>
                     <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="icon-sm"
-                        onClick={() => setHistoryPanelOpen(true)}
-                        title="Conversation history"
-                        aria-label="Conversation history"
-                        data-tour="history-btn"
-                      >
-                        <History className="size-5" />
-                      </Button>
+                      {hasChatHistory ? (
+                        <Button
+                          variant="outline"
+                          size="icon-sm"
+                          onClick={() => setHistoryPanelOpen(true)}
+                          title="Conversation history"
+                          aria-label="Conversation history"
+                          data-tour="history-btn"
+                        >
+                          <History className="size-5" />
+                        </Button>
+                      ) : null}
                       <Button
                         variant="outline"
                         size="icon-sm"
