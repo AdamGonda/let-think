@@ -67,7 +67,7 @@ export const create = mutation({
       title: "New session",
       createdAt: now,
     });
-    const limit = 5;
+    const limit = 3;
     await ctx.db.insert("interactionSessions", {
       sessionId: id,
       userId,

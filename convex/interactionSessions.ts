@@ -7,7 +7,7 @@ const BREAK_MS = 10 * 60 * 1000;
 
 /** Returns the interaction limit (used when creating after break reset). */
 function pickRandomLimit(): number {
-  return 5;
+  return 3;
 }
 
 async function requireSessionOwner(ctx: MutationCtx, sessionId: Id<"sessions">) {
