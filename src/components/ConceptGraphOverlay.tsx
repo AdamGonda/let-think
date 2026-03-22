@@ -169,14 +169,18 @@ export function ConceptGraphOverlay({
                     onMouseEnter={() => setHoveredNode(node)}
                     onMouseLeave={() => setHoveredNode(null)}
                     style={{
-                      boxShadow: isReferenced ? "0 0 0 2px #1447E6" : undefined,
+                      boxShadow: isReferenced
+                        ? "0 0 0 2px var(--session-accent)"
+                        : undefined,
                     }}
                   >
                     {showNumberBadge && (
                       <div
                         className="absolute top-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-10"
                         style={{
-                          outline: isReferenced ? "2px solid #1447E6" : undefined,
+                          outline: isReferenced
+                            ? "2px solid var(--session-accent)"
+                            : undefined,
                           outlineOffset: 2,
                         }}
                       >

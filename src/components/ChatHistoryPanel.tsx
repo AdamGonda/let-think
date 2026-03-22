@@ -241,7 +241,7 @@ export function ChatHistoryPanel({
                   const isSelectedStep = hasStep && batchIndex === selectedBatchIndex;
 
                   const dotBase = "absolute left-[7px] top-3 size-3 -translate-x-1/2 shrink-0 ring-4 ring-background z-10 rounded-full";
-                  const dotSelected = "bg-[#1447E6]";
+                  const dotSelected = "bg-[var(--session-accent)]";
                   const dotRest = "bg-foreground";
 
                   return (

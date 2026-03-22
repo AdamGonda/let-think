@@ -53,7 +53,7 @@ export function PaginationDots({
         title={`Step ${index + 1}`}
         className={`shrink-0 rounded-full transition-colors duration-300 cursor-pointer focus:outline-none ${
           isActive
-            ? "bg-[#1447E6]"
+            ? "bg-[var(--session-accent)]"
             : "bg-zinc-300 dark:bg-white/80 hover:opacity-80"
         }`}
         style={{

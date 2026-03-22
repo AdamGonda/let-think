@@ -676,11 +676,7 @@ export function SessionSidebar({
           isCollapsed ? "p-2 items-center mt-auto" : "p-3"
         }`}
       >
-        <UserCard
-          compact={isCollapsed}
-          onRunTutorial={onRunTutorial}
-          activeSessionId={activeSessionId}
-        />
+        <UserCard compact={isCollapsed} onRunTutorial={onRunTutorial} />
       </div>
     </aside>
   );

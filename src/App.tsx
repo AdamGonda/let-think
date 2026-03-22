@@ -38,6 +38,7 @@ import { Toaster } from "./components/ui/sonner";
 import { Button } from "./components/ui/button";
 import { FileText, History, Sigma, X } from "lucide-react";
 import { StepNavigator } from "./components/StepNavigator";
+import { WorkPreferenceProvider } from "./contexts/WorkPreferenceContext";
 
 function App() {
   return (
@@ -250,41 +251,43 @@ function AppContent() {
   }, [isExitingOverlay]);
 
   return (
-    <SessionDataProvider sessionId={activeSessionId}>
-      <AppContentBody
-        onCreateSessionForFirstMessage={
-          !activeSessionId ? handleCreateSessionForFirstMessage : undefined
-        }
-        activeSessionId={activeSessionId}
-        activeProjectId={activeProjectId}
-        setActiveSessionId={setActiveSessionId}
-        setActiveProjectId={setActiveProjectId}
-        isLoading={isLoading}
-        setIsLoading={setIsLoading}
-        modelRespondedAwaitingDismissal={modelRespondedAwaitingDismissal}
-        setModelRespondedAwaitingDismissal={setModelRespondedAwaitingDismissal}
-        overlayDismissed={overlayDismissed}
-        setOverlayDismissed={setOverlayDismissed}
-        isExitingOverlay={isExitingOverlay}
-        setIsExitingOverlay={setIsExitingOverlay}
-        editorOpen={editorOpen}
-        setEditorOpen={setEditorOpen}
-        historyPanelOpen={historyPanelOpen}
-        setHistoryPanelOpen={setHistoryPanelOpen}
-        viewMode={viewMode}
-        setViewMode={setViewMode}
-        selectedBatchIndex={selectedBatchIndex}
-        setSelectedBatchIndex={setSelectedBatchIndex}
-        draftInput={draftInput}
-        setDraftInput={setDraftInput}
-        notes={notes}
-        setNotes={setNotes}
-        mainContentRef={mainContentRef}
-        workspace={projectsWithSessions}
-        notesListDrill={notesListDrill}
-        setNotesListDrill={setNotesListDrill}
-      />
-    </SessionDataProvider>
+    <WorkPreferenceProvider activeSessionId={activeSessionId}>
+      <SessionDataProvider sessionId={activeSessionId}>
+        <AppContentBody
+          onCreateSessionForFirstMessage={
+            !activeSessionId ? handleCreateSessionForFirstMessage : undefined
+          }
+          activeSessionId={activeSessionId}
+          activeProjectId={activeProjectId}
+          setActiveSessionId={setActiveSessionId}
+          setActiveProjectId={setActiveProjectId}
+          isLoading={isLoading}
+          setIsLoading={setIsLoading}
+          modelRespondedAwaitingDismissal={modelRespondedAwaitingDismissal}
+          setModelRespondedAwaitingDismissal={setModelRespondedAwaitingDismissal}
+          overlayDismissed={overlayDismissed}
+          setOverlayDismissed={setOverlayDismissed}
+          isExitingOverlay={isExitingOverlay}
+          setIsExitingOverlay={setIsExitingOverlay}
+          editorOpen={editorOpen}
+          setEditorOpen={setEditorOpen}
+          historyPanelOpen={historyPanelOpen}
+          setHistoryPanelOpen={setHistoryPanelOpen}
+          viewMode={viewMode}
+          setViewMode={setViewMode}
+          selectedBatchIndex={selectedBatchIndex}
+          setSelectedBatchIndex={setSelectedBatchIndex}
+          draftInput={draftInput}
+          setDraftInput={setDraftInput}
+          notes={notes}
+          setNotes={setNotes}
+          mainContentRef={mainContentRef}
+          workspace={projectsWithSessions}
+          notesListDrill={notesListDrill}
+          setNotesListDrill={setNotesListDrill}
+        />
+      </SessionDataProvider>
+    </WorkPreferenceProvider>
   );
 }
 

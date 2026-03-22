@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import type { Id } from "../../convex/_generated/dataModel";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { useWorkPreference } from "../contexts/WorkPreferenceContext";
 import { LogOut, MoreHorizontal, HelpCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -21,25 +21,22 @@ function getInitials(name: string | undefined | null): string {
 interface UserCardProps {
   compact?: boolean;
   onRunTutorial?: () => void;
-  activeSessionId?: Id<"sessions"> | null;
 }
 
 type UserMenuPanelProps = {
   onClose: () => void;
   signOut: () => void | Promise<void>;
   onRunTutorial?: () => void;
-  sessionRestrictEnabled: boolean;
-  sessionRestrictDisabled: boolean;
-  onToggleSessionRestrict: () => void;
+  isWorkMode: boolean;
+  setWorkMode: (work: boolean) => void;
 };
 
 function UserMenuPanel({
   onClose,
   signOut,
   onRunTutorial,
-  sessionRestrictEnabled,
-  sessionRestrictDisabled,
-  onToggleSessionRestrict,
+  isWorkMode,
+  setWorkMode,
 }: UserMenuPanelProps) {
   const menuItemClass =
     "flex w-full cursor-pointer items-center gap-1.5 rounded-md px-1.5 py-1.5 text-sm outline-none hover:bg-muted/60 hover:text-foreground focus-visible:bg-muted/60 focus-visible:text-foreground [&_svg]:size-4 [&_svg]:shrink-0";
@@ -55,24 +52,17 @@ function UserMenuPanel({
           <span className="shrink-0 text-xs font-medium text-muted-foreground">
             Account
           </span>
-          <div
-            className={cn(
-              "flex shrink-0 items-center",
-              sessionRestrictDisabled && "opacity-50",
-            )}
-          >
+          <div className="flex shrink-0 items-center">
             <Switch
-              checked={sessionRestrictEnabled}
-              disabled={sessionRestrictDisabled}
+              checked={isWorkMode}
               onCheckedChange={(next) => {
-                if (sessionRestrictDisabled) return;
-                if (next !== sessionRestrictEnabled) onToggleSessionRestrict();
+                if (next !== isWorkMode) setWorkMode(next);
               }}
               internalLabel={{ off: "Think", on: "Work" }}
-              offTrackClassName="bg-[#1447E6]"
-              onTrackClassName="bg-[#059669]"
+              offTrackClassName="bg-[var(--session-accent-think)]"
+              onTrackClassName="bg-[var(--session-accent-work)]"
               aria-label={
-                sessionRestrictEnabled
+                isWorkMode
                   ? "Work (productivity mode)"
                   : "Think (thinking mode)"
               }
@@ -128,29 +118,16 @@ function UserMenuPanel({
 export function UserCard({
   compact = false,
   onRunTutorial,
-  activeSessionId = null,
 }: UserCardProps) {
   const user = useQuery(api.users.currentUser);
   const { signOut } = useAuthActions();
+  const { isWorkMode, setMode } = useWorkPreference();
   const [imageError, setImageError] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const interactionState = useQuery(
-    api.interactionSessions.get,
-    activeSessionId ? { sessionId: activeSessionId } : "skip",
-  );
-  const setInteractionRestriction = useMutation(
-    api.sessions.setInteractionRestriction,
-  );
-  const sessionRestrictEnabled = interactionState?.mode === "restrict";
-  const sessionRestrictDisabled = activeSessionId == null;
 
-  const onToggleSessionRestrict = () => {
-    if (!activeSessionId) return;
-    void setInteractionRestriction({
-      sessionId: activeSessionId,
-      mode: sessionRestrictEnabled ? "open" : "restrict",
-    });
+  const setWorkMode = (work: boolean) => {
+    setMode(work ? "work" : "think");
   };
 
   useEffect(() => {
@@ -245,9 +222,8 @@ export function UserCard({
             onClose={() => setMenuOpen(false)}
             signOut={signOut}
             onRunTutorial={onRunTutorial}
-            sessionRestrictEnabled={sessionRestrictEnabled}
-            sessionRestrictDisabled={sessionRestrictDisabled}
-            onToggleSessionRestrict={onToggleSessionRestrict}
+            isWorkMode={isWorkMode}
+            setWorkMode={setWorkMode}
           />
         </div>
       </div>
@@ -303,9 +279,8 @@ export function UserCard({
           onClose={() => setMenuOpen(false)}
           signOut={signOut}
           onRunTutorial={onRunTutorial}
-          sessionRestrictEnabled={sessionRestrictEnabled}
-          sessionRestrictDisabled={sessionRestrictDisabled}
-          onToggleSessionRestrict={onToggleSessionRestrict}
+          isWorkMode={isWorkMode}
+          setWorkMode={setWorkMode}
         />
       </div>
     </div>

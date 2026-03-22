@@ -86,6 +86,11 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: rgb(69 69 66 / 0.5);
   --sidebar-ring: oklch(0.556 0 0);
+  /* Think/Work switch tracks (fixed). Synced tints use --session-accent below. */
+  --session-accent-think: #1447e6;
+  --session-accent-work: #059669;
+  /* Overridden by SessionAccentSync from the active session’s mode. */
+  --session-accent: var(--session-accent-think);
 }
 
 .font-brand {
