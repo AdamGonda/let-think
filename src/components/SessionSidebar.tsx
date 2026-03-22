@@ -263,12 +263,12 @@ export function SessionSidebar({
           onClick={() =>
             onViewModeChange(viewMode === "notesList" ? "graph" : "notesList")
           }
-          aria-label="View thinking notes"
+          aria-label="View files"
           aria-pressed={viewMode === "notesList"}
           data-tour="notes-toggle"
         >
           <FileText className="size-5 shrink-0" />
-          {!isCollapsed && "Notes"}
+          {!isCollapsed && "Files"}
         </Button>
       </div>
       <nav

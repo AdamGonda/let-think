@@ -59,9 +59,9 @@ function getSteps(): DriveStep[] {
     {
       element: "[data-tour='notes-toggle']",
       popover: {
-        title: "Notes view",
+        title: "Files",
         description:
-          "Switch to a list view of all your thinking notes. Great for scanning and jumping between sessions.",
+          "Switch to a list view of all your sessions and notes. Great for scanning and jumping between sessions.",
         side: "right",
         align: "center",
       },
