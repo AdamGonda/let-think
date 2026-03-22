@@ -12,7 +12,7 @@ import type { ProjectWithSessions } from "./SessionSidebar";
 
 type SortMode = "activity" | "name";
 
-type Drill =
+export type NotesListDrill =
   | null
   | { type: "inbox" }
   | { type: "project"; id: Id<"projects"> };
@@ -63,7 +63,7 @@ function groupMatchesQuery(group: ProjectWithSessions, q: string): boolean {
 
 function resolveDrillGroup(
   workspace: ProjectWithSessions[],
-  drill: Drill,
+  drill: NotesListDrill,
 ): ProjectWithSessions | undefined {
   if (!drill) return undefined;
   if (drill.type === "inbox") {
@@ -74,18 +74,21 @@ function resolveDrillGroup(
 
 interface NotesListPanelProps {
   workspace: ProjectWithSessions[] | undefined;
+  drill: NotesListDrill;
+  onDrillChange: (drill: NotesListDrill) => void;
   onSelectSession: (session: Doc<"sessions">) => void;
   onJumpToSession?: (session: Doc<"sessions">) => void;
 }
 
 export function NotesListPanel({
   workspace,
+  drill,
+  onDrillChange,
   onSelectSession,
   onJumpToSession,
 }: NotesListPanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("activity");
-  const [drill, setDrill] = useState<Drill>(null);
 
   const totalSessions =
     workspace?.reduce((n, g) => n + g.sessions.length, 0) ?? 0;
@@ -126,9 +129,9 @@ export function NotesListPanel({
 
   useEffect(() => {
     if (drill && workspace && !drillGroup) {
-      setDrill(null);
+      onDrillChange(null);
     }
-  }, [drill, workspace, drillGroup]);
+  }, [drill, workspace, drillGroup, onDrillChange]);
 
   const filteredDrillSessions = useMemo(() => {
     if (!drillGroup) return [];
@@ -186,29 +189,27 @@ export function NotesListPanel({
     <div className="flex flex-1 flex-col min-h-0 bg-background">
       <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-6">
         <div className="shrink-0 border-b border-border py-6">
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
+          <div className="relative mb-5 flex min-h-10 items-center">
             {drilled && drillGroup ? (
-              <div className="flex items-center gap-3 min-w-0">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setDrill(null);
-                    setSearchQuery("");
-                  }}
-                  className="shrink-0 cursor-pointer rounded-lg border border-border/80 bg-card p-2 text-foreground transition-colors hover:bg-muted hover:border-border active:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  aria-label="Back to projects"
-                >
-                  <ChevronLeft className="size-5" />
-                </button>
-                <h1 className="text-2xl font-semibold tracking-tight text-foreground truncate">
-                  {drillTitle}
-                </h1>
-              </div>
-            ) : (
-              <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-                Projects
-              </h1>
-            )}
+              <button
+                type="button"
+                onClick={() => {
+                  onDrillChange(null);
+                  setSearchQuery("");
+                }}
+                className="absolute left-0 top-1/2 z-10 -translate-y-1/2 cursor-pointer rounded-lg border border-border/80 bg-card p-2 text-foreground transition-colors hover:bg-muted hover:border-border active:bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label="Back to projects"
+              >
+                <ChevronLeft className="size-5" />
+              </button>
+            ) : null}
+            <h1
+              className={`min-w-0 text-2xl font-semibold tracking-tight text-foreground ${
+                drilled && drillGroup ? "truncate pl-11" : ""
+              }`}
+            >
+              {drilled && drillGroup ? drillTitle : "Projects"}
+            </h1>
           </div>
           <div className="relative mb-3 w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
@@ -273,7 +274,7 @@ export function NotesListPanel({
                         <button
                           type="button"
                           onClick={() =>
-                            setDrill(
+                            onDrillChange(
                               group.project
                                 ? { type: "project", id: group.project._id }
                                 : { type: "inbox" },

@@ -7,7 +7,7 @@ import {
   Authenticated,
 } from "convex/react";
 import { api } from "../convex/_generated/api";
-import type { Id } from "../convex/_generated/dataModel";
+import type { Doc, Id } from "../convex/_generated/dataModel";
 import { formatBreakCountdown } from "./hooks/useSessionManager";
 import {
   SessionDataProvider,
@@ -17,7 +17,14 @@ import {
   SessionSidebar,
   type ProjectWithSessions,
 } from "./components/SessionSidebar";
-import { NotesListPanel } from "./components/NotesListPanel";
+import {
+  NotesListPanel,
+  type NotesListDrill,
+} from "./components/NotesListPanel";
+import {
+  NoteBreadcrumb,
+  noteHeadingFromMarkdown,
+} from "./components/NoteBreadcrumb";
 import { Chat } from "./components/Chat";
 import {
   Tutorial,
@@ -65,6 +72,7 @@ function AppContent() {
   const [isExitingOverlay, setIsExitingOverlay] = useState(false);
   const [editorOpen, setEditorOpen] = useState(false);
   const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
+  const [notesListDrill, setNotesListDrill] = useState<NotesListDrill>(null);
   const [viewMode, setViewMode] = useState<"graph" | "notesList">("graph");
   const [selectedBatchIndex, setSelectedBatchIndex] = useState(0);
   const [draftInput, setDraftInput] = useState("");
@@ -274,6 +282,8 @@ function AppContent() {
         setNotes={setNotes}
         mainContentRef={mainContentRef}
         workspace={projectsWithSessions}
+        notesListDrill={notesListDrill}
+        setNotesListDrill={setNotesListDrill}
       />
     </SessionDataProvider>
   );
@@ -307,9 +317,13 @@ function AppContentBody({
   setNotes,
   mainContentRef,
   workspace,
+  notesListDrill,
+  setNotesListDrill,
 }: {
   onCreateSessionForFirstMessage?: () => Promise<Id<"sessions">>;
   workspace: ProjectWithSessions[] | undefined;
+  notesListDrill: NotesListDrill;
+  setNotesListDrill: (d: NotesListDrill) => void;
   activeSessionId: Id<"sessions"> | null;
   activeProjectId: Id<"projects"> | null;
   setActiveSessionId: (id: Id<"sessions"> | null) => void;
@@ -336,6 +350,20 @@ function AppContentBody({
   setNotes: (v: string) => void;
   mainContentRef: React.RefObject<HTMLDivElement | null>;
 }) {
+  const activeSessionDoc = useMemo((): Doc<"sessions"> | undefined => {
+    if (!workspace || !activeSessionId) return undefined;
+    for (const g of workspace) {
+      const s = g.sessions.find((x) => x._id === activeSessionId);
+      if (s) return s;
+    }
+    return undefined;
+  }, [workspace, activeSessionId]);
+
+  const noteBreadcrumbLeaf = useMemo(
+    () => noteHeadingFromMarkdown(notes) ?? "Note",
+    [notes],
+  );
+
   const {
     conceptGraph,
     messages,
@@ -477,6 +505,29 @@ function AppContentBody({
                     editorRevealReady ? "opacity-100" : "opacity-0"
                   }`}
                 >
+                  {editorOpen && activeSessionDoc ? (
+                    <NoteBreadcrumb
+                      sessionTitle={activeSessionDoc.title}
+                      noteTitle={noteBreadcrumbLeaf}
+                      onProjectsClick={() => {
+                        setEditorOpen(false);
+                        setViewMode("notesList");
+                        setNotesListDrill(null);
+                      }}
+                      onSessionClick={() => {
+                        setEditorOpen(false);
+                        setViewMode("notesList");
+                        setNotesListDrill(
+                          activeSessionDoc.projectId
+                            ? {
+                                type: "project",
+                                id: activeSessionDoc.projectId,
+                              }
+                            : { type: "inbox" },
+                        );
+                      }}
+                    />
+                  ) : null}
                   <MarkdownEditor
                     value={notes}
                     onChange={(v) => setNotes(v ?? "")}
@@ -515,10 +566,17 @@ function AppContentBody({
             {viewMode === "notesList" ? (
               <NotesListPanel
                 workspace={workspace}
+                drill={notesListDrill}
+                onDrillChange={setNotesListDrill}
                 onSelectSession={(session) => {
                   setActiveSessionId(session._id);
                   if (session.projectId) setActiveProjectId(session.projectId);
                   else setActiveProjectId(null);
+                  setNotesListDrill(
+                    session.projectId
+                      ? { type: "project", id: session.projectId }
+                      : { type: "inbox" },
+                  );
                   setEditorOpen(true);
                 }}
                 onJumpToSession={(session) => {
