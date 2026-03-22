@@ -1,5 +1,10 @@
 import { v } from "convex/values";
-import { mutation, query, type MutationCtx } from "./_generated/server";
+import {
+  internalMutation,
+  mutation,
+  query,
+  type MutationCtx,
+} from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
@@ -7,51 +12,32 @@ const BREAK_MS = 10 * 60 * 1000;
 
 const RESTRICT_INTERACTION_LIMIT = 3;
 
-/** Returns the interaction limit (used when creating after break reset). */
 function pickRandomLimit(): number {
   return RESTRICT_INTERACTION_LIMIT;
 }
 
-async function requireSessionOwner(ctx: MutationCtx, sessionId: Id<"sessions">) {
-  const userId = await getAuthUserId(ctx);
-  if (!userId) throw new Error("Must be signed in");
-  const session = await ctx.db.get(sessionId);
-  if (!session || session.userId !== userId) {
-    throw new Error("Session not found or access denied");
-  }
-  return { session, userId };
+async function getUserRow(ctx: MutationCtx, userId: Id<"users">) {
+  return ctx.db
+    .query("userThinkInteractions")
+    .withIndex("by_user", (q) => q.eq("userId", userId))
+    .first();
 }
 
+/** Current Think interaction state for the signed-in user (no sessionId). */
 export const get = query({
-  args: { sessionId: v.id("sessions") },
-  handler: async (ctx, { sessionId }) => {
+  args: {},
+  handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
-    const session = await ctx.db.get(sessionId);
-    if (!session || session.userId !== userId) return null;
     const row = await ctx.db
-      .query("interactionSessions")
-      .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+      .query("userThinkInteractions")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .first();
-
-    const stored = session.interactionRestriction;
-    const effectiveMode =
-      stored !== undefined ? stored : row ? "restrict" : "open";
-
-    if (effectiveMode === "open") {
+    if (!row) {
       return {
         mode: "open" as const,
         limit: null as null,
         used: null as null,
-        breakEndsAt: null as null,
-      };
-    }
-
-    if (!row) {
-      return {
-        mode: "restrict" as const,
-        limit: RESTRICT_INTERACTION_LIMIT,
-        used: 0,
         breakEndsAt: null as null,
       };
     }
@@ -64,21 +50,41 @@ export const get = query({
   },
 });
 
-/** Record an interaction (increment used). Creates row with random limit if not exists. */
-export const recordInteraction = mutation({
-  args: { sessionId: v.id("sessions") },
-  handler: async (ctx, { sessionId }) => {
-    const { userId } = await requireSessionOwner(ctx, sessionId);
-    const existing = await ctx.db
-      .query("interactionSessions")
-      .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
-      .first();
+/** Sync Think (restrict) vs Work (open) from client preference — one row per user. */
+export const applyWorkPreferenceMode = mutation({
+  args: {
+    mode: v.union(v.literal("open"), v.literal("restrict")),
+  },
+  handler: async (ctx, { mode }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return;
+    const row = await getUserRow(ctx, userId);
+    if (mode === "open") {
+      if (row) await ctx.db.delete(row._id);
+      return;
+    }
+    const now = Date.now();
+    if (!row) {
+      await ctx.db.insert("userThinkInteractions", {
+        userId,
+        limit: RESTRICT_INTERACTION_LIMIT,
+        used: 0,
+        createdAt: now,
+      });
+    }
+  },
+});
 
+export const recordInteraction = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Must be signed in");
+    const existing = await getUserRow(ctx, userId);
     const now = Date.now();
     if (!existing) {
-      const limit = pickRandomLimit(); // MIN_LIMIT (2) or more
-      await ctx.db.insert("interactionSessions", {
-        sessionId,
+      const limit = pickRandomLimit();
+      await ctx.db.insert("userThinkInteractions", {
         userId,
         limit,
         used: 1,
@@ -97,21 +103,16 @@ export const recordInteraction = mutation({
   },
 });
 
-/** Start the break timer optimistically (e.g. when user sends their last allowed message). */
 export const startBreakOptimistically = mutation({
-  args: { sessionId: v.id("sessions") },
-  handler: async (ctx, { sessionId }) => {
-    const { userId } = await requireSessionOwner(ctx, sessionId);
-    const existing = await ctx.db
-      .query("interactionSessions")
-      .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
-      .first();
-
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Must be signed in");
+    const existing = await getUserRow(ctx, userId);
     const now = Date.now();
     if (!existing) {
       const limit = pickRandomLimit();
-      await ctx.db.insert("interactionSessions", {
-        sessionId,
+      await ctx.db.insert("userThinkInteractions", {
         userId,
         limit,
         used: 0,
@@ -128,26 +129,33 @@ export const startBreakOptimistically = mutation({
   },
 });
 
-/** Reset interaction session when break ends (fresh start with new limit). */
 export const resetAfterBreak = mutation({
-  args: { sessionId: v.id("sessions") },
-  handler: async (ctx, { sessionId }) => {
-    const { userId } = await requireSessionOwner(ctx, sessionId);
-    const existing = await ctx.db
-      .query("interactionSessions")
-      .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
-      .first();
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Must be signed in");
+    const existing = await getUserRow(ctx, userId);
     if (existing) {
       await ctx.db.delete(existing._id);
     }
     const now = Date.now();
     const limit = pickRandomLimit();
-    await ctx.db.insert("interactionSessions", {
-      sessionId,
+    await ctx.db.insert("userThinkInteractions", {
       userId,
       limit,
       used: 0,
       createdAt: now,
     });
+  },
+});
+
+/** One-off: remove legacy per-session rows after migrating to userThinkInteractions. */
+export const deleteLegacyInteractionSessions = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const rows = await ctx.db.query("interactionSessions").collect();
+    for (const r of rows) {
+      await ctx.db.delete(r._id);
+    }
   },
 });

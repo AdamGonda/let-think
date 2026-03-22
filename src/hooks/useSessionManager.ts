@@ -6,6 +6,7 @@ import {
   useRef,
 } from "react";
 import { useAtomValue } from "jotai";
+import { useAuthToken } from "@convex-dev/auth/react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -19,12 +20,14 @@ export function formatBreakCountdown(ms: number): string {
 }
 
 export function useSessionManager(sessionId: Id<"sessions"> | null) {
+  const authToken = useAuthToken();
+  const isAuthenticated = authToken !== null;
   const workPreferenceMode = useAtomValue(workPreferenceModeAtom);
   const restrictionFromPreference =
     workPreferenceMode === "think" ? ("restrict" as const) : ("open" as const);
   const state = useQuery(
     api.interactionSessions.get,
-    sessionId ? { sessionId } : "skip"
+    isAuthenticated ? {} : "skip"
   );
   const recordInteraction = useMutation(api.interactionSessions.recordInteraction);
   const startBreakOptimisticallyMutation = useMutation(
@@ -35,10 +38,8 @@ export function useSessionManager(sessionId: Id<"sessions"> | null) {
 
   const [breakRemainingMs, setBreakRemainingMs] = useState<number | null>(null);
 
-  // Before paint: align break timer with this session (passive useEffect runs too late — one
-  // frame could keep the previous session's break and hide the interaction line).
   useLayoutEffect(() => {
-    if (!sessionId || !state?.breakEndsAt) {
+    if (!state?.breakEndsAt) {
       setBreakRemainingMs(null);
       hasResetRef.current = false;
       return;
@@ -49,13 +50,12 @@ export function useSessionManager(sessionId: Id<"sessions"> | null) {
     }
     hasResetRef.current = false;
     setBreakRemainingMs(Math.max(0, state.breakEndsAt - Date.now()));
-  }, [sessionId, state?.breakEndsAt]);
+  }, [state?.breakEndsAt]);
 
-  // Timer for break countdown - tick every second and reset when done
   useEffect(() => {
     if (breakRemainingMs === null || breakRemainingMs <= 0) return;
     const interval = setInterval(() => {
-      if (!sessionId || !state?.breakEndsAt) {
+      if (!state?.breakEndsAt) {
         setBreakRemainingMs(null);
         return;
       }
@@ -64,11 +64,11 @@ export function useSessionManager(sessionId: Id<"sessions"> | null) {
       if (remaining === 0 && !hasResetRef.current) {
         hasResetRef.current = true;
         setBreakRemainingMs(null);
-        resetAfterBreak({ sessionId });
+        void resetAfterBreak({});
       }
     }, 1000);
     return () => clearInterval(interval);
-  }, [sessionId, state?.breakEndsAt, breakRemainingMs, resetAfterBreak]);
+  }, [state?.breakEndsAt, breakRemainingMs, resetAfterBreak]);
 
   const inBreak = breakRemainingMs !== null && breakRemainingMs > 0;
 
@@ -85,29 +85,22 @@ export function useSessionManager(sessionId: Id<"sessions"> | null) {
       ? Math.max(0, state.limit - state.used)
       : null;
 
-  /**
-   * Chrome follows global Think/Work (see WorkPreferenceSync). Server may still say "open"
-   * until setInteractionRestriction runs for this session — never flash unlimited in Think mode.
-   */
   const interactionRestriction =
     restrictionFromPreference === "restrict" ? "restrict" : "open";
 
-  /** True while we cannot show an accurate remaining count (query loading or stale "open" row). */
   const interactionCountsPending =
-    !!sessionId &&
+    isAuthenticated &&
     restrictionFromPreference === "restrict" &&
     (state === undefined ||
       (state !== null && state.mode === "open"));
 
   const onInteractionComplete = useCallback(async () => {
-    if (!sessionId) return;
-    await recordInteraction({ sessionId });
-  }, [sessionId, recordInteraction]);
+    await recordInteraction({});
+  }, [recordInteraction]);
 
   const startBreakOptimistically = useCallback(async () => {
-    if (!sessionId) return;
-    await startBreakOptimisticallyMutation({ sessionId });
-  }, [sessionId, startBreakOptimisticallyMutation]);
+    await startBreakOptimisticallyMutation({});
+  }, [startBreakOptimisticallyMutation]);
 
   return {
     interactionRestriction,

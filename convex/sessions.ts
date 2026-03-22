@@ -66,7 +66,6 @@ export const create = mutation({
       projectId,
       title: "New session",
       createdAt: now,
-      interactionRestriction: "open",
     });
     return id;
   },
@@ -99,39 +98,6 @@ export const updateTitle = mutation({
   },
 });
 
-const RESTRICT_INTERACTION_LIMIT = 3;
-
-export const setInteractionRestriction = mutation({
-  args: {
-    sessionId: v.id("sessions"),
-    mode: v.union(v.literal("open"), v.literal("restrict")),
-  },
-  handler: async (ctx, { sessionId, mode }) => {
-    const session = await requireSessionOwner(ctx, sessionId);
-    const userId = session.userId;
-    if (!userId) throw new Error("Session has no owner");
-    await ctx.db.patch(sessionId, { interactionRestriction: mode });
-    const row = await ctx.db
-      .query("interactionSessions")
-      .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
-      .first();
-    if (mode === "open") {
-      if (row) await ctx.db.delete(row._id);
-      return;
-    }
-    const now = Date.now();
-    if (!row) {
-      await ctx.db.insert("interactionSessions", {
-        sessionId,
-        userId,
-        limit: RESTRICT_INTERACTION_LIMIT,
-        used: 0,
-        createdAt: now,
-      });
-    }
-  },
-});
-
 export const moveToProject = mutation({
   args: {
     id: v.id("sessions"),
@@ -158,13 +124,6 @@ export const remove = mutation({
       .collect();
     for (const msg of messages) {
       await ctx.db.delete(msg._id);
-    }
-    const interactionSession = await ctx.db
-      .query("interactionSessions")
-      .withIndex("by_session", (q) => q.eq("sessionId", id))
-      .first();
-    if (interactionSession) {
-      await ctx.db.delete(interactionSession._id);
     }
     await deleteConceptGraphRow(ctx, id);
     await ctx.db.delete(id);

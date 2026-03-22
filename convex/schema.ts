@@ -81,7 +81,19 @@ export default defineSchema({
     ),
   }).index("by_session", ["sessionId"]),
 
-  /** Tracks interaction limits per chat session (limit, used, breakEndsAt). */
+  /**
+   * Think-mode interaction cap per user (not per chat session).
+   * Absent row = Work/unlimited for server purposes until applyWorkPreferenceMode("restrict").
+   */
+  userThinkInteractions: defineTable({
+    userId: v.id("users"),
+    limit: v.number(),
+    used: v.number(),
+    breakEndsAt: v.optional(v.number()),
+    createdAt: v.number(),
+  }).index("by_user", ["userId"]),
+
+  /** Legacy per-session cap (unused). Run `internal.interactionSessions.deleteLegacyInteractionSessions` then drop. */
   interactionSessions: defineTable({
     sessionId: v.id("sessions"),
     userId: v.id("users"),

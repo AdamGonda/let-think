@@ -185,7 +185,7 @@ export function Chat({
       });
       if (restrictInteractions) {
         if (createdViaCallback) {
-          await recordInteraction({ sessionId: effectiveSessionId });
+          await recordInteraction({});
         } else {
           await onInteractionComplete();
         }

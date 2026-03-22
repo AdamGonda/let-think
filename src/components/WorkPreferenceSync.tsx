@@ -2,7 +2,6 @@ import { useEffect } from "react";
 import { useAtomValue } from "jotai";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { activeSessionIdAtom } from "../atoms/appAtoms";
 import { workPreferenceModeAtom } from "../atoms/workPreferenceAtoms";
 import {
   SESSION_ACCENT_THINK,
@@ -11,9 +10,8 @@ import {
 
 export function WorkPreferenceSync() {
   const mode = useAtomValue(workPreferenceModeAtom);
-  const activeSessionId = useAtomValue(activeSessionIdAtom);
-  const setInteractionRestriction = useMutation(
-    api.sessions.setInteractionRestriction,
+  const applyWorkPreferenceMode = useMutation(
+    api.interactionSessions.applyWorkPreferenceMode,
   );
 
   useEffect(() => {
@@ -28,12 +26,10 @@ export function WorkPreferenceSync() {
   }, [mode]);
 
   useEffect(() => {
-    if (!activeSessionId) return;
-    void setInteractionRestriction({
-      sessionId: activeSessionId,
+    void applyWorkPreferenceMode({
       mode: mode === "think" ? "restrict" : "open",
     });
-  }, [activeSessionId, mode, setInteractionRestriction]);
+  }, [mode, applyWorkPreferenceMode]);
 
   return null;
 }

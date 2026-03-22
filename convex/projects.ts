@@ -108,13 +108,6 @@ export const remove = mutation({
       for (const msg of messages) {
         await ctx.db.delete(msg._id);
       }
-      const interactionSession = await ctx.db
-        .query("interactionSessions")
-        .withIndex("by_session", (q) => q.eq("sessionId", session._id))
-        .first();
-      if (interactionSession) {
-        await ctx.db.delete(interactionSession._id);
-      }
       const graphRow = await ctx.db
         .query("sessionConceptGraphs")
         .withIndex("by_session", (q) => q.eq("sessionId", session._id))
