@@ -1,4 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useCallback,
+  useRef,
+} from "react";
 import { useAtomValue } from "jotai";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
@@ -29,8 +35,9 @@ export function useSessionManager(sessionId: Id<"sessions"> | null) {
 
   const [breakRemainingMs, setBreakRemainingMs] = useState<number | null>(null);
 
-  // Sync breakRemainingMs from Convex state when it changes
-  useEffect(() => {
+  // Before paint: align break timer with this session (passive useEffect runs too late — one
+  // frame could keep the previous session's break and hide the interaction line).
+  useLayoutEffect(() => {
     if (!sessionId || !state?.breakEndsAt) {
       setBreakRemainingMs(null);
       hasResetRef.current = false;
@@ -68,7 +75,8 @@ export function useSessionManager(sessionId: Id<"sessions"> | null) {
   const canSend =
     !!sessionId &&
     !inBreak &&
-    (state == null ||
+    (restrictionFromPreference === "open" ||
+      state == null ||
       state.mode === "open" ||
       state.used < state.limit);
 
@@ -77,11 +85,19 @@ export function useSessionManager(sessionId: Id<"sessions"> | null) {
       ? Math.max(0, state.limit - state.used)
       : null;
 
-  /** Convex returns undefined while the query is loading — do not treat that as unlimited. */
-  const interactionStatePending = sessionId != null && state === undefined;
+  /**
+   * Chrome follows global Think/Work (see WorkPreferenceSync). Server may still say "open"
+   * until setInteractionRestriction runs for this session — never flash unlimited in Think mode.
+   */
   const interactionRestriction =
-    state?.mode ??
-    (sessionId ? restrictionFromPreference : ("open" as const));
+    restrictionFromPreference === "restrict" ? "restrict" : "open";
+
+  /** True while we cannot show an accurate remaining count (query loading or stale "open" row). */
+  const interactionCountsPending =
+    !!sessionId &&
+    restrictionFromPreference === "restrict" &&
+    (state === undefined ||
+      (state !== null && state.mode === "open"));
 
   const onInteractionComplete = useCallback(async () => {
     if (!sessionId) return;
@@ -95,7 +111,7 @@ export function useSessionManager(sessionId: Id<"sessions"> | null) {
 
   return {
     interactionRestriction,
-    interactionStatePending,
+    interactionCountsPending,
     canSend,
     remaining,
     breakRemainingMs,

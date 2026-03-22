@@ -614,7 +614,6 @@ function AppContentBody({
           </div>
           {chatVisible && (
             <Chat
-              key={activeSessionId ?? "empty"}
               sessionId={activeSessionId}
               isLoading={isLoading}
               setIsLoading={setIsLoading}
