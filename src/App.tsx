@@ -7,7 +7,7 @@ import {
   Authenticated,
 } from "convex/react";
 import { api } from "../convex/_generated/api";
-import type { Doc, Id } from "../convex/_generated/dataModel";
+import type { Id } from "../convex/_generated/dataModel";
 import { formatBreakCountdown } from "./hooks/useSessionManager";
 import {
   SessionDataProvider,
@@ -349,11 +349,15 @@ function AppContentBody({
   setNotes: (v: string) => void;
   mainContentRef: React.RefObject<HTMLDivElement | null>;
 }) {
-  const activeSessionDoc = useMemo((): Doc<"sessions"> | undefined => {
+  const activeSessionInWorkspace = useMemo(() => {
     if (!workspace || !activeSessionId) return undefined;
     for (const g of workspace) {
       const s = g.sessions.find((x) => x._id === activeSessionId);
-      if (s) return s;
+      if (s)
+        return {
+          session: s,
+          projectName: g.project?.name ?? "Inbox",
+        };
     }
     return undefined;
   }, [workspace, activeSessionId]);
@@ -499,8 +503,13 @@ function AppContentBody({
                     editorRevealReady ? "opacity-100" : "opacity-0"
                   }`}
                 >
-                  {editorOpen && activeSessionDoc && viewMode === "notesList" ? (
-                    <NoteBreadcrumb sessionName={activeSessionDoc.title} />
+                  {editorOpen &&
+                  activeSessionInWorkspace &&
+                  viewMode === "notesList" ? (
+                    <NoteBreadcrumb
+                      projectName={activeSessionInWorkspace.projectName}
+                      sessionName={activeSessionInWorkspace.session.title}
+                    />
                   ) : null}
                   <MarkdownEditor
                     value={notes}
