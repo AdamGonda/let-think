@@ -7,7 +7,7 @@ import {
   Authenticated,
 } from "convex/react";
 import { api } from "../convex/_generated/api";
-import type { Doc, Id } from "../convex/_generated/dataModel";
+import type { Id } from "../convex/_generated/dataModel";
 import { formatBreakCountdown } from "./hooks/useSessionManager";
 import {
   SessionDataProvider,
@@ -274,7 +274,6 @@ function AppContent() {
         setNotes={setNotes}
         mainContentRef={mainContentRef}
         workspace={projectsWithSessions}
-        allSessionsSorted={allSessionsSorted}
       />
     </SessionDataProvider>
   );
@@ -308,11 +307,9 @@ function AppContentBody({
   setNotes,
   mainContentRef,
   workspace,
-  allSessionsSorted,
 }: {
   onCreateSessionForFirstMessage?: () => Promise<Id<"sessions">>;
   workspace: ProjectWithSessions[] | undefined;
-  allSessionsSorted: Doc<"sessions">[] | undefined;
   activeSessionId: Id<"sessions"> | null;
   activeProjectId: Id<"projects"> | null;
   setActiveSessionId: (id: Id<"sessions"> | null) => void;
@@ -517,7 +514,7 @@ function AppContentBody({
           <div ref={mainContentRef} className="flex flex-1 min-h-0 flex-col">
             {viewMode === "notesList" ? (
               <NotesListPanel
-                sessions={allSessionsSorted}
+                workspace={workspace}
                 onSelectSession={(session) => {
                   setActiveSessionId(session._id);
                   if (session.projectId) setActiveProjectId(session.projectId);
