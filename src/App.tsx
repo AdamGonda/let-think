@@ -1,4 +1,12 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
+import { useAtom, useSetAtom } from "jotai";
 import {
   useQuery,
   useMutation,
@@ -17,13 +25,8 @@ import {
   SessionSidebar,
   type ProjectWithSessions,
 } from "./components/SessionSidebar";
-import {
-  NotesListPanel,
-  type NotesListDrill,
-} from "./components/NotesListPanel";
-import {
-  NoteBreadcrumb,
-} from "./components/NoteBreadcrumb";
+import { NotesListPanel } from "./components/NotesListPanel";
+import { NoteBreadcrumb } from "./components/NoteBreadcrumb";
 import { Chat } from "./components/Chat";
 import {
   Tutorial,
@@ -38,7 +41,22 @@ import { Toaster } from "./components/ui/sonner";
 import { Button } from "./components/ui/button";
 import { FileText, History, Sigma, X } from "lucide-react";
 import { StepNavigator } from "./components/StepNavigator";
-import { WorkPreferenceProvider } from "./contexts/WorkPreferenceContext";
+import { WorkPreferenceSync } from "./components/WorkPreferenceSync";
+import {
+  activeSessionIdAtom,
+  activeProjectIdAtom,
+  draftInputAtom,
+  notesAtom,
+  isLoadingAtom,
+  modelRespondedAwaitingDismissalAtom,
+  overlayDismissedAtom,
+  isExitingOverlayAtom,
+  editorOpenAtom,
+  historyPanelOpenAtom,
+  notesListDrillAtom,
+  viewModeAtom,
+  selectedBatchIndexAtom,
+} from "./atoms/appAtoms";
 
 function App() {
   return (
@@ -59,28 +77,26 @@ function App() {
 }
 
 function AppContent() {
-  const [activeSessionId, setActiveSessionId] = useState<Id<"sessions"> | null>(
-    null,
+  const [activeSessionId, setActiveSessionId] = useAtom(activeSessionIdAtom);
+  const setActiveProjectId = useSetAtom(activeProjectIdAtom);
+  const [draftInput, setDraftInput] = useAtom(draftInputAtom);
+  const [notes, setNotes] = useAtom(notesAtom);
+  const [isExitingOverlay, setIsExitingOverlay] = useAtom(
+    isExitingOverlayAtom,
   );
-  const [activeProjectId, setActiveProjectId] = useState<Id<"projects"> | null>(
-    null,
+  const setIsLoading = useSetAtom(isLoadingAtom);
+  const setModelRespondedAwaitingDismissal = useSetAtom(
+    modelRespondedAwaitingDismissalAtom,
   );
-  const [isLoading, setIsLoading] = useState(false);
-  const [modelRespondedAwaitingDismissal, setModelRespondedAwaitingDismissal] =
-    useState(false);
-  const [overlayDismissed, setOverlayDismissed] = useState(false);
-  const [isExitingOverlay, setIsExitingOverlay] = useState(false);
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [historyPanelOpen, setHistoryPanelOpen] = useState(false);
-  const [notesListDrill, setNotesListDrill] = useState<NotesListDrill>(null);
-  const [viewMode, setViewMode] = useState<"graph" | "notesList">("graph");
-  const [selectedBatchIndex, setSelectedBatchIndex] = useState(0);
-  const [draftInput, setDraftInput] = useState("");
-  const [notes, setNotes] = useState("");
+  const setOverlayDismissed = useSetAtom(overlayDismissedAtom);
+  const setEditorOpen = useSetAtom(editorOpenAtom);
+
   const draftInputRef = useRef(draftInput);
   const notesRef = useRef(notes);
-  draftInputRef.current = draftInput;
-  notesRef.current = notes;
+  useLayoutEffect(() => {
+    draftInputRef.current = draftInput;
+    notesRef.current = notes;
+  });
   const projectsWithSessions = useQuery(api.projects.listWithSessions);
   const allSessionsSorted = useMemo(() => {
     if (!projectsWithSessions) return undefined;
@@ -117,7 +133,7 @@ function AppContent() {
       if (first.projectId) setActiveProjectId(first.projectId);
       hasEverHadSelectionRef.current = true;
     }
-  }, [allSessionsSorted, activeSessionId]);
+  }, [allSessionsSorted, activeSessionId, setActiveSessionId, setActiveProjectId]);
 
   const handleCreateSessionForFirstMessage = useCallback(async () => {
     const id = await createSessionMutation({});
@@ -142,7 +158,7 @@ function AppContent() {
       setActiveProjectId(null);
       setActiveSessionId(null);
     }
-  }, [projectsWithSessions]);
+  }, [projectsWithSessions, setActiveProjectId, setActiveSessionId]);
 
   // Load draft and thinking notes from Convex when session changes or when stored data loads (e.g. after refresh)
   useEffect(() => {
@@ -186,6 +202,8 @@ function AppContent() {
     storedThinkingNotes,
     updateDraft,
     updateThinkingNotes,
+    setDraftInput,
+    setNotes,
   ]);
 
   // Debounced save when draft changes (same session)
@@ -235,7 +253,13 @@ function AppContent() {
       setModelRespondedAwaitingDismissal(false);
       setIsExitingOverlay(false);
     }
-  }, [activeSessionId]);
+  }, [
+    activeSessionId,
+    setIsLoading,
+    setEditorOpen,
+    setModelRespondedAwaitingDismissal,
+    setIsExitingOverlay,
+  ]);
 
   const WAKE_UP_EXIT_DURATION_MS = 300;
   useEffect(() => {
@@ -248,122 +272,73 @@ function AppContent() {
       setIsExitingOverlay(false);
     }, WAKE_UP_EXIT_DURATION_MS);
     return () => clearTimeout(id);
-  }, [isExitingOverlay]);
+  }, [
+    isExitingOverlay,
+    setOverlayDismissed,
+    setIsLoading,
+    setEditorOpen,
+    setModelRespondedAwaitingDismissal,
+    setIsExitingOverlay,
+  ]);
 
   return (
-    <WorkPreferenceProvider activeSessionId={activeSessionId}>
+    <>
+      <WorkPreferenceSync />
       <SessionDataProvider sessionId={activeSessionId}>
         <AppContentBody
           onCreateSessionForFirstMessage={
             !activeSessionId ? handleCreateSessionForFirstMessage : undefined
           }
-          activeSessionId={activeSessionId}
-          activeProjectId={activeProjectId}
-          setActiveSessionId={setActiveSessionId}
-          setActiveProjectId={setActiveProjectId}
-          isLoading={isLoading}
-          setIsLoading={setIsLoading}
-          modelRespondedAwaitingDismissal={modelRespondedAwaitingDismissal}
-          setModelRespondedAwaitingDismissal={setModelRespondedAwaitingDismissal}
-          overlayDismissed={overlayDismissed}
-          setOverlayDismissed={setOverlayDismissed}
-          isExitingOverlay={isExitingOverlay}
-          setIsExitingOverlay={setIsExitingOverlay}
-          editorOpen={editorOpen}
-          setEditorOpen={setEditorOpen}
-          historyPanelOpen={historyPanelOpen}
-          setHistoryPanelOpen={setHistoryPanelOpen}
-          viewMode={viewMode}
-          setViewMode={setViewMode}
-          selectedBatchIndex={selectedBatchIndex}
-          setSelectedBatchIndex={setSelectedBatchIndex}
-          draftInput={draftInput}
-          setDraftInput={setDraftInput}
-          notes={notes}
-          setNotes={setNotes}
-          mainContentRef={mainContentRef}
           workspace={projectsWithSessions}
-          notesListDrill={notesListDrill}
-          setNotesListDrill={setNotesListDrill}
+          mainContentRef={mainContentRef}
         />
       </SessionDataProvider>
-    </WorkPreferenceProvider>
+    </>
   );
 }
 
 function AppContentBody({
   onCreateSessionForFirstMessage,
-  activeSessionId,
-  activeProjectId,
-  setActiveSessionId,
-  setActiveProjectId,
-  isLoading,
-  setIsLoading,
-  modelRespondedAwaitingDismissal,
-  setModelRespondedAwaitingDismissal,
-  overlayDismissed,
-  setOverlayDismissed,
-  isExitingOverlay,
-  setIsExitingOverlay,
-  editorOpen,
-  setEditorOpen,
-  historyPanelOpen,
-  setHistoryPanelOpen,
-  viewMode,
-  setViewMode,
-  selectedBatchIndex,
-  setSelectedBatchIndex,
-  draftInput,
-  setDraftInput,
-  notes,
-  setNotes,
-  mainContentRef,
   workspace,
-  notesListDrill,
-  setNotesListDrill,
+  mainContentRef,
 }: {
   onCreateSessionForFirstMessage?: () => Promise<Id<"sessions">>;
   workspace: ProjectWithSessions[] | undefined;
-  notesListDrill: NotesListDrill;
-  setNotesListDrill: (d: NotesListDrill) => void;
-  activeSessionId: Id<"sessions"> | null;
-  activeProjectId: Id<"projects"> | null;
-  setActiveSessionId: (id: Id<"sessions"> | null) => void;
-  setActiveProjectId: (id: Id<"projects"> | null) => void;
-  isLoading: boolean;
-  setIsLoading: (v: boolean) => void;
-  modelRespondedAwaitingDismissal: boolean;
-  setModelRespondedAwaitingDismissal: (v: boolean) => void;
-  overlayDismissed: boolean;
-  setOverlayDismissed: (v: boolean) => void;
-  isExitingOverlay: boolean;
-  setIsExitingOverlay: (v: boolean) => void;
-  editorOpen: boolean;
-  setEditorOpen: (v: boolean) => void;
-  historyPanelOpen: boolean;
-  setHistoryPanelOpen: (v: boolean) => void;
-  viewMode: "graph" | "notesList";
-  setViewMode: (v: "graph" | "notesList") => void;
-  selectedBatchIndex: number;
-  setSelectedBatchIndex: React.Dispatch<React.SetStateAction<number>>;
-  draftInput: string;
-  setDraftInput: (v: string) => void;
-  notes: string;
-  setNotes: (v: string) => void;
   mainContentRef: React.RefObject<HTMLDivElement | null>;
 }) {
-  const activeSessionInWorkspace = useMemo(() => {
-    if (!workspace || !activeSessionId) return undefined;
-    for (const g of workspace) {
-      const s = g.sessions.find((x) => x._id === activeSessionId);
-      if (s)
-        return {
-          session: s,
-          projectName: g.project?.name ?? "Inbox",
-        };
-    }
-    return undefined;
-  }, [workspace, activeSessionId]);
+  const [activeSessionId, setActiveSessionId] = useAtom(activeSessionIdAtom);
+  const [activeProjectId, setActiveProjectId] = useAtom(activeProjectIdAtom);
+  const [isLoading, setIsLoading] = useAtom(isLoadingAtom);
+  const [modelRespondedAwaitingDismissal, setModelRespondedAwaitingDismissal] =
+    useAtom(modelRespondedAwaitingDismissalAtom);
+  const [overlayDismissed, setOverlayDismissed] = useAtom(overlayDismissedAtom);
+  const [isExitingOverlay, setIsExitingOverlay] = useAtom(
+    isExitingOverlayAtom,
+  );
+  const [editorOpen, setEditorOpen] = useAtom(editorOpenAtom);
+  const [historyPanelOpen, setHistoryPanelOpen] = useAtom(historyPanelOpenAtom);
+  const [notesListDrill, setNotesListDrill] = useAtom(notesListDrillAtom);
+  const [viewMode, setViewMode] = useAtom(viewModeAtom);
+  const [selectedBatchIndex, setSelectedBatchIndex] = useAtom(
+    selectedBatchIndexAtom,
+  );
+  const [draftInput, setDraftInput] = useAtom(draftInputAtom);
+  const [notes, setNotes] = useAtom(notesAtom);
+
+  const activeSessionInWorkspace =
+    workspace && activeSessionId
+      ? (() => {
+          for (const g of workspace) {
+            const s = g.sessions.find((x) => x._id === activeSessionId);
+            if (s)
+              return {
+                session: s,
+                projectName: g.project?.name ?? "Inbox",
+              };
+          }
+          return undefined;
+        })()
+      : undefined;
 
   const {
     conceptGraph,
@@ -421,7 +396,7 @@ function AppContentBody({
       if (node) result.push({ ...node, number: i + 1 });
     }
     return result;
-  }, [conceptGraph?.nodes, batches, selectedBatchIndex]);
+  }, [conceptGraph, batches, selectedBatchIndex]);
 
   const isLatestBatch =
     batches.length > 0 && selectedBatchIndex === batches.length - 1;
@@ -451,7 +426,7 @@ function AppContentBody({
   const [editorRevealReady, setEditorRevealReady] = useState(false);
   useEffect(() => {
     if (!showOverlay || isExitingOverlay) {
-      setEditorRevealReady(false);
+      queueMicrotask(() => setEditorRevealReady(false));
       return;
     }
     const id = setTimeout(() => setEditorRevealReady(true), 50);

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useWorkPreference } from "../contexts/WorkPreferenceContext";
+import { useWorkPreference } from "../hooks/useWorkPreference";
 import { LogOut, MoreHorizontal, HelpCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -158,6 +158,7 @@ export function UserCard({
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset when avatar URL changes
     setImageError(false);
   }, [user?.image]);
 

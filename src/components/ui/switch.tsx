@@ -1,5 +1,3 @@
-import * as React from "react";
-
 import { cn } from "@/lib/utils";
 
 const DEFAULT_TRACK = "bg-[#6e6e6e]";
