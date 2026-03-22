@@ -23,7 +23,7 @@ import {
 
 type WorkPreferenceContextValue = {
   mode: WorkPreferenceMode;
-  /** True when productivity / capped-interactions mode (Work). */
+  /** True when Work (green) — unlimited interactions. Think caps interactions + breaks. */
   isWorkMode: boolean;
   setMode: (mode: WorkPreferenceMode) => void;
 };
@@ -78,7 +78,7 @@ export function WorkPreferenceProvider({
     if (!activeSessionId) return;
     void setInteractionRestriction({
       sessionId: activeSessionId,
-      mode: mode === "work" ? "restrict" : "open",
+      mode: mode === "think" ? "restrict" : "open",
     });
   }, [activeSessionId, mode, setInteractionRestriction]);
 
