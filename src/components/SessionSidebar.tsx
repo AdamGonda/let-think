@@ -257,22 +257,26 @@ export function SessionSidebar({
         </div>
         <Button
           variant="secondary"
-          className={isCollapsed ? "h-10 w-10 p-0 justify-center ring-1 ring-border/50 shadow-sm" : "justify-start h-10 w-full gap-2 ring-1 ring-border/50 shadow-sm"}
+          className={isCollapsed ? "h-10 w-10 p-0 justify-center ring-1 ring-border/50 shadow-sm" : "justify-start h-10 w-full gap-2 px-3 ring-1 ring-border/50 shadow-sm"}
           onClick={() => handleNewSession()}
           aria-label="New session"
           data-tour="new-session"
         >
-          <Plus className="size-5 shrink-0" />
+          <span className="inline-flex size-5 shrink-0 items-center justify-center" aria-hidden>
+            <Plus className="size-4.5 stroke-[1.75]" />
+          </span>
           {!isCollapsed && "New session"}
         </Button>
         <Button
           variant="ghost"
-          className={isCollapsed ? "h-10 w-10 p-0 justify-center ring-1 ring-border/50 shadow-sm" : "justify-start h-10 w-full gap-2 ring-1 ring-border/50 shadow-sm"}
+          className={isCollapsed ? "h-10 w-10 p-0 justify-center ring-1 ring-border/50 shadow-sm" : "justify-start h-10 w-full gap-2 px-3 ring-1 ring-border/50 shadow-sm"}
           onClick={handleNewProject}
           aria-label="New project"
           data-tour="new-project"
         >
-          <FolderPlus className="size-5 shrink-0" />
+          <span className="inline-flex size-5 shrink-0 items-center justify-center" aria-hidden>
+            <FolderPlus className="size-4.5 stroke-[1.75]" />
+          </span>
           {!isCollapsed && "New project"}
         </Button>
         <Button
@@ -280,7 +284,7 @@ export function SessionSidebar({
           className={`transition-colors ${
             isCollapsed
               ? "h-10 w-10 p-0 justify-center rounded-lg overflow-hidden"
-              : "justify-start h-10 w-full gap-2 py-1.5 px-3 rounded-none rounded-r-lg border-y border-r border-transparent"
+              : "justify-start h-10 w-full gap-2 px-3 rounded-none rounded-r-lg border-y border-r border-transparent"
           } ${
             viewMode === "notesList"
               ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent"
@@ -293,7 +297,9 @@ export function SessionSidebar({
           aria-pressed={viewMode === "notesList"}
           data-tour="notes-toggle"
         >
-          <FileText className="size-5 shrink-0" />
+          <span className="inline-flex size-5 shrink-0 items-center justify-center" aria-hidden>
+            <FileText className="size-4.5 stroke-[1.75]" />
+          </span>
           {!isCollapsed && "Files"}
         </Button>
       </div>
