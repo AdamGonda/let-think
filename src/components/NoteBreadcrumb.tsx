@@ -12,40 +12,30 @@ export function noteHeadingFromMarkdown(markdown: string): string | undefined {
 interface NoteBreadcrumbProps {
   sessionTitle: string;
   noteTitle: string;
-  onProjectsClick: () => void;
-  onSessionClick: () => void;
 }
 
 export function NoteBreadcrumb({
   sessionTitle,
   noteTitle,
-  onProjectsClick,
-  onSessionClick,
 }: NoteBreadcrumbProps) {
   return (
     <nav aria-label="Breadcrumb" className="mb-3 w-full shrink-0">
       <ol className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted-foreground">
         <li className="min-w-0">
-          <button
-            type="button"
-            onClick={onProjectsClick}
-            className="cursor-pointer rounded px-1 py-0.5 font-medium text-foreground/90 transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-          >
+          <span className="px-1 py-0.5 font-medium text-foreground/90">
             Projects
-          </button>
+          </span>
         </li>
         <li aria-hidden className="shrink-0 text-muted-foreground/50">
           <ChevronRight className="size-3.5" />
         </li>
         <li className="min-w-0">
-          <button
-            type="button"
-            onClick={onSessionClick}
-            className="max-w-full cursor-pointer truncate rounded px-1 py-0.5 text-left font-medium text-foreground/90 transition-colors hover:bg-muted/50 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          <span
+            className="block max-w-full truncate px-1 py-0.5 font-medium text-foreground/90"
             title={sessionTitle}
           >
             {sessionTitle}
-          </button>
+          </span>
         </li>
         <li aria-hidden className="shrink-0 text-muted-foreground/50">
           <ChevronRight className="size-3.5" />

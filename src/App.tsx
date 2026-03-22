@@ -509,23 +509,6 @@ function AppContentBody({
                     <NoteBreadcrumb
                       sessionTitle={activeSessionDoc.title}
                       noteTitle={noteBreadcrumbLeaf}
-                      onProjectsClick={() => {
-                        setEditorOpen(false);
-                        setViewMode("notesList");
-                        setNotesListDrill(null);
-                      }}
-                      onSessionClick={() => {
-                        setEditorOpen(false);
-                        setViewMode("notesList");
-                        setNotesListDrill(
-                          activeSessionDoc.projectId
-                            ? {
-                                type: "project",
-                                id: activeSessionDoc.projectId,
-                              }
-                            : { type: "inbox" },
-                        );
-                      }}
                     />
                   ) : null}
                   <MarkdownEditor
