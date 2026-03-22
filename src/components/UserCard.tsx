@@ -50,51 +50,46 @@ function UserMenuPanel({
       id="user-card-menu"
       className="flex w-full flex-col gap-1 rounded-md border border-border/50 bg-muted/20 p-1.5"
     >
-      <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-2">
-        <span className="text-xs font-medium text-muted-foreground">
-          Account
-        </span>
+      <div className="flex w-full items-center border-b border-border/40 pb-2">
+        <div className="flex min-w-0 items-center gap-1">
+          <span className="shrink-0 text-xs font-medium text-muted-foreground">
+            Account
+          </span>
+          <div
+            className={cn(
+              "flex shrink-0 items-center",
+              sessionRestrictDisabled && "opacity-50",
+            )}
+          >
+            <Switch
+              checked={sessionRestrictEnabled}
+              disabled={sessionRestrictDisabled}
+              onCheckedChange={(next) => {
+                if (sessionRestrictDisabled) return;
+                if (next !== sessionRestrictEnabled) onToggleSessionRestrict();
+              }}
+              internalLabel={{ off: "Think", on: "Work" }}
+              offTrackClassName="bg-[#1447E6]"
+              onTrackClassName="bg-[#059669]"
+              aria-label={
+                sessionRestrictEnabled
+                  ? "Work (productivity mode)"
+                  : "Think (thinking mode)"
+              }
+              className="ring-offset-background"
+            />
+          </div>
+        </div>
         <Button
           type="button"
           variant="ghost"
           size="icon-xs"
-          className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
+          className="ml-auto h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
           aria-label="Close menu"
           onClick={onClose}
         >
           <X className="size-4" />
         </Button>
-      </div>
-
-      <div
-        role="presentation"
-        className={cn(
-          "flex w-full items-center rounded-md px-0.5 py-2 text-sm",
-          sessionRestrictDisabled ? "opacity-50" : "",
-        )}
-      >
-        <div className="flex w-full min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="shrink-0 font-medium leading-snug text-foreground">
-            Mode:
-          </span>
-          <Switch
-            checked={sessionRestrictEnabled}
-            disabled={sessionRestrictDisabled}
-            onCheckedChange={(next) => {
-              if (sessionRestrictDisabled) return;
-              if (next !== sessionRestrictEnabled) onToggleSessionRestrict();
-            }}
-            internalLabel={{ off: "Think", on: "Work" }}
-            offTrackClassName="bg-[#1447E6]"
-            onTrackClassName="bg-[#059669]"
-            aria-label={
-              sessionRestrictEnabled
-                ? "Mode: Work (productivity)"
-                : "Mode: Think (thinking)"
-            }
-            className="shrink-0 ring-offset-background"
-          />
-        </div>
       </div>
 
       {onRunTutorial ? (
@@ -264,7 +259,7 @@ export function UserCard({
       ref={containerRef}
       className={cn(
         "relative w-full min-w-0 overflow-hidden transition-[min-height] duration-200 ease-out",
-        menuOpen ? "min-h-[190px]" : "min-h-18",
+        menuOpen ? "min-h-[150px]" : "min-h-18",
       )}
     >
       <div
