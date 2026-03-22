@@ -264,7 +264,7 @@ export function UserCard({
       ref={containerRef}
       className={cn(
         "relative w-full min-w-0 overflow-hidden transition-[min-height] duration-200 ease-out",
-        menuOpen ? "min-h-[220px]" : "min-h-18",
+        menuOpen ? "min-h-[190px]" : "min-h-18",
       )}
     >
       <div
