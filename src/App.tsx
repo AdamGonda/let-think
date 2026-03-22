@@ -505,7 +505,7 @@ function AppContentBody({
                     editorRevealReady ? "opacity-100" : "opacity-0"
                   }`}
                 >
-                  {editorOpen && activeSessionDoc ? (
+                  {editorOpen && activeSessionDoc && viewMode === "notesList" ? (
                     <NoteBreadcrumb
                       sessionTitle={activeSessionDoc.title}
                       noteTitle={noteBreadcrumbLeaf}
