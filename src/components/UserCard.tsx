@@ -85,7 +85,7 @@ function UserMenuPanel({
       </div>
 
       <div
-        className="flex w-full items-center justify-between gap-3 rounded-md px-1.5 py-1.5 text-sm"
+        className="flex w-full items-center gap-2 rounded-md px-1.5 py-1.5 text-sm"
         role="group"
         aria-labelledby="user-card-mode-label"
       >
@@ -93,7 +93,7 @@ function UserMenuPanel({
           id="user-card-mode-label"
           className="shrink-0 text-muted-foreground"
         >
-          Mode:
+          Mode
         </span>
         <Switch
           checked={isWorkMode}
