@@ -277,7 +277,11 @@ export function NotesListPanel({
                                 : { type: "inbox" },
                             )
                           }
-                          className="flex min-h-30 w-full cursor-pointer flex-col gap-2 rounded-xl border-2 border-border/90 bg-transparent p-5 text-left shadow-none transition-colors hover:border-border hover:bg-muted/10 active:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                          className={`flex min-h-30 w-full cursor-pointer flex-col gap-2 rounded-xl bg-transparent p-5 text-left shadow-none transition-colors hover:border-border hover:bg-muted/10 active:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                            group.project == null
+                              ? "border-4 border-border"
+                              : "border-2 border-border/90"
+                          }`}
                         >
                           <div className="flex items-start justify-between gap-2">
                             <span className="font-semibold text-foreground leading-snug line-clamp-2">
