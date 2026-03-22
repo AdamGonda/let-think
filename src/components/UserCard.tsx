@@ -84,17 +84,7 @@ function UserMenuPanel({
         </Button>
       </div>
 
-      <div
-        className="flex w-full items-center gap-2 rounded-md px-1.5 py-1.5 text-sm"
-        role="group"
-        aria-labelledby="user-card-mode-label"
-      >
-        <span
-          id="user-card-mode-label"
-          className="shrink-0 text-muted-foreground"
-        >
-          Mode
-        </span>
+      <div className="flex w-full items-center rounded-md px-1.5 py-1.5">
         <Switch
           checked={isWorkMode}
           onCheckedChange={(next) => {
