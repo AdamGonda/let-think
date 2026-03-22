@@ -46,14 +46,8 @@ function groupDisplayName(group: ProjectWithSessions): string {
   return group.project?.name ?? "Inbox";
 }
 
-function groupMatchesQuery(group: ProjectWithSessions, q: string): boolean {
-  const name = groupDisplayName(group).toLowerCase();
-  if (name.includes(q)) return true;
-  return group.sessions.some((s) => {
-    if (s.title.toLowerCase().includes(q)) return true;
-    const notes = s.thinkingNotes?.toLowerCase() ?? "";
-    return notes.includes(q);
-  });
+function projectGroupMatchesQuery(group: ProjectWithSessions, q: string): boolean {
+  return groupDisplayName(group).toLowerCase().includes(q);
 }
 
 function resolveDrillGroup(
@@ -116,7 +110,7 @@ export function NotesListPanel({
   const filteredGroups = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return sortedGroups;
-    return sortedGroups.filter((g) => groupMatchesQuery(g, q));
+    return sortedGroups.filter((g) => projectGroupMatchesQuery(g, q));
   }, [sortedGroups, searchQuery]);
 
   const drillGroup = useMemo(
@@ -215,7 +209,7 @@ export function NotesListPanel({
             <Input
               type="search"
               placeholder={
-                drilled ? searchPlaceholderDrill : "Search projects and notes…"
+                drilled ? searchPlaceholderDrill : "Search projects…"
               }
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
