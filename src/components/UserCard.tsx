@@ -69,28 +69,9 @@ function UserMenuPanel({
       className="flex w-full flex-col gap-1 rounded-md border border-border/50 bg-muted/20 p-1.5"
     >
       <div className="flex w-full items-center border-b border-border/40 pb-2">
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="shrink-0 text-xs font-medium text-muted-foreground">
-            Account
-          </span>
-          <div className="flex shrink-0 items-center">
-            <Switch
-              checked={isWorkMode}
-              onCheckedChange={(next) => {
-                if (next !== isWorkMode) setWorkMode(next);
-              }}
-              internalLabel={{ off: "Think", on: "Work" }}
-              offTrackClassName="bg-[var(--session-accent-think)]"
-              onTrackClassName="bg-[var(--session-accent-work)]"
-              aria-label={
-                isWorkMode
-                  ? "Work (productivity mode)"
-                  : "Think (thinking mode)"
-              }
-              className="ring-offset-background"
-            />
-          </div>
-        </div>
+        <span className="shrink-0 text-xs font-medium text-muted-foreground">
+          Account
+        </span>
         <Button
           type="button"
           variant="ghost"
@@ -101,6 +82,34 @@ function UserMenuPanel({
         >
           <X className="size-4" />
         </Button>
+      </div>
+
+      <div
+        className="flex w-full items-center justify-between gap-3 rounded-md px-1.5 py-1.5 text-sm"
+        role="group"
+        aria-labelledby="user-card-mode-label"
+      >
+        <span
+          id="user-card-mode-label"
+          className="shrink-0 text-muted-foreground"
+        >
+          Mode:
+        </span>
+        <Switch
+          checked={isWorkMode}
+          onCheckedChange={(next) => {
+            if (next !== isWorkMode) setWorkMode(next);
+          }}
+          internalLabel={{ off: "Think", on: "Work" }}
+          offTrackClassName="bg-[var(--session-accent-think)]"
+          onTrackClassName="bg-[var(--session-accent-work)]"
+          aria-label={
+            isWorkMode
+              ? "Work (productivity mode)"
+              : "Think (thinking mode)"
+          }
+          className="shrink-0 ring-offset-background"
+        />
       </div>
 
       {onRunTutorial ? (
@@ -266,7 +275,7 @@ export function UserCard({
       ref={containerRef}
       className={cn(
         "relative w-full min-w-0 overflow-hidden transition-[min-height] duration-200 ease-out",
-        menuOpen ? "min-h-[150px]" : "min-h-18",
+        menuOpen ? "min-h-[180px]" : "min-h-18",
       )}
     >
       <div
