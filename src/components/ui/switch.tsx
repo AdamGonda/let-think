@@ -59,7 +59,7 @@ export function Switch({
           if (!disabled) onCheckedChange(!checked);
         }}
         className={cn(
-          "relative h-[26px] min-w-[84px] shrink-0 rounded-full px-0.5 transition-colors",
+          "relative h-[26px] min-w-[74px] shrink-0 rounded-full px-0.5 transition-colors",
           trackClass,
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
           disabled && "cursor-not-allowed opacity-50",
