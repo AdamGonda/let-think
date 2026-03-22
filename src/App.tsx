@@ -23,7 +23,6 @@ import {
 } from "./components/NotesListPanel";
 import {
   NoteBreadcrumb,
-  noteHeadingFromMarkdown,
 } from "./components/NoteBreadcrumb";
 import { Chat } from "./components/Chat";
 import {
@@ -359,11 +358,6 @@ function AppContentBody({
     return undefined;
   }, [workspace, activeSessionId]);
 
-  const noteBreadcrumbLeaf = useMemo(
-    () => noteHeadingFromMarkdown(notes) ?? "Note",
-    [notes],
-  );
-
   const {
     conceptGraph,
     messages,
@@ -506,10 +500,7 @@ function AppContentBody({
                   }`}
                 >
                   {editorOpen && activeSessionDoc && viewMode === "notesList" ? (
-                    <NoteBreadcrumb
-                      sessionTitle={activeSessionDoc.title}
-                      noteTitle={noteBreadcrumbLeaf}
-                    />
+                    <NoteBreadcrumb sessionName={activeSessionDoc.title} />
                   ) : null}
                   <MarkdownEditor
                     value={notes}
