@@ -1,6 +1,6 @@
 import { ChevronRight } from "lucide-react";
 
-const NOTE_BREADCRUMB_LEAF = "Note";
+const FILE_BREADCRUMB_LEAF = "File";
 
 interface NoteBreadcrumbProps {
   projectName: string;
@@ -40,7 +40,7 @@ export function NoteBreadcrumb({
           className="min-w-0 px-1 py-0.5 font-medium text-foreground/90"
           aria-current="page"
         >
-          {NOTE_BREADCRUMB_LEAF}
+          {FILE_BREADCRUMB_LEAF}
         </li>
       </ol>
     </nav>
