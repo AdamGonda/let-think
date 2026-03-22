@@ -590,8 +590,8 @@ function AppContentBody({
                         variant="outline"
                         size="icon-sm"
                         onClick={() => setEditorOpen(true)}
-                        title="Open notes"
-                        aria-label="Open notes"
+                        title="Open file"
+                        aria-label="Open file"
                         data-tour="notes-btn"
                       >
                         <FileText className="size-5" />
