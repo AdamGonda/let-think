@@ -1,10 +1,9 @@
-import { useState, useEffect, useRef, useLayoutEffect } from "react";
-import { createPortal } from "react-dom";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { LogOut, MoreHorizontal, HelpCircle } from "lucide-react";
+import { LogOut, MoreHorizontal, HelpCircle, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
@@ -25,166 +24,56 @@ interface UserCardProps {
   activeSessionId?: Id<"sessions"> | null;
 }
 
-const USER_MENU_MARGIN = 8;
-/** Matches min-w + padding; used to clamp horizontal position before measure. */
-const USER_MENU_EST_WIDTH = 280;
+type UserMenuPanelProps = {
+  onClose: () => void;
+  signOut: () => void | Promise<void>;
+  onRunTutorial?: () => void;
+  sessionRestrictEnabled: boolean;
+  sessionRestrictDisabled: boolean;
+  onToggleSessionRestrict: () => void;
+};
 
-function getUserMenuPosition(
-  rect: DOMRect,
-  compact: boolean,
-  menuWidth: number,
-): React.CSSProperties {
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-  const w = Math.min(menuWidth, vw - 2 * USER_MENU_MARGIN);
-
-  if (compact) {
-    let left = rect.right + USER_MENU_MARGIN;
-    if (left + w > vw - USER_MENU_MARGIN) {
-      left = Math.max(
-        USER_MENU_MARGIN,
-        rect.left - w - USER_MENU_MARGIN,
-      );
-    }
-    let top = rect.top;
-    const estH = 240;
-    if (top + estH > vh - USER_MENU_MARGIN) {
-      top = Math.max(USER_MENU_MARGIN, vh - estH - USER_MENU_MARGIN);
-    }
-    return {
-      position: "fixed",
-      left,
-      top,
-      zIndex: 10000,
-    };
-  }
-
-  // Open to the right of the trigger (into the main content), not left-aligned under it.
-  let left = rect.right + USER_MENU_MARGIN;
-  left = Math.min(left, vw - w - USER_MENU_MARGIN);
-  left = Math.max(USER_MENU_MARGIN, left);
-
-  return {
-    position: "fixed",
-    left,
-    bottom: vh - rect.top + USER_MENU_MARGIN,
-    zIndex: 10000,
-  };
-}
-
-function UserMenu({
-  open,
+function UserMenuPanel({
   onClose,
-  anchorRef,
-  compact,
   signOut,
   onRunTutorial,
   sessionRestrictEnabled,
   sessionRestrictDisabled,
   onToggleSessionRestrict,
-}: {
-  open: boolean;
-  onClose: () => void;
-  anchorRef: React.RefObject<HTMLElement | null>;
-  compact: boolean;
-  signOut: () => void;
-  onRunTutorial?: () => void;
-  sessionRestrictEnabled: boolean;
-  sessionRestrictDisabled: boolean;
-  onToggleSessionRestrict: () => void;
-}) {
-  const menuRef = useRef<HTMLDivElement>(null);
-  const [measuredStyle, setMeasuredStyle] =
-    useState<React.CSSProperties | null>(null);
-
-  useLayoutEffect(() => {
-    if (!open) {
-      setMeasuredStyle(null);
-      return;
-    }
-    const anchor = anchorRef.current;
-    if (!anchor) return;
-
-    const update = () => {
-      const rect = anchor.getBoundingClientRect();
-      const w = menuRef.current?.offsetWidth ?? USER_MENU_EST_WIDTH;
-      setMeasuredStyle(getUserMenuPosition(rect, compact, w));
-    };
-
-    update();
-    window.addEventListener("resize", update);
-    const ro =
-      typeof ResizeObserver !== "undefined" && menuRef.current
-        ? new ResizeObserver(update)
-        : null;
-    if (menuRef.current) ro?.observe(menuRef.current);
-
-    return () => {
-      window.removeEventListener("resize", update);
-      ro?.disconnect();
-    };
-  }, [
-    open,
-    compact,
-    sessionRestrictEnabled,
-    sessionRestrictDisabled,
-    onRunTutorial,
-    anchorRef,
-  ]);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: MouseEvent) => {
-      const anchor = anchorRef.current;
-      const menu = menuRef.current;
-      if (
-        menu &&
-        !menu.contains(e.target as Node) &&
-        anchor &&
-        !anchor.contains(e.target as Node)
-      ) {
-        onClose();
-      }
-    };
-    document.addEventListener("mousedown", handler, true);
-    return () => document.removeEventListener("mousedown", handler, true);
-  }, [open, onClose, anchorRef]);
-
-  useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [open, onClose]);
-
-  if (!open || !anchorRef.current || typeof document === "undefined")
-    return null;
-
-  const rect = anchorRef.current.getBoundingClientRect();
-  const style =
-    measuredStyle ??
-    getUserMenuPosition(rect, compact, USER_MENU_EST_WIDTH);
-
+}: UserMenuPanelProps) {
   const menuItemClass =
-    "flex w-full cursor-pointer items-center gap-1.5 rounded-md px-1.5 py-1 text-sm outline-none hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground [&_svg]:size-4 [&_svg]:shrink-0";
+    "flex w-full cursor-pointer items-center gap-1.5 rounded-md px-1.5 py-1.5 text-sm outline-none hover:bg-muted/60 hover:text-foreground focus-visible:bg-muted/60 focus-visible:text-foreground [&_svg]:size-4 [&_svg]:shrink-0";
 
-  const content = (
+  return (
     <div
-      ref={menuRef}
       role="menu"
-      className="min-w-[260px] max-w-[calc(100vw-16px)] overflow-hidden rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
-      style={style}
+      id="user-card-menu"
+      className="flex w-full flex-col gap-1 rounded-md border border-border/50 bg-muted/20 p-1.5"
     >
+      <div className="flex items-center justify-between gap-2 border-b border-border/40 pb-2">
+        <span className="text-xs font-medium text-muted-foreground">
+          Account
+        </span>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-xs"
+          className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
+          aria-label="Close menu"
+          onClick={onClose}
+        >
+          <X className="size-4" />
+        </Button>
+      </div>
+
       <div
         role="presentation"
         className={cn(
-          "flex w-full items-center rounded-md px-1.5 py-2.5 text-sm transition-colors",
-          sessionRestrictDisabled ? "opacity-50" : "hover:bg-accent/60",
+          "flex w-full items-center rounded-md px-0.5 py-2 text-sm",
+          sessionRestrictDisabled ? "opacity-50" : "",
         )}
       >
-        <div className="flex w-full items-center gap-2 px-0.5">
+        <div className="flex w-full min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
           <span className="shrink-0 font-medium leading-snug text-foreground">
             Mode:
           </span>
@@ -203,11 +92,12 @@ function UserMenu({
                 ? "Mode: Work (productivity)"
                 : "Mode: Think (thinking)"
             }
-            className="shrink-0 ring-offset-popover"
+            className="shrink-0 ring-offset-background"
           />
         </div>
       </div>
-      {onRunTutorial && (
+
+      {onRunTutorial ? (
         <button
           type="button"
           role="menuitem"
@@ -220,8 +110,10 @@ function UserMenu({
           <HelpCircle className="size-4" />
           Replay tutorial
         </button>
-      )}
-      <div className="my-1 h-px bg-border" role="separator" />
+      ) : null}
+
+      <div className="my-0.5 h-px bg-border/60" role="separator" />
+
       <button
         type="button"
         role="menuitem"
@@ -236,8 +128,6 @@ function UserMenu({
       </button>
     </div>
   );
-
-  return createPortal(content, document.body);
 }
 
 export function UserCard({
@@ -249,7 +139,7 @@ export function UserCard({
   const { signOut } = useAuthActions();
   const [imageError, setImageError] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
-  const triggerRef = useRef<HTMLButtonElement | HTMLDivElement | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const interactionState = useQuery(
     api.interactionSessions.get,
     activeSessionId ? { sessionId: activeSessionId } : "skip",
@@ -272,6 +162,29 @@ export function UserCard({
     setImageError(false);
   }, [user?.image]);
 
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (
+        containerRef.current &&
+        !containerRef.current.contains(e.target as Node)
+      ) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler, true);
+    return () => document.removeEventListener("mousedown", handler, true);
+  }, [menuOpen]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [menuOpen]);
+
   if (!user) return null;
 
   const initials = getInitials(user.name ?? user.email ?? undefined);
@@ -293,25 +206,106 @@ export function UserCard({
     </Avatar>
   );
 
+  const slideEase =
+    "transition-transform duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform";
+
   if (compact) {
     return (
-      <div className="flex flex-col items-center py-2">
-        <button
-          ref={triggerRef as React.RefObject<HTMLButtonElement | null>}
-          type="button"
-          className="flex items-center justify-center rounded-md hover:bg-muted transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background"
-          aria-label="Open menu"
-          aria-expanded={menuOpen}
-          aria-haspopup="menu"
-          onClick={() => setMenuOpen((o) => !o)}
+      <div
+        ref={containerRef}
+        className={cn(
+          "relative w-full overflow-hidden transition-[min-height] duration-200 ease-out",
+          menuOpen ? "min-h-[220px]" : "min-h-14",
+        )}
+      >
+        <div
+          className={cn(
+            "absolute inset-x-0 top-0 flex justify-center py-1",
+            slideEase,
+            menuOpen ? "-translate-y-full pointer-events-none" : "translate-y-0",
+          )}
         >
-          {avatar}
-        </button>
-        <UserMenu
-          open={menuOpen}
+          <button
+            type="button"
+            className="flex items-center justify-center rounded-md hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            aria-label="Open account menu"
+            aria-expanded={menuOpen}
+            aria-haspopup="menu"
+            aria-controls="user-card-menu"
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            {avatar}
+          </button>
+        </div>
+        <div
+          className={cn(
+            "absolute inset-x-0 top-0 py-0.5",
+            slideEase,
+            menuOpen
+              ? "translate-y-0"
+              : "translate-y-full pointer-events-none opacity-0",
+          )}
+        >
+          <UserMenuPanel
+            onClose={() => setMenuOpen(false)}
+            signOut={signOut}
+            onRunTutorial={onRunTutorial}
+            sessionRestrictEnabled={sessionRestrictEnabled}
+            sessionRestrictDisabled={sessionRestrictDisabled}
+            onToggleSessionRestrict={onToggleSessionRestrict}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      className={cn(
+        "relative w-full min-w-0 overflow-hidden transition-[min-height] duration-200 ease-out",
+        menuOpen ? "min-h-[220px]" : "min-h-18",
+      )}
+    >
+      <div
+        className={cn(
+          "absolute inset-x-0 top-0 flex items-center gap-3 py-2",
+          slideEase,
+          menuOpen ? "-translate-y-full pointer-events-none" : "translate-y-0",
+        )}
+      >
+        {avatar}
+        <div className="flex-1 min-w-0">
+          <p className="truncate text-sm font-medium text-foreground">
+            {displayName}
+          </p>
+          <p className="truncate text-xs text-muted-foreground">Free plan</p>
+        </div>
+        <div className="shrink-0">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Open account menu"
+            aria-expanded={menuOpen}
+            aria-haspopup="menu"
+            aria-controls="user-card-menu"
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            <MoreHorizontal className="size-4" />
+          </Button>
+        </div>
+      </div>
+      <div
+        className={cn(
+          "absolute inset-x-0 top-0 py-1",
+          slideEase,
+          menuOpen
+            ? "translate-y-0"
+            : "translate-y-full pointer-events-none opacity-0",
+        )}
+      >
+        <UserMenuPanel
           onClose={() => setMenuOpen(false)}
-          anchorRef={triggerRef}
-          compact={true}
           signOut={signOut}
           onRunTutorial={onRunTutorial}
           sessionRestrictEnabled={sessionRestrictEnabled}
@@ -319,39 +313,6 @@ export function UserCard({
           onToggleSessionRestrict={onToggleSessionRestrict}
         />
       </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center gap-3 w-full min-w-0 py-2">
-      {avatar}
-      <div className="flex-1 min-w-0">
-        <p className="truncate text-sm font-medium text-foreground">{displayName}</p>
-        <p className="truncate text-xs text-muted-foreground">Free plan</p>
-      </div>
-      <div ref={triggerRef as React.RefObject<HTMLDivElement | null>} className="shrink-0">
-        <Button
-          variant="ghost"
-          size="icon-sm"
-          aria-label="Open menu"
-          aria-expanded={menuOpen}
-          aria-haspopup="menu"
-          onClick={() => setMenuOpen((o) => !o)}
-        >
-          <MoreHorizontal className="size-4" />
-        </Button>
-      </div>
-      <UserMenu
-        open={menuOpen}
-        onClose={() => setMenuOpen(false)}
-        anchorRef={triggerRef}
-        compact={false}
-        signOut={signOut}
-        onRunTutorial={onRunTutorial}
-        sessionRestrictEnabled={sessionRestrictEnabled}
-        sessionRestrictDisabled={sessionRestrictDisabled}
-        onToggleSessionRestrict={onToggleSessionRestrict}
-      />
     </div>
   );
 }
