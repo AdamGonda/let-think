@@ -1,13 +1,44 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Switch } from "@/components/ui/switch";
 import {
   Search,
   FileText,
   ChevronLeft,
   ChevronDown,
+  MoreVertical,
 } from "lucide-react";
 import type { ProjectWithSessions } from "./SessionSidebar";
+
+const PINNED_STORAGE_KEY = "think-pinned-project-ids";
+
+function loadPinnedIds(): Set<string> {
+  if (typeof window === "undefined") return new Set();
+  try {
+    const raw = localStorage.getItem(PINNED_STORAGE_KEY);
+    if (!raw) return new Set();
+    const arr = JSON.parse(raw) as unknown;
+    if (!Array.isArray(arr)) return new Set();
+    return new Set(arr.filter((x): x is string => typeof x === "string"));
+  } catch {
+    return new Set();
+  }
+}
+
+function savePinnedIds(ids: Set<string>) {
+  try {
+    localStorage.setItem(PINNED_STORAGE_KEY, JSON.stringify([...ids]));
+  } catch {
+    /* ignore */
+  }
+}
 
 type SortMode = "activity" | "name";
 
@@ -67,34 +98,73 @@ export function NotesListPanel({
 }: NotesListPanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("activity");
+  const [pinnedIds, setPinnedIds] = useState<Set<string>>(loadPinnedIds);
 
   const totalSessions =
     workspace?.reduce((n, g) => n + g.sessions.length, 0) ?? 0;
 
+  useEffect(() => {
+    if (!workspace) return;
+    const valid = new Set(
+      workspace.flatMap((g) => (g.project ? [g.project._id as string] : [])),
+    );
+    setPinnedIds((prev) => {
+      let pruned = false;
+      const next = new Set<string>();
+      for (const id of prev) {
+        if (valid.has(id)) next.add(id);
+        else pruned = true;
+      }
+      if (!pruned && next.size === prev.size) return prev;
+      savePinnedIds(next);
+      return next;
+    });
+  }, [workspace]);
+
+  const toggleProjectPinned = useCallback((projectId: string) => {
+    setPinnedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(projectId)) next.delete(projectId);
+      else next.add(projectId);
+      savePinnedIds(next);
+      return next;
+    });
+  }, []);
+
   const sortedGroups = useMemo(() => {
     if (!workspace) return [];
     const copy = [...workspace];
+    const sortProjects = (a: ProjectWithSessions, b: ProjectWithSessions) => {
+      const pidA = a.project!._id as string;
+      const pidB = b.project!._id as string;
+      const pinA = pinnedIds.has(pidA);
+      const pinB = pinnedIds.has(pidB);
+      if (pinA !== pinB) return pinA ? -1 : 1;
+      return 0;
+    };
     if (sortMode === "name") {
-      copy.sort((a, b) => {
-        const aInbox = a.project == null;
-        const bInbox = b.project == null;
-        if (aInbox && !bInbox) return -1;
-        if (!aInbox && bInbox) return 1;
+      const inboxGroup = copy.find((g) => g.project == null);
+      const projectGroups = copy.filter((g) => g.project != null);
+      projectGroups.sort((a, b) => {
+        const order = sortProjects(a, b);
+        if (order !== 0) return order;
         return groupDisplayName(a).localeCompare(groupDisplayName(b), undefined, {
           sensitivity: "base",
         });
       });
-      return copy;
+      return inboxGroup ? [inboxGroup, ...projectGroups] : projectGroups;
     }
     const inboxGroup = copy.find((g) => g.project == null);
     const projectGroups = copy.filter((g) => g.project != null);
     projectGroups.sort((a, b) => {
+      const order = sortProjects(a, b);
+      if (order !== 0) return order;
       const ta = groupActivityMs(a.sessions, a.project!.createdAt);
       const tb = groupActivityMs(b.sessions, b.project!.createdAt);
       return tb - ta;
     });
     return inboxGroup ? [inboxGroup, ...projectGroups] : projectGroups;
-  }, [workspace, sortMode]);
+  }, [workspace, sortMode, pinnedIds]);
 
   const filteredGroups = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -244,42 +314,91 @@ export function NotesListPanel({
                     );
                     const key = group.project?._id ?? "__inbox__";
                     const emptyInbox = group.project == null && count === 0;
+                    const projectId = group.project?._id;
+                    const isPinned = projectId
+                      ? pinnedIds.has(projectId as string)
+                      : false;
+                    const pinLabelId = projectId
+                      ? `pin-label-${projectId}`
+                      : undefined;
                     return (
                       <li key={key}>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            onDrillChange(
-                              group.project
-                                ? { type: "project", id: group.project._id }
-                                : { type: "inbox" },
-                            )
-                          }
-                          className={`flex min-h-30 w-full cursor-pointer flex-col gap-2 rounded-xl bg-transparent p-5 text-left shadow-none transition-colors hover:border-border hover:bg-muted/10 active:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                        <div
+                          className={`relative rounded-xl ${
                             group.project == null
                               ? "border-4 border-border"
                               : "border-2 border-border/90"
                           }`}
                         >
-                          <div className="flex items-start justify-between gap-2">
-                            <span className="font-semibold text-foreground leading-snug line-clamp-2">
-                              {title}
-                            </span>
-                            {group.project == null && (
-                              <span className="shrink-0 rounded-full border border-border/60 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                                Inbox
+                          <button
+                            type="button"
+                            onClick={() =>
+                              onDrillChange(
+                                group.project
+                                  ? { type: "project", id: group.project._id }
+                                  : { type: "inbox" },
+                              )
+                            }
+                            className="flex min-h-30 w-full cursor-pointer flex-col gap-2 rounded-[inherit] bg-transparent p-5 pr-12 text-left shadow-none transition-colors hover:bg-muted/10 active:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <span className="font-semibold text-foreground leading-snug line-clamp-2">
+                                {title}
                               </span>
-                            )}
-                          </div>
-                          <p className="text-sm text-muted-foreground line-clamp-2 flex-1">
-                            {sessionCountLabel}
-                          </p>
-                          <p className="text-xs text-muted-foreground/90 pt-1">
-                            {emptyInbox
-                              ? "—"
-                              : formatUpdatedLabel(activity)}
-                          </p>
-                        </button>
+                              {group.project == null && (
+                                <span className="shrink-0 rounded-full border border-border/60 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                                  Inbox
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-sm text-muted-foreground line-clamp-2 flex-1">
+                              {sessionCountLabel}
+                            </p>
+                            <p className="text-xs text-muted-foreground/90 pt-1">
+                              {emptyInbox
+                                ? "—"
+                                : formatUpdatedLabel(activity)}
+                            </p>
+                          </button>
+                          {projectId ? (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger
+                                type="button"
+                                className="absolute right-2 top-2 z-10 flex size-9 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                                aria-label={`${title} options`}
+                                onPointerDown={(e) => e.stopPropagation()}
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreVertical className="size-4" />
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent
+                                align="end"
+                                className="min-w-[220px]"
+                                onPointerDown={(e) => e.stopPropagation()}
+                              >
+                                <DropdownMenuItem
+                                  closeOnClick={false}
+                                  className="flex cursor-default items-center justify-between gap-4 py-2.5"
+                                  onClick={(e) => e.preventDefault()}
+                                >
+                                  <span
+                                    id={pinLabelId}
+                                    className="text-sm text-foreground"
+                                  >
+                                    Pin to top
+                                  </span>
+                                  <Switch
+                                    checked={isPinned}
+                                    onCheckedChange={() =>
+                                      toggleProjectPinned(projectId as string)
+                                    }
+                                    aria-labelledby={pinLabelId}
+                                  />
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          ) : null}
+                        </div>
                       </li>
                     );
                   })}

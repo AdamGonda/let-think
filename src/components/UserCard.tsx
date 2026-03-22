@@ -4,9 +4,11 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { Check, LogOut, MoreHorizontal, HelpCircle } from "lucide-react";
+import { LogOut, MoreHorizontal, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 
 function getInitials(name: string | undefined | null): string {
   if (!name?.trim()) return "?";
@@ -98,9 +100,39 @@ function UserMenu({
     <div
       ref={menuRef}
       role="menu"
-      className="min-w-[220px] overflow-hidden rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
+      className="min-w-[260px] overflow-hidden rounded-lg bg-popover p-1 text-popover-foreground shadow-md ring-1 ring-foreground/10"
       style={style}
     >
+      <div
+        role="presentation"
+        className={cn(
+          "flex w-full items-center rounded-md px-1.5 py-2.5 text-sm transition-colors",
+          sessionRestrictDisabled ? "opacity-50" : "hover:bg-accent/60",
+        )}
+      >
+        <div className="flex w-full items-center gap-2 px-0.5">
+          <span className="shrink-0 font-medium leading-snug text-foreground">
+            Mode:
+          </span>
+          <Switch
+            checked={sessionRestrictEnabled}
+            disabled={sessionRestrictDisabled}
+            onCheckedChange={(next) => {
+              if (sessionRestrictDisabled) return;
+              if (next !== sessionRestrictEnabled) onToggleSessionRestrict();
+            }}
+            internalLabel={{ off: "Think", on: "Work" }}
+            offTrackClassName="bg-[#1447E6]"
+            onTrackClassName="bg-[#059669]"
+            aria-label={
+              sessionRestrictEnabled
+                ? "Mode: Work (productivity)"
+                : "Mode: Think (thinking)"
+            }
+            className="shrink-0 ring-offset-popover"
+          />
+        </div>
+      </div>
       {onRunTutorial && (
         <button
           type="button"
@@ -115,27 +147,6 @@ function UserMenu({
           Replay tutorial
         </button>
       )}
-      <button
-        type="button"
-        role="menuitemcheckbox"
-        aria-checked={sessionRestrictEnabled}
-        disabled={sessionRestrictDisabled}
-        className={`${menuItemClass} ${sessionRestrictDisabled ? "pointer-events-none opacity-50" : ""}`}
-        onClick={() => {
-          if (sessionRestrictDisabled) return;
-          onToggleSessionRestrict();
-        }}
-      >
-        <span
-          className="flex size-4 shrink-0 items-center justify-center rounded border border-border bg-background"
-          aria-hidden
-        >
-          {sessionRestrictEnabled ? (
-            <Check className="size-3 text-foreground" strokeWidth={3} />
-          ) : null}
-        </span>
-        Restrict interactions (3 per break)
-      </button>
       <div className="my-1 h-px bg-border" role="separator" />
       <button
         type="button"
