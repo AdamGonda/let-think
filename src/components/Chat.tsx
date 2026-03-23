@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { CornerDownLeft } from "lucide-react";
+import { CornerDownLeft, Loader2 } from "lucide-react";
 import { useAction, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -232,7 +232,25 @@ export function Chat({
             until long break
           </p>
         )}
-        <form className="flex gap-2 items-end" onSubmit={handleSubmit}>
+        <form
+          className="flex flex-col gap-2"
+          onSubmit={handleSubmit}
+          aria-busy={isLoading}
+        >
+          {isLoading && (
+            <div
+              className="flex items-center gap-2 text-sm text-muted-foreground"
+              role="status"
+              aria-live="polite"
+            >
+              <Loader2
+                className="size-4 shrink-0 animate-spin text-(--session-accent)"
+                aria-hidden
+              />
+              <span>Generating response…</span>
+            </div>
+          )}
+          <div className="flex gap-2 items-end">
           <div className="flex-1 flex relative min-h-[48px] max-h-[240px] rounded-xl border border-input bg-background overflow-hidden">
           <div
             ref={mirrorRef}
@@ -273,16 +291,25 @@ export function Chat({
           />
           <div
             className="absolute right-3 top-1/2 -translate-y-1/2 z-20 pointer-events-none flex items-center"
-            title="Press Enter to send"
+            title={isLoading ? "Generating response" : "Press Enter to send"}
             aria-hidden
           >
-            <CornerDownLeft
-              size={18}
-              className="text-muted-foreground"
-              strokeWidth={2}
-            />
+            {isLoading ? (
+              <Loader2
+                size={18}
+                className="animate-spin text-(--session-accent)"
+                strokeWidth={2}
+              />
+            ) : (
+              <CornerDownLeft
+                size={18}
+                className="text-muted-foreground"
+                strokeWidth={2}
+              />
+            )}
           </div>
         </div>
+          </div>
       </form>
       </div>
     </div>

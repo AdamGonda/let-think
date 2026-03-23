@@ -420,7 +420,7 @@ function AppContentBody({
     (!isWorkMode && isLoading) ||
     isInBreak ||
     editorOpen ||
-    modelRespondedAwaitingDismissal;
+    (!isWorkMode && modelRespondedAwaitingDismissal);
   const workModeSessionLoading =
     isWorkMode &&
     isLoading &&
