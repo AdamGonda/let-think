@@ -5,12 +5,12 @@ import {
   useCallback,
   useRef,
 } from "react";
-import { useAtomValue } from "jotai";
 import { useAuthToken } from "@convex-dev/auth/react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
-import { workPreferenceModeAtom } from "../atoms/workPreferenceAtoms";
+import { useAppUiSelector } from "./useAppUi";
+import type { WorkPreferenceMode } from "../lib/workPreferenceStorage";
 
 export function formatBreakCountdown(ms: number): string {
   const totalSeconds = Math.ceil(ms / 1000);
@@ -22,7 +22,9 @@ export function formatBreakCountdown(ms: number): string {
 export function useSessionManager(sessionId: Id<"sessions"> | null) {
   const authToken = useAuthToken();
   const isAuthenticated = authToken !== null;
-  const workPreferenceMode = useAtomValue(workPreferenceModeAtom);
+  const workPreferenceMode = useAppUiSelector(
+    (s): WorkPreferenceMode => s.context.preference,
+  );
   const restrictionFromPreference =
     workPreferenceMode === "think" ? ("restrict" as const) : ("open" as const);
   const state = useQuery(
@@ -85,7 +87,7 @@ export function useSessionManager(sessionId: Id<"sessions"> | null) {
       ? Math.max(0, state.limit - state.used)
       : null;
 
-  const interactionRestriction =
+  const interactionRestriction: "open" | "restrict" =
     restrictionFromPreference === "restrict" ? "restrict" : "open";
 
   const interactionCountsPending =

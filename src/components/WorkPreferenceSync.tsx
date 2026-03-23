@@ -1,15 +1,14 @@
 import { useEffect } from "react";
-import { useAtomValue } from "jotai";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
-import { workPreferenceModeAtom } from "../atoms/workPreferenceAtoms";
+import { useAppUiSelector } from "../hooks/useAppUi";
 import {
   SESSION_ACCENT_THINK,
   SESSION_ACCENT_WORK,
 } from "../constants/sessionAccent";
 
 export function WorkPreferenceSync() {
-  const mode = useAtomValue(workPreferenceModeAtom);
+  const mode = useAppUiSelector((s) => s.context.preference);
   const applyWorkPreferenceMode = useMutation(
     api.interactionSessions.applyWorkPreferenceMode,
   );

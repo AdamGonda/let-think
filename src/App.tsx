@@ -6,7 +6,7 @@ import {
   useRef,
   useCallback,
 } from "react";
-import { useAtom, useSetAtom } from "jotai";
+import { useAtom } from "jotai";
 import {
   useQuery,
   useMutation,
@@ -21,6 +21,8 @@ import {
   SessionDataProvider,
   useSessionData,
 } from "./contexts/SessionDataContext";
+import { AppUiProvider } from "./contexts/AppUiProvider";
+import { useAppUiActor, useAppUiSelector } from "./hooks/useAppUi";
 import {
   SessionSidebar,
   type ProjectWithSessions,
@@ -42,20 +44,19 @@ import { Button } from "./components/ui/button";
 import { FileText, History, Sigma } from "lucide-react";
 import { StepNavigator } from "./components/StepNavigator";
 import { WorkPreferenceSync } from "./components/WorkPreferenceSync";
-import { useWorkPreference } from "./hooks/useWorkPreference";
+import {
+  selectCanExitWakeUp,
+  selectDisplayWakeUpLayer,
+  selectIsExitingWakeUp,
+  selectSurface,
+  selectWorkModeSessionLoading,
+} from "./machines/appUiMachine";
 import {
   activeSessionIdAtom,
   activeProjectIdAtom,
   draftInputAtom,
   notesAtom,
-  isLoadingAtom,
-  modelRespondedAwaitingDismissalAtom,
-  overlayDismissedAtom,
-  isExitingOverlayAtom,
-  editorOpenAtom,
-  historyPanelOpenAtom,
   notesListDrillAtom,
-  viewModeAtom,
   selectedBatchIndexAtom,
 } from "./atoms/appAtoms";
 
@@ -71,7 +72,9 @@ function App() {
         <SignIn />
       </Unauthenticated>
       <Authenticated>
-        <AppContent />
+        <AppUiProvider>
+          <AppContent />
+        </AppUiProvider>
       </Authenticated>
     </>
   );
@@ -79,18 +82,10 @@ function App() {
 
 function AppContent() {
   const [activeSessionId, setActiveSessionId] = useAtom(activeSessionIdAtom);
-  const setActiveProjectId = useSetAtom(activeProjectIdAtom);
+  const [, setActiveProjectId] = useAtom(activeProjectIdAtom);
   const [draftInput, setDraftInput] = useAtom(draftInputAtom);
   const [notes, setNotes] = useAtom(notesAtom);
-  const [isExitingOverlay, setIsExitingOverlay] = useAtom(
-    isExitingOverlayAtom,
-  );
-  const setIsLoading = useSetAtom(isLoadingAtom);
-  const setModelRespondedAwaitingDismissal = useSetAtom(
-    modelRespondedAwaitingDismissalAtom,
-  );
-  const setOverlayDismissed = useSetAtom(overlayDismissedAtom);
-  const setEditorOpen = useSetAtom(editorOpenAtom);
+  const actor = useAppUiActor();
 
   const draftInputRef = useRef(draftInput);
   const notesRef = useRef(notes);
@@ -117,6 +112,10 @@ function AppContent() {
   const prevSessionIdRef = useRef<Id<"sessions"> | null>(null);
   const appliedStoredForSessionRef = useRef<Id<"sessions"> | null>(null);
   const hasEverHadSelectionRef = useRef(false);
+
+  useEffect(() => {
+    actor.send({ type: "SESSION_SYNC", active: activeSessionId != null });
+  }, [activeSessionId, actor]);
 
   useEffect(() => {
     if (activeSessionId) hasEverHadSelectionRef.current = true;
@@ -246,42 +245,6 @@ function AppContent() {
 
   const mainContentRef = useRef<HTMLDivElement>(null);
 
-  // When session is cleared, reset overlay state to avoid stuck "Wake up" with no escape
-  useEffect(() => {
-    if (!activeSessionId) {
-      setIsLoading(false);
-      setEditorOpen(false);
-      setModelRespondedAwaitingDismissal(false);
-      setIsExitingOverlay(false);
-    }
-  }, [
-    activeSessionId,
-    setIsLoading,
-    setEditorOpen,
-    setModelRespondedAwaitingDismissal,
-    setIsExitingOverlay,
-  ]);
-
-  const WAKE_UP_EXIT_DURATION_MS = 300;
-  useEffect(() => {
-    if (!isExitingOverlay) return;
-    const id = setTimeout(() => {
-      setOverlayDismissed(true);
-      setIsLoading(false);
-      setEditorOpen(false);
-      setModelRespondedAwaitingDismissal(false);
-      setIsExitingOverlay(false);
-    }, WAKE_UP_EXIT_DURATION_MS);
-    return () => clearTimeout(id);
-  }, [
-    isExitingOverlay,
-    setOverlayDismissed,
-    setIsLoading,
-    setEditorOpen,
-    setModelRespondedAwaitingDismissal,
-    setIsExitingOverlay,
-  ]);
-
   return (
     <>
       <WorkPreferenceSync />
@@ -309,23 +272,23 @@ function AppContentBody({
 }) {
   const [activeSessionId, setActiveSessionId] = useAtom(activeSessionIdAtom);
   const [activeProjectId, setActiveProjectId] = useAtom(activeProjectIdAtom);
-  const [isLoading, setIsLoading] = useAtom(isLoadingAtom);
-  const [modelRespondedAwaitingDismissal, setModelRespondedAwaitingDismissal] =
-    useAtom(modelRespondedAwaitingDismissalAtom);
-  const [overlayDismissed, setOverlayDismissed] = useAtom(overlayDismissedAtom);
-  const [isExitingOverlay, setIsExitingOverlay] = useAtom(
-    isExitingOverlayAtom,
-  );
-  const [editorOpen, setEditorOpen] = useAtom(editorOpenAtom);
-  const [historyPanelOpen, setHistoryPanelOpen] = useAtom(historyPanelOpenAtom);
   const [notesListDrill, setNotesListDrill] = useAtom(notesListDrillAtom);
-  const [viewMode, setViewMode] = useAtom(viewModeAtom);
   const [selectedBatchIndex, setSelectedBatchIndex] = useAtom(
     selectedBatchIndexAtom,
   );
   const [draftInput, setDraftInput] = useAtom(draftInputAtom);
   const [notes, setNotes] = useAtom(notesAtom);
-  const { isWorkMode } = useWorkPreference();
+  const actor = useAppUiActor();
+
+  const chatLoading = useAppUiSelector((s) => s.context.chatLoading);
+  const editorOpen = useAppUiSelector((s) => s.context.editorOpen);
+  const historyPanelOpen = useAppUiSelector((s) => s.context.historyPanelOpen);
+  const viewMode = useAppUiSelector(selectSurface);
+
+  const displayWakeUpLayer = useAppUiSelector(selectDisplayWakeUpLayer);
+  const isExitingOverlay = useAppUiSelector(selectIsExitingWakeUp);
+  const workModeSessionLoading = useAppUiSelector(selectWorkModeSessionLoading);
+  const canExitOverlay = useAppUiSelector(selectCanExitWakeUp);
 
   const activeSessionInWorkspace =
     workspace && activeSessionId
@@ -357,15 +320,20 @@ function AppContentBody({
 
   useEffect(() => {
     if (!historyPanelOpen || !activeSessionId || messagesLoading) return;
-    if (!hasChatHistory) setHistoryPanelOpen(false);
+    if (!hasChatHistory) actor.send({ type: "HISTORY_CLOSE" });
   }, [
     historyPanelOpen,
     activeSessionId,
     messagesLoading,
     hasChatHistory,
-    setHistoryPanelOpen,
+    actor,
   ]);
   const isInBreak = breakRemainingMs !== null && breakRemainingMs > 0;
+
+  useEffect(() => {
+    actor.send({ type: "BREAK_CHANGED", inBreak: isInBreak });
+  }, [isInBreak, actor]);
+
   const prevBatchesLengthRef = useRef(0);
 
   useEffect(() => {
@@ -416,19 +384,6 @@ function AppContentBody({
     return ids;
   }, [isLatestBatch, draftInput, numberedConcepts]);
 
-  const overlayActive =
-    (!isWorkMode && isLoading) ||
-    isInBreak ||
-    editorOpen ||
-    (!isWorkMode && modelRespondedAwaitingDismissal);
-  const workModeSessionLoading =
-    isWorkMode &&
-    isLoading &&
-    activeSessionId != null &&
-    viewMode === "graph";
-  const showOverlay =
-    overlayActive && !overlayDismissed && activeSessionId != null;
-  const canExitOverlay = !isLoading && !isInBreak;
   const chatVisible =
     viewMode === "graph" &&
     (batches.length === 0 || selectedBatchIndex === batches.length - 1);
@@ -436,18 +391,25 @@ function AppContentBody({
   // Delay revealing the editor until after it has rendered and scrolled to caret
   const [editorRevealReady, setEditorRevealReady] = useState(false);
   useEffect(() => {
-    if (!showOverlay || isExitingOverlay) {
+    if (!displayWakeUpLayer || isExitingOverlay) {
       queueMicrotask(() => setEditorRevealReady(false));
       return;
     }
     const id = setTimeout(() => setEditorRevealReady(true), 50);
     return () => clearTimeout(id);
-  }, [showOverlay, isExitingOverlay]);
+  }, [displayWakeUpLayer, isExitingOverlay]);
+
+  const setViewMode = useCallback(
+    (mode: "graph" | "notesList") => {
+      actor.send({ type: "VIEW_SET", mode });
+    },
+    [actor],
+  );
 
   const handleExitOverlay = useCallback(() => {
     if (!canExitOverlay) return;
-    setIsExitingOverlay(true);
-  }, [canExitOverlay, setIsExitingOverlay]);
+    actor.send({ type: "USER_EXIT_WAKE_UP" });
+  }, [canExitOverlay, actor]);
 
   const handleBreadcrumbProjectClick = useCallback(() => {
     setNotesListDrill(null);
@@ -475,21 +437,15 @@ function AppContentBody({
     setViewMode("graph");
     handleExitOverlay();
   }, [handleExitOverlay, setViewMode]);
-  useEffect(() => {
-    if (!overlayActive) {
-      setOverlayDismissed(false);
-      setModelRespondedAwaitingDismissal(false);
-    }
-  }, [overlayActive, setOverlayDismissed, setModelRespondedAwaitingDismissal]);
 
   return (
     <div className="flex h-screen bg-background">
-      {(showOverlay || isExitingOverlay) && (
+      {displayWakeUpLayer && (
         <div
           className={`fixed inset-0 z-[9999] flex h-screen w-screen flex-col bg-background ${
             isExitingOverlay ? "animate-wake-up-out" : "animate-wake-up-in"
           }`}
-          aria-busy={isLoading}
+          aria-busy={chatLoading}
           aria-live="polite"
         >
           {/* Hide overlay content immediately when exiting to avoid text/cards overlap during fade */}
@@ -555,7 +511,7 @@ function AppContentBody({
       <Tutorial autoStart={!getTutorialCompleted()} onComplete={() => {}} />
       <div
         className="flex flex-1 min-w-0"
-        inert={showOverlay || isExitingOverlay}
+        inert={displayWakeUpLayer}
       >
         <SessionSidebar
           workspace={workspace}
@@ -594,7 +550,7 @@ function AppContentBody({
                       ? { type: "project", id: session.projectId }
                       : { type: "inbox" },
                   );
-                  setEditorOpen(true);
+                  actor.send({ type: "EDITOR_OPEN" });
                 }}
               />
             ) : (
@@ -614,7 +570,7 @@ function AppContentBody({
                         <Button
                           variant="outline"
                           size="icon-sm"
-                          onClick={() => setHistoryPanelOpen(true)}
+                          onClick={() => actor.send({ type: "HISTORY_OPEN" })}
                           title="Conversation history"
                           aria-label="Conversation history"
                           data-tour="history-btn"
@@ -625,7 +581,7 @@ function AppContentBody({
                       <Button
                         variant="outline"
                         size="icon-sm"
-                        onClick={() => setEditorOpen(true)}
+                        onClick={() => actor.send({ type: "EDITOR_OPEN" })}
                         title="Open file"
                         aria-label="Open file"
                         data-tour="notes-btn"
@@ -645,7 +601,7 @@ function AppContentBody({
                   <ConceptGraphOverlay
                     key={activeSessionId ?? "empty"}
                     graph={conceptGraph ?? null}
-                    isLoading={isLoading}
+                    isLoading={chatLoading}
                     selectedBatchIndex={selectedBatchIndex}
                     onSelectedBatchIndexChange={setSelectedBatchIndex}
                     referencedConceptIds={referencedConceptIds}
@@ -657,9 +613,15 @@ function AppContentBody({
           {chatVisible && (
             <Chat
               sessionId={activeSessionId}
-              isLoading={isLoading}
-              setIsLoading={setIsLoading}
-              onModelResponded={() => setModelRespondedAwaitingDismissal(true)}
+              isLoading={chatLoading}
+              setIsLoading={(loading) =>
+                actor.send(
+                  loading
+                    ? { type: "CHAT_LOADING_START" }
+                    : { type: "CHAT_LOADING_END" },
+                )
+              }
+              onModelResponded={() => actor.send({ type: "MODEL_FINISHED" })}
               numberedConcepts={numberedConcepts}
               draftInput={draftInput}
               setDraftInput={setDraftInput}
@@ -669,7 +631,7 @@ function AppContentBody({
           {viewMode === "graph" && (
             <ChatHistoryPanel
               isOpen={historyPanelOpen}
-              onClose={() => setHistoryPanelOpen(false)}
+              onClose={() => actor.send({ type: "HISTORY_CLOSE" })}
               messages={messages ?? []}
               onLoadOlderMessages={
                 canLoadOlderMessages ? () => loadOlderMessages(80) : undefined
@@ -679,7 +641,7 @@ function AppContentBody({
               selectedBatchIndex={selectedBatchIndex}
               onNavigateToStep={(batchIndex: number) => {
                 setSelectedBatchIndex(batchIndex);
-                setHistoryPanelOpen(false);
+                actor.send({ type: "HISTORY_CLOSE" });
               }}
             />
           )}

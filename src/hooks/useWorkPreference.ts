@@ -1,5 +1,4 @@
-import { useAtom } from "jotai";
-import { workPreferenceModeAtom } from "../atoms/workPreferenceAtoms";
+import { useAppUiActor, useAppUiSelector } from "./useAppUi";
 import type { WorkPreferenceMode } from "../lib/workPreferenceStorage";
 
 export function useWorkPreference(): {
@@ -7,10 +6,12 @@ export function useWorkPreference(): {
   isWorkMode: boolean;
   setMode: (mode: WorkPreferenceMode) => void;
 } {
-  const [mode, setMode] = useAtom(workPreferenceModeAtom);
+  const actor = useAppUiActor();
+  const mode = useAppUiSelector((s) => s.context.preference);
   return {
     mode,
     isWorkMode: mode === "work",
-    setMode,
+    setMode: (m: WorkPreferenceMode) =>
+      actor.send({ type: "PREFERENCE_SET", mode: m }),
   };
 }
