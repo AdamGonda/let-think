@@ -26,6 +26,8 @@ interface ChatProps {
   setDraftInput?: (value: string) => void;
   /** Called when the model finishes responding (overlay stays visible until user exits) */
   onModelResponded?: () => void;
+  /** Match main work-mode loading frame (green inset ring) */
+  workModeLoadingFrame?: boolean;
 }
 
 export type Mention = { start: number; end: number; conceptId: string; name: string };
@@ -101,6 +103,7 @@ export function Chat({
   draftInput,
   setDraftInput,
   onModelResponded,
+  workModeLoadingFrame = false,
 }: ChatProps) {
   const [internalInput, setInternalInput] = useState("");
   const input = draftInput !== undefined ? draftInput : internalInput;
@@ -223,7 +226,14 @@ export function Chat({
 
   return (
     <div className="flex flex-col items-center px-4 pt-4 shrink-0" data-tour="session-input">
-      <div className="w-full max-w-[720px] flex flex-col gap-3 rounded-t-2xl border border-b-0 border-border shadow-lg px-4 py-3 pb-4" style={{ backgroundColor: "#2B2B28" }}>
+      <div
+        className={
+          workModeLoadingFrame
+            ? "w-full max-w-[720px] flex flex-col gap-3 rounded-t-2xl border-t-2 border-l-2 border-r-2 border-b-0 border-(--session-accent) shadow-lg px-4 py-3 pb-4"
+            : "w-full max-w-[720px] flex flex-col gap-3 rounded-t-2xl border border-b-0 border-border shadow-lg px-4 py-3 pb-4"
+        }
+        style={{ backgroundColor: "#2B2B28" }}
+      >
         {showInteractionLine && (
           <p className="text-sm font-medium text-muted-foreground tabular-nums min-h-[1.25em]">
             <span className="inline-block min-w-[2ch] text-right">
@@ -245,19 +255,6 @@ export function Chat({
           onSubmit={handleSubmit}
           aria-busy={isLoading}
         >
-          {isLoading && (
-            <div
-              className="flex items-center gap-2 text-sm text-muted-foreground"
-              role="status"
-              aria-live="polite"
-            >
-              <Loader2
-                className="size-4 shrink-0 animate-spin text-(--session-accent)"
-                aria-hidden
-              />
-              <span>Generating response…</span>
-            </div>
-          )}
           <div className="flex gap-2 items-end">
           <div className="flex-1 flex relative min-h-[48px] max-h-[240px] rounded-xl border border-input bg-background overflow-hidden">
           <div
@@ -300,14 +297,18 @@ export function Chat({
           <div
             className="absolute right-3 top-1/2 -translate-y-1/2 z-20 pointer-events-none flex items-center"
             title={isLoading ? "Generating response" : "Press Enter to send"}
-            aria-hidden
+            aria-hidden={!isLoading}
           >
             {isLoading ? (
-              <Loader2
-                size={18}
-                className="animate-spin text-(--session-accent)"
-                strokeWidth={2}
-              />
+              <>
+                <span className="sr-only">Generating response…</span>
+                <Loader2
+                  size={18}
+                  className="animate-spin text-(--session-accent)"
+                  strokeWidth={2}
+                  aria-hidden
+                />
+              </>
             ) : (
               <CornerDownLeft
                 size={18}

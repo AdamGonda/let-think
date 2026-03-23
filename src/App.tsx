@@ -660,6 +660,7 @@ function AppContentBody({
           {chatVisible && (
             <Chat
               sessionId={activeSessionId}
+              workModeLoadingFrame={workModeSessionLoading}
               isLoading={chatLoading}
               setIsLoading={(loading) =>
                 actor.send(
