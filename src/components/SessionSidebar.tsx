@@ -304,9 +304,13 @@ export function SessionSidebar({
                   ? "h-10 w-10 p-0 justify-center rounded-lg overflow-hidden"
                   : "justify-start h-10 w-full gap-2 px-3 rounded-none rounded-r-lg border-y border-r border-transparent"
               } ${
-                viewModeIsNotesList
+                viewModeIsNotesList && !isCollapsed
                   ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent"
-                  : "border-l-2 border-l-transparent hover:border-border hover:bg-muted/10 active:bg-muted/20"
+                  : isCollapsed
+                    ? viewModeIsNotesList
+                      ? "hover:bg-muted/10 active:bg-muted/20"
+                      : "border-l-2 border-l-transparent hover:border-border hover:bg-muted/10 active:bg-muted/20"
+                    : "border-l-2 border-l-transparent hover:border-border hover:bg-muted/10 active:bg-muted/20"
               }`}
               onClick={() =>
                 onViewModeChange(viewModeIsNotesList ? "graph" : "notesList")
