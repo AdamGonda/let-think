@@ -48,7 +48,9 @@ import {
   selectCanExitWakeUp,
   selectDisplayWakeUpLayer,
   selectIsExitingWakeUp,
+  selectIsWorkMode,
   selectSurface,
+  selectWorkModeNotesListDuringChatLoading,
   selectWorkModeSessionLoading,
 } from "./machines/appUiMachine";
 import {
@@ -288,6 +290,10 @@ function AppContentBody({
   const displayWakeUpLayer = useAppUiSelector(selectDisplayWakeUpLayer);
   const isExitingOverlay = useAppUiSelector(selectIsExitingWakeUp);
   const workModeSessionLoading = useAppUiSelector(selectWorkModeSessionLoading);
+  const workModeNotesListDuringChatLoading = useAppUiSelector(
+    selectWorkModeNotesListDuringChatLoading,
+  );
+  const isWorkMode = useAppUiSelector(selectIsWorkMode);
   const canExitOverlay = useAppUiSelector(selectCanExitWakeUp);
 
   const activeSessionInWorkspace =
@@ -411,6 +417,12 @@ function AppContentBody({
     actor.send({ type: "USER_EXIT_WAKE_UP" });
   }, [canExitOverlay, actor]);
 
+  /** Close file editor overlay and return to graph — works while LLM is loading (unlike USER_EXIT_WAKE_UP). */
+  const handleReturnToGraphFromEditorOverlay = useCallback(() => {
+    setViewMode("graph");
+    actor.send({ type: "EDITOR_CLOSE" });
+  }, [setViewMode, actor]);
+
   const handleBreadcrumbProjectClick = useCallback(() => {
     setNotesListDrill(null);
     handleExitOverlay();
@@ -434,9 +446,16 @@ function AppContentBody({
   ]);
 
   const handleBreadcrumbFileClick = useCallback(() => {
-    setViewMode("graph");
-    handleExitOverlay();
-  }, [handleExitOverlay, setViewMode]);
+    handleReturnToGraphFromEditorOverlay();
+  }, [handleReturnToGraphFromEditorOverlay]);
+
+  /** Open file from graph keeps `viewMode === "graph"`; picking a session in Files keeps `notesList`. */
+  const workSigmaEditorFromSession =
+    isWorkMode && editorOpen && viewMode === "graph";
+  const overlaySigmaStandardExit =
+    canExitOverlay && !(editorOpen && viewMode === "notesList");
+  const showOverlaySigma =
+    workSigmaEditorFromSession || overlaySigmaStandardExit;
 
   return (
     <div className="flex h-screen bg-background">
@@ -454,18 +473,25 @@ function AppContentBody({
               isExitingOverlay ? "opacity-0" : "opacity-100"
             }`}
           >
-            {canExitOverlay &&
-              !(editorOpen && viewMode === "notesList") && (
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  className="absolute top-4 right-4 z-10"
-                  onClick={handleExitOverlay}
-                  aria-label="Summarize and return to session"
-                >
-                  <Sigma className="size-5" />
-                </Button>
-              )}
+            {showOverlaySigma ? (
+              <Button
+                variant="outline"
+                size="icon-sm"
+                className="absolute top-4 right-4 z-10"
+                onClick={
+                  workSigmaEditorFromSession
+                    ? handleReturnToGraphFromEditorOverlay
+                    : handleExitOverlay
+                }
+                aria-label={
+                  workSigmaEditorFromSession
+                    ? "Return to concept graph"
+                    : "Summarize and return to session"
+                }
+              >
+                <Sigma className="size-5" />
+              </Button>
+            ) : null}
             <div className="shrink-0 py-8 flex flex-col items-center gap-1">
               {breakRemainingMs != null &&
                 breakRemainingMs > 0 &&
@@ -528,31 +554,52 @@ function AppContentBody({
         />
         <main
           className={`flex flex-1 flex-col min-w-0${
-            workModeSessionLoading
+            workModeSessionLoading || workModeNotesListDuringChatLoading
               ? " rounded-md ring-2 ring-(--session-accent) ring-inset"
               : ""
           }`}
           data-tour="main-content"
-          aria-busy={workModeSessionLoading ? true : undefined}
+          aria-busy={
+            workModeSessionLoading || workModeNotesListDuringChatLoading
+              ? true
+              : undefined
+          }
         >
-          <div ref={mainContentRef} className="flex flex-1 min-h-0 flex-col">
+          <div
+            ref={mainContentRef}
+            className="relative flex flex-1 min-h-0 flex-col"
+          >
             {viewMode === "notesList" ? (
-              <NotesListPanel
-                workspace={workspace}
-                drill={notesListDrill}
-                onDrillChange={setNotesListDrill}
-                onSelectSession={(session) => {
-                  setActiveSessionId(session._id);
-                  if (session.projectId) setActiveProjectId(session.projectId);
-                  else setActiveProjectId(null);
-                  setNotesListDrill(
-                    session.projectId
-                      ? { type: "project", id: session.projectId }
-                      : { type: "inbox" },
-                  );
-                  actor.send({ type: "EDITOR_OPEN" });
-                }}
-              />
+              <>
+                {workModeNotesListDuringChatLoading ? (
+                  <Button
+                    variant="outline"
+                    size="icon-sm"
+                    className="absolute top-4 right-4 z-10"
+                    onClick={() => setViewMode("graph")}
+                    title="Return to graph"
+                    aria-label="Return to concept graph"
+                  >
+                    <Sigma className="size-5" />
+                  </Button>
+                ) : null}
+                <NotesListPanel
+                  workspace={workspace}
+                  drill={notesListDrill}
+                  onDrillChange={setNotesListDrill}
+                  onSelectSession={(session) => {
+                    setActiveSessionId(session._id);
+                    if (session.projectId) setActiveProjectId(session.projectId);
+                    else setActiveProjectId(null);
+                    setNotesListDrill(
+                      session.projectId
+                        ? { type: "project", id: session.projectId }
+                        : { type: "inbox" },
+                    );
+                    actor.send({ type: "EDITOR_OPEN" });
+                  }}
+                />
+              </>
             ) : (
               <>
                 {activeSessionId && (

@@ -311,6 +311,19 @@ export function selectWorkModeSessionLoading(
   );
 }
 
+/** Work mode + LLM loading while on Files — show Σ to return to graph (overlay Σ is absent here). */
+export function selectWorkModeNotesListDuringChatLoading(
+  snapshot: MachineSnapshot,
+): boolean {
+  const c = snapshot.context;
+  return (
+    c.preference === "work" &&
+    c.chatLoading &&
+    c.sessionActive &&
+    surfaceState(snapshot) === "notesList"
+  );
+}
+
 export function selectCanExitWakeUp(snapshot: MachineSnapshot): boolean {
   const c = snapshot.context;
   return !c.chatLoading && !c.inBreak;
