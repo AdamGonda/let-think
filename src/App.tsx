@@ -42,6 +42,7 @@ import { Button } from "./components/ui/button";
 import { FileText, History, Sigma } from "lucide-react";
 import { StepNavigator } from "./components/StepNavigator";
 import { WorkPreferenceSync } from "./components/WorkPreferenceSync";
+import { useWorkPreference } from "./hooks/useWorkPreference";
 import {
   activeSessionIdAtom,
   activeProjectIdAtom,
@@ -324,6 +325,7 @@ function AppContentBody({
   );
   const [draftInput, setDraftInput] = useAtom(draftInputAtom);
   const [notes, setNotes] = useAtom(notesAtom);
+  const { isWorkMode } = useWorkPreference();
 
   const activeSessionInWorkspace =
     workspace && activeSessionId
@@ -415,7 +417,15 @@ function AppContentBody({
   }, [isLatestBatch, draftInput, numberedConcepts]);
 
   const overlayActive =
-    isLoading || isInBreak || editorOpen || modelRespondedAwaitingDismissal;
+    (!isWorkMode && isLoading) ||
+    isInBreak ||
+    editorOpen ||
+    modelRespondedAwaitingDismissal;
+  const workModeSessionLoading =
+    isWorkMode &&
+    isLoading &&
+    activeSessionId != null &&
+    viewMode === "graph";
   const showOverlay =
     overlayActive && !overlayDismissed && activeSessionId != null;
   const canExitOverlay = !isLoading && !isInBreak;
@@ -560,7 +570,15 @@ function AppContentBody({
           onViewModeChange={setViewMode}
           onRunTutorial={runTutorial}
         />
-        <main className="flex flex-1 flex-col min-w-0" data-tour="main-content">
+        <main
+          className={`flex flex-1 flex-col min-w-0${
+            workModeSessionLoading
+              ? " rounded-md ring-2 ring-(--session-accent) ring-inset"
+              : ""
+          }`}
+          data-tour="main-content"
+          aria-busy={workModeSessionLoading ? true : undefined}
+        >
           <div ref={mainContentRef} className="flex flex-1 min-h-0 flex-col">
             {viewMode === "notesList" ? (
               <NotesListPanel
