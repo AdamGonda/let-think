@@ -21,11 +21,14 @@ function getInitials(name: string | undefined | null): string {
 
 interface UserCardProps {
   compact?: boolean;
+  /** When true (e.g. sidebar collapsed), profile does not open the account menu. */
+  menuDisabled?: boolean;
   onRunTutorial?: () => void;
 }
 
 export function UserCard({
   compact = false,
+  menuDisabled = false,
   onRunTutorial,
 }: UserCardProps) {
   const user = useQuery(api.users.currentUser);
@@ -67,6 +70,10 @@ export function UserCard({
     return () => document.removeEventListener("keydown", handler);
   }, [menuOpen]);
 
+  useEffect(() => {
+    if (menuDisabled) setMenuOpen(false);
+  }, [menuDisabled]);
+
   if (!user) return null;
 
   const initials = getInitials(user.name ?? user.email ?? undefined);
@@ -107,27 +114,47 @@ export function UserCard({
             menuOpen ? "-translate-y-full pointer-events-none" : "translate-y-0",
           )}
         >
-          <button
-            type="button"
-            className="flex items-center justify-center rounded-md hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            aria-label={`Open account menu (${isWorkMode ? "Fast" : "Deep"} mode)`}
-            aria-expanded={menuOpen}
-            aria-haspopup="menu"
-            aria-controls="user-card-menu"
-            onClick={() => setMenuOpen((o) => !o)}
-          >
-            <span className="relative inline-flex">
-              {avatar}
-              <span
-                aria-hidden
-                className="pointer-events-none absolute -bottom-0.5 -right-0.5 flex size-[18px] items-center justify-center rounded-full text-[9px] font-bold leading-none text-white shadow-sm ring-2 ring-background"
-                style={{ backgroundColor: "var(--session-accent)" }}
-                title={isWorkMode ? "Fast mode" : "Deep mode"}
-              >
-                {isWorkMode ? "F" : "D"}
+          {menuDisabled ? (
+            <div
+              className="flex cursor-default items-center justify-center rounded-md"
+              aria-label={`Account (${isWorkMode ? "Fast" : "Deep"} mode). Expand the sidebar to open the menu.`}
+              role="group"
+            >
+              <span className="relative inline-flex">
+                {avatar}
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute -bottom-0.5 -right-0.5 flex size-[18px] items-center justify-center rounded-full text-[9px] font-bold leading-none text-white shadow-sm ring-2 ring-background"
+                  style={{ backgroundColor: "var(--session-accent)" }}
+                  title={isWorkMode ? "Fast mode" : "Deep mode"}
+                >
+                  {isWorkMode ? "F" : "D"}
+                </span>
               </span>
-            </span>
-          </button>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="flex items-center justify-center rounded-md hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              aria-label={`Open account menu (${isWorkMode ? "Fast" : "Deep"} mode)`}
+              aria-expanded={menuOpen}
+              aria-haspopup="menu"
+              aria-controls="user-card-menu"
+              onClick={() => setMenuOpen((o) => !o)}
+            >
+              <span className="relative inline-flex">
+                {avatar}
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute -bottom-0.5 -right-0.5 flex size-[18px] items-center justify-center rounded-full text-[9px] font-bold leading-none text-white shadow-sm ring-2 ring-background"
+                  style={{ backgroundColor: "var(--session-accent)" }}
+                  title={isWorkMode ? "Fast mode" : "Deep mode"}
+                >
+                  {isWorkMode ? "F" : "D"}
+                </span>
+              </span>
+            </button>
+          )}
         </div>
         <div
           className={cn(
