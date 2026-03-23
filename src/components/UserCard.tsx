@@ -180,12 +180,12 @@ export function UserCard({
       ref={containerRef}
       className={cn(
         "relative w-full min-w-0 overflow-hidden transition-[min-height] duration-200 ease-out",
-        menuOpen ? "min-h-[145px]" : "min-h-18",
+        menuOpen ? "min-h-[145px]" : "min-h-14",
       )}
     >
       <div
         className={cn(
-          "absolute inset-x-0 top-0 flex items-center gap-3 py-2",
+          "absolute inset-x-0 top-0 flex items-center gap-3 pt-2 pb-1",
           slideEase,
           menuOpen ? "-translate-y-full pointer-events-none" : "translate-y-0",
         )}
