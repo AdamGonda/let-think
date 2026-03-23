@@ -218,6 +218,9 @@ export function Chat({
     breakRemainingMs === null &&
     (remaining != null || interactionCountsPending);
 
+  const showUnlimitedInteractionLine =
+    !restrictInteractions && sessionId && breakRemainingMs === null;
+
   return (
     <div className="flex flex-col items-center px-4 pt-4 shrink-0" data-tour="session-input">
       <div className="w-full max-w-[720px] flex flex-col gap-3 rounded-t-2xl border border-b-0 border-border shadow-lg px-4 py-3 pb-4" style={{ backgroundColor: "#2B2B28" }}>
@@ -230,6 +233,11 @@ export function Chat({
               ? "interactions"
               : "interaction"}{" "}
             until long break
+          </p>
+        )}
+        {showUnlimitedInteractionLine && (
+          <p className="text-sm font-medium text-muted-foreground min-h-[1.25em]">
+            Unlimited interactions
           </p>
         )}
         <form
