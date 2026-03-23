@@ -461,16 +461,6 @@ function AppContentBody({
     setNotesListDrill,
   ]);
 
-  const handleViewModeChange = useCallback(
-    (mode: "graph" | "notesList") => {
-      if (mode === "notesList") {
-        setNotesListDrill(null);
-      }
-      setViewMode(mode);
-    },
-    [setNotesListDrill, setViewMode],
-  );
-
   const handleBreadcrumbFileClick = useCallback(() => {
     setViewMode("graph");
     handleExitOverlay();
@@ -567,7 +557,7 @@ function AppContentBody({
           }}
           onSelectProject={setActiveProjectId}
           viewMode={viewMode}
-          onViewModeChange={handleViewModeChange}
+          onViewModeChange={setViewMode}
           onRunTutorial={runTutorial}
         />
         <main className="flex flex-1 flex-col min-w-0" data-tour="main-content">
