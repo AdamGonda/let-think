@@ -11,6 +11,7 @@ interface NoteBreadcrumbProps {
   sessionName: string;
   onProjectClick: () => void;
   onSessionClick: () => void;
+  onFileClick: () => void;
 }
 
 export function NoteBreadcrumb({
@@ -18,6 +19,7 @@ export function NoteBreadcrumb({
   sessionName,
   onProjectClick,
   onSessionClick,
+  onFileClick,
 }: NoteBreadcrumbProps) {
   return (
     <nav aria-label="Breadcrumb" className="mb-3 w-full shrink-0">
@@ -48,11 +50,16 @@ export function NoteBreadcrumb({
         <li aria-hidden className="shrink-0 text-muted-foreground/50">
           <ChevronRight className="size-3.5" />
         </li>
-        <li
-          className="min-w-0 px-1 py-0.5 font-medium text-foreground/90"
-          aria-current="page"
-        >
-          {FILE_BREADCRUMB_LEAF}
+        <li className="min-w-0">
+          <button
+            type="button"
+            className={cn("block w-full min-w-0", crumbButtonClass)}
+            title={FILE_BREADCRUMB_LEAF}
+            aria-label={`Open session: ${sessionName}`}
+            onClick={onFileClick}
+          >
+            {FILE_BREADCRUMB_LEAF}
+          </button>
         </li>
       </ol>
     </nav>

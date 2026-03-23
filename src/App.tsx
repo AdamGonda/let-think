@@ -460,6 +460,11 @@ function AppContentBody({
     setActiveProjectId,
     setNotesListDrill,
   ]);
+
+  const handleBreadcrumbFileClick = useCallback(() => {
+    setViewMode("graph");
+    handleExitOverlay();
+  }, [handleExitOverlay, setViewMode]);
   useEffect(() => {
     if (!overlayActive) {
       setOverlayDismissed(false);
@@ -519,6 +524,7 @@ function AppContentBody({
                       sessionName={activeSessionInWorkspace.session.title}
                       onProjectClick={handleBreadcrumbProjectClick}
                       onSessionClick={handleBreadcrumbSessionClick}
+                      onFileClick={handleBreadcrumbFileClick}
                     />
                   ) : null}
                   <MarkdownEditor
