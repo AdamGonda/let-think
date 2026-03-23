@@ -1,87 +1,21 @@
-import { useState, useMemo, useEffect, useCallback } from "react";
-import type { Doc, Id } from "../../convex/_generated/dataModel";
-import { Input } from "@/components/ui/input";
+import { useState, useMemo, useEffect } from "react";
+import type { Doc } from "../../convex/_generated/dataModel";
+import { FileText } from "lucide-react";
+import type { ProjectWithSessions } from "./session-sidebar/workspaceTypes";
+import { usePinnedProjectIds } from "@/hooks/usePinnedProjectIds";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Switch } from "@/components/ui/switch";
-import {
-  Search,
-  FileText,
-  ChevronLeft,
-  ChevronDown,
-  MoreVertical,
-} from "lucide-react";
-import type { ProjectWithSessions } from "./SessionSidebar";
+  type NotesListDrill,
+  type SortMode,
+  groupDisplayName,
+  projectGroupMatchesQuery,
+  resolveDrillGroup,
+  formatUpdatedLabel,
+  groupActivityMs,
+} from "@/lib/notesListUtils";
+import { NotesListToolbar } from "./notes-list/NotesListToolbar";
+import { ProjectSummaryCard } from "./notes-list/ProjectSummaryCard";
 
-const PINNED_STORAGE_KEY = "think-pinned-project-ids";
-
-function loadPinnedIds(): Set<string> {
-  if (typeof window === "undefined") return new Set();
-  try {
-    const raw = localStorage.getItem(PINNED_STORAGE_KEY);
-    if (!raw) return new Set();
-    const arr = JSON.parse(raw) as unknown;
-    if (!Array.isArray(arr)) return new Set();
-    return new Set(arr.filter((x): x is string => typeof x === "string"));
-  } catch {
-    return new Set();
-  }
-}
-
-function savePinnedIds(ids: Set<string>) {
-  try {
-    localStorage.setItem(PINNED_STORAGE_KEY, JSON.stringify([...ids]));
-  } catch {
-    /* ignore */
-  }
-}
-
-type SortMode = "activity" | "name";
-
-export type NotesListDrill =
-  | null
-  | { type: "inbox" }
-  | { type: "project"; id: Id<"projects"> };
-
-function formatUpdatedLabel(ms: number): string {
-  const diff = Date.now() - ms;
-  const minutes = Math.floor(diff / 60_000);
-  const hours = Math.floor(diff / 3600_000);
-  const days = Math.floor(diff / 86400_000);
-  if (minutes < 1) return "Updated just now";
-  if (minutes < 60) return `Updated ${minutes}m ago`;
-  if (hours < 24) return `Updated ${hours}h ago`;
-  if (days < 7) return `Updated ${days}d ago`;
-  return `Updated ${new Date(ms).toLocaleDateString()}`;
-}
-
-function groupActivityMs(sessions: Doc<"sessions">[], projectCreated: number): number {
-  if (sessions.length === 0) return projectCreated;
-  return Math.max(...sessions.map((s) => s.createdAt));
-}
-
-function groupDisplayName(group: ProjectWithSessions): string {
-  return group.project?.name ?? "Inbox";
-}
-
-function projectGroupMatchesQuery(group: ProjectWithSessions, q: string): boolean {
-  return groupDisplayName(group).toLowerCase().includes(q);
-}
-
-function resolveDrillGroup(
-  workspace: ProjectWithSessions[],
-  drill: NotesListDrill,
-): ProjectWithSessions | undefined {
-  if (!drill) return undefined;
-  if (drill.type === "inbox") {
-    return workspace.find((g) => g.project == null);
-  }
-  return workspace.find((g) => g.project?._id === drill.id);
-}
+export type { NotesListDrill };
 
 interface NotesListPanelProps {
   workspace: ProjectWithSessions[] | undefined;
@@ -98,38 +32,10 @@ export function NotesListPanel({
 }: NotesListPanelProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("activity");
-  const [pinnedIds, setPinnedIds] = useState<Set<string>>(loadPinnedIds);
+  const { pinnedIds, toggleProjectPinned } = usePinnedProjectIds(workspace);
 
   const totalSessions =
     workspace?.reduce((n, g) => n + g.sessions.length, 0) ?? 0;
-
-  useEffect(() => {
-    if (!workspace) return;
-    const valid = new Set(
-      workspace.flatMap((g) => (g.project ? [g.project._id as string] : [])),
-    );
-    setPinnedIds((prev) => {
-      let pruned = false;
-      const next = new Set<string>();
-      for (const id of prev) {
-        if (valid.has(id)) next.add(id);
-        else pruned = true;
-      }
-      if (!pruned && next.size === prev.size) return prev;
-      savePinnedIds(next);
-      return next;
-    });
-  }, [workspace]);
-
-  const toggleProjectPinned = useCallback((projectId: string) => {
-    setPinnedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(projectId)) next.delete(projectId);
-      else next.add(projectId);
-      savePinnedIds(next);
-      return next;
-    });
-  }, []);
 
   const sortedGroups = useMemo(() => {
     if (!workspace) return [];
@@ -233,61 +139,19 @@ export function NotesListPanel({
   return (
     <div className="flex flex-1 flex-col min-h-0 bg-background">
       <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-6">
-        <div className="shrink-0 border-b border-border py-6">
-          <div
-            className={`mb-5 flex min-h-10 items-center ${
-              drilled && drillGroup ? "gap-6" : ""
-            }`}
-          >
-            {drilled && drillGroup ? (
-              <button
-                type="button"
-                onClick={() => {
-                  onDrillChange(null);
-                  setSearchQuery("");
-                }}
-                className="shrink-0 cursor-pointer rounded-lg border border-border/80 bg-card p-2 text-foreground transition-colors hover:border-border hover:bg-muted/10 active:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                aria-label="Back to projects"
-              >
-                <ChevronLeft className="size-5" />
-              </button>
-            ) : null}
-            <h1 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight text-foreground truncate">
-              {drillHeading}
-            </h1>
-          </div>
-          <div className="relative mb-3 w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
-            <Input
-              type="search"
-              placeholder={
-                drilled ? "Search sessions…" : "Search projects…"
-              }
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-10 w-full pl-9 rounded-lg bg-muted/25 border-border/80 focus-visible:ring-2 focus-visible:ring-ring/40"
-            />
-          </div>
-          <div className="flex justify-end">
-            <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground select-none">
-              <span className="sr-only">Sort</span>
-              <span className="hidden sm:inline">Sort by</span>
-              <div className="relative">
-                <select
-                  value={sortMode}
-                  onChange={(e) =>
-                    setSortMode(e.target.value as SortMode)
-                  }
-                  className="appearance-none cursor-pointer rounded-lg border border-border/80 bg-card py-1.5 pl-3 pr-8 text-sm text-foreground transition-colors hover:border-border hover:bg-muted/10 active:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <option value="activity">Last changed</option>
-                  <option value="name">Name</option>
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-              </div>
-            </label>
-          </div>
-        </div>
+        <NotesListToolbar
+          drilled={drilled}
+          hasDrillGroup={!!drillGroup}
+          drillHeading={drillHeading}
+          searchQuery={searchQuery}
+          onSearchQueryChange={setSearchQuery}
+          sortMode={sortMode}
+          onSortModeChange={setSortMode}
+          onBackFromDrill={() => {
+            onDrillChange(null);
+            setSearchQuery("");
+          }}
+        />
 
         <div className="min-h-0 flex-1 overflow-y-auto py-6">
           {!drilled && (
@@ -299,21 +163,7 @@ export function NotesListPanel({
               ) : (
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {filteredGroups.map((group) => {
-                    const title = groupDisplayName(group);
-                    const sessions = group.sessions;
-                    const count = sessions.length;
-                    const sessionCountLabel =
-                      count === 0
-                        ? "No sessions yet"
-                        : count === 1
-                          ? "1 session"
-                          : `${count} sessions`;
-                    const activity = groupActivityMs(
-                      sessions,
-                      group.project?.createdAt ?? 0,
-                    );
                     const key = group.project?._id ?? "__inbox__";
-                    const emptyInbox = group.project == null && count === 0;
                     const projectId = group.project?._id;
                     const isPinned = projectId
                       ? pinnedIds.has(projectId as string)
@@ -323,82 +173,21 @@ export function NotesListPanel({
                       : undefined;
                     return (
                       <li key={key}>
-                        <div
-                          className={`relative rounded-xl ${
-                            group.project == null
-                              ? "border-4 border-border"
-                              : "border-2 border-border/90"
-                          }`}
-                        >
-                          <button
-                            type="button"
-                            onClick={() =>
-                              onDrillChange(
-                                group.project
-                                  ? { type: "project", id: group.project._id }
-                                  : { type: "inbox" },
-                              )
-                            }
-                            className="flex min-h-30 w-full cursor-pointer flex-col gap-2 rounded-[inherit] bg-transparent p-5 pr-12 text-left shadow-none transition-colors hover:bg-muted/10 active:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                          >
-                            <div className="flex items-start justify-between gap-2">
-                              <span className="font-semibold text-foreground leading-snug line-clamp-2">
-                                {title}
-                              </span>
-                              {group.project == null && (
-                                <span className="shrink-0 rounded-full border border-border/60 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-                                  Inbox
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-sm text-muted-foreground line-clamp-2 flex-1">
-                              {sessionCountLabel}
-                            </p>
-                            <p className="text-xs text-muted-foreground/90 pt-1">
-                              {emptyInbox
-                                ? "—"
-                                : formatUpdatedLabel(activity)}
-                            </p>
-                          </button>
-                          {projectId ? (
-                            <DropdownMenu>
-                              <DropdownMenuTrigger
-                                type="button"
-                                className="absolute right-2 top-2 z-10 flex size-9 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/30 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                                aria-label={`${title} options`}
-                                onPointerDown={(e) => e.stopPropagation()}
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <MoreVertical className="size-4" />
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent
-                                align="end"
-                                className="min-w-[220px]"
-                                onPointerDown={(e) => e.stopPropagation()}
-                              >
-                                <DropdownMenuItem
-                                  closeOnClick={false}
-                                  className="flex cursor-default items-center justify-between gap-4 py-2.5"
-                                  onClick={(e) => e.preventDefault()}
-                                >
-                                  <span
-                                    id={pinLabelId}
-                                    className="text-sm text-foreground"
-                                  >
-                                    Pin to top
-                                  </span>
-                                  <Switch
-                                    checked={isPinned}
-                                    onCheckedChange={() =>
-                                      toggleProjectPinned(projectId as string)
-                                    }
-                                    aria-labelledby={pinLabelId}
-                                  />
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          ) : null}
-                        </div>
+                        <ProjectSummaryCard
+                          group={group}
+                          isPinned={isPinned}
+                          pinLabelId={pinLabelId}
+                          onDrill={() =>
+                            onDrillChange(
+                              group.project
+                                ? { type: "project", id: group.project._id }
+                                : { type: "inbox" },
+                            )
+                          }
+                          onTogglePin={() => {
+                            if (projectId) toggleProjectPinned(projectId as string);
+                          }}
+                        />
                       </li>
                     );
                   })}
@@ -422,25 +211,25 @@ export function NotesListPanel({
               ) : (
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {filteredDrillSessions.map((session) => (
-                      <li key={session._id}>
-                        <button
-                          type="button"
-                          onClick={() => onSelectSession(session)}
-                          className={`flex min-h-30 w-full cursor-pointer flex-col gap-2 rounded-xl bg-card p-5 text-left shadow-sm transition-colors hover:border-border hover:bg-muted active:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-                            drill?.type === "inbox"
-                              ? "border-4 border-border"
-                              : "border-2 border-border/90"
-                          }`}
-                        >
-                          <span className="font-semibold text-foreground leading-snug line-clamp-2">
-                            {session.title}
-                          </span>
-                          <p className="text-xs text-muted-foreground/90 pt-1">
-                            {formatUpdatedLabel(session.createdAt)}
-                          </p>
-                        </button>
-                      </li>
-                    ))}
+                    <li key={session._id}>
+                      <button
+                        type="button"
+                        onClick={() => onSelectSession(session)}
+                        className={`flex min-h-30 w-full cursor-pointer flex-col gap-2 rounded-xl bg-card p-5 text-left shadow-sm transition-colors hover:border-border hover:bg-muted active:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                          drill?.type === "inbox"
+                            ? "border-4 border-border"
+                            : "border-2 border-border/90"
+                        }`}
+                      >
+                        <span className="font-semibold text-foreground leading-snug line-clamp-2">
+                          {session.title}
+                        </span>
+                        <p className="text-xs text-muted-foreground/90 pt-1">
+                          {formatUpdatedLabel(session.createdAt)}
+                        </p>
+                      </button>
+                    </li>
+                  ))}
                 </ul>
               )}
             </>

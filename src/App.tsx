@@ -1,22 +1,14 @@
 import {
   useState,
   useEffect,
-  useLayoutEffect,
   useMemo,
   useRef,
   useCallback,
 } from "react";
 import { useAtom } from "jotai";
-import {
-  useQuery,
-  useMutation,
-  AuthLoading,
-  Unauthenticated,
-  Authenticated,
-} from "convex/react";
+import { useQuery, AuthLoading, Unauthenticated, Authenticated } from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
-import { formatBreakCountdown } from "./hooks/useSessionManager";
 import {
   SessionDataProvider,
   useSessionData,
@@ -28,7 +20,6 @@ import {
   type ProjectWithSessions,
 } from "./components/SessionSidebar";
 import { NotesListPanel } from "./components/NotesListPanel";
-import { NoteBreadcrumb } from "./components/NoteBreadcrumb";
 import { Chat } from "./components/Chat";
 import {
   Tutorial,
@@ -37,12 +28,10 @@ import {
 } from "./components/Tutorial";
 import { ChatHistoryPanel } from "./components/ChatHistoryPanel";
 import { ConceptGraphOverlay } from "./components/ConceptGraphOverlay";
-import { MarkdownEditor } from "./components/MarkdownEditor";
 import { SignIn } from "./components/SignIn";
 import { Toaster } from "./components/ui/sonner";
 import { Button } from "./components/ui/button";
-import { FileText, History, Sigma } from "lucide-react";
-import { StepNavigator } from "./components/StepNavigator";
+import { Sigma } from "lucide-react";
 import { WorkPreferenceSync } from "./components/WorkPreferenceSync";
 import {
   selectCanExitWakeUp,
@@ -61,6 +50,15 @@ import {
   notesListDrillAtom,
   selectedBatchIndexAtom,
 } from "./atoms/appAtoms";
+import { useSessionEditorSync } from "./hooks/useSessionEditorSync";
+import { useDefaultSessionSelection } from "./hooks/useDefaultSessionSelection";
+import {
+  buildNumberedConceptsFromGraph,
+  referencedConceptIdsFromDraft,
+} from "./lib/conceptReferences";
+import { WakeUpOverlay } from "./components/WakeUpOverlay";
+import { GraphViewHeader } from "./components/GraphViewHeader";
+import { AppShell } from "./components/AppShell";
 
 function App() {
   return (
@@ -83,168 +81,11 @@ function App() {
 }
 
 function AppContent() {
-  const [activeSessionId, setActiveSessionId] = useAtom(activeSessionIdAtom);
-  const [, setActiveProjectId] = useAtom(activeProjectIdAtom);
-  const [draftInput, setDraftInput] = useAtom(draftInputAtom);
-  const [notes, setNotes] = useAtom(notesAtom);
-  const actor = useAppUiActor();
-
-  const draftInputRef = useRef(draftInput);
-  const notesRef = useRef(notes);
-  useLayoutEffect(() => {
-    draftInputRef.current = draftInput;
-    notesRef.current = notes;
-  });
+  const [activeSessionId] = useAtom(activeSessionIdAtom);
   const projectsWithSessions = useQuery(api.projects.listWithSessions);
-  const allSessionsSorted = useMemo(() => {
-    if (!projectsWithSessions) return undefined;
-    return projectsWithSessions
-      .flatMap((g) => g.sessions)
-      .sort((a, b) => b.createdAt - a.createdAt);
-  }, [projectsWithSessions]);
-  const createSessionMutation = useMutation(api.sessions.create);
-  const storedEditor = useQuery(
-    api.sessions.getEditorFields,
-    activeSessionId ? { sessionId: activeSessionId } : "skip",
-  );
-  const storedDraft = storedEditor?.draftInput;
-  const storedThinkingNotes = storedEditor?.thinkingNotes;
-  const updateDraft = useMutation(api.sessions.updateDraft);
-  const updateThinkingNotes = useMutation(api.sessions.updateThinkingNotes);
-  const prevSessionIdRef = useRef<Id<"sessions"> | null>(null);
-  const appliedStoredForSessionRef = useRef<Id<"sessions"> | null>(null);
-  const hasEverHadSelectionRef = useRef(false);
-
-  useEffect(() => {
-    actor.send({ type: "SESSION_SYNC", active: activeSessionId != null });
-  }, [activeSessionId, actor]);
-
-  useEffect(() => {
-    if (activeSessionId) hasEverHadSelectionRef.current = true;
-  }, [activeSessionId]);
-
-  useEffect(() => {
-    if (
-      allSessionsSorted &&
-      allSessionsSorted.length > 0 &&
-      !activeSessionId &&
-      !hasEverHadSelectionRef.current
-    ) {
-      const first = allSessionsSorted[0]!;
-      setActiveSessionId(first._id);
-      if (first.projectId) setActiveProjectId(first.projectId);
-      hasEverHadSelectionRef.current = true;
-    }
-  }, [allSessionsSorted, activeSessionId, setActiveSessionId, setActiveProjectId]);
-
-  const handleCreateSessionForFirstMessage = useCallback(async () => {
-    const id = await createSessionMutation({});
-    setActiveSessionId(id);
-    setActiveProjectId(null);
-    hasEverHadSelectionRef.current = true;
-    return id;
-  }, [createSessionMutation, setActiveSessionId, setActiveProjectId]);
-
-  // Select inbox by default when empty (no projects, inbox empty) so the user
-  // understands they're viewing the inbox and can create a new session
-  useEffect(() => {
-    if (!projectsWithSessions) return;
-    const hasProjects = projectsWithSessions.some(
-      (g: { project: unknown }) => g.project != null,
-    );
-    const inboxGroup = projectsWithSessions.find(
-      (g: { project: unknown }) => g.project == null,
-    );
-    const inboxEmpty = !inboxGroup || inboxGroup.sessions.length === 0;
-    if (!hasProjects && inboxEmpty) {
-      setActiveProjectId(null);
-      setActiveSessionId(null);
-    }
-  }, [projectsWithSessions, setActiveProjectId, setActiveSessionId]);
-
-  // Load draft and thinking notes from Convex when session changes or when stored data loads (e.g. after refresh)
-  useEffect(() => {
-    const prevId = prevSessionIdRef.current;
-    const sessionChanged = prevId !== activeSessionId;
-
-    if (sessionChanged && prevId != null) {
-      updateDraft({ sessionId: prevId, draftInput: draftInputRef.current });
-      updateThinkingNotes({
-        sessionId: prevId,
-        thinkingNotes: notesRef.current,
-      });
-    }
-    prevSessionIdRef.current = activeSessionId;
-
-    if (sessionChanged) {
-      appliedStoredForSessionRef.current = null;
-      setDraftInput(activeSessionId == null ? "" : (storedDraft ?? ""));
-      setNotes("");
-      if (
-        activeSessionId != null &&
-        storedDraft !== undefined &&
-        storedThinkingNotes !== undefined
-      ) {
-        appliedStoredForSessionRef.current = activeSessionId;
-        setNotes(storedThinkingNotes ?? "");
-      }
-    } else if (
-      activeSessionId != null &&
-      appliedStoredForSessionRef.current !== activeSessionId &&
-      storedDraft !== undefined &&
-      storedThinkingNotes !== undefined
-    ) {
-      setDraftInput(storedDraft ?? "");
-      setNotes(storedThinkingNotes ?? "");
-      appliedStoredForSessionRef.current = activeSessionId;
-    }
-  }, [
-    activeSessionId,
-    storedDraft,
-    storedThinkingNotes,
-    updateDraft,
-    updateThinkingNotes,
-    setDraftInput,
-    setNotes,
-  ]);
-
-  // Debounced save when draft changes (same session)
-  const saveDraft = useCallback(
-    (value: string) => {
-      if (activeSessionId) {
-        updateDraft({ sessionId: activeSessionId, draftInput: value });
-      }
-    },
-    [activeSessionId, updateDraft],
-  );
-  useEffect(() => {
-    if (!activeSessionId) return;
-    const timer = setTimeout(() => {
-      saveDraft(draftInput);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [activeSessionId, draftInput, saveDraft]);
-
-  // Debounced save when thinking notes change (same session)
-  const saveThinkingNotes = useCallback(
-    (value: string) => {
-      if (activeSessionId) {
-        updateThinkingNotes({
-          sessionId: activeSessionId,
-          thinkingNotes: value,
-        });
-      }
-    },
-    [activeSessionId, updateThinkingNotes],
-  );
-  useEffect(() => {
-    if (!activeSessionId) return;
-    const timer = setTimeout(() => {
-      saveThinkingNotes(notes);
-    }, 400);
-    return () => clearTimeout(timer);
-  }, [activeSessionId, notes, saveThinkingNotes]);
-
+  const { handleCreateSessionForFirstMessage } =
+    useDefaultSessionSelection(projectsWithSessions);
+  useSessionEditorSync(activeSessionId);
   const mainContentRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -321,8 +162,7 @@ function AppContentBody({
     canLoadOlderMessages,
     messagesLoading,
   } = useSessionData();
-  const hasChatHistory =
-    messages.length > 0 || canLoadOlderMessages;
+  const hasChatHistory = messages.length > 0 || canLoadOlderMessages;
 
   useEffect(() => {
     if (!historyPanelOpen || !activeSessionId || messagesLoading) return;
@@ -353,48 +193,28 @@ function AppContentBody({
     }
   }, [batches.length, setSelectedBatchIndex]);
 
-  const numberedConcepts = useMemo(() => {
-    if (!conceptGraph?.nodes) return [];
-    const batch = batches[selectedBatchIndex];
-    if (!batch?.nodeIds?.length) return [];
-    const nodeMap = new Map(
-      conceptGraph.nodes.map(
-        (n: { id: string; name: string; description?: string }) => [n.id, n],
-      ),
-    );
-    const result: Array<{
-      id: string;
-      name: string;
-      description?: string;
-      number: number;
-    }> = [];
-    for (let i = 0; i < batch.nodeIds.length; i++) {
-      const node = nodeMap.get(batch.nodeIds[i]!);
-      if (node) result.push({ ...node, number: i + 1 });
-    }
-    return result;
-  }, [conceptGraph, batches, selectedBatchIndex]);
+  const numberedConcepts = useMemo(
+    () =>
+      buildNumberedConceptsFromGraph(conceptGraph, batches, selectedBatchIndex),
+    [conceptGraph, batches, selectedBatchIndex],
+  );
 
   const isLatestBatch =
     batches.length > 0 && selectedBatchIndex === batches.length - 1;
-  const referencedConceptIds = useMemo(() => {
-    if (!isLatestBatch) return new Set<string>();
-    const ids = new Set<string>();
-    const conceptByNumber = new Map(numberedConcepts.map((c) => [c.number, c]));
-    const refRegex = /@(\d+)\b/g;
-    let m: RegExpExecArray | null;
-    while ((m = refRegex.exec(draftInput ?? "")) !== null) {
-      const concept = conceptByNumber.get(parseInt(m[1]!, 10));
-      if (concept) ids.add(concept.id);
-    }
-    return ids;
-  }, [isLatestBatch, draftInput, numberedConcepts]);
+  const referencedConceptIds = useMemo(
+    () =>
+      referencedConceptIdsFromDraft(
+        draftInput,
+        numberedConcepts,
+        isLatestBatch,
+      ),
+    [draftInput, numberedConcepts, isLatestBatch],
+  );
 
   const chatVisible =
     viewMode === "graph" &&
     (batches.length === 0 || selectedBatchIndex === batches.length - 1);
 
-  // Delay revealing the editor until after it has rendered and scrolled to caret
   const [editorRevealReady, setEditorRevealReady] = useState(false);
   useEffect(() => {
     if (!displayWakeUpLayer || isExitingOverlay) {
@@ -417,7 +237,6 @@ function AppContentBody({
     actor.send({ type: "USER_EXIT_WAKE_UP" });
   }, [canExitOverlay, actor]);
 
-  /** Close file editor overlay and return to graph — works while LLM is loading (unlike USER_EXIT_WAKE_UP). */
   const handleReturnToGraphFromEditorOverlay = useCallback(() => {
     setViewMode("graph");
     actor.send({ type: "EDITOR_CLOSE" });
@@ -432,7 +251,10 @@ function AppContentBody({
     if (!activeSessionInWorkspace) return;
     if (activeSessionInWorkspace.projectId) {
       setActiveProjectId(activeSessionInWorkspace.projectId);
-      setNotesListDrill({ type: "project", id: activeSessionInWorkspace.projectId });
+      setNotesListDrill({
+        type: "project",
+        id: activeSessionInWorkspace.projectId,
+      });
     } else {
       setActiveProjectId(null);
       setNotesListDrill({ type: "inbox" });
@@ -449,7 +271,6 @@ function AppContentBody({
     handleReturnToGraphFromEditorOverlay();
   }, [handleReturnToGraphFromEditorOverlay]);
 
-  /** Open file from graph keeps `viewMode === "graph"`; picking a session in Files keeps `notesList`. */
   const workSigmaEditorFromSession =
     isWorkMode && editorOpen && viewMode === "graph";
   const overlaySigmaStandardExit =
@@ -457,246 +278,177 @@ function AppContentBody({
   const showOverlaySigma =
     workSigmaEditorFromSession || overlaySigmaStandardExit;
 
+  const handleWakeUpSigmaClick = useCallback(() => {
+    if (workSigmaEditorFromSession) {
+      handleReturnToGraphFromEditorOverlay();
+    } else {
+      handleExitOverlay();
+    }
+  }, [
+    workSigmaEditorFromSession,
+    handleReturnToGraphFromEditorOverlay,
+    handleExitOverlay,
+  ]);
+
   return (
-    <div className="flex h-screen bg-background">
-      {displayWakeUpLayer && (
-        <div
-          className={`fixed inset-0 z-[9999] flex h-screen w-screen flex-col bg-background ${
-            isExitingOverlay ? "animate-wake-up-out" : "animate-wake-up-in"
-          }`}
-          aria-busy={chatLoading}
-          aria-live="polite"
-        >
-          {/* Hide overlay content immediately when exiting to avoid text/cards overlap during fade */}
-          <div
-            className={`flex flex-1 min-h-0 flex-col transition-opacity duration-75 ${
-              isExitingOverlay ? "opacity-0" : "opacity-100"
-            }`}
-          >
-            {showOverlaySigma ? (
-              <Button
-                variant="outline"
-                size="icon-sm"
-                className="absolute top-4 right-4 z-10"
-                onClick={
-                  workSigmaEditorFromSession
-                    ? handleReturnToGraphFromEditorOverlay
-                    : handleExitOverlay
-                }
-                aria-label={
-                  workSigmaEditorFromSession
-                    ? "Return to concept graph"
-                    : "Summarize and return to session"
-                }
-              >
-                <Sigma className="size-5" />
-              </Button>
-            ) : null}
-            <div className="shrink-0 py-8 flex flex-col items-center gap-1">
-              {breakRemainingMs != null &&
-                breakRemainingMs > 0 &&
-                !editorOpen && (
-                  <span className="text-muted-foreground text-lg font-medium tabular-nums">
-                    {formatBreakCountdown(breakRemainingMs)}
-                  </span>
-                )}
-            </div>
-            {activeSessionId && (
-              <div className="flex-1 min-h-0 flex flex-col items-center px-6 pb-8 overflow-hidden">
-                <div
-                  className={`relative w-full max-w-[720px] flex-1 min-h-0 flex flex-col transition-opacity duration-150 ${
-                    editorRevealReady ? "opacity-100" : "opacity-0"
-                  }`}
-                >
-                  {editorOpen &&
-                  activeSessionInWorkspace &&
-                  viewMode === "notesList" ? (
-                    <NoteBreadcrumb
-                      projectName={activeSessionInWorkspace.projectName}
-                      sessionName={activeSessionInWorkspace.session.title}
-                      onProjectClick={handleBreadcrumbProjectClick}
-                      onSessionClick={handleBreadcrumbSessionClick}
-                      onFileClick={handleBreadcrumbFileClick}
-                    />
-                  ) : null}
-                  <MarkdownEditor
-                    value={notes}
-                    onChange={(v) => setNotes(v ?? "")}
-                    placeholder="Take notes…"
-                    variant="focused"
-                    dark={true}
-                    autoFocus
-                    autoFocusEnd
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-      <Tutorial autoStart={!getTutorialCompleted()} onComplete={() => {}} />
-      <div
-        className="flex flex-1 min-w-0"
-        inert={displayWakeUpLayer}
+    <AppShell
+      wakeUpOverlay={
+        displayWakeUpLayer ? (
+          <WakeUpOverlay
+            chatLoading={chatLoading}
+            isExitingOverlay={isExitingOverlay}
+            breakRemainingMs={breakRemainingMs}
+            editorOpen={editorOpen}
+            showOverlaySigma={showOverlaySigma}
+            workSigmaEditorFromSession={workSigmaEditorFromSession}
+            onSigmaClick={handleWakeUpSigmaClick}
+            editorRevealReady={editorRevealReady}
+            activeSessionId={activeSessionId}
+            activeSessionInWorkspace={activeSessionInWorkspace}
+            viewMode={viewMode}
+            notes={notes}
+            onNotesChange={setNotes}
+            onBreadcrumbProjectClick={handleBreadcrumbProjectClick}
+            onBreadcrumbSessionClick={handleBreadcrumbSessionClick}
+            onBreadcrumbFileClick={handleBreadcrumbFileClick}
+          />
+        ) : null
+      }
+      tutorial={
+        <Tutorial autoStart={!getTutorialCompleted()} onComplete={() => {}} />
+      }
+      mainInert={!!displayWakeUpLayer}
+      toaster={<Toaster theme="dark" />}
+    >
+      <SessionSidebar
+        workspace={workspace}
+        activeSessionId={activeSessionId}
+        activeProjectId={activeProjectId}
+        onSelectSession={(id) => {
+          setActiveSessionId(id);
+          if (viewMode === "notesList") setViewMode("graph");
+        }}
+        onSelectProject={setActiveProjectId}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        onRunTutorial={runTutorial}
+      />
+      <main
+        className={`flex flex-1 flex-col min-w-0${
+          workModeSessionLoading || workModeNotesListDuringChatLoading
+            ? " rounded-md ring-2 ring-(--session-accent) ring-inset"
+            : ""
+        }`}
+        data-tour="main-content"
+        aria-busy={
+          workModeSessionLoading || workModeNotesListDuringChatLoading
+            ? true
+            : undefined
+        }
       >
-        <SessionSidebar
-          workspace={workspace}
-          activeSessionId={activeSessionId}
-          activeProjectId={activeProjectId}
-          onSelectSession={(id) => {
-            setActiveSessionId(id);
-            if (viewMode === "notesList") setViewMode("graph");
-          }}
-          onSelectProject={setActiveProjectId}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
-          onRunTutorial={runTutorial}
-        />
-        <main
-          className={`flex flex-1 flex-col min-w-0${
-            workModeSessionLoading || workModeNotesListDuringChatLoading
-              ? " rounded-md ring-2 ring-(--session-accent) ring-inset"
-              : ""
-          }`}
-          data-tour="main-content"
-          aria-busy={
-            workModeSessionLoading || workModeNotesListDuringChatLoading
-              ? true
-              : undefined
-          }
+        <div
+          ref={mainContentRef}
+          className="relative flex flex-1 min-h-0 flex-col"
         >
-          <div
-            ref={mainContentRef}
-            className="relative flex flex-1 min-h-0 flex-col"
-          >
-            {viewMode === "notesList" ? (
-              <>
-                {workModeNotesListDuringChatLoading ? (
-                  <Button
-                    variant="outline"
-                    size="icon-sm"
-                    className="absolute top-4 right-4 z-10"
-                    onClick={() => setViewMode("graph")}
-                    title="Return to graph"
-                    aria-label="Return to concept graph"
-                  >
-                    <Sigma className="size-5" />
-                  </Button>
-                ) : null}
-                <NotesListPanel
-                  workspace={workspace}
-                  drill={notesListDrill}
-                  onDrillChange={setNotesListDrill}
-                  onSelectSession={(session) => {
-                    setActiveSessionId(session._id);
-                    if (session.projectId) setActiveProjectId(session.projectId);
-                    else setActiveProjectId(null);
-                    setNotesListDrill(
-                      session.projectId
-                        ? { type: "project", id: session.projectId }
-                        : { type: "inbox" },
-                    );
-                    actor.send({ type: "EDITOR_OPEN" });
-                  }}
-                />
-              </>
-            ) : (
-              <>
-                {activeSessionId && (
-                  <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 shrink-0 py-3 px-4 border-b border-border">
-                    <div className="min-w-0" />
-                    <div className="flex justify-center">
-                      <StepNavigator
-                        totalSteps={batches.length}
-                        selectedIndex={selectedBatchIndex}
-                        onSelect={(index) => setSelectedBatchIndex(index)}
-                      />
-                    </div>
-                    <div className="flex items-center justify-end gap-2">
-                      {hasChatHistory ? (
-                        <Button
-                          variant="outline"
-                          size="icon-sm"
-                          onClick={() => actor.send({ type: "HISTORY_OPEN" })}
-                          title="Conversation history"
-                          aria-label="Conversation history"
-                          data-tour="history-btn"
-                        >
-                          <History className="size-5" />
-                        </Button>
-                      ) : null}
-                      <Button
-                        variant="outline"
-                        size="icon-sm"
-                        onClick={() => actor.send({ type: "EDITOR_OPEN" })}
-                        title="Open file"
-                        aria-label="Open file"
-                        data-tour="notes-btn"
-                      >
-                        <FileText className="size-5" />
-                      </Button>
-                    </div>
-                  </header>
-                )}
-                {/* Past steps hide chat; cap graph height so card rows match the usual graph+input layout. */}
-                <div
-                  className={`flex w-full flex-1 min-h-0 items-stretch justify-stretch ${
-                    !chatVisible ? "max-h-[calc(100dvh-13rem)]" : ""
-                  }`}
-                  data-tour="graph-area"
+          {viewMode === "notesList" ? (
+            <>
+              {workModeNotesListDuringChatLoading ? (
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  className="absolute top-4 right-4 z-10"
+                  onClick={() => setViewMode("graph")}
+                  title="Return to graph"
+                  aria-label="Return to concept graph"
                 >
-                  <ConceptGraphOverlay
-                    key={activeSessionId ?? "empty"}
-                    graph={conceptGraph ?? null}
-                    isLoading={chatLoading}
-                    selectedBatchIndex={selectedBatchIndex}
-                    onSelectedBatchIndexChange={setSelectedBatchIndex}
-                    referencedConceptIds={referencedConceptIds}
-                  />
-                </div>
-              </>
-            )}
-          </div>
-          {chatVisible && (
-            <Chat
-              sessionId={activeSessionId}
-              workModeLoadingFrame={workModeSessionLoading}
-              isLoading={chatLoading}
-              setIsLoading={(loading) =>
-                actor.send(
-                  loading
-                    ? { type: "CHAT_LOADING_START" }
-                    : { type: "CHAT_LOADING_END" },
-                )
-              }
-              onModelResponded={() => actor.send({ type: "MODEL_FINISHED" })}
-              numberedConcepts={numberedConcepts}
-              draftInput={draftInput}
-              setDraftInput={setDraftInput}
-              onCreateSession={onCreateSessionForFirstMessage}
-            />
+                  <Sigma className="size-5" />
+                </Button>
+              ) : null}
+              <NotesListPanel
+                workspace={workspace}
+                drill={notesListDrill}
+                onDrillChange={setNotesListDrill}
+                onSelectSession={(session) => {
+                  setActiveSessionId(session._id);
+                  if (session.projectId) setActiveProjectId(session.projectId);
+                  else setActiveProjectId(null);
+                  setNotesListDrill(
+                    session.projectId
+                      ? { type: "project", id: session.projectId }
+                      : { type: "inbox" },
+                  );
+                  actor.send({ type: "EDITOR_OPEN" });
+                }}
+              />
+            </>
+          ) : (
+            <>
+              {activeSessionId && (
+                <GraphViewHeader
+                  batchCount={batches.length}
+                  selectedBatchIndex={selectedBatchIndex}
+                  onSelectBatch={setSelectedBatchIndex}
+                  hasChatHistory={hasChatHistory}
+                  onHistoryOpen={() => actor.send({ type: "HISTORY_OPEN" })}
+                  onEditorOpen={() => actor.send({ type: "EDITOR_OPEN" })}
+                />
+              )}
+              <div
+                className={`flex w-full flex-1 min-h-0 items-stretch justify-stretch ${
+                  !chatVisible ? "max-h-[calc(100dvh-13rem)]" : ""
+                }`}
+                data-tour="graph-area"
+              >
+                <ConceptGraphOverlay
+                  key={activeSessionId ?? "empty"}
+                  graph={conceptGraph ?? null}
+                  isLoading={chatLoading}
+                  selectedBatchIndex={selectedBatchIndex}
+                  onSelectedBatchIndexChange={setSelectedBatchIndex}
+                  referencedConceptIds={referencedConceptIds}
+                />
+              </div>
+            </>
           )}
-          {viewMode === "graph" && (
-            <ChatHistoryPanel
-              isOpen={historyPanelOpen}
-              onClose={() => actor.send({ type: "HISTORY_CLOSE" })}
-              messages={messages ?? []}
-              onLoadOlderMessages={
-                canLoadOlderMessages ? () => loadOlderMessages(80) : undefined
-              }
-              canLoadOlderMessages={canLoadOlderMessages}
-              batches={batches}
-              selectedBatchIndex={selectedBatchIndex}
-              onNavigateToStep={(batchIndex: number) => {
-                setSelectedBatchIndex(batchIndex);
-                actor.send({ type: "HISTORY_CLOSE" });
-              }}
-            />
-          )}
-        </main>
-      </div>
-      <Toaster theme="dark" />
-    </div>
+        </div>
+        {chatVisible && (
+          <Chat
+            sessionId={activeSessionId}
+            workModeLoadingFrame={workModeSessionLoading}
+            isLoading={chatLoading}
+            setIsLoading={(loading) =>
+              actor.send(
+                loading
+                  ? { type: "CHAT_LOADING_START" }
+                  : { type: "CHAT_LOADING_END" },
+              )
+            }
+            onModelResponded={() => actor.send({ type: "MODEL_FINISHED" })}
+            numberedConcepts={numberedConcepts}
+            draftInput={draftInput}
+            setDraftInput={setDraftInput}
+            onCreateSession={onCreateSessionForFirstMessage}
+          />
+        )}
+        {viewMode === "graph" && (
+          <ChatHistoryPanel
+            isOpen={historyPanelOpen}
+            onClose={() => actor.send({ type: "HISTORY_CLOSE" })}
+            messages={messages ?? []}
+            onLoadOlderMessages={
+              canLoadOlderMessages ? () => loadOlderMessages(80) : undefined
+            }
+            canLoadOlderMessages={canLoadOlderMessages}
+            batches={batches}
+            selectedBatchIndex={selectedBatchIndex}
+            onNavigateToStep={(batchIndex: number) => {
+              setSelectedBatchIndex(batchIndex);
+              actor.send({ type: "HISTORY_CLOSE" });
+            }}
+          />
+        )}
+      </main>
+    </AppShell>
   );
 }
 

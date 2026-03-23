@@ -3,10 +3,12 @@ import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useWorkPreference } from "../hooks/useWorkPreference";
-import { LogOut, MoreHorizontal, HelpCircle, X } from "lucide-react";
+import { MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
+import { UserCardModeToggle } from "./UserCardModeToggle";
+import { UserMenuPanel } from "./UserMenuPanel";
 
 function getInitials(name: string | undefined | null): string {
   if (!name?.trim()) return "?";
@@ -17,129 +19,9 @@ function getInitials(name: string | undefined | null): string {
   return (name[0] ?? "?").toUpperCase();
 }
 
-function ModeToggleBadge({
-  isWorkMode,
-  onToggle,
-  compact,
-  className,
-}: {
-  isWorkMode: boolean;
-  onToggle: () => void;
-  compact?: boolean;
-  className?: string;
-}) {
-  const label = isWorkMode ? "Work" : "Think";
-  const switchTo = isWorkMode ? "Think" : "Work";
-  const focusRing =
-    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
-
-  if (compact) {
-    return (
-      <button
-        type="button"
-        className={cn(
-          "z-10 flex size-[18px] items-center justify-center rounded-full text-[9px] font-bold leading-none text-white shadow-sm ring-2 ring-background transition-opacity hover:opacity-90",
-          focusRing,
-          className,
-        )}
-        style={{ backgroundColor: "var(--session-accent)" }}
-        onClick={onToggle}
-        aria-label={`${label} mode. Click to switch to ${switchTo}.`}
-      >
-        {isWorkMode ? "W" : "T"}
-      </button>
-    );
-  }
-
-  return (
-    <button
-      type="button"
-      className={cn(
-        "inline-flex shrink-0 cursor-pointer items-center rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-white transition-opacity hover:opacity-90",
-        focusRing,
-        className,
-      )}
-      style={{ backgroundColor: "var(--session-accent)" }}
-      onClick={onToggle}
-      aria-label={`${label} mode. Click to switch to ${switchTo}.`}
-    >
-      {label}
-    </button>
-  );
-}
-
 interface UserCardProps {
   compact?: boolean;
   onRunTutorial?: () => void;
-}
-
-type UserMenuPanelProps = {
-  onClose: () => void;
-  signOut: () => void | Promise<void>;
-  onRunTutorial?: () => void;
-};
-
-function UserMenuPanel({
-  onClose,
-  signOut,
-  onRunTutorial,
-}: UserMenuPanelProps) {
-  const menuItemClass =
-    "flex w-full cursor-pointer items-center gap-1.5 rounded-md px-1.5 py-1.5 text-sm outline-none hover:bg-muted/60 hover:text-foreground focus-visible:bg-muted/60 focus-visible:text-foreground [&_svg]:size-4 [&_svg]:shrink-0";
-
-  return (
-    <div
-      role="menu"
-      id="user-card-menu"
-      className="flex w-full flex-col gap-1 rounded-md border border-border/50 bg-muted/20 p-1.5"
-    >
-      <div className="flex w-full items-center border-b border-border/40 pb-2">
-        <span className="shrink-0 text-xs font-medium text-muted-foreground">
-          Account
-        </span>
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon-xs"
-          className="ml-auto h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
-          aria-label="Close menu"
-          onClick={onClose}
-        >
-          <X className="size-4" />
-        </Button>
-      </div>
-
-      {onRunTutorial ? (
-        <button
-          type="button"
-          role="menuitem"
-          className={menuItemClass}
-          onClick={() => {
-            onRunTutorial();
-            onClose();
-          }}
-        >
-          <HelpCircle className="size-4" />
-          Replay tutorial
-        </button>
-      ) : null}
-
-      <div className="my-0.5 h-px bg-border/60" role="separator" />
-
-      <button
-        type="button"
-        role="menuitem"
-        className={menuItemClass}
-        onClick={() => {
-          void signOut();
-          onClose();
-        }}
-      >
-        <LogOut className="size-4" />
-        Sign out
-      </button>
-    </div>
-  );
 }
 
 export function UserCard({
@@ -287,7 +169,7 @@ export function UserCard({
             <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
               {displayName}
             </p>
-            <ModeToggleBadge
+            <UserCardModeToggle
               isWorkMode={isWorkMode}
               onToggle={toggleWorkMode}
             />

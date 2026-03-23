@@ -2,40 +2,29 @@ import { useState, useEffect, useRef } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id, Doc } from "../../convex/_generated/dataModel";
-import { Plus, FolderPlus, ChevronDown, Circle, Trash2, X, PanelLeftClose, PanelRight, FileText } from "lucide-react";
+import {
+  Plus,
+  FolderPlus,
+  ChevronDown,
+  PanelLeftClose,
+  PanelRight,
+  FileText,
+} from "lucide-react";
 import { UserCard } from "./UserCard";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  SIDEBAR_WIDTH,
+  SIDEBAR_COLLAPSED_WIDTH,
+  getStoredSidebarCollapsed,
+  setStoredSidebarCollapsed,
+  getStoredProjectsSectionOpen,
+  setStoredProjectsSectionOpen,
+} from "@/lib/sidebarStorage";
+import type { ProjectWithSessions } from "./session-sidebar/workspaceTypes";
+import { SidebarProjectGroup } from "./session-sidebar/SidebarProjectGroup";
+import { SidebarSessionItem } from "./session-sidebar/SidebarSessionItem";
 
-export type ProjectWithSessions = {
-  project: Doc<"projects"> | null;
-  sessions: Doc<"sessions">[];
-};
-
-const SIDEBAR_WIDTH = 260;
-const SIDEBAR_COLLAPSED_WIDTH = 56;
-
-const STORAGE_KEY_SIDEBAR = "think-sidebar-collapsed";
-const STORAGE_KEY_PROJECTS_OPEN = "think-sidebar-projects-open";
-
-function getStoredCollapsed(): boolean {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY_SIDEBAR);
-    return stored === "true";
-  } catch {
-    return false;
-  }
-}
-
-function getStoredProjectsSectionOpen(): boolean {
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY_PROJECTS_OPEN);
-    if (stored === null) return true;
-    return stored === "true";
-  } catch {
-    return true;
-  }
-}
+export type { ProjectWithSessions };
 
 interface SessionSidebarProps {
   workspace: ProjectWithSessions[] | undefined;
@@ -66,45 +55,51 @@ export function SessionSidebar({
   const removeProject = useMutation(api.projects.remove);
   const updateTitle = useMutation(api.sessions.updateTitle);
   const updateProjectName = useMutation(api.projects.updateName);
-  const [expandedProjectIds, setExpandedProjectIds] = useState<Set<string>>(() => new Set());
-  const [dragOverProjectId, setDragOverProjectId] = useState<string | "inbox" | null>(null);
-  const [editingSessionId, setEditingSessionId] = useState<Id<"sessions"> | null>(null);
-  const [editingProjectId, setEditingProjectId] = useState<Id<"projects"> | null>(null);
-  const [confirmDeleteSessionId, setConfirmDeleteSessionId] = useState<Id<"sessions"> | null>(null);
-  const [confirmDeleteProjectId, setConfirmDeleteProjectId] = useState<Id<"projects"> | null>(null);
+  const [expandedProjectIds, setExpandedProjectIds] = useState<Set<string>>(
+    () => new Set(),
+  );
+  const [dragOverProjectId, setDragOverProjectId] = useState<
+    string | "inbox" | null
+  >(null);
+  const [editingSessionId, setEditingSessionId] = useState<Id<"sessions"> | null>(
+    null,
+  );
+  const [editingProjectId, setEditingProjectId] = useState<Id<"projects"> | null>(
+    null,
+  );
+  const [confirmDeleteSessionId, setConfirmDeleteSessionId] =
+    useState<Id<"sessions"> | null>(null);
+  const [confirmDeleteProjectId, setConfirmDeleteProjectId] =
+    useState<Id<"projects"> | null>(null);
   const sessionInputRef = useRef<HTMLInputElement>(null);
   const projectInputRef = useRef<HTMLInputElement>(null);
-  const projectClickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [isCollapsed, setIsCollapsed] = useState(getStoredCollapsed);
+  const projectClickTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const [isCollapsed, setIsCollapsed] = useState(getStoredSidebarCollapsed);
   const [projectsSectionOpen, setProjectsSectionOpen] = useState(
     getStoredProjectsSectionOpen,
   );
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY_SIDEBAR, String(isCollapsed));
-    } catch {
-      /* ignore */
-    }
+    setStoredSidebarCollapsed(isCollapsed);
   }, [isCollapsed]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY_PROJECTS_OPEN, String(projectsSectionOpen));
-    } catch {
-      /* ignore */
-    }
+    setStoredProjectsSectionOpen(projectsSectionOpen);
   }, [projectsSectionOpen]);
 
-  // Expand project containing active session by default
   useEffect(() => {
     if (!data) return;
     if (activeSessionId) {
       for (const { project, sessions } of data) {
-        const hasActive = sessions.some((s: Doc<"sessions">) => s._id === activeSessionId);
+        const hasActive = sessions.some(
+          (s: Doc<"sessions">) => s._id === activeSessionId,
+        );
         if (hasActive) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect -- expand project for active session on navigation
           setExpandedProjectIds((prev) =>
-            project ? new Set([...prev, project._id]) : prev
+            project ? new Set([...prev, project._id]) : prev,
           );
           break;
         }
@@ -112,10 +107,10 @@ export function SessionSidebar({
     }
   }, [data, activeSessionId]);
 
-  const allSessions = data?.flatMap((g: ProjectWithSessions) => g.sessions) ?? [];
+  const allSessions =
+    data?.flatMap((g: ProjectWithSessions) => g.sessions) ?? [];
 
   const handleNewSession = async (projectId?: Id<"projects">) => {
-    // Main "New session" button creates in inbox; per-project + creates in that project
     const targetProjectId = projectId;
     const id = await createSession({ projectId: targetProjectId ?? undefined });
     onSelectSession(id);
@@ -179,12 +174,11 @@ export function SessionSidebar({
     await removeSession({ id });
     if (wasActive) {
       const remaining = allSessions.filter((s: Doc<"sessions">) => s._id !== id);
-      // Prefer remaining sessions in the same project (or inbox) so focus stays there
       const sameProject = remaining.filter(
-        (s: Doc<"sessions">) => (s.projectId ?? null) === projectId
+        (s: Doc<"sessions">) => (s.projectId ?? null) === projectId,
       );
-      // When deleting last inbox session, don't jump to a project—leave selection empty
-      const nextSession = sameProject[0] ?? (projectId != null ? remaining[0] : null) ?? null;
+      const nextSession =
+        sameProject[0] ?? (projectId != null ? remaining[0] : null) ?? null;
       onSelectSession(nextSession?._id ?? null);
       if (nextSession?.projectId) {
         onSelectProject(nextSession.projectId);
@@ -192,7 +186,10 @@ export function SessionSidebar({
     }
   };
 
-  const handleMoveSession = async (sessionId: Id<"sessions">, targetProjectId: Id<"projects"> | null) => {
+  const handleMoveSession = async (
+    sessionId: Id<"sessions">,
+    targetProjectId: Id<"projects"> | null,
+  ) => {
     const session = allSessions.find((s: Doc<"sessions">) => s._id === sessionId);
     if ((session?.projectId ?? null) === targetProjectId) return;
     await moveToProject({ id: sessionId, projectId: targetProjectId ?? undefined });
@@ -216,6 +213,8 @@ export function SessionSidebar({
       return next;
     });
   };
+
+  const viewModeIsNotesList = viewMode === "notesList";
 
   return (
     <aside
@@ -257,24 +256,38 @@ export function SessionSidebar({
         </div>
         <Button
           variant="secondary"
-          className={isCollapsed ? "h-10 w-10 p-0 justify-center ring-1 ring-border/50 shadow-sm" : "justify-start h-10 w-full gap-2 px-3 ring-1 ring-border/50 shadow-sm"}
+          className={
+            isCollapsed
+              ? "h-10 w-10 p-0 justify-center ring-1 ring-border/50 shadow-sm"
+              : "justify-start h-10 w-full gap-2 px-3 ring-1 ring-border/50 shadow-sm"
+          }
           onClick={() => handleNewSession()}
           aria-label="New session"
           data-tour="new-session"
         >
-          <span className="inline-flex size-5 shrink-0 items-center justify-center" aria-hidden>
+          <span
+            className="inline-flex size-5 shrink-0 items-center justify-center"
+            aria-hidden
+          >
             <Plus className="size-4.5 stroke-[1.75]" />
           </span>
           {!isCollapsed && "New session"}
         </Button>
         <Button
           variant="ghost"
-          className={isCollapsed ? "h-10 w-10 p-0 justify-center ring-1 ring-border/50 shadow-sm" : "justify-start h-10 w-full gap-2 px-3 ring-1 ring-border/50 shadow-sm"}
+          className={
+            isCollapsed
+              ? "h-10 w-10 p-0 justify-center ring-1 ring-border/50 shadow-sm"
+              : "justify-start h-10 w-full gap-2 px-3 ring-1 ring-border/50 shadow-sm"
+          }
           onClick={handleNewProject}
           aria-label="New project"
           data-tour="new-project"
         >
-          <span className="inline-flex size-5 shrink-0 items-center justify-center" aria-hidden>
+          <span
+            className="inline-flex size-5 shrink-0 items-center justify-center"
+            aria-hidden
+          >
             <FolderPlus className="size-4.5 stroke-[1.75]" />
           </span>
           {!isCollapsed && "New project"}
@@ -286,18 +299,21 @@ export function SessionSidebar({
               ? "h-10 w-10 p-0 justify-center rounded-lg overflow-hidden"
               : "justify-start h-10 w-full gap-2 px-3 rounded-none rounded-r-lg border-y border-r border-transparent"
           } ${
-            viewMode === "notesList"
+            viewModeIsNotesList
               ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent"
               : "border-l-2 border-l-transparent hover:border-border hover:bg-muted/10 active:bg-muted/20"
           }`}
           onClick={() =>
-            onViewModeChange(viewMode === "notesList" ? "graph" : "notesList")
+            onViewModeChange(viewModeIsNotesList ? "graph" : "notesList")
           }
           aria-label="View files"
-          aria-pressed={viewMode === "notesList"}
+          aria-pressed={viewModeIsNotesList}
           data-tour="notes-toggle"
         >
-          <span className="inline-flex size-5 shrink-0 items-center justify-center" aria-hidden>
+          <span
+            className="inline-flex size-5 shrink-0 items-center justify-center"
+            aria-hidden
+          >
             <FileText className="size-4.5 stroke-[1.75]" />
           </span>
           {!isCollapsed && "Files"}
@@ -308,420 +324,181 @@ export function SessionSidebar({
           isCollapsed ? "hidden" : "px-3"
         }`}
       >
-          {/* Projects section */}
-          <div className="flex flex-col gap-2">
-            <button
-              type="button"
-              onClick={() => setProjectsSectionOpen((o) => !o)}
-              aria-expanded={projectsSectionOpen}
-              aria-controls="sidebar-projects-list"
-              aria-label={
-                projectsSectionOpen
-                  ? "Collapse projects list"
-                  : "Expand projects list"
-              }
-              className="flex items-center gap-1 w-full min-w-0 text-left text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/90 px-2 py-1 rounded-lg hover:bg-muted/15 hover:text-muted-foreground transition-colors"
-            >
-              <ChevronDown
-                className={`size-3.5 shrink-0 text-muted-foreground transition-transform ${
-                  projectsSectionOpen ? "" : "-rotate-90"
-                }`}
-                aria-hidden
-              />
-              Projects
-            </button>
-            {projectsSectionOpen && (
-              <div
-                id="sidebar-projects-list"
-                className="flex flex-col gap-2"
-              >
-              {data?.filter((g: ProjectWithSessions) => g.project).map((group: ProjectWithSessions) => {
-            const project = group.project!;
-            const sessions = group.sessions;
-            const projectId = project._id;
-            const isExpanded = expandedProjectIds.has(projectId);
-
-            return (
-              <div key={projectId} className="flex flex-col gap-1">
-                  <div
-                    className={`flex items-center gap-1 group/project rounded-lg transition-colors px-3 pl-0 ${
-                      viewMode !== "notesList" && activeProjectId === projectId
-                        ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent/40"
-                        : "hover:bg-muted/10 active:bg-muted/20"
-                    } ${
-                      dragOverProjectId === project._id ? "ring-2 ring-ring ring-inset" : ""
-                    }`}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.dataTransfer.dropEffect = "move";
-                      setDragOverProjectId(project._id);
-                    }}
-                    onDragLeave={() => setDragOverProjectId(null)}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      const sessionId = e.dataTransfer.getData("text/plain") as Id<"sessions">;
-                      if (sessionId) {
-                        handleMoveSession(sessionId, project._id);
-                      }
-                      setDragOverProjectId(null);
-                    }}
-                  >
-                    {editingProjectId === project._id ? (
-                      <Input
-                        ref={projectInputRef}
-                        type="text"
-                        defaultValue={project.name}
-                        className="flex-1 min-w-0 h-8 py-1 px-2 text-left text-sm font-medium"
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            handleRenameProject(project._id, (e.target as HTMLInputElement).value);
-                          } else if (e.key === "Escape") {
-                            setEditingProjectId(null);
-                          }
-                        }}
-                        onBlur={(e) => {
-                          handleRenameProject(project._id, e.target.value);
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (projectClickTimeoutRef.current) {
-                            clearTimeout(projectClickTimeoutRef.current);
-                            projectClickTimeoutRef.current = null;
-                            return;
-                          }
-                          projectClickTimeoutRef.current = setTimeout(() => {
-                            projectClickTimeoutRef.current = null;
-                            toggleProjectExpanded(projectId);
-                          }, 250);
-                        }}
-                        onDoubleClick={(e) => {
-                          e.stopPropagation();
-                          if (projectClickTimeoutRef.current) {
-                            clearTimeout(projectClickTimeoutRef.current);
-                            projectClickTimeoutRef.current = null;
-                          }
-                          setEditingProjectId(project._id);
-                        }}
-                        aria-expanded={isExpanded}
-                        aria-label={`${project.name}, click to ${isExpanded ? "collapse" : "expand"}`}
-                        className="flex-1 min-w-0 flex items-center gap-1 py-2.5 pr-2 pl-1.5 text-left rounded-lg font-medium text-sm text-zinc-700 dark:text-zinc-300 cursor-pointer"
-                      >
-                        <span className={`shrink-0 flex items-center justify-center w-6 ${sessions.length === 0 ? "text-sidebar-primary" : "text-muted-foreground"}`}>
-                          {sessions.length === 0 ? (
-                            <Circle className="size-1.5 fill-current" strokeWidth={0} />
-                          ) : (
-                            <ChevronDown
-                              className={`size-4 transition-transform ${
-                                isExpanded ? "" : "-rotate-90"
-                              }`}
-                            />
-                          )}
-                        </span>
-                        <span className="flex-1 min-w-0 truncate">{project.name}</span>
-                      </button>
-                    )}
-                    {confirmDeleteProjectId !== project._id && (
-                      <Button
-                        variant="ghost"
-                        size="icon-xs"
-                        className="opacity-0 group-hover/project:opacity-100 group-hover/project:pointer-events-auto pointer-events-none h-7 shrink-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleNewSession(project._id);
-                        }}
-                        aria-label="New session in project"
-                      >
-                        <Plus className="size-4" />
-                      </Button>
-                    )}
-                    {confirmDeleteProjectId === project._id ? (
-                      <div
-                        className="flex items-center gap-0.5 h-7 shrink-0"
-                        onMouseLeave={() => setConfirmDeleteProjectId(null)}
-                      >
-                        <Button
-                          variant="destructive"
-                          size="icon-xs"
-                          className="h-7 w-7"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteProject(project._id);
-                          }}
-                          aria-label="Confirm delete"
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          className="h-7 w-7"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setConfirmDeleteProjectId(null);
-                          }}
-                          aria-label="Cancel delete"
-                        >
-                          <X className="size-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <Button
-                        variant="ghost"
-                        size="icon-xs"
-                        className="opacity-0 group-hover/project:opacity-100 group-hover/project:pointer-events-auto pointer-events-none hover:bg-destructive/20 hover:text-destructive h-7 shrink-0"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setConfirmDeleteProjectId(project._id);
-                        }}
-                        aria-label="Delete project"
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    )}
-                  </div>
-                {isExpanded &&
-                  sessions.map((session: Doc<"sessions">) => (
-                    <div
-                      key={session._id}
-                      draggable={editingSessionId !== session._id}
-                      onDragStart={(e) => {
-                        e.dataTransfer.setData("text/plain", session._id);
-                        e.dataTransfer.effectAllowed = "move";
-                      }}
-                      onClick={() => {
-                        if (editingSessionId !== session._id) {
-                          onSelectSession(session._id);
-                          if (session.projectId) onSelectProject(session.projectId);
-                        }
-                      }}
-                      onDoubleClick={(e) => {
-                        if (editingSessionId !== session._id) {
-                          e.stopPropagation();
-                          setEditingSessionId(session._id);
-                        }
-                      }}
-                      className={`group flex items-center gap-1 py-1.5 px-3 ml-4 rounded-r-lg border-y border-r border-transparent transition-colors cursor-pointer select-none ${
-                        viewMode !== "notesList" && activeSessionId === session._id
-                          ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent"
-                          : "border-l-2 border-l-transparent hover:border-border hover:bg-muted/10 active:bg-muted/20"
-                      }`}
-                    >
-                      {editingSessionId === session._id ? (
-                        <Input
-                          ref={sessionInputRef}
-                          type="text"
-                          defaultValue={session.title}
-                          className="flex-1 min-w-0 h-8 py-1 px-2 text-left text-sm"
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter") {
-                              handleRename(session._id, (e.target as HTMLInputElement).value);
-                            } else if (e.key === "Escape") {
-                              setEditingSessionId(null);
-                            }
-                          }}
-                          onBlur={(e) => {
-                            handleRename(session._id, e.target.value);
-                          }}
-                          onClick={(e) => e.stopPropagation()}
-                          onMouseDown={(e) => e.stopPropagation()}
-                        />
-                      ) : (
-                        <div
-                          className={`flex-1 min-w-0 text-left truncate pointer-events-none text-sm py-0.5 ${
-                            viewMode !== "notesList" && activeSessionId === session._id
-                              ? "text-foreground"
-                              : "text-muted-foreground"
-                          }`}
-                        >
-                          {session.title}
-                        </div>
-                      )}
-                      {confirmDeleteSessionId === session._id ? (
-                        <div
-                          className="flex items-center gap-0.5 h-7 shrink-0"
-                          onMouseLeave={() => setConfirmDeleteSessionId(null)}
-                        >
-                          <Button
-                            variant="destructive"
-                            size="icon-xs"
-                            className="h-7 w-7"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDelete(session._id);
-                            }}
-                            aria-label="Confirm delete"
-                          >
-                            <Trash2 className="size-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon-xs"
-                            className="h-7 w-7"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setConfirmDeleteSessionId(null);
-                            }}
-                            aria-label="Cancel delete"
-                          >
-                            <X className="size-4" />
-                          </Button>
-                        </div>
-                      ) : allSessions.length > 1 ? (
-                        <Button
-                          variant="ghost"
-                          size="icon-xs"
-                          className="opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto pointer-events-none hover:bg-destructive/20 hover:text-destructive h-7 shrink-0"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setConfirmDeleteSessionId(session._id);
-                          }}
-                          aria-label="Delete session"
-                        >
-                          <Trash2 className="size-4" />
-                        </Button>
-                      ) : null}
-                    </div>
-                  ))}
-              </div>
-            );
-          })}
-              </div>
-            )}
-          </div>
-
-          {/* Sessions section (sessions without a project) */}
-          <div className="flex flex-col gap-1">
-            <div
-                className={`flex items-center gap-1 rounded-lg border transition-colors py-1.5 px-0 border-transparent ${
-                dragOverProjectId === "inbox" ? "ring-2 ring-ring ring-inset" : ""
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => setProjectsSectionOpen((o) => !o)}
+            aria-expanded={projectsSectionOpen}
+            aria-controls="sidebar-projects-list"
+            aria-label={
+              projectsSectionOpen
+                ? "Collapse projects list"
+                : "Expand projects list"
+            }
+            className="flex items-center gap-1 w-full min-w-0 text-left text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/90 px-2 py-1 rounded-lg hover:bg-muted/15 hover:text-muted-foreground transition-colors"
+          >
+            <ChevronDown
+              className={`size-3.5 shrink-0 text-muted-foreground transition-transform ${
+                projectsSectionOpen ? "" : "-rotate-90"
               }`}
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.dataTransfer.dropEffect = "move";
-                setDragOverProjectId("inbox");
-              }}
-              onDragLeave={() => setDragOverProjectId(null)}
-              onDrop={(e) => {
-                e.preventDefault();
-                const sessionId = e.dataTransfer.getData("text/plain") as Id<"sessions">;
-                if (sessionId) {
-                  handleMoveSession(sessionId, null);
-                }
-                setDragOverProjectId(null);
-              }}
-            >
-              <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/90 py-1 px-2">
-                Sessions
-              </span>
+              aria-hidden
+            />
+            Projects
+          </button>
+          {projectsSectionOpen && (
+            <div id="sidebar-projects-list" className="flex flex-col gap-2">
+              {data
+                ?.filter((g: ProjectWithSessions) => g.project)
+                .map((group: ProjectWithSessions) => {
+                  const project = group.project!;
+                  const projectId = project._id;
+                  const isExpanded = expandedProjectIds.has(projectId);
+                  return (
+                    <SidebarProjectGroup
+                      key={projectId}
+                      group={group}
+                      isExpanded={isExpanded}
+                      viewModeIsNotesList={viewModeIsNotesList}
+                      activeProjectId={activeProjectId}
+                      activeSessionId={activeSessionId}
+                      dragOverProjectId={dragOverProjectId}
+                      editingProjectId={editingProjectId}
+                      editingSessionId={editingSessionId}
+                      projectInputRef={projectInputRef}
+                      sessionInputRef={sessionInputRef}
+                      confirmDeleteProjectId={confirmDeleteProjectId}
+                      confirmDeleteSessionId={confirmDeleteSessionId}
+                      projectClickTimeoutRef={projectClickTimeoutRef}
+                      allSessionsLength={allSessions.length}
+                      onDragOverProject={(id) => setDragOverProjectId(id)}
+                      onDragLeaveProject={() => setDragOverProjectId(null)}
+                      onDropOnProject={(projectIdDrop, e) => {
+                        e.preventDefault();
+                        const sessionId = e.dataTransfer.getData(
+                          "text/plain",
+                        ) as Id<"sessions">;
+                        if (sessionId) {
+                          handleMoveSession(sessionId, projectIdDrop);
+                        }
+                        setDragOverProjectId(null);
+                      }}
+                      onRenameProject={handleRenameProject}
+                      onCancelEditProject={() => setEditingProjectId(null)}
+                      onToggleProjectExpanded={toggleProjectExpanded}
+                      onStartEditProject={setEditingProjectId}
+                      onNewSessionInProject={(e, pid) => {
+                        e.stopPropagation();
+                        handleNewSession(pid);
+                      }}
+                      onRequestDeleteProject={(e, id) => {
+                        e.stopPropagation();
+                        setConfirmDeleteProjectId(id);
+                      }}
+                      onConfirmDeleteProject={(e, id) => {
+                        e.stopPropagation();
+                        handleDeleteProject(id);
+                      }}
+                      onCancelDeleteProject={(e) => {
+                        e.stopPropagation();
+                        setConfirmDeleteProjectId(null);
+                      }}
+                      onMouseLeaveDeleteProjectConfirm={() =>
+                        setConfirmDeleteProjectId(null)
+                      }
+                      onSelectSession={(id) => onSelectSession(id)}
+                      onSelectProject={onSelectProject}
+                      onRenameSession={handleRename}
+                      onCancelEditSession={() => setEditingSessionId(null)}
+                      onSetEditingSessionId={setEditingSessionId}
+                      onSetConfirmDeleteSessionId={setConfirmDeleteSessionId}
+                      onRequestDeleteSession={(e, id) => {
+                        e.stopPropagation();
+                        setConfirmDeleteSessionId(id);
+                      }}
+                      onCancelDeleteSession={(e) => {
+                        e.stopPropagation();
+                        setConfirmDeleteSessionId(null);
+                      }}
+                      onDeleteSession={handleDelete}
+                    />
+                  );
+                })}
             </div>
-            {(data?.find((g: ProjectWithSessions) => !g.project)?.sessions ?? []).map((session: Doc<"sessions">) => (
-              <div
+          )}
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <div
+            className={`flex items-center gap-1 rounded-lg border transition-colors py-1.5 px-0 border-transparent ${
+              dragOverProjectId === "inbox" ? "ring-2 ring-ring ring-inset" : ""
+            }`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
+              setDragOverProjectId("inbox");
+            }}
+            onDragLeave={() => setDragOverProjectId(null)}
+            onDrop={(e) => {
+              e.preventDefault();
+              const sessionId = e.dataTransfer.getData(
+                "text/plain",
+              ) as Id<"sessions">;
+              if (sessionId) {
+                handleMoveSession(sessionId, null);
+              }
+              setDragOverProjectId(null);
+            }}
+          >
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/90 py-1 px-2">
+              Sessions
+            </span>
+          </div>
+          {(data?.find((g: ProjectWithSessions) => !g.project)?.sessions ?? []).map(
+            (session: Doc<"sessions">) => (
+              <SidebarSessionItem
                 key={session._id}
-                draggable={editingSessionId !== session._id}
-                onDragStart={(e) => {
-                  e.dataTransfer.setData("text/plain", session._id);
-                  e.dataTransfer.effectAllowed = "move";
-                }}
-                onClick={() => {
+                session={session}
+                isGraphActive={
+                  !viewModeIsNotesList && activeSessionId === session._id
+                }
+                viewModeIsNotesList={viewModeIsNotesList}
+                editingSessionId={editingSessionId}
+                sessionInputRef={sessionInputRef}
+                confirmDeleteSessionId={confirmDeleteSessionId}
+                canDeleteSession={allSessions.length > 1}
+                onSelect={() => {
                   if (editingSessionId !== session._id) {
                     onSelectSession(session._id);
                     onSelectProject(null);
                   }
                 }}
-                onDoubleClick={(e) => {
+                onBeginEdit={(e) => {
                   if (editingSessionId !== session._id) {
                     e.stopPropagation();
                     setEditingSessionId(session._id);
                   }
                 }}
-                className={`group flex items-center gap-1 py-1.5 px-3 rounded-r-lg border-y border-r border-transparent transition-colors cursor-pointer select-none ${
-                  viewMode !== "notesList" && activeSessionId === session._id
-                    ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent"
-                    : "border-l-2 border-l-transparent hover:border-border hover:bg-muted/10 active:bg-muted/20"
-                }`}
-              >
-                {editingSessionId === session._id ? (
-                  <Input
-                    ref={sessionInputRef}
-                    type="text"
-                    defaultValue={session.title}
-                    className="flex-1 min-w-0 h-8 py-1 px-2 text-left text-sm"
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        handleRename(session._id, (e.target as HTMLInputElement).value);
-                      } else if (e.key === "Escape") {
-                        setEditingSessionId(null);
-                      }
-                    }}
-                    onBlur={(e) => {
-                      handleRename(session._id, e.target.value);
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                    onMouseDown={(e) => e.stopPropagation()}
-                  />
-                ) : (
-                <div
-                  className={`flex-1 min-w-0 text-left truncate pointer-events-none text-sm py-0.5 ${
-                    viewMode !== "notesList" && activeSessionId === session._id
-                      ? "text-foreground"
-                      : "text-muted-foreground"
-                  }`}
-                >
-                  {session.title}
-                </div>
-                )}
-                {confirmDeleteSessionId === session._id ? (
-                  <div
-                    className="flex items-center gap-0.5 h-7 shrink-0"
-                    onMouseLeave={() => setConfirmDeleteSessionId(null)}
-                  >
-                    <Button
-                      variant="destructive"
-                      size="icon-xs"
-                      className="h-7 w-7"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDelete(session._id);
-                      }}
-                      aria-label="Confirm delete"
-                    >
-                      <Trash2 className="size-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon-xs"
-                      className="h-7 w-7"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setConfirmDeleteSessionId(null);
-                      }}
-                      aria-label="Cancel delete"
-                    >
-                      <X className="size-4" />
-                    </Button>
-                  </div>
-                ) : allSessions.length > 1 ? (
-                  <Button
-                    variant="ghost"
-                    size="icon-xs"
-                    className="opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto pointer-events-none hover:bg-destructive/20 hover:text-destructive h-7 shrink-0"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setConfirmDeleteSessionId(session._id);
-                    }}
-                    aria-label="Delete session"
-                  >
-                    <Trash2 className="size-4" />
-                  </Button>
-                ) : null}
-              </div>
-            ))}
-          </div>
+                onRename={handleRename}
+                onCancelEdit={() => setEditingSessionId(null)}
+                onRequestDelete={(e) => {
+                  e.stopPropagation();
+                  setConfirmDeleteSessionId(session._id);
+                }}
+                onConfirmDelete={(e) => {
+                  e.stopPropagation();
+                  handleDelete(session._id);
+                }}
+                onCancelDelete={(e) => {
+                  e.stopPropagation();
+                  setConfirmDeleteSessionId(null);
+                }}
+                onMouseLeaveDeleteConfirm={() =>
+                  setConfirmDeleteSessionId(null)
+                }
+              />
+            ),
+          )}
+        </div>
       </nav>
       <div
         className={`flex flex-col gap-2 border-t border-border transition-[padding] duration-200 shrink-0 ${

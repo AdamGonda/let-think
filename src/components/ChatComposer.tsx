@@ -1,0 +1,158 @@
+import { useRef, useEffect } from "react";
+import { CornerDownLeft, Loader2 } from "lucide-react";
+import { parseInputTokens } from "@/lib/chatMentions";
+import type { NumberedConcept } from "@/lib/conceptReferences";
+
+type ChatComposerProps = {
+  input: string;
+  setInput: (value: string) => void;
+  placeholder: string;
+  numberedConcepts: NumberedConcept[];
+  isDisabled: boolean;
+  isLoading: boolean;
+  workModeLoadingFrame: boolean;
+  showInteractionLine: boolean;
+  showUnlimitedInteractionLine: boolean;
+  remaining: number | null | undefined;
+  interactionCountsPending: boolean;
+  onSubmit: (e: React.FormEvent) => void;
+};
+
+export function ChatComposer({
+  input,
+  setInput,
+  placeholder,
+  numberedConcepts,
+  isDisabled,
+  isLoading,
+  workModeLoadingFrame,
+  showInteractionLine,
+  showUnlimitedInteractionLine,
+  remaining,
+  interactionCountsPending,
+  onSubmit,
+}: ChatComposerProps) {
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const mirrorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 240)}px`;
+  }, [input]);
+
+  const handleScroll = () => {
+    const ta = textareaRef.current;
+    const mirror = mirrorRef.current;
+    if (ta && mirror) mirror.scrollTop = ta.scrollTop;
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      (e.target as HTMLTextAreaElement).form?.requestSubmit();
+    }
+  };
+
+  return (
+    <div
+      className="flex flex-col items-center px-4 pt-4 shrink-0"
+      data-tour="session-input"
+    >
+      <div
+        className={
+          workModeLoadingFrame
+            ? "w-full max-w-[720px] flex flex-col gap-3 rounded-t-2xl border-t-2 border-l-2 border-r-2 border-b-0 border-(--session-accent) shadow-lg px-4 py-3 pb-4"
+            : "w-full max-w-[720px] flex flex-col gap-3 rounded-t-2xl border border-b-0 border-border shadow-lg px-4 py-3 pb-4"
+        }
+        style={{ backgroundColor: "#2B2B28" }}
+      >
+        {showInteractionLine && (
+          <p className="text-sm font-medium text-muted-foreground tabular-nums min-h-[1.25em]">
+            <span className="inline-block min-w-[2ch] text-right">
+              {interactionCountsPending ? "$" : remaining}
+            </span>{" "}
+            {interactionCountsPending || remaining !== 1
+              ? "interactions"
+              : "interaction"}{" "}
+            until long break
+          </p>
+        )}
+        {showUnlimitedInteractionLine && (
+          <p className="text-sm font-medium text-muted-foreground min-h-[1.25em]">
+            Unlimited interactions
+          </p>
+        )}
+        <form
+          className="flex flex-col gap-2"
+          onSubmit={onSubmit}
+          aria-busy={isLoading}
+        >
+          <div className="flex gap-2 items-end">
+            <div className="flex-1 flex relative min-h-[48px] max-h-[240px] rounded-xl border border-input bg-background overflow-hidden">
+              <div
+                ref={mirrorRef}
+                className="absolute inset-0 z-0 py-3 px-4 pr-10 overflow-y-auto pointer-events-none whitespace-pre-wrap break-words text-[0.95rem] leading-[1.5] text-zinc-950 dark:text-zinc-100"
+                aria-hidden
+              >
+                {input ? (
+                  parseInputTokens(input, numberedConcepts).map((seg, i) =>
+                    seg.type === "token" && seg.name ? (
+                      <span
+                        key={i}
+                        className="rounded-sm bg-zinc-300/70 dark:bg-zinc-600/70 text-inherit"
+                        title={seg.name}
+                      >
+                        {seg.content}
+                      </span>
+                    ) : (
+                      seg.content
+                    ),
+                  )
+                ) : (
+                  <span className="text-muted-foreground">{placeholder}</span>
+                )}
+              </div>
+              <textarea
+                ref={textareaRef}
+                rows={1}
+                className="relative z-10 w-full min-h-[48px] max-h-[240px] py-3 px-4 pr-10 bg-transparent text-transparent caret-foreground font-inherit text-[0.95rem] leading-[1.5] placeholder:transparent focus:outline-none focus:ring-0 disabled:opacity-60 disabled:cursor-not-allowed resize-none overflow-y-auto"
+                style={{ color: "transparent" }}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onScroll={handleScroll}
+                onKeyDown={handleKeyDown}
+                placeholder={placeholder}
+                disabled={isDisabled}
+              />
+              <div
+                className="absolute right-3 top-1/2 -translate-y-1/2 z-20 pointer-events-none flex items-center"
+                title={isLoading ? "Generating response" : "Press Enter to send"}
+                aria-hidden={!isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <span className="sr-only">Generating response…</span>
+                    <Loader2
+                      size={18}
+                      className="animate-spin text-(--session-accent)"
+                      strokeWidth={2}
+                      aria-hidden
+                    />
+                  </>
+                ) : (
+                  <CornerDownLeft
+                    size={18}
+                    className="text-muted-foreground"
+                    strokeWidth={2}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

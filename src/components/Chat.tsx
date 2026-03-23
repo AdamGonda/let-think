@@ -1,97 +1,28 @@
-import { useState, useRef, useEffect } from "react";
-import { CornerDownLeft, Loader2 } from "lucide-react";
+import { useState } from "react";
 import { useAction, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useSessionData } from "../contexts/SessionDataContext";
 import { formatBreakCountdown } from "../hooks/useSessionManager";
+import {
+  resolveAtReferences,
+  type Mention,
+} from "../lib/chatMentions";
+import type { NumberedConcept } from "../lib/conceptReferences";
+import { ChatComposer } from "./ChatComposer";
 
-interface NumberedConcept {
-  id: string;
-  name: string;
-  description?: string;
-  number: number;
-}
+export type { Mention };
 
 interface ChatProps {
   sessionId: Id<"sessions"> | null;
-  /** When provided and sessionId is null, creates a session on first submit */
   onCreateSession?: () => Promise<Id<"sessions">>;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
-  /** Numbered concepts from the current batch - reference with @1, @2, etc. */
   numberedConcepts?: NumberedConcept[];
-  /** Controlled draft input (shared with overlay during loading/break) */
   draftInput?: string;
   setDraftInput?: (value: string) => void;
-  /** Called when the model finishes responding (overlay stays visible until user exits) */
   onModelResponded?: () => void;
-  /** Match main work-mode loading frame (green inset ring) */
   workModeLoadingFrame?: boolean;
-}
-
-export type Mention = { start: number; end: number; conceptId: string; name: string };
-
-/** Parse raw input into segments - @N that match a concept become styled tokens. */
-function parseInputTokens(
-  raw: string,
-  numberedConcepts: NumberedConcept[]
-): Array<{ type: "text" | "token"; content: string; name?: string }> {
-  const conceptByNumber = new Map(numberedConcepts.map((c) => [c.number, c]));
-  const refRegex = /@(\d+)\b/g;
-  const segments: Array<{ type: "text" | "token"; content: string; name?: string }> = [];
-  let lastIndex = 0;
-  let m: RegExpExecArray | null;
-  while ((m = refRegex.exec(raw)) !== null) {
-    const num = parseInt(m[1]!, 10);
-    const concept = conceptByNumber.get(num);
-    if (lastIndex < m.index) {
-      segments.push({ type: "text", content: raw.slice(lastIndex, m.index) });
-    }
-    segments.push({
-      type: "token",
-      content: m[0]!,
-      name: concept?.name,
-    });
-    lastIndex = m.index + m[0]!.length;
-  }
-  if (lastIndex < raw.length) {
-    segments.push({ type: "text", content: raw.slice(lastIndex) });
-  }
-  return segments.length > 0 ? segments : [{ type: "text", content: "" }];
-}
-
-/** Parse @N from raw input, resolve to concept names for LLM/store, build mentions. */
-function resolveAtReferences(
-  rawContent: string,
-  numberedConcepts: NumberedConcept[]
-): { resolvedContent: string; referencedConcepts: NumberedConcept[]; mentions: Mention[] } {
-  const conceptByNumber = new Map(numberedConcepts.map((c) => [c.number, c]));
-  const refRegex = /@(\d+)\b/g;
-  let resolvedContent = "";
-  const mentions: Mention[] = [];
-  let lastIndex = 0;
-  let m: RegExpExecArray | null;
-
-  while ((m = refRegex.exec(rawContent)) !== null) {
-    const num = parseInt(m[1]!, 10);
-    const concept = conceptByNumber.get(num);
-    if (!concept) {
-      resolvedContent += rawContent.slice(lastIndex, m.index + m[0]!.length);
-      lastIndex = m.index + m[0]!.length;
-      continue;
-    }
-    resolvedContent += rawContent.slice(lastIndex, m.index);
-    const start = resolvedContent.length;
-    resolvedContent += concept.name;
-    mentions.push({ start, end: resolvedContent.length, conceptId: concept.id, name: concept.name });
-    lastIndex = m.index + m[0]!.length;
-  }
-  resolvedContent += rawContent.slice(lastIndex);
-
-  const referencedIds = new Set(mentions.map((x) => x.conceptId));
-  const referencedConcepts = numberedConcepts.filter((c) => referencedIds.has(c.id));
-  return { resolvedContent, referencedConcepts, mentions };
 }
 
 export function Chat({
@@ -109,8 +40,6 @@ export function Chat({
   const input = draftInput !== undefined ? draftInput : internalInput;
   const setInput =
     setDraftInput !== undefined ? setDraftInput : setInternalInput;
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const mirrorRef = useRef<HTMLDivElement>(null);
   const sendMessage = useAction(api.chat.send);
   const recordInteraction = useMutation(api.interactionSessions.recordInteraction);
   const {
@@ -128,27 +57,6 @@ export function Chat({
       ? formatBreakCountdown(breakRemainingMs)
       : null;
 
-  // Auto-resize textarea as user types
-  useEffect(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 240)}px`;
-  }, [input]);
-
-  const handleScroll = () => {
-    const ta = textareaRef.current;
-    const mirror = mirrorRef.current;
-    if (ta && mirror) mirror.scrollTop = ta.scrollTop;
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      (e.target as HTMLTextAreaElement).form?.requestSubmit();
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
@@ -164,7 +72,7 @@ export function Chat({
     const rawContent = input.trim();
     const { resolvedContent, referencedConcepts, mentions } = resolveAtReferences(
       rawContent,
-      numberedConcepts
+      numberedConcepts,
     );
     setInput("");
     if (restrictInteractions && remaining === 1) {
@@ -197,7 +105,6 @@ export function Chat({
       onModelResponded?.();
     } catch (err) {
       console.error("Chat error:", err);
-      // Put the input back on error
       setInput(rawContent);
       setIsLoading(false);
     }
@@ -225,102 +132,19 @@ export function Chat({
     !restrictInteractions && sessionId && breakRemainingMs === null;
 
   return (
-    <div className="flex flex-col items-center px-4 pt-4 shrink-0" data-tour="session-input">
-      <div
-        className={
-          workModeLoadingFrame
-            ? "w-full max-w-[720px] flex flex-col gap-3 rounded-t-2xl border-t-2 border-l-2 border-r-2 border-b-0 border-(--session-accent) shadow-lg px-4 py-3 pb-4"
-            : "w-full max-w-[720px] flex flex-col gap-3 rounded-t-2xl border border-b-0 border-border shadow-lg px-4 py-3 pb-4"
-        }
-        style={{ backgroundColor: "#2B2B28" }}
-      >
-        {showInteractionLine && (
-          <p className="text-sm font-medium text-muted-foreground tabular-nums min-h-[1.25em]">
-            <span className="inline-block min-w-[2ch] text-right">
-              {interactionCountsPending ? "$" : remaining}
-            </span>{" "}
-            {interactionCountsPending || remaining !== 1
-              ? "interactions"
-              : "interaction"}{" "}
-            until long break
-          </p>
-        )}
-        {showUnlimitedInteractionLine && (
-          <p className="text-sm font-medium text-muted-foreground min-h-[1.25em]">
-            Unlimited interactions
-          </p>
-        )}
-        <form
-          className="flex flex-col gap-2"
-          onSubmit={handleSubmit}
-          aria-busy={isLoading}
-        >
-          <div className="flex gap-2 items-end">
-          <div className="flex-1 flex relative min-h-[48px] max-h-[240px] rounded-xl border border-input bg-background overflow-hidden">
-          <div
-            ref={mirrorRef}
-            className="absolute inset-0 z-0 py-3 px-4 pr-10 overflow-y-auto pointer-events-none whitespace-pre-wrap break-words text-[0.95rem] leading-[1.5] text-zinc-950 dark:text-zinc-100"
-            aria-hidden
-          >
-            {input ? (
-              parseInputTokens(input, numberedConcepts).map((seg, i) =>
-                seg.type === "token" && seg.name ? (
-                  <span
-                    key={i}
-                    className="rounded-sm bg-zinc-300/70 dark:bg-zinc-600/70 text-inherit"
-                    title={seg.name}
-                  >
-                    {seg.content}
-                  </span>
-                ) : (
-                  seg.content
-                )
-              )
-            ) : (
-              <span className="text-muted-foreground">
-                {placeholder}
-              </span>
-            )}
-          </div>
-          <textarea
-            ref={textareaRef}
-            rows={1}
-            className="relative z-10 w-full min-h-[48px] max-h-[240px] py-3 px-4 pr-10 bg-transparent text-transparent caret-foreground font-inherit text-[0.95rem] leading-[1.5] placeholder:transparent focus:outline-none focus:ring-0 disabled:opacity-60 disabled:cursor-not-allowed resize-none overflow-y-auto"
-            style={{ color: "transparent" }}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onScroll={handleScroll}
-            onKeyDown={handleKeyDown}
-            placeholder={placeholder}
-            disabled={isDisabled}
-          />
-          <div
-            className="absolute right-3 top-1/2 -translate-y-1/2 z-20 pointer-events-none flex items-center"
-            title={isLoading ? "Generating response" : "Press Enter to send"}
-            aria-hidden={!isLoading}
-          >
-            {isLoading ? (
-              <>
-                <span className="sr-only">Generating response…</span>
-                <Loader2
-                  size={18}
-                  className="animate-spin text-(--session-accent)"
-                  strokeWidth={2}
-                  aria-hidden
-                />
-              </>
-            ) : (
-              <CornerDownLeft
-                size={18}
-                className="text-muted-foreground"
-                strokeWidth={2}
-              />
-            )}
-          </div>
-        </div>
-          </div>
-      </form>
-      </div>
-    </div>
+    <ChatComposer
+      input={input}
+      setInput={setInput}
+      placeholder={placeholder}
+      numberedConcepts={numberedConcepts}
+      isDisabled={isDisabled}
+      isLoading={isLoading}
+      workModeLoadingFrame={workModeLoadingFrame}
+      showInteractionLine={!!showInteractionLine}
+      showUnlimitedInteractionLine={!!showUnlimitedInteractionLine}
+      remaining={remaining}
+      interactionCountsPending={interactionCountsPending}
+      onSubmit={handleSubmit}
+    />
   );
 }

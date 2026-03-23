@@ -1,6 +1,6 @@
 import { atom } from "jotai";
 import type { Id } from "../../convex/_generated/dataModel";
-import type { NotesListDrill } from "../components/NotesListPanel";
+import type { NotesListDrill } from "../lib/notesListUtils";
 
 export const activeSessionIdAtom = atom<Id<"sessions"> | null>(null);
 
