@@ -39,7 +39,7 @@ import { MarkdownEditor } from "./components/MarkdownEditor";
 import { SignIn } from "./components/SignIn";
 import { Toaster } from "./components/ui/sonner";
 import { Button } from "./components/ui/button";
-import { FileText, History, Sigma, X } from "lucide-react";
+import { FileText, History, Sigma } from "lucide-react";
 import { StepNavigator } from "./components/StepNavigator";
 import { WorkPreferenceSync } from "./components/WorkPreferenceSync";
 import {
@@ -334,6 +334,7 @@ function AppContentBody({
               return {
                 session: s,
                 projectName: g.project?.name ?? "Inbox",
+                projectId: g.project?._id ?? null,
               };
           }
           return undefined;
@@ -433,10 +434,32 @@ function AppContentBody({
     return () => clearTimeout(id);
   }, [showOverlay, isExitingOverlay]);
 
-  const handleExitOverlay = () => {
+  const handleExitOverlay = useCallback(() => {
     if (!canExitOverlay) return;
     setIsExitingOverlay(true);
-  };
+  }, [canExitOverlay, setIsExitingOverlay]);
+
+  const handleBreadcrumbProjectClick = useCallback(() => {
+    setNotesListDrill(null);
+    handleExitOverlay();
+  }, [handleExitOverlay, setNotesListDrill]);
+
+  const handleBreadcrumbSessionClick = useCallback(() => {
+    if (!activeSessionInWorkspace) return;
+    if (activeSessionInWorkspace.projectId) {
+      setActiveProjectId(activeSessionInWorkspace.projectId);
+      setNotesListDrill({ type: "project", id: activeSessionInWorkspace.projectId });
+    } else {
+      setActiveProjectId(null);
+      setNotesListDrill({ type: "inbox" });
+    }
+    handleExitOverlay();
+  }, [
+    activeSessionInWorkspace,
+    handleExitOverlay,
+    setActiveProjectId,
+    setNotesListDrill,
+  ]);
   useEffect(() => {
     if (!overlayActive) {
       setOverlayDismissed(false);
@@ -460,25 +483,18 @@ function AppContentBody({
               isExitingOverlay ? "opacity-0" : "opacity-100"
             }`}
           >
-            {canExitOverlay && (
-              <Button
-                variant="outline"
-                size="icon-sm"
-                className="absolute top-4 right-4 z-10"
-                onClick={handleExitOverlay}
-                aria-label={
-                  viewMode === "notesList"
-                    ? "Close"
-                    : "Summarize and return to session"
-                }
-              >
-                {viewMode === "notesList" ? (
-                  <X className="size-5" />
-                ) : (
+            {canExitOverlay &&
+              !(editorOpen && viewMode === "notesList") && (
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  className="absolute top-4 right-4 z-10"
+                  onClick={handleExitOverlay}
+                  aria-label="Summarize and return to session"
+                >
                   <Sigma className="size-5" />
-                )}
-              </Button>
-            )}
+                </Button>
+              )}
             <div className="shrink-0 py-8 flex flex-col items-center gap-1">
               {breakRemainingMs != null &&
                 breakRemainingMs > 0 &&
@@ -501,6 +517,8 @@ function AppContentBody({
                     <NoteBreadcrumb
                       projectName={activeSessionInWorkspace.projectName}
                       sessionName={activeSessionInWorkspace.session.title}
+                      onProjectClick={handleBreadcrumbProjectClick}
+                      onSessionClick={handleBreadcrumbSessionClick}
                     />
                   ) : null}
                   <MarkdownEditor
