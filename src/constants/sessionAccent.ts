@@ -1,4 +1,4 @@
-/** Think — interaction caps + breaks; matches badge “Think” (blue). */
+/** Deep — interaction caps + breaks; matches badge “Deep” (blue). */
 export const SESSION_ACCENT_THINK = "#1447E6";
-/** Work — unlimited interactions; matches badge “Work” (green). */
+/** Think — unlimited interactions; matches badge “Think” (green). */
 export const SESSION_ACCENT_WORK = "#059669";
