@@ -110,7 +110,7 @@ export function UserCard({
           <button
             type="button"
             className="flex items-center justify-center rounded-md hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-            aria-label={`Open account menu (${isWorkMode ? "Think" : "Deep"} mode)`}
+            aria-label={`Open account menu (${isWorkMode ? "Fast" : "Deep"} mode)`}
             aria-expanded={menuOpen}
             aria-haspopup="menu"
             aria-controls="user-card-menu"
@@ -122,9 +122,9 @@ export function UserCard({
                 aria-hidden
                 className="pointer-events-none absolute -bottom-0.5 -right-0.5 flex size-[18px] items-center justify-center rounded-full text-[9px] font-bold leading-none text-white shadow-sm ring-2 ring-background"
                 style={{ backgroundColor: "var(--session-accent)" }}
-                title={isWorkMode ? "Think mode" : "Deep mode"}
+                title={isWorkMode ? "Fast mode" : "Deep mode"}
               >
-                {isWorkMode ? "T" : "D"}
+                {isWorkMode ? "F" : "D"}
               </span>
             </span>
           </button>

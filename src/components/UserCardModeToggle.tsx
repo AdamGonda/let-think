@@ -13,8 +13,8 @@ export function UserCardModeToggle({
   compact,
   className,
 }: UserCardModeToggleProps) {
-  const label = isWorkMode ? "Think" : "Deep";
-  const switchTo = isWorkMode ? "Deep" : "Think";
+  const label = isWorkMode ? "Fast" : "Deep";
+  const switchTo = isWorkMode ? "Deep" : "Fast";
   const focusRing =
     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
@@ -31,7 +31,7 @@ export function UserCardModeToggle({
         onClick={onToggle}
         aria-label={`${label} mode. Click to switch to ${switchTo}.`}
       >
-        {isWorkMode ? "T" : "D"}
+        {isWorkMode ? "F" : "D"}
       </button>
     );
   }
