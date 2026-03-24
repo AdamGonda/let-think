@@ -23,9 +23,6 @@ import {
 import type { ProjectWithSessions } from "./session-sidebar/workspaceTypes";
 import { SidebarProjectGroup } from "./session-sidebar/SidebarProjectGroup";
 import { SidebarSessionItem } from "./session-sidebar/SidebarSessionItem";
-import { useAppUiSelector } from "@/hooks/useAppUi";
-import { selectIsWorkMode } from "@/machines/appUiMachine";
-
 export type { ProjectWithSessions };
 
 interface SessionSidebarProps {
@@ -82,7 +79,6 @@ export function SessionSidebar({
   const [projectsSectionOpen, setProjectsSectionOpen] = useState(
     getStoredProjectsSectionOpen,
   );
-  const isWorkMode = useAppUiSelector(selectIsWorkMode);
 
   useEffect(() => {
     setStoredSidebarCollapsed(isCollapsed);
@@ -276,169 +272,163 @@ export function SessionSidebar({
           </span>
           {!isCollapsed && "New session"}
         </Button>
-        {isWorkMode && (
-          <>
-            <Button
-              variant="ghost"
-              className={
-                isCollapsed
-                  ? "h-10 w-10 p-0 justify-center ring-1 ring-border/50 shadow-sm"
-                  : "justify-start h-10 w-full gap-2 px-3 ring-1 ring-border/50 shadow-sm"
-              }
-              onClick={handleNewProject}
-              aria-label="New project"
-              data-tour="new-project"
-            >
-              <span
-                className="inline-flex size-5 shrink-0 items-center justify-center"
-                aria-hidden
-              >
-                <FolderPlus className="size-4.5 stroke-[1.75]" />
-              </span>
-              {!isCollapsed && "New project"}
-            </Button>
-            <Button
-              variant="ghost"
-              className={`transition-colors ${
-                isCollapsed
-                  ? "h-10 w-10 p-0 justify-center rounded-lg overflow-hidden"
-                  : "justify-start h-10 w-full gap-2 px-3 rounded-none rounded-r-lg border-y border-r border-transparent"
-              } ${
-                viewModeIsNotesList && !isCollapsed
-                  ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent"
-                  : isCollapsed
-                    ? viewModeIsNotesList
-                      ? "hover:bg-muted/10 active:bg-muted/20"
-                      : "border-l-2 border-l-transparent hover:border-border hover:bg-muted/10 active:bg-muted/20"
-                    : "border-l-2 border-l-transparent hover:border-border hover:bg-muted/10 active:bg-muted/20"
-              }`}
-              onClick={() =>
-                onViewModeChange(viewModeIsNotesList ? "graph" : "notesList")
-              }
-              aria-label="View files"
-              aria-pressed={viewModeIsNotesList}
-              data-tour="notes-toggle"
-            >
-              <span
-                className="inline-flex size-5 shrink-0 items-center justify-center"
-                aria-hidden
-              >
-                <FileText className="size-4.5 stroke-[1.75]" />
-              </span>
-              {!isCollapsed && "Files"}
-            </Button>
-          </>
-        )}
+        <Button
+          variant="ghost"
+          className={
+            isCollapsed
+              ? "h-10 w-10 p-0 justify-center ring-1 ring-border/50 shadow-sm"
+              : "justify-start h-10 w-full gap-2 px-3 ring-1 ring-border/50 shadow-sm"
+          }
+          onClick={handleNewProject}
+          aria-label="New project"
+          data-tour="new-project"
+        >
+          <span
+            className="inline-flex size-5 shrink-0 items-center justify-center"
+            aria-hidden
+          >
+            <FolderPlus className="size-4.5 stroke-[1.75]" />
+          </span>
+          {!isCollapsed && "New project"}
+        </Button>
+        <Button
+          variant="ghost"
+          className={`transition-colors ${
+            isCollapsed
+              ? "h-10 w-10 p-0 justify-center rounded-lg overflow-hidden"
+              : "justify-start h-10 w-full gap-2 px-3 rounded-none rounded-r-lg border-y border-r border-transparent"
+          } ${
+            viewModeIsNotesList && !isCollapsed
+              ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent"
+              : isCollapsed
+                ? viewModeIsNotesList
+                  ? "hover:bg-muted/10 active:bg-muted/20"
+                  : "border-l-2 border-l-transparent hover:border-border hover:bg-muted/10 active:bg-muted/20"
+                : "border-l-2 border-l-transparent hover:border-border hover:bg-muted/10 active:bg-muted/20"
+          }`}
+          onClick={() =>
+            onViewModeChange(viewModeIsNotesList ? "graph" : "notesList")
+          }
+          aria-label="View files"
+          aria-pressed={viewModeIsNotesList}
+          data-tour="notes-toggle"
+        >
+          <span
+            className="inline-flex size-5 shrink-0 items-center justify-center"
+            aria-hidden
+          >
+            <FileText className="size-4.5 stroke-[1.75]" />
+          </span>
+          {!isCollapsed && "Files"}
+        </Button>
       </div>
       <nav
         className={`flex-1 overflow-y-auto py-3 flex flex-col gap-3 ${
           isCollapsed ? "hidden" : "px-3"
         }`}
       >
-        {isWorkMode && (
-          <div className="flex flex-col gap-2">
-            <button
-              type="button"
-              onClick={() => setProjectsSectionOpen((o) => !o)}
-              aria-expanded={projectsSectionOpen}
-              aria-controls="sidebar-projects-list"
-              aria-label={
-                projectsSectionOpen
-                  ? "Collapse projects list"
-                  : "Expand projects list"
-              }
-              className="flex items-center gap-1 w-full min-w-0 text-left text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/90 px-2 py-1 rounded-lg hover:bg-muted/15 hover:text-muted-foreground transition-colors"
-            >
-              <ChevronDown
-                className={`size-3.5 shrink-0 text-muted-foreground transition-transform ${
-                  projectsSectionOpen ? "" : "-rotate-90"
-                }`}
-                aria-hidden
-              />
-              Projects
-            </button>
-            {projectsSectionOpen && (
-              <div id="sidebar-projects-list" className="flex flex-col gap-2">
-                {data
-                  ?.filter((g: ProjectWithSessions) => g.project)
-                  .map((group: ProjectWithSessions) => {
-                    const project = group.project!;
-                    const projectId = project._id;
-                    const isExpanded = expandedProjectIds.has(projectId);
-                    return (
-                      <SidebarProjectGroup
-                        key={projectId}
-                        group={group}
-                        isExpanded={isExpanded}
-                        viewModeIsNotesList={viewModeIsNotesList}
-                        activeProjectId={activeProjectId}
-                        activeSessionId={activeSessionId}
-                        dragOverProjectId={dragOverProjectId}
-                        editingProjectId={editingProjectId}
-                        editingSessionId={editingSessionId}
-                        projectInputRef={projectInputRef}
-                        sessionInputRef={sessionInputRef}
-                        confirmDeleteProjectId={confirmDeleteProjectId}
-                        confirmDeleteSessionId={confirmDeleteSessionId}
-                        projectClickTimeoutRef={projectClickTimeoutRef}
-                        allSessionsLength={allSessions.length}
-                        onDragOverProject={(id) => setDragOverProjectId(id)}
-                        onDragLeaveProject={() => setDragOverProjectId(null)}
-                        onDropOnProject={(projectIdDrop, e) => {
-                          e.preventDefault();
-                          const sessionId = e.dataTransfer.getData(
-                            "text/plain",
-                          ) as Id<"sessions">;
-                          if (sessionId) {
-                            handleMoveSession(sessionId, projectIdDrop);
-                          }
-                          setDragOverProjectId(null);
-                        }}
-                        onRenameProject={handleRenameProject}
-                        onCancelEditProject={() => setEditingProjectId(null)}
-                        onToggleProjectExpanded={toggleProjectExpanded}
-                        onStartEditProject={setEditingProjectId}
-                        onNewSessionInProject={(e, pid) => {
-                          e.stopPropagation();
-                          handleNewSession(pid);
-                        }}
-                        onRequestDeleteProject={(e, id) => {
-                          e.stopPropagation();
-                          setConfirmDeleteProjectId(id);
-                        }}
-                        onConfirmDeleteProject={(e, id) => {
-                          e.stopPropagation();
-                          handleDeleteProject(id);
-                        }}
-                        onCancelDeleteProject={(e) => {
-                          e.stopPropagation();
-                          setConfirmDeleteProjectId(null);
-                        }}
-                        onMouseLeaveDeleteProjectConfirm={() =>
-                          setConfirmDeleteProjectId(null)
+        <div className="flex flex-col gap-2">
+          <button
+            type="button"
+            onClick={() => setProjectsSectionOpen((o) => !o)}
+            aria-expanded={projectsSectionOpen}
+            aria-controls="sidebar-projects-list"
+            aria-label={
+              projectsSectionOpen
+                ? "Collapse projects list"
+                : "Expand projects list"
+            }
+            className="flex items-center gap-1 w-full min-w-0 text-left text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/90 px-2 py-1 rounded-lg hover:bg-muted/15 hover:text-muted-foreground transition-colors"
+          >
+            <ChevronDown
+              className={`size-3.5 shrink-0 text-muted-foreground transition-transform ${
+                projectsSectionOpen ? "" : "-rotate-90"
+              }`}
+              aria-hidden
+            />
+            Projects
+          </button>
+          {projectsSectionOpen && (
+            <div id="sidebar-projects-list" className="flex flex-col gap-2">
+              {data
+                ?.filter((g: ProjectWithSessions) => g.project)
+                .map((group: ProjectWithSessions) => {
+                  const project = group.project!;
+                  const projectId = project._id;
+                  const isExpanded = expandedProjectIds.has(projectId);
+                  return (
+                    <SidebarProjectGroup
+                      key={projectId}
+                      group={group}
+                      isExpanded={isExpanded}
+                      viewModeIsNotesList={viewModeIsNotesList}
+                      activeProjectId={activeProjectId}
+                      activeSessionId={activeSessionId}
+                      dragOverProjectId={dragOverProjectId}
+                      editingProjectId={editingProjectId}
+                      editingSessionId={editingSessionId}
+                      projectInputRef={projectInputRef}
+                      sessionInputRef={sessionInputRef}
+                      confirmDeleteProjectId={confirmDeleteProjectId}
+                      confirmDeleteSessionId={confirmDeleteSessionId}
+                      projectClickTimeoutRef={projectClickTimeoutRef}
+                      allSessionsLength={allSessions.length}
+                      onDragOverProject={(id) => setDragOverProjectId(id)}
+                      onDragLeaveProject={() => setDragOverProjectId(null)}
+                      onDropOnProject={(projectIdDrop, e) => {
+                        e.preventDefault();
+                        const sessionId = e.dataTransfer.getData(
+                          "text/plain",
+                        ) as Id<"sessions">;
+                        if (sessionId) {
+                          handleMoveSession(sessionId, projectIdDrop);
                         }
-                        onSelectSession={(id) => onSelectSession(id)}
-                        onSelectProject={onSelectProject}
-                        onRenameSession={handleRename}
-                        onCancelEditSession={() => setEditingSessionId(null)}
-                        onSetEditingSessionId={setEditingSessionId}
-                        onSetConfirmDeleteSessionId={setConfirmDeleteSessionId}
-                        onRequestDeleteSession={(e, id) => {
-                          e.stopPropagation();
-                          setConfirmDeleteSessionId(id);
-                        }}
-                        onCancelDeleteSession={(e) => {
-                          e.stopPropagation();
-                          setConfirmDeleteSessionId(null);
-                        }}
-                        onDeleteSession={handleDelete}
-                      />
-                    );
-                  })}
-              </div>
-            )}
-          </div>
-        )}
+                        setDragOverProjectId(null);
+                      }}
+                      onRenameProject={handleRenameProject}
+                      onCancelEditProject={() => setEditingProjectId(null)}
+                      onToggleProjectExpanded={toggleProjectExpanded}
+                      onStartEditProject={setEditingProjectId}
+                      onNewSessionInProject={(e, pid) => {
+                        e.stopPropagation();
+                        handleNewSession(pid);
+                      }}
+                      onRequestDeleteProject={(e, id) => {
+                        e.stopPropagation();
+                        setConfirmDeleteProjectId(id);
+                      }}
+                      onConfirmDeleteProject={(e, id) => {
+                        e.stopPropagation();
+                        handleDeleteProject(id);
+                      }}
+                      onCancelDeleteProject={(e) => {
+                        e.stopPropagation();
+                        setConfirmDeleteProjectId(null);
+                      }}
+                      onMouseLeaveDeleteProjectConfirm={() =>
+                        setConfirmDeleteProjectId(null)
+                      }
+                      onSelectSession={(id) => onSelectSession(id)}
+                      onSelectProject={onSelectProject}
+                      onRenameSession={handleRename}
+                      onCancelEditSession={() => setEditingSessionId(null)}
+                      onSetEditingSessionId={setEditingSessionId}
+                      onSetConfirmDeleteSessionId={setConfirmDeleteSessionId}
+                      onRequestDeleteSession={(e, id) => {
+                        e.stopPropagation();
+                        setConfirmDeleteSessionId(id);
+                      }}
+                      onCancelDeleteSession={(e) => {
+                        e.stopPropagation();
+                        setConfirmDeleteSessionId(null);
+                      }}
+                      onDeleteSession={handleDelete}
+                    />
+                  );
+                })}
+            </div>
+          )}
+        </div>
 
         <div className="flex flex-col gap-1">
           <div

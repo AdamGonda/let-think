@@ -232,12 +232,6 @@ function AppContentBody({
     [actor],
   );
 
-  useEffect(() => {
-    if (!isWorkMode && viewMode === "notesList") {
-      setViewMode("graph");
-    }
-  }, [isWorkMode, viewMode, setViewMode]);
-
   const handleExitOverlay = useCallback(() => {
     if (!canExitOverlay) return;
     actor.send({ type: "USER_EXIT_WAKE_UP" });
