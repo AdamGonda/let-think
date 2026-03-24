@@ -57,8 +57,13 @@ import {
   referencedConceptIdsFromDraft,
 } from "./lib/conceptReferences";
 import { WakeUpOverlay } from "./components/WakeUpOverlay";
+import { RestSessionWalkthrough } from "./components/RestSessionWalkthrough";
 import { GraphViewHeader } from "./components/GraphViewHeader";
 import { AppShell } from "./components/AppShell";
+import {
+  isRestWalkthroughDoneForSession,
+  markRestWalkthroughDoneForSession,
+} from "./lib/restSessionWalkthroughStorage";
 
 function App() {
   return (
@@ -163,6 +168,27 @@ function AppContentBody({
     messagesLoading,
   } = useSessionData();
   const hasChatHistory = messages.length > 0 || canLoadOlderMessages;
+
+  const [restWalkthroughDismissed, setRestWalkthroughDismissed] =
+    useState(false);
+  useEffect(() => {
+    setRestWalkthroughDismissed(false);
+  }, [activeSessionId]);
+
+  const showRestSessionWalkthrough =
+    !isWorkMode &&
+    !!activeSessionId &&
+    !messagesLoading &&
+    messages.length === 0 &&
+    !isRestWalkthroughDoneForSession(activeSessionId) &&
+    !restWalkthroughDismissed;
+
+  const handleRestWalkthroughComplete = useCallback(() => {
+    if (activeSessionId) {
+      markRestWalkthroughDoneForSession(activeSessionId);
+    }
+    setRestWalkthroughDismissed(true);
+  }, [activeSessionId]);
 
   useEffect(() => {
     if (!historyPanelOpen || !activeSessionId || messagesLoading) return;
@@ -314,10 +340,18 @@ function AppContentBody({
           />
         ) : null
       }
+      restSessionWalkthrough={
+        showRestSessionWalkthrough ? (
+          <RestSessionWalkthrough
+            key={activeSessionId ?? undefined}
+            onComplete={handleRestWalkthroughComplete}
+          />
+        ) : null
+      }
       tutorial={
         <Tutorial autoStart={!getTutorialCompleted()} onComplete={() => {}} />
       }
-      mainInert={!!displayWakeUpLayer}
+      mainInert={!!displayWakeUpLayer || showRestSessionWalkthrough}
       toaster={<Toaster theme="dark" />}
     >
       <SessionSidebar
