@@ -59,7 +59,7 @@ export function CornerRippleBackdrop({
   ringCount = 1,
   durationSec: durationSecProp,
   strokeWidth = 0.5,
-  strokeOpacity = 0.05,
+  strokeOpacity = 0.04,
   className,
   ...props
 }: CornerRippleBackdropProps &
