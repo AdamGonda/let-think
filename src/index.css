@@ -159,18 +159,18 @@
 }
 
 /*
- * Hairline ripple: opacity stays ~constant while the ring expands (sharp stroke),
- * then only fades in the last segment so the loop can reset without a bright pop.
+ * Hairline ripple: full opacity on the element while the stroke grows (sharp line;
+ * alpha comes from SVG stroke-opacity). Only the tail fades so the loop can reset.
  */
 @keyframes corner-ripple-expand {
   0% {
     transform: scale(0) translateZ(0);
     opacity: 0;
   }
-  1% {
+  1.5% {
     opacity: 1;
   }
-  86% {
+  88% {
     transform: scale(var(--corner-ripple-max-scale, 1)) translateZ(0);
     opacity: 1;
   }
@@ -181,7 +181,7 @@
 }
 
 .animate-corner-ripple {
-  animation: corner-ripple-expand var(--corner-ripple-duration, 5s) linear
+  animation: corner-ripple-expand var(--corner-ripple-duration, 10s) linear
     infinite;
   will-change: transform;
   backface-visibility: hidden;
