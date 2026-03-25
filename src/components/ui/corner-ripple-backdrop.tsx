@@ -50,9 +50,9 @@ function pickDifferentCorner(
 export function CornerRippleBackdrop({
   corners,
   ringCount = 1,
-  durationSec = 16,
+  durationSec = 15,
   strokeWidth = 0.5,
-  strokeOpacity = 0.45,
+  strokeOpacity = 0.05,
   className,
   ...props
 }: CornerRippleBackdropProps &
@@ -89,9 +89,9 @@ export function CornerRippleBackdrop({
   }, [])
 
   const { w, h } = size
-  /* Past opposite corner + small margin — enough to clear the card, not oversized. */
-  const maxScale = w > 0 && h > 0 ? Math.hypot(w, h) * 1.2 : 1
-  const durationMs = durationSec * 1000
+  /* Past opposite corner + margin so the arc reads slightly larger before the fade. */
+  const maxScale = w > 0 && h > 0 ? Math.hypot(w, h) * 1.318 : 1
+  const durationMs = durationSec * 1000;
   const nRings = Math.max(1, ringCount)
   const staggerMs = durationMs / nRings
 
