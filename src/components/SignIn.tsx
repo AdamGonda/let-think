@@ -7,7 +7,10 @@ export function SignIn() {
 
   return (
     <div className="flex h-screen w-screen items-center justify-center bg-background sign-in-bg">
-      <Card className="flex flex-col items-center gap-6 p-10 shadow-sm max-w-md w-full mx-4">
+      <Card
+        cornerRipple
+        className="flex flex-col items-center gap-6 p-10 shadow-sm max-w-md w-full mx-4"
+      >
         <CardHeader className="p-0 text-center">
           <h1 className="text-2xl font-bold text-foreground">
             Sign in to Think

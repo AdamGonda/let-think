@@ -165,6 +165,7 @@ export function ConceptGraphOverlay({
                   <Card
                     key={node.id}
                     size="sm"
+                    cornerRipple
                     className="relative flex h-full min-h-[200px] flex-col transition-colors duration-200"
                     onMouseEnter={() => setHoveredNode(node)}
                     onMouseLeave={() => setHoveredNode(null)}

@@ -151,6 +151,48 @@
   animation: batch-swipe-from-left 0.5s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
+/* Card corner ripples – expanding rings from corners (SVG circles + scale) */
+/* SVG shapes default to hit-testing; force decoration to never capture pointer events. */
+.corner-ripple-backdrop,
+.corner-ripple-backdrop * {
+  pointer-events: none;
+}
+
+/*
+ * Hairline ripple: opacity stays ~constant while the ring expands (sharp stroke),
+ * then only fades in the last segment so the loop can reset without a bright pop.
+ */
+@keyframes corner-ripple-expand {
+  0% {
+    transform: scale(0) translateZ(0);
+    opacity: 0;
+  }
+  1% {
+    opacity: 1;
+  }
+  86% {
+    transform: scale(var(--corner-ripple-max-scale, 1)) translateZ(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(var(--corner-ripple-max-scale, 1)) translateZ(0);
+    opacity: 0;
+  }
+}
+
+.animate-corner-ripple {
+  animation: corner-ripple-expand var(--corner-ripple-duration, 5s) linear
+    infinite;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .corner-ripple-backdrop {
+    display: none;
+  }
+}
+
 /* Wake up overlay – dissolve in / out */
 @keyframes wake-up-dissolve-in {
   from {

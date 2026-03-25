@@ -7,6 +7,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { MoreVertical } from "lucide-react";
 import type { ProjectWithSessions } from "@/components/session-sidebar/workspaceTypes";
+import { CornerRippleBackdrop } from "@/components/ui/corner-ripple-backdrop";
 import {
   formatUpdatedLabel,
   groupActivityMs,
@@ -46,16 +47,17 @@ export function ProjectSummaryCard({
 
   return (
     <div
-      className={`relative rounded-xl ${
+      className={`relative overflow-hidden rounded-xl ${
         group.project == null
           ? "border-4 border-border"
           : "border-2 border-border/90"
       }`}
     >
+      <CornerRippleBackdrop />
       <button
         type="button"
         onClick={onDrill}
-        className="flex min-h-30 w-full cursor-pointer flex-col gap-2 rounded-[inherit] bg-transparent p-5 pr-12 text-left shadow-none transition-colors hover:bg-muted/10 active:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        className="relative z-10 flex min-h-30 w-full cursor-pointer flex-col gap-2 rounded-[inherit] bg-transparent p-5 pr-12 text-left shadow-none transition-colors hover:bg-muted/10 active:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         <div className="flex items-start justify-between gap-2">
           <span className="font-semibold text-foreground leading-snug line-clamp-2">
