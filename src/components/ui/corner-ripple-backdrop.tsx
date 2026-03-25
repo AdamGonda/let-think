@@ -15,7 +15,10 @@ export type CornerRippleBackdropProps = {
    * and reads as a wide band — default is **1** (a single hairline ripple).
    */
   ringCount?: number
-  /** Duration of one full ripple cycle in seconds (default: 16). */
+  /**
+   * One full ripple cycle in seconds. If omitted, each instance picks a random
+   * duration (see `RANDOM_DURATION_*` in this file) so cards stay out of sync.
+   */
   durationSec?: number
   /** Hairline stroke in CSS px (default: 0.5; non-scaling). */
   strokeWidth?: number
@@ -47,16 +50,28 @@ function pickDifferentCorner(
   return others[Math.floor(Math.random() * others.length)]!
 }
 
+/** When `durationSec` is omitted, each card instance picks a value in this range (seconds). */
+const RANDOM_DURATION_MIN = 12
+const RANDOM_DURATION_MAX = 22
+
 export function CornerRippleBackdrop({
   corners,
   ringCount = 1,
-  durationSec = 15,
+  durationSec: durationSecProp,
   strokeWidth = 0.5,
   strokeOpacity = 0.05,
   className,
   ...props
 }: CornerRippleBackdropProps &
   Omit<React.ComponentProps<"div">, keyof CornerRippleBackdropProps>) {
+  const [randomDurationSec] = React.useState(
+    () =>
+      RANDOM_DURATION_MIN +
+      Math.random() * (RANDOM_DURATION_MAX - RANDOM_DURATION_MIN),
+  )
+
+  const durationSec = durationSecProp ?? randomDurationSec
+
   const pool = React.useMemo((): CornerRippleCorner[] => {
     if (corners != null && corners.length > 0) return corners
     return ["tl", "tr", "bl", "br"]
@@ -91,7 +106,7 @@ export function CornerRippleBackdrop({
   const { w, h } = size
   /* Past opposite corner + margin so the arc reads slightly larger before the fade. */
   const maxScale = w > 0 && h > 0 ? Math.hypot(w, h) * 1.318 : 1
-  const durationMs = durationSec * 1000;
+  const durationMs = durationSec * 1000
   const nRings = Math.max(1, ringCount)
   const staggerMs = durationMs / nRings
 
