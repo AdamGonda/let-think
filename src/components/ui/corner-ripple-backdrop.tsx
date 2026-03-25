@@ -15,7 +15,7 @@ export type CornerRippleBackdropProps = {
    * and reads as a wide band — default is **1** (a single hairline ripple).
    */
   ringCount?: number
-  /** Duration of one full ripple cycle in seconds (default: 10). */
+  /** Duration of one full ripple cycle in seconds (default: 16). */
   durationSec?: number
   /** Hairline stroke in CSS px (default: 0.5; non-scaling). */
   strokeWidth?: number
@@ -50,7 +50,7 @@ function pickDifferentCorner(
 export function CornerRippleBackdrop({
   corners,
   ringCount = 1,
-  durationSec = 10,
+  durationSec = 16,
   strokeWidth = 0.5,
   strokeOpacity = 0.45,
   className,
@@ -89,7 +89,8 @@ export function CornerRippleBackdrop({
   }, [])
 
   const { w, h } = size
-  const maxScale = w > 0 && h > 0 ? Math.hypot(w, h) * 1.05 : 1
+  /* Past opposite corner + small margin — enough to clear the card, not oversized. */
+  const maxScale = w > 0 && h > 0 ? Math.hypot(w, h) * 1.2 : 1
   const durationMs = durationSec * 1000
   const nRings = Math.max(1, ringCount)
   const staggerMs = durationMs / nRings
