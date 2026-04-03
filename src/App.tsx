@@ -5,7 +5,6 @@ import {
   useRef,
   useCallback,
 } from "react";
-import { useAtom } from "jotai";
 import { useQuery, AuthLoading, Unauthenticated, Authenticated } from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
@@ -42,14 +41,6 @@ import {
   selectWorkModeNotesListDuringChatLoading,
   selectWorkModeSessionLoading,
 } from "./machines/appUiMachine";
-import {
-  activeSessionIdAtom,
-  activeProjectIdAtom,
-  draftInputAtom,
-  notesAtom,
-  notesListDrillAtom,
-  selectedBatchIndexAtom,
-} from "./atoms/appAtoms";
 import { useSessionEditorSync } from "./hooks/useSessionEditorSync";
 import { useDefaultSessionSelection } from "./hooks/useDefaultSessionSelection";
 import {
@@ -86,7 +77,7 @@ function App() {
 }
 
 function AppContent() {
-  const [activeSessionId] = useAtom(activeSessionIdAtom);
+  const activeSessionId = useAppUiSelector((s) => s.context.activeSessionId);
   const projectsWithSessions = useQuery(api.projects.listWithSessions);
   const { handleCreateSessionForFirstMessage } =
     useDefaultSessionSelection(projectsWithSessions);
@@ -118,14 +109,14 @@ function AppContentBody({
   workspace: ProjectWithSessions[] | undefined;
   mainContentRef: React.RefObject<HTMLDivElement | null>;
 }) {
-  const [activeSessionId, setActiveSessionId] = useAtom(activeSessionIdAtom);
-  const [activeProjectId, setActiveProjectId] = useAtom(activeProjectIdAtom);
-  const [notesListDrill, setNotesListDrill] = useAtom(notesListDrillAtom);
-  const [selectedBatchIndex, setSelectedBatchIndex] = useAtom(
-    selectedBatchIndexAtom,
+  const activeSessionId = useAppUiSelector((s) => s.context.activeSessionId);
+  const activeProjectId = useAppUiSelector((s) => s.context.activeProjectId);
+  const notesListDrill = useAppUiSelector((s) => s.context.notesListDrill);
+  const selectedBatchIndex = useAppUiSelector(
+    (s) => s.context.selectedBatchIndex,
   );
-  const [draftInput, setDraftInput] = useAtom(draftInputAtom);
-  const [notes, setNotes] = useAtom(notesAtom);
+  const draftInput = useAppUiSelector((s) => s.context.draftInput);
+  const notes = useAppUiSelector((s) => s.context.notes);
   const actor = useAppUiActor();
 
   const chatLoading = useAppUiSelector((s) => s.context.chatLoading);
@@ -213,11 +204,17 @@ function AppContentBody({
     const prevLen = prevBatchesLengthRef.current;
     prevBatchesLengthRef.current = batches.length;
     if (batches.length > prevLen) {
-      setSelectedBatchIndex(batches.length - 1);
+      actor.send({
+        type: "SELECTED_BATCH_INDEX_SET",
+        index: batches.length - 1,
+      });
     } else {
-      setSelectedBatchIndex((i) => Math.min(i, batches.length - 1));
+      actor.send({
+        type: "SELECTED_BATCH_INDEX_SET",
+        index: Math.min(selectedBatchIndex, batches.length - 1),
+      });
     }
-  }, [batches.length, setSelectedBatchIndex]);
+  }, [batches.length, selectedBatchIndex, actor]);
 
   const numberedConcepts = useMemo(
     () =>
@@ -269,29 +266,30 @@ function AppContentBody({
   }, [setViewMode, actor]);
 
   const handleBreadcrumbProjectClick = useCallback(() => {
-    setNotesListDrill(null);
+    actor.send({ type: "NOTES_LIST_DRILL_SET", drill: null });
     handleExitOverlay();
-  }, [handleExitOverlay, setNotesListDrill]);
+  }, [handleExitOverlay, actor]);
 
   const handleBreadcrumbSessionClick = useCallback(() => {
     if (!activeSessionInWorkspace) return;
     if (activeSessionInWorkspace.projectId) {
-      setActiveProjectId(activeSessionInWorkspace.projectId);
-      setNotesListDrill({
-        type: "project",
-        id: activeSessionInWorkspace.projectId,
+      actor.send({
+        type: "ACTIVE_PROJECT_SET",
+        projectId: activeSessionInWorkspace.projectId,
+      });
+      actor.send({
+        type: "NOTES_LIST_DRILL_SET",
+        drill: {
+          type: "project",
+          id: activeSessionInWorkspace.projectId,
+        },
       });
     } else {
-      setActiveProjectId(null);
-      setNotesListDrill({ type: "inbox" });
+      actor.send({ type: "ACTIVE_PROJECT_SET", projectId: null });
+      actor.send({ type: "NOTES_LIST_DRILL_SET", drill: { type: "inbox" } });
     }
     handleExitOverlay();
-  }, [
-    activeSessionInWorkspace,
-    handleExitOverlay,
-    setActiveProjectId,
-    setNotesListDrill,
-  ]);
+  }, [activeSessionInWorkspace, handleExitOverlay, actor]);
 
   const handleBreadcrumbFileClick = useCallback(() => {
     handleReturnToGraphFromEditorOverlay();
@@ -333,7 +331,7 @@ function AppContentBody({
             activeSessionInWorkspace={activeSessionInWorkspace}
             viewMode={viewMode}
             notes={notes}
-            onNotesChange={setNotes}
+            onNotesChange={(v) => actor.send({ type: "NOTES_SET", value: v })}
             onBreadcrumbProjectClick={handleBreadcrumbProjectClick}
             onBreadcrumbSessionClick={handleBreadcrumbSessionClick}
             onBreadcrumbFileClick={handleBreadcrumbFileClick}
@@ -359,10 +357,12 @@ function AppContentBody({
         activeSessionId={activeSessionId}
         activeProjectId={activeProjectId}
         onSelectSession={(id) => {
-          setActiveSessionId(id);
+          actor.send({ type: "ACTIVE_SESSION_SET", sessionId: id });
           if (viewMode === "notesList") setViewMode("graph");
         }}
-        onSelectProject={setActiveProjectId}
+        onSelectProject={(id) =>
+          actor.send({ type: "ACTIVE_PROJECT_SET", projectId: id })
+        }
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         onRunTutorial={runTutorial}
@@ -401,16 +401,25 @@ function AppContentBody({
               <NotesListPanel
                 workspace={workspace}
                 drill={notesListDrill}
-                onDrillChange={setNotesListDrill}
+                onDrillChange={(drill) =>
+                  actor.send({ type: "NOTES_LIST_DRILL_SET", drill })
+                }
                 onSelectSession={(session) => {
-                  setActiveSessionId(session._id);
-                  if (session.projectId) setActiveProjectId(session.projectId);
-                  else setActiveProjectId(null);
-                  setNotesListDrill(
-                    session.projectId
+                  actor.send({ type: "ACTIVE_SESSION_SET", sessionId: session._id });
+                  if (session.projectId) {
+                    actor.send({
+                      type: "ACTIVE_PROJECT_SET",
+                      projectId: session.projectId,
+                    });
+                  } else {
+                    actor.send({ type: "ACTIVE_PROJECT_SET", projectId: null });
+                  }
+                  actor.send({
+                    type: "NOTES_LIST_DRILL_SET",
+                    drill: session.projectId
                       ? { type: "project", id: session.projectId }
                       : { type: "inbox" },
-                  );
+                  });
                   actor.send({ type: "EDITOR_OPEN" });
                 }}
               />
@@ -421,7 +430,9 @@ function AppContentBody({
                 <GraphViewHeader
                   batchCount={batches.length}
                   selectedBatchIndex={selectedBatchIndex}
-                  onSelectBatch={setSelectedBatchIndex}
+                  onSelectBatch={(i) =>
+                    actor.send({ type: "SELECTED_BATCH_INDEX_SET", index: i })
+                  }
                   hasChatHistory={hasChatHistory}
                   onHistoryOpen={() => actor.send({ type: "HISTORY_OPEN" })}
                   onEditorOpen={() => actor.send({ type: "EDITOR_OPEN" })}
@@ -438,7 +449,9 @@ function AppContentBody({
                   graph={conceptGraph ?? null}
                   isLoading={chatLoading}
                   selectedBatchIndex={selectedBatchIndex}
-                  onSelectedBatchIndexChange={setSelectedBatchIndex}
+                  onSelectedBatchIndexChange={(i) =>
+                    actor.send({ type: "SELECTED_BATCH_INDEX_SET", index: i })
+                  }
                   referencedConceptIds={referencedConceptIds}
                 />
               </div>
@@ -460,7 +473,9 @@ function AppContentBody({
             onModelResponded={() => actor.send({ type: "MODEL_FINISHED" })}
             numberedConcepts={numberedConcepts}
             draftInput={draftInput}
-            setDraftInput={setDraftInput}
+            setDraftInput={(v) =>
+              actor.send({ type: "DRAFT_INPUT_SET", value: v })
+            }
             onCreateSession={onCreateSessionForFirstMessage}
           />
         )}
@@ -476,7 +491,7 @@ function AppContentBody({
             batches={batches}
             selectedBatchIndex={selectedBatchIndex}
             onNavigateToStep={(batchIndex: number) => {
-              setSelectedBatchIndex(batchIndex);
+              actor.send({ type: "SELECTED_BATCH_INDEX_SET", index: batchIndex });
               actor.send({ type: "HISTORY_CLOSE" });
             }}
           />

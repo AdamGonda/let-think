@@ -4,19 +4,19 @@ import {
   useRef,
   useCallback,
 } from "react";
-import { useAtom } from "jotai";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
-import { draftInputAtom, notesAtom } from "../atoms/appAtoms";
+import { useAppUiActor, useAppUiSelector } from "./useAppUi";
 
 /**
  * Keeps draft + thinking notes in sync with Convex: load on session change,
  * flush previous session on switch, debounced saves while editing.
  */
 export function useSessionEditorSync(activeSessionId: Id<"sessions"> | null) {
-  const [draftInput, setDraftInput] = useAtom(draftInputAtom);
-  const [notes, setNotes] = useAtom(notesAtom);
+  const actor = useAppUiActor();
+  const draftInput = useAppUiSelector((s) => s.context.draftInput);
+  const notes = useAppUiSelector((s) => s.context.notes);
 
   const draftInputRef = useRef(draftInput);
   const notesRef = useRef(notes);
@@ -50,15 +50,21 @@ export function useSessionEditorSync(activeSessionId: Id<"sessions"> | null) {
 
     if (sessionChanged) {
       appliedStoredForSessionRef.current = null;
-      setDraftInput(activeSessionId == null ? "" : (storedDraft ?? ""));
-      setNotes("");
+      actor.send({
+        type: "DRAFT_INPUT_SET",
+        value: activeSessionId == null ? "" : (storedDraft ?? ""),
+      });
+      actor.send({ type: "NOTES_SET", value: "" });
       if (
         activeSessionId != null &&
         storedDraft !== undefined &&
         storedThinkingNotes !== undefined
       ) {
         appliedStoredForSessionRef.current = activeSessionId;
-        setNotes(storedThinkingNotes ?? "");
+        actor.send({
+          type: "NOTES_SET",
+          value: storedThinkingNotes ?? "",
+        });
       }
     } else if (
       activeSessionId != null &&
@@ -66,8 +72,11 @@ export function useSessionEditorSync(activeSessionId: Id<"sessions"> | null) {
       storedDraft !== undefined &&
       storedThinkingNotes !== undefined
     ) {
-      setDraftInput(storedDraft ?? "");
-      setNotes(storedThinkingNotes ?? "");
+      actor.send({ type: "DRAFT_INPUT_SET", value: storedDraft ?? "" });
+      actor.send({
+        type: "NOTES_SET",
+        value: storedThinkingNotes ?? "",
+      });
       appliedStoredForSessionRef.current = activeSessionId;
     }
   }, [
@@ -76,8 +85,7 @@ export function useSessionEditorSync(activeSessionId: Id<"sessions"> | null) {
     storedThinkingNotes,
     updateDraft,
     updateThinkingNotes,
-    setDraftInput,
-    setNotes,
+    actor,
   ]);
 
   const saveDraft = useCallback(

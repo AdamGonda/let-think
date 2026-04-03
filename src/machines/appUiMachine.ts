@@ -1,4 +1,6 @@
 import { assign, setup } from "xstate";
+import type { Id } from "../../convex/_generated/dataModel";
+import type { NotesListDrill } from "../lib/notesListUtils";
 import {
   readWorkPreference,
   writeWorkPreference,
@@ -9,8 +11,12 @@ export type SurfaceMode = "graph" | "notesList";
 
 export type AppUiContext = {
   preference: WorkPreferenceMode;
-  /** Whether a session is selected (from Jotai; synced via events). */
-  sessionActive: boolean;
+  activeSessionId: Id<"sessions"> | null;
+  activeProjectId: Id<"projects"> | null;
+  notesListDrill: NotesListDrill;
+  selectedBatchIndex: number;
+  draftInput: string;
+  notes: string;
   chatLoading: boolean;
   inBreak: boolean;
   editorOpen: boolean;
@@ -31,11 +37,20 @@ export type AppUiEvent =
   | { type: "EDITOR_OPEN" }
   | { type: "EDITOR_CLOSE" }
   | { type: "USER_EXIT_WAKE_UP" }
-  | { type: "SESSION_SYNC"; active: boolean }
+  | { type: "ACTIVE_SESSION_SET"; sessionId: Id<"sessions"> | null }
+  | { type: "ACTIVE_PROJECT_SET"; projectId: Id<"projects"> | null }
+  | { type: "NOTES_LIST_DRILL_SET"; drill: NotesListDrill }
+  | { type: "SELECTED_BATCH_INDEX_SET"; index: number }
+  | { type: "DRAFT_INPUT_SET"; value: string }
+  | { type: "NOTES_SET"; value: string }
   | { type: "HISTORY_OPEN" }
   | { type: "HISTORY_CLOSE" };
 
 const WAKE_UP_EXIT_MS = 300;
+
+export function sessionSelected(c: AppUiContext): boolean {
+  return c.activeSessionId != null;
+}
 
 /** Focus layer "demand" — same formula as previous overlayActive. */
 export function focusLayerDemand(c: AppUiContext): boolean {
@@ -59,15 +74,15 @@ export const appUiMachine = setup({
     shouldEnterVisible: ({ context }) =>
       focusLayerDemand(context) &&
       !context.overlayDismissed &&
-      context.sessionActive,
+      sessionSelected(context),
     demandEnded: ({ context }) => !focusLayerDemand(context),
     canExitWakeUp: ({ context }) =>
       !context.chatLoading && !context.inBreak,
     canLeaveDismissedLatch: ({ context }) => !focusLayerDemand(context),
     sessionBecameInactive: ({ event }) =>
-      event.type === "SESSION_SYNC" && !event.active,
+      event.type === "ACTIVE_SESSION_SET" && event.sessionId === null,
     sessionBecameActive: ({ event }) =>
-      event.type === "SESSION_SYNC" && event.active,
+      event.type === "ACTIVE_SESSION_SET" && event.sessionId !== null,
     viewIsNotesList: ({ event }) =>
       event.type === "VIEW_SET" && event.mode === "notesList",
     viewIsGraph: ({ event }) =>
@@ -102,14 +117,48 @@ export const appUiMachine = setup({
       modelAwaitingDismissal: false,
     }),
     sessionCleared: assign({
-      sessionActive: false,
       chatLoading: false,
       editorOpen: false,
       modelAwaitingDismissal: false,
       overlayDismissed: false,
       historyPanelOpen: false,
     }),
-    sessionActiveTrue: assign({ sessionActive: true }),
+    setActiveSessionId: assign({
+      activeSessionId: ({ event }) => {
+        if (event.type !== "ACTIVE_SESSION_SET") return null;
+        return event.sessionId;
+      },
+    }),
+    setActiveProject: assign({
+      activeProjectId: ({ event }) => {
+        if (event.type !== "ACTIVE_PROJECT_SET") return null;
+        return event.projectId;
+      },
+    }),
+    setNotesListDrill: assign({
+      notesListDrill: ({ event }) => {
+        if (event.type !== "NOTES_LIST_DRILL_SET") return null;
+        return event.drill;
+      },
+    }),
+    setSelectedBatchIndex: assign({
+      selectedBatchIndex: ({ event }) => {
+        if (event.type !== "SELECTED_BATCH_INDEX_SET") return 0;
+        return event.index;
+      },
+    }),
+    setDraftInput: assign({
+      draftInput: ({ event }) => {
+        if (event.type !== "DRAFT_INPUT_SET") return "";
+        return event.value;
+      },
+    }),
+    setNotes: assign({
+      notes: ({ event }) => {
+        if (event.type !== "NOTES_SET") return "";
+        return event.value;
+      },
+    }),
     startChatLoading: assign({ chatLoading: true }),
     endChatLoading: assign({ chatLoading: false }),
     modelFinishedThink: assign({
@@ -133,7 +182,12 @@ export const appUiMachine = setup({
     return {
       preference: inp?.preference ?? readWorkPreference(),
       surface: "graph",
-      sessionActive: false,
+      activeSessionId: inp?.activeSessionId ?? null,
+      activeProjectId: inp?.activeProjectId ?? null,
+      notesListDrill: inp?.notesListDrill ?? null,
+      selectedBatchIndex: inp?.selectedBatchIndex ?? 0,
+      draftInput: inp?.draftInput ?? "",
+      notes: inp?.notes ?? "",
       chatLoading: false,
       inBreak: false,
       editorOpen: false,
@@ -143,17 +197,32 @@ export const appUiMachine = setup({
     };
   },
   on: {
-    SESSION_SYNC: [
+    ACTIVE_SESSION_SET: [
       {
         guard: "sessionBecameInactive",
-        actions: "sessionCleared",
+        actions: ["setActiveSessionId", "sessionCleared"],
         target: ".wakeUp.off",
       },
       {
         guard: "sessionBecameActive",
-        actions: "sessionActiveTrue",
+        actions: "setActiveSessionId",
       },
     ],
+    ACTIVE_PROJECT_SET: {
+      actions: "setActiveProject",
+    },
+    NOTES_LIST_DRILL_SET: {
+      actions: "setNotesListDrill",
+    },
+    SELECTED_BATCH_INDEX_SET: {
+      actions: "setSelectedBatchIndex",
+    },
+    DRAFT_INPUT_SET: {
+      actions: "setDraftInput",
+    },
+    NOTES_SET: {
+      actions: "setNotes",
+    },
     PREFERENCE_TOGGLE: {
       actions: ["togglePreference", "persistPreference"],
     },
@@ -239,10 +308,10 @@ export const appUiMachine = setup({
             },
           },
           on: {
-            SESSION_SYNC: {
+            ACTIVE_SESSION_SET: {
               guard: "sessionBecameInactive",
               target: "off",
-              actions: "sessionCleared",
+              actions: ["setActiveSessionId", "sessionCleared"],
             },
           },
         },
@@ -285,7 +354,7 @@ export function selectShowWakeUpOverlay(snapshot: MachineSnapshot): boolean {
   return (
     focusLayerDemand(c) &&
     !c.overlayDismissed &&
-    c.sessionActive
+    sessionSelected(c)
   );
 }
 
@@ -306,7 +375,7 @@ export function selectWorkModeSessionLoading(
   return (
     c.preference === "work" &&
     c.chatLoading &&
-    c.sessionActive &&
+    sessionSelected(c) &&
     surfaceState(snapshot) === "graph"
   );
 }
@@ -319,7 +388,7 @@ export function selectWorkModeNotesListDuringChatLoading(
   return (
     c.preference === "work" &&
     c.chatLoading &&
-    c.sessionActive &&
+    sessionSelected(c) &&
     surfaceState(snapshot) === "notesList"
   );
 }
