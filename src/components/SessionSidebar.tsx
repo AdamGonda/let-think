@@ -338,7 +338,7 @@ export function SessionSidebar({
                 ? "Collapse projects list"
                 : "Expand projects list"
             }
-            className="flex items-center gap-1 w-full min-w-0 text-left text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/90 px-2 py-1 rounded-lg hover:bg-muted/15 hover:text-muted-foreground transition-colors"
+            className="flex cursor-pointer items-center gap-1 w-full min-w-0 text-left text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/90 px-2 py-1 rounded-lg hover:bg-muted/15 hover:text-muted-foreground transition-colors"
           >
             <ChevronDown
               className={`size-3.5 shrink-0 text-muted-foreground transition-transform ${
