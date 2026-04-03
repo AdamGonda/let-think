@@ -142,7 +142,7 @@ export function ConceptGraphOverlay({
         <>
           <div
             ref={graphViewportRef}
-            className="flex flex-1 min-h-0 min-w-0 overflow-auto relative py-4 items-start"
+            className="flex flex-1 p-1 min-h-0 min-w-0 overflow-auto relative py-4 items-start"
           >
             <div
               key={selectedBatchIndex}
