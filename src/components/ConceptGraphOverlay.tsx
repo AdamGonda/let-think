@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useMemo } from "react";
+import { useRef, useEffect, useLayoutEffect, useState, useMemo } from "react";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 
 type GraphNode = {
@@ -32,7 +32,7 @@ interface ConceptGraphOverlayProps {
 export function ConceptGraphOverlay({
   graph,
   className,
-  isLoading: _isLoading = false,
+  isLoading = false,
   selectedBatchIndex: controlledBatchIndex,
   onSelectedBatchIndexChange,
   referencedConceptIds,
@@ -61,29 +61,36 @@ export function ConceptGraphOverlay({
       ];
     }
     return [];
-  }, [graph?.batches, graph?.nodes]);
+  }, [graph]);
 
   const nodeMap = useMemo(() => {
     const m = new Map<string, GraphNode>();
     graph?.nodes?.forEach((n) => m.set(n.id, n));
     return m;
-  }, [graph?.nodes]);
+  }, [graph]);
 
   // When a new batch arrives, jump to it to show the most up-to-date batch (uncontrolled only)
   const prevBatchesLengthRef = useRef(0);
-  const prevBatchIndexRef = useRef(selectedBatchIndex);
 
-  // Swipe on batch transition – direction matches nav (next = from right, prev = from left)
+  // Swipe on batch transition – direction matches nav (next = from right, prev = from left).
   const [isAnimating, setIsAnimating] = useState(false);
-  const swipeDirectionRef = useRef<"left" | "right">("right");
-  useEffect(() => {
-    const prev = prevBatchIndexRef.current;
-    if (selectedBatchIndex !== prev) {
-      swipeDirectionRef.current =
-        selectedBatchIndex > prev ? "right" : "left";
-      prevBatchIndexRef.current = selectedBatchIndex;
-      setIsAnimating(true);
+  const [swipeDirection, setSwipeDirection] = useState<"left" | "right">("right");
+  const prevBatchIndexForSwipeRef = useRef<number | undefined>(undefined);
+  const isFirstSwipeLayoutRef = useRef(true);
+
+  useLayoutEffect(() => {
+    if (isFirstSwipeLayoutRef.current) {
+      isFirstSwipeLayoutRef.current = false;
+      prevBatchIndexForSwipeRef.current = selectedBatchIndex;
+      return;
     }
+    const prev = prevBatchIndexForSwipeRef.current;
+    prevBatchIndexForSwipeRef.current = selectedBatchIndex;
+    if (prev === undefined || selectedBatchIndex === prev) return;
+    /* eslint-disable react-hooks/set-state-in-effect -- swipe UI must follow prop-driven batch index before paint */
+    setSwipeDirection(selectedBatchIndex > prev ? "right" : "left");
+    setIsAnimating(true);
+    /* eslint-enable react-hooks/set-state-in-effect */
   }, [selectedBatchIndex]);
 
   const handleBatchAnimationEnd = () => {
@@ -99,7 +106,7 @@ export function ConceptGraphOverlay({
     } else {
       setSelectedBatchIndex(Math.min(selectedBatchIndex, batches.length - 1));
     }
-  }, [batches.length, isControlled, selectedBatchIndex]);
+  }, [batches.length, isControlled, selectedBatchIndex, setSelectedBatchIndex]);
 
   const isEmpty = !graph?.nodes?.length;
 
@@ -120,18 +127,14 @@ export function ConceptGraphOverlay({
   const isLatestBatch =
     batches.length > 0 && selectedBatchIndex === batches.length - 1;
 
-  // Clear animation state when batch has no nodes (nothing to animate)
-  useEffect(() => {
-    if (isAnimating && currentBatchNodes.length === 0) {
-      setIsAnimating(false);
-    }
-  }, [isAnimating, currentBatchNodes.length]);
+  const showSwipeAnimation = isAnimating && currentBatchNodes.length > 0;
 
   return (
     <div
       ref={containerRef}
       className={className ?? "flex flex-1 min-w-0 min-h-0 flex-col"}
       style={{ width: "100%", height: "100%" }}
+      aria-busy={isLoading}
       onMouseLeave={() => setHoveredNode(null)}
     >
       {isEmpty ? (
@@ -147,8 +150,8 @@ export function ConceptGraphOverlay({
             <div
               key={selectedBatchIndex}
               className={`grid min-h-full w-full grid-cols-1 gap-6 p-4 auto-rows-[minmax(200px,calc((100%-7.5rem)/6))] sm:grid-cols-2 sm:auto-rows-[minmax(200px,calc((100%-3rem)/3))] lg:grid-cols-3 lg:auto-rows-[minmax(200px,calc((100%-1.5rem)/2))] ${
-                isAnimating
-                  ? swipeDirectionRef.current === "right"
+                showSwipeAnimation
+                  ? swipeDirection === "right"
                     ? "animate-batch-swipe-right"
                     : "animate-batch-swipe-left"
                   : ""
