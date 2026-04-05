@@ -123,6 +123,7 @@ export function SessionSidebar({
 
   const handleNewProject = async () => {
     const id = await createProject();
+    setProjectsSectionOpen(true);
     setExpandedProjectIds((prev) => new Set([...prev, id]));
   };
 
