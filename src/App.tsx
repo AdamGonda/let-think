@@ -244,7 +244,8 @@ function AppContentBody({
 
   const handleBreadcrumbFileClick = useCallback(() => {
     handleReturnToGraphFromEditorOverlay();
-  }, [handleReturnToGraphFromEditorOverlay]);
+    sessionSidebarRef.current?.expand();
+  }, [handleReturnToGraphFromEditorOverlay, sessionSidebarRef]);
 
   const workSigmaEditorFromSession =
     isWorkMode && editorOpen && viewMode === "graph";
