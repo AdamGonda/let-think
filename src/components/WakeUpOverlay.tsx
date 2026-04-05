@@ -65,7 +65,7 @@ export function WakeUpOverlay({
           <Button
             variant="outline"
             size="icon-sm"
-            className="absolute top-4 right-4 z-10"
+            className="absolute top-3 right-4 z-10"
             onClick={onSigmaClick}
             aria-label={
               workSigmaEditorFromSession

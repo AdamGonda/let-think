@@ -1,11 +1,10 @@
+import { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import {
-  useState,
-  useEffect,
-  useMemo,
-  useRef,
-  useCallback,
-} from "react";
-import { useQuery, AuthLoading, Unauthenticated, Authenticated } from "convex/react";
+  useQuery,
+  AuthLoading,
+  Unauthenticated,
+  Authenticated,
+} from "convex/react";
 import { api } from "../convex/_generated/api";
 import type { Id } from "../convex/_generated/dataModel";
 import {
@@ -385,45 +384,34 @@ function AppContentBody({
           className="relative flex flex-1 min-h-0 flex-col"
         >
           {viewMode === "notesList" ? (
-            <>
-              {workModeNotesListDuringChatLoading ? (
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  className="absolute top-4 right-4 z-10"
-                  onClick={() => setViewMode("graph")}
-                  title="Return to graph"
-                  aria-label="Return to concept graph"
-                >
-                  <Sigma className="size-5" />
-                </Button>
-              ) : null}
-              <NotesListPanel
-                workspace={workspace}
-                drill={notesListDrill}
-                onDrillChange={(drill) =>
-                  actor.send({ type: "NOTES_LIST_DRILL_SET", drill })
-                }
-                onSelectSession={(session) => {
-                  actor.send({ type: "ACTIVE_SESSION_SET", sessionId: session._id });
-                  if (session.projectId) {
-                    actor.send({
-                      type: "ACTIVE_PROJECT_SET",
-                      projectId: session.projectId,
-                    });
-                  } else {
-                    actor.send({ type: "ACTIVE_PROJECT_SET", projectId: null });
-                  }
+            <NotesListPanel
+              workspace={workspace}
+              drill={notesListDrill}
+              onDrillChange={(drill) =>
+                actor.send({ type: "NOTES_LIST_DRILL_SET", drill })
+              }
+              onSelectSession={(session) => {
+                actor.send({
+                  type: "ACTIVE_SESSION_SET",
+                  sessionId: session._id,
+                });
+                if (session.projectId) {
                   actor.send({
-                    type: "NOTES_LIST_DRILL_SET",
-                    drill: session.projectId
-                      ? { type: "project", id: session.projectId }
-                      : { type: "inbox" },
+                    type: "ACTIVE_PROJECT_SET",
+                    projectId: session.projectId,
                   });
-                  actor.send({ type: "EDITOR_OPEN" });
-                }}
-              />
-            </>
+                } else {
+                  actor.send({ type: "ACTIVE_PROJECT_SET", projectId: null });
+                }
+                actor.send({
+                  type: "NOTES_LIST_DRILL_SET",
+                  drill: session.projectId
+                    ? { type: "project", id: session.projectId }
+                    : { type: "inbox" },
+                });
+                actor.send({ type: "EDITOR_OPEN" });
+              }}
+            />
           ) : (
             <>
               {activeSessionId && (
@@ -491,7 +479,10 @@ function AppContentBody({
             batches={batches}
             selectedBatchIndex={selectedBatchIndex}
             onNavigateToStep={(batchIndex: number) => {
-              actor.send({ type: "SELECTED_BATCH_INDEX_SET", index: batchIndex });
+              actor.send({
+                type: "SELECTED_BATCH_INDEX_SET",
+                index: batchIndex,
+              });
               actor.send({ type: "HISTORY_CLOSE" });
             }}
           />
