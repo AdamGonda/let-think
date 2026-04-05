@@ -88,13 +88,7 @@ export function ChatComposer({
       return;
     }
 
-    if (
-      isDisabled ||
-      e.ctrlKey ||
-      e.metaKey ||
-      e.altKey ||
-      (e.key !== "Backspace" && e.key !== "Delete")
-    ) {
+    if (isDisabled || (e.key !== "Backspace" && e.key !== "Delete")) {
       return;
     }
 
