@@ -14,7 +14,6 @@ type SidebarSessionItemProps = {
   editingSessionId: Id<"sessions"> | null;
   sessionInputRef: RefObject<HTMLInputElement | null>;
   confirmDeleteSessionId: Id<"sessions"> | null;
-  canDeleteSession: boolean;
   onSelect: () => void;
   onBeginEdit: (e: React.MouseEvent) => void;
   onRename: (id: Id<"sessions">, title: string) => void;
@@ -33,7 +32,6 @@ export function SidebarSessionItem({
   editingSessionId,
   sessionInputRef,
   confirmDeleteSessionId,
-  canDeleteSession,
   onSelect,
   onBeginEdit,
   onRename,
@@ -103,7 +101,7 @@ export function SidebarSessionItem({
             onCancel={onCancelDelete}
           />
         </div>
-      ) : canDeleteSession ? (
+      ) : (
         <Button
           variant="ghost"
           size="icon-xs"
@@ -113,7 +111,7 @@ export function SidebarSessionItem({
         >
           <Trash2 className="size-4" />
         </Button>
-      ) : null}
+      )}
     </div>
   );
 }

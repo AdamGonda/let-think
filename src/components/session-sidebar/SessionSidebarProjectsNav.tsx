@@ -56,6 +56,10 @@ export function SessionSidebarProjectsNav({
     data?.filter((g: ProjectWithSessions) => g.project) ?? [];
   const hasProjects = projectGroups.length > 0;
 
+  const inboxSessions =
+    data?.find((g: ProjectWithSessions) => !g.project)?.sessions ?? [];
+  const hasInboxSessions = inboxSessions.length > 0;
+
   return (
     <nav
       className={`flex-1 overflow-y-auto py-3 flex flex-col gap-3 ${
@@ -106,7 +110,6 @@ export function SessionSidebarProjectsNav({
                     confirmDeleteProjectId={confirmDeleteProjectId}
                     confirmDeleteSessionId={confirmDeleteSessionId}
                     projectClickTimeoutRef={projectClickTimeoutRef}
-                    allSessionsLength={allSessions.length}
                     onDragOverProject={(id) => setDragOverProjectId(id)}
                     onDragLeaveProject={() => setDragOverProjectId(null)}
                     onDropOnProject={(projectIdDrop, e) => {
@@ -165,34 +168,34 @@ export function SessionSidebarProjectsNav({
         </div>
       )}
 
-      <div className="flex flex-col gap-1">
-        <div
-          className={`flex items-center gap-1 rounded-lg border transition-colors py-1.5 px-0 border-transparent ${
-            dragOverProjectId === "inbox" ? "ring-2 ring-ring ring-inset" : ""
-          }`}
-          onDragOver={(e) => {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = "move";
-            setDragOverProjectId("inbox");
-          }}
-          onDragLeave={() => setDragOverProjectId(null)}
-          onDrop={(e) => {
-            e.preventDefault();
-            const sessionId = e.dataTransfer.getData(
-              "text/plain",
-            ) as Id<"sessions">;
-            if (sessionId) {
-              handleMoveSession(sessionId, null);
-            }
-            setDragOverProjectId(null);
-          }}
-        >
-          <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/90 py-1 px-2">
-            Sessions
-          </span>
-        </div>
-        {(data?.find((g: ProjectWithSessions) => !g.project)?.sessions ?? []).map(
-          (session: Doc<"sessions">) => (
+      {hasInboxSessions && (
+        <div className="flex flex-col gap-1">
+          <div
+            className={`flex items-center gap-1 rounded-lg border transition-colors py-1.5 px-0 border-transparent ${
+              dragOverProjectId === "inbox" ? "ring-2 ring-ring ring-inset" : ""
+            }`}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.dataTransfer.dropEffect = "move";
+              setDragOverProjectId("inbox");
+            }}
+            onDragLeave={() => setDragOverProjectId(null)}
+            onDrop={(e) => {
+              e.preventDefault();
+              const sessionId = e.dataTransfer.getData(
+                "text/plain",
+              ) as Id<"sessions">;
+              if (sessionId) {
+                handleMoveSession(sessionId, null);
+              }
+              setDragOverProjectId(null);
+            }}
+          >
+            <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/90 py-1 px-2">
+              Sessions
+            </span>
+          </div>
+          {inboxSessions.map((session: Doc<"sessions">) => (
             <SidebarSessionItem
               key={session._id}
               session={session}
@@ -203,7 +206,6 @@ export function SessionSidebarProjectsNav({
               editingSessionId={editingSessionId}
               sessionInputRef={sessionInputRef}
               confirmDeleteSessionId={confirmDeleteSessionId}
-              canDeleteSession={allSessions.length > 1}
               onSelect={() => {
                 if (editingSessionId !== session._id) {
                   onSelectSession(session._id);
@@ -232,9 +234,9 @@ export function SessionSidebarProjectsNav({
               }}
               onMouseLeaveDeleteConfirm={() => setConfirmDeleteSessionId(null)}
             />
-          ),
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </nav>
   );
 }

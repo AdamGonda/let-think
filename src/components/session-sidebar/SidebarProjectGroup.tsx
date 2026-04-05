@@ -27,7 +27,6 @@ type SidebarProjectGroupProps = {
   confirmDeleteProjectId: Id<"projects"> | null;
   confirmDeleteSessionId: Id<"sessions"> | null;
   projectClickTimeoutRef: RefObject<ReturnType<typeof setTimeout> | null>;
-  allSessionsLength: number;
   onDragOverProject: (projectId: Id<"projects">) => void;
   onDragLeaveProject: () => void;
   onDropOnProject: (projectId: Id<"projects">, e: React.DragEvent) => void;
@@ -65,7 +64,6 @@ export function SidebarProjectGroup({
   confirmDeleteProjectId,
   confirmDeleteSessionId,
   projectClickTimeoutRef,
-  allSessionsLength,
   onDragOverProject,
   onDragLeaveProject,
   onDropOnProject,
@@ -221,7 +219,6 @@ export function SidebarProjectGroup({
             editingSessionId={editingSessionId}
             sessionInputRef={sessionInputRef}
             confirmDeleteSessionId={confirmDeleteSessionId}
-            canDeleteSession={allSessionsLength > 1}
             onSelect={() => {
               if (editingSessionId !== session._id) {
                 onSelectSession(session._id);

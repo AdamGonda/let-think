@@ -163,7 +163,6 @@ export function useSessionSidebarWorkspace({
 
   const handleDelete = useCallback(
     async (id: Id<"sessions">) => {
-      if (allSessions.length <= 1) return;
       setConfirmDeleteSessionId(null);
       const wasActive = activeSessionId === id;
       const deletedSession = allSessions.find(
