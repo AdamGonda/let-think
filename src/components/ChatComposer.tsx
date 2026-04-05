@@ -1,4 +1,5 @@
 import { useRef, useEffect } from "react";
+import { layout } from "@/config";
 import { CornerDownLeft, Loader2 } from "lucide-react";
 import { parseInputTokens } from "@/lib/chatMentions";
 import type { NumberedConcept } from "@/lib/conceptReferences";
@@ -63,8 +64,8 @@ export function ChatComposer({
       <div
         className={
           workModeLoadingFrame
-            ? "w-full max-w-[720px] flex flex-col gap-3 rounded-t-2xl border-t-2 border-l-2 border-r-2 border-b-0 border-(--session-accent) shadow-lg px-4 py-3 pb-4"
-            : "w-full max-w-[720px] flex flex-col gap-3 rounded-t-2xl border border-b-0 border-border shadow-lg px-4 py-3 pb-4"
+            ? `w-full ${layout.mainColumnMaxWidthClass} flex flex-col gap-3 rounded-t-2xl border-t-2 border-l-2 border-r-2 border-b-0 border-(--session-accent) shadow-lg px-4 py-3 pb-4`
+            : `w-full ${layout.mainColumnMaxWidthClass} flex flex-col gap-3 rounded-t-2xl border border-b-0 border-border shadow-lg px-4 py-3 pb-4`
         }
         style={{ backgroundColor: "#2B2B28" }}
       >

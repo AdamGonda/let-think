@@ -1,5 +1,6 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
+import { SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS } from "./constants";
 import {
   internalMutation,
   internalQuery,
@@ -229,7 +230,11 @@ export const addMessages = mutation({
     }
     const session = await ctx.db.get(sessionId);
     if (session?.title === "New session" && userContent.trim()) {
-      const title = userContent.slice(0, 50) + (userContent.length > 50 ? "…" : "");
+      const title =
+        userContent.slice(0, SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS) +
+        (userContent.length > SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS
+          ? "…"
+          : "");
       await ctx.db.patch(sessionId, { title });
     }
   },

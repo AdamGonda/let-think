@@ -1,4 +1,5 @@
 import type { RefObject } from "react";
+import { timings } from "@/config";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import {
   ChevronDown,
@@ -143,7 +144,7 @@ export function SidebarProjectGroup({
               projectClickTimeoutRef.current = setTimeout(() => {
                 projectClickTimeoutRef.current = null;
                 onToggleProjectExpanded(projectId);
-              }, 250);
+              }, timings.projectRowClickDelayMs);
             }}
             onDoubleClick={(e) => {
               e.stopPropagation();

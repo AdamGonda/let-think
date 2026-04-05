@@ -9,6 +9,7 @@ import { usePaginatedQuery, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useSessionManager } from "../hooks/useSessionManager";
+import { CHAT_MESSAGES_PAGE_SIZE } from "@/config";
 
 export type ConceptGraphData = {
   nodes: Array<{ id: string; name: string; description?: string }>;
@@ -82,7 +83,7 @@ export function SessionDataProvider({
   } = usePaginatedQuery(
     api.sessions.listMessagesPaginated,
     sessionId ? { sessionId } : "skip",
-    { initialNumItems: 60 }
+    { initialNumItems: CHAT_MESSAGES_PAGE_SIZE }
   );
 
   const messages = useMemo((): SessionMessage[] => {
@@ -99,7 +100,7 @@ export function SessionDataProvider({
   }, [messageResults]);
 
   const loadOlderMessages = useCallback(
-    (count = 60) => {
+    (count = CHAT_MESSAGES_PAGE_SIZE) => {
       loadMore(count);
     },
     [loadMore]

@@ -28,8 +28,6 @@ import { ChatHistoryPanel } from "./components/ChatHistoryPanel";
 import { ConceptGraphOverlay } from "./components/ConceptGraphOverlay";
 import { SignIn } from "./components/SignIn";
 import { Toaster } from "./components/ui/sonner";
-import { Button } from "./components/ui/button";
-import { Sigma } from "lucide-react";
 import { WorkPreferenceSync } from "./components/WorkPreferenceSync";
 import {
   selectCanExitWakeUp,
@@ -46,6 +44,7 @@ import {
   buildNumberedConceptsFromGraph,
   referencedConceptIdsFromDraft,
 } from "./lib/conceptReferences";
+import { CHAT_MESSAGES_PAGE_SIZE, timings } from "@/config";
 import { WakeUpOverlay } from "./components/WakeUpOverlay";
 import { RestSessionWalkthrough } from "./components/RestSessionWalkthrough";
 import { GraphViewHeader } from "./components/GraphViewHeader";
@@ -243,7 +242,10 @@ function AppContentBody({
       queueMicrotask(() => setEditorRevealReady(false));
       return;
     }
-    const id = setTimeout(() => setEditorRevealReady(true), 50);
+    const id = setTimeout(
+      () => setEditorRevealReady(true),
+      timings.wakeUpEditorRevealMs,
+    );
     return () => clearTimeout(id);
   }, [displayWakeUpLayer, isExitingOverlay]);
 
@@ -473,7 +475,9 @@ function AppContentBody({
             onClose={() => actor.send({ type: "HISTORY_CLOSE" })}
             messages={messages ?? []}
             onLoadOlderMessages={
-              canLoadOlderMessages ? () => loadOlderMessages(80) : undefined
+              canLoadOlderMessages
+                ? () => loadOlderMessages(CHAT_MESSAGES_PAGE_SIZE)
+                : undefined
             }
             canLoadOlderMessages={canLoadOlderMessages}
             batches={batches}

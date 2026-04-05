@@ -14,6 +14,11 @@ import {
 } from "./chatPipeline";
 type ConceptNode = ConceptGraph["nodes"][number];
 import type { ModelMessage } from "ai";
+import {
+  BATCH_PROMPT_SUMMARY_MAX_CHARS,
+  PROMPT_SUMMARY_INPUT_MAX_CHARS,
+  PROMPT_SUMMARY_OUTPUT_MAX_CHARS,
+} from "./constants";
 
 /** Generate a short topic/summary from user prompt via AI – fits in max 2 lines above history bubbles. */
 async function generatePromptSummary(
@@ -25,7 +30,7 @@ async function generatePromptSummary(
   const prompt = `Summarize the following in one short phrase (max 8–12 words). Reply with only that phrase, nothing else.
 
 User prompt:
-${trimmed.slice(0, 500)}`;
+${trimmed.slice(0, PROMPT_SUMMARY_INPUT_MAX_CHARS)}`;
 
   // Use main model first (known to work); fall back to flash models if needed
   const modelsToTry = ["gemini-3-flash-preview"] //"gemini-3.1-pro-preview", "gemini-2.5-flash", "gemini-2.0-flash"];
@@ -35,7 +40,10 @@ ${trimmed.slice(0, 500)}`;
         model: model(modelId),
         prompt,
       });
-      const raw = text.trim().replace(/\n+/g, " ").slice(0, 100);
+      const raw = text
+        .trim()
+        .replace(/\n+/g, " ")
+        .slice(0, PROMPT_SUMMARY_OUTPUT_MAX_CHARS);
       const sentence = raw.replace(/^["'`]\s*|["'`]\s*$/g, "").trim();
       if (sentence && sentence !== "—") {
         return sentence.charAt(0).toUpperCase() + sentence.slice(1);
@@ -182,7 +190,11 @@ export const send = action({
               {
                 id: `batch-${Date.now()}`,
                 nodeIds: newNodeIds,
-                promptSummary: userContent.slice(0, 60).trim() + (userContent.length > 60 ? "…" : "") || undefined,
+                promptSummary:
+                  userContent.slice(0, BATCH_PROMPT_SUMMARY_MAX_CHARS).trim() +
+                    (userContent.length > BATCH_PROMPT_SUMMARY_MAX_CHARS
+                      ? "…"
+                      : "") || undefined,
                 description: userContent.trim() || undefined,
               },
             ]

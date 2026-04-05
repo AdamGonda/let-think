@@ -7,10 +7,10 @@ import {
 } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
-
-const BREAK_MS = 10 * 60 * 1000;
-
-const RESTRICT_INTERACTION_LIMIT = 3;
+import {
+  BREAK_MS,
+  RESTRICT_INTERACTION_LIMIT,
+} from "./constants";
 
 function pickRandomLimit(): number {
   return RESTRICT_INTERACTION_LIMIT;

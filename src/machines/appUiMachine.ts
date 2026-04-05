@@ -6,6 +6,7 @@ import {
   writeWorkPreference,
   type WorkPreferenceMode,
 } from "../lib/workPreferenceStorage";
+import { timings } from "@/config";
 
 export type SurfaceMode = "graph" | "notesList";
 
@@ -45,8 +46,6 @@ export type AppUiEvent =
   | { type: "NOTES_SET"; value: string }
   | { type: "HISTORY_OPEN" }
   | { type: "HISTORY_CLOSE" };
-
-const WAKE_UP_EXIT_MS = 300;
 
 export function sessionSelected(c: AppUiContext): boolean {
   return c.activeSessionId != null;
@@ -302,7 +301,7 @@ export const appUiMachine = setup({
         },
         exiting: {
           after: {
-            [WAKE_UP_EXIT_MS]: {
+            [timings.wakeUpExitMs]: {
               target: "dismissedLatch",
               actions: "completeUserExit",
             },
@@ -405,5 +404,3 @@ export function selectIsWorkMode(snapshot: MachineSnapshot): boolean {
 export function selectSurface(snapshot: MachineSnapshot): SurfaceMode {
   return surfaceState(snapshot);
 }
-
-export { WAKE_UP_EXIT_MS };

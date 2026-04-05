@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from "react";
+import { timings } from "@/config";
 import { driver, type Driver, type DriveStep, type Config } from "driver.js";
 import "driver.js/dist/driver.css";
 
@@ -166,7 +167,7 @@ export function Tutorial({ autoStart = false, onComplete }: TutorialProps) {
   useEffect(() => {
     if (autoStart && !getTutorialCompleted()) {
       // Small delay so the UI is painted before the tour starts
-      const t = setTimeout(runTutorial, 600);
+      const t = setTimeout(runTutorial, timings.tutorialStartDelayMs);
       return () => clearTimeout(t);
     }
   }, [autoStart, runTutorial]);

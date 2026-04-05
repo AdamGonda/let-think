@@ -16,6 +16,7 @@ import {
   renderContentWithMentions,
   type HistoryMention,
 } from "@/lib/chatHistoryRender";
+import { timings } from "@/config";
 
 interface UserMessage {
   _id?: Id<"messages">;
@@ -91,7 +92,7 @@ export function ChatHistoryPanel({
     e.stopPropagation();
     navigator.clipboard.writeText(content);
     setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), 2000);
+    setTimeout(() => setCopiedKey(null), timings.copiedFeedbackMs);
     toast.success("Copied to clipboard");
   };
 

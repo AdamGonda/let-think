@@ -1,3 +1,4 @@
+import { layout } from "@/config";
 import { Sigma } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatBreakCountdown } from "@/hooks/useSessionManager";
@@ -50,7 +51,7 @@ export function WakeUpOverlay({
 }: WakeUpOverlayProps) {
   return (
     <div
-      className={`fixed inset-0 z-[9999] flex h-screen w-screen flex-col bg-background ${
+      className={`fixed inset-0 ${layout.wakeUpOverlayZIndexClass} flex h-screen w-screen flex-col bg-background ${
         isExitingOverlay ? "animate-wake-up-out" : "animate-wake-up-in"
       }`}
       aria-busy={chatLoading}
@@ -88,7 +89,7 @@ export function WakeUpOverlay({
         {activeSessionId && (
           <div className="flex-1 min-h-0 flex flex-col items-center px-6 pb-8 overflow-hidden">
             <div
-              className={`relative w-full max-w-[720px] flex-1 min-h-0 flex flex-col transition-opacity duration-150 ${
+              className={`relative w-full ${layout.mainColumnMaxWidthClass} flex-1 min-h-0 flex flex-col transition-opacity duration-150 ${
                 editorRevealReady ? "opacity-100" : "opacity-0"
               }`}
             >

@@ -11,6 +11,7 @@ import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useAppUiSelector } from "./useAppUi";
 import type { WorkPreferenceMode } from "../lib/workPreferenceStorage";
+import { timings } from "@/config";
 
 export function formatBreakCountdown(ms: number): string {
   const totalSeconds = Math.ceil(ms / 1000);
@@ -68,7 +69,7 @@ export function useSessionManager(sessionId: Id<"sessions"> | null) {
         setBreakRemainingMs(null);
         void resetAfterBreak({});
       }
-    }, 1000);
+    }, timings.breakCountdownTickMs);
     return () => clearInterval(interval);
   }, [state?.breakEndsAt, breakRemainingMs, resetAfterBreak]);
 

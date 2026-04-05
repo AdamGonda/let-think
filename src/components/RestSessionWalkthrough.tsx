@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { layout } from "@/config";
 import { Button } from "@/components/ui/button";
 import { StepNavigator } from "@/components/StepNavigator";
 
@@ -24,7 +25,7 @@ export function RestSessionWalkthrough({
 
   return (
     <div
-      className="fixed inset-0 z-[9998] flex items-center justify-center bg-background/95 p-6 backdrop-blur-sm"
+      className={`fixed inset-0 ${layout.restWalkthroughOverlayZIndexClass} flex items-center justify-center bg-background/95 p-6 backdrop-blur-sm`}
       role="dialog"
       aria-modal="true"
       aria-labelledby="rest-walkthrough-title"

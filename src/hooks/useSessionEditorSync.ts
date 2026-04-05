@@ -4,6 +4,7 @@ import {
   useRef,
   useCallback,
 } from "react";
+import { timings } from "@/config";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -100,7 +101,7 @@ export function useSessionEditorSync(activeSessionId: Id<"sessions"> | null) {
     if (!activeSessionId) return;
     const timer = setTimeout(() => {
       saveDraft(draftInput);
-    }, 400);
+    }, timings.draftSaveDebounceMs);
     return () => clearTimeout(timer);
   }, [activeSessionId, draftInput, saveDraft]);
 
@@ -119,7 +120,7 @@ export function useSessionEditorSync(activeSessionId: Id<"sessions"> | null) {
     if (!activeSessionId) return;
     const timer = setTimeout(() => {
       saveThinkingNotes(notes);
-    }, 400);
+    }, timings.draftSaveDebounceMs);
     return () => clearTimeout(timer);
   }, [activeSessionId, notes, saveThinkingNotes]);
 }

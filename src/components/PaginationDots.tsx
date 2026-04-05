@@ -2,6 +2,7 @@
 
 import { animated, useSpring } from "@react-spring/web";
 import { useEffect, useState } from "react";
+import { timings } from "@/config";
 
 const DOT_SIZE = 10;
 const GAP = 6;
@@ -32,7 +33,7 @@ export function PaginationDots({
 
   const springProps = useSpring({
     to: { x: -offset },
-    config: { duration: 300 },
+    config: { duration: timings.paginationDotsSpringMs },
   });
 
   if (totalItems <= 1) {
