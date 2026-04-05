@@ -60,7 +60,7 @@ function getSteps(): DriveStep[] {
     {
       element: "[data-tour='notes-toggle']",
       popover: {
-        title: "Files",
+        title: "Project notes",
         description:
           "Switch to a list view of all your sessions and notes. Great for scanning and jumping between sessions.",
         side: "right",

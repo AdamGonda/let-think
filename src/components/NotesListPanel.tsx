@@ -48,7 +48,7 @@ export function NotesListPanel({
   const drilled = drill != null;
   const drillTitle = drillGroup ? groupDisplayName(drillGroup) : "";
   const drillHeading =
-    drilled && drillGroup ? `${drillTitle}` : "Projects";
+    drilled && drillGroup ? `${drillTitle}` : "Project notes";
 
   return (
     <div className="flex flex-1 flex-col min-h-0 bg-background">

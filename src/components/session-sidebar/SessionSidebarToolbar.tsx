@@ -12,6 +12,8 @@ type SessionSidebarToolbarProps = {
   onToggleCollapsed: () => void;
   onNewSession: () => void;
   onNewProject: () => void;
+  /** Project notes view toggle; only once there is at least one session under a project. */
+  showProjectsViewToggle: boolean;
   viewModeIsNotesList: boolean;
   onViewModeChange: (mode: "graph" | "notesList") => void;
 };
@@ -21,6 +23,7 @@ export function SessionSidebarToolbar({
   onToggleCollapsed,
   onNewSession,
   onNewProject,
+  showProjectsViewToggle,
   viewModeIsNotesList,
   onViewModeChange,
 }: SessionSidebarToolbarProps) {
@@ -96,36 +99,40 @@ export function SessionSidebarToolbar({
         </span>
         {!isCollapsed && "New project"}
       </Button>
-      <Button
-        variant="ghost"
-        className={`transition-colors ${
-          isCollapsed
-            ? viewModeIsNotesList
-              ? "h-10 w-10 p-0 justify-center rounded-none rounded-r-lg overflow-hidden"
-              : "h-10 w-10 p-0 justify-center rounded-lg overflow-hidden"
-            : "justify-start h-10 w-full gap-2 px-3 rounded-none rounded-r-lg border-y border-r border-transparent"
-        } ${
-          viewModeIsNotesList
-            ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent"
-            : "border-l-2 border-l-transparent hover:border-border hover:bg-muted/10 active:bg-muted/20"
-        }`}
-        onClick={() =>
-          onViewModeChange(viewModeIsNotesList ? "graph" : "notesList")
-        }
-        aria-label={
-          viewModeIsNotesList ? "Switch to graph view" : "Switch to projects list"
-        }
-        aria-pressed={viewModeIsNotesList}
-        data-tour="notes-toggle"
-      >
-        <span
-          className="inline-flex size-5 shrink-0 items-center justify-center"
-          aria-hidden
+      {showProjectsViewToggle && (
+        <Button
+          variant="ghost"
+          className={`transition-colors ${
+            isCollapsed
+              ? viewModeIsNotesList
+                ? "h-10 w-10 p-0 justify-center rounded-none rounded-r-lg overflow-hidden"
+                : "h-10 w-10 p-0 justify-center rounded-lg overflow-hidden"
+              : "justify-start h-10 w-full gap-2 px-3 rounded-none rounded-r-lg border-y border-r border-transparent"
+          } ${
+            viewModeIsNotesList
+              ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent"
+              : "border-l-2 border-l-transparent hover:border-border hover:bg-muted/10 active:bg-muted/20"
+          }`}
+          onClick={() =>
+            onViewModeChange(viewModeIsNotesList ? "graph" : "notesList")
+          }
+          aria-label={
+            viewModeIsNotesList
+              ? "Switch to graph view"
+              : "Switch to project notes"
+          }
+          aria-pressed={viewModeIsNotesList}
+          data-tour="notes-toggle"
         >
-          <Layers className="size-4.5 stroke-[1.75]" />
-        </span>
-        {!isCollapsed && "Projects"}
-      </Button>
+          <span
+            className="inline-flex size-5 shrink-0 items-center justify-center"
+            aria-hidden
+          >
+            <Layers className="size-4.5 stroke-[1.75]" />
+          </span>
+          {!isCollapsed && "Project notes"}
+        </Button>
+      )}
     </div>
   );
 }

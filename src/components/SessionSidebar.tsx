@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import { forwardRef, useEffect, useMemo } from "react";
 import type { Id } from "../../convex/_generated/dataModel";
 import { UserCard } from "./UserCard";
 import {
@@ -53,6 +53,20 @@ export const SessionSidebar = forwardRef<
 
   const viewModeIsNotesList = viewMode === "notesList";
 
+  const hasSessionInProject = useMemo(
+    () =>
+      workspace?.some(
+        (g) => g.project != null && g.sessions.length > 0,
+      ) ?? false,
+    [workspace],
+  );
+
+  useEffect(() => {
+    if (!hasSessionInProject && viewMode === "notesList") {
+      onViewModeChange("graph");
+    }
+  }, [hasSessionInProject, viewMode, onViewModeChange]);
+
   return (
     <aside
       className="shrink-0 flex flex-col h-screen overflow-hidden bg-muted/30 border-r border-border transition-[width] duration-200 ease-in-out"
@@ -65,6 +79,7 @@ export const SessionSidebar = forwardRef<
         onToggleCollapsed={() => w.setIsCollapsed((c) => !c)}
         onNewSession={() => void w.handleNewSession()}
         onNewProject={() => void w.handleNewProject()}
+        showProjectsViewToggle={hasSessionInProject}
         viewModeIsNotesList={viewModeIsNotesList}
         onViewModeChange={onViewModeChange}
       />
