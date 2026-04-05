@@ -14,7 +14,7 @@ import {
   ChevronDown,
   PanelLeftClose,
   PanelRight,
-  FileText,
+  Layers,
 } from "lucide-react";
 import { UserCard } from "./UserCard";
 import { Button } from "@/components/ui/button";
@@ -360,7 +360,9 @@ export const SessionSidebar = forwardRef<
           onClick={() =>
             onViewModeChange(viewModeIsNotesList ? "graph" : "notesList")
           }
-          aria-label="View files"
+          aria-label={
+            viewModeIsNotesList ? "Switch to graph view" : "Switch to projects list"
+          }
           aria-pressed={viewModeIsNotesList}
           data-tour="notes-toggle"
         >
@@ -368,7 +370,7 @@ export const SessionSidebar = forwardRef<
             className="inline-flex size-5 shrink-0 items-center justify-center"
             aria-hidden
           >
-            <FileText className="size-4.5 stroke-[1.75]" />
+            <Layers className="size-4.5 stroke-[1.75]" />
           </span>
           {!isCollapsed && "Projects"}
         </Button>
