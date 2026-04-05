@@ -358,6 +358,7 @@ function AppContentBody({
             <>
               {activeSessionId && (
                 <GraphViewHeader
+                  sessionTitle={activeSessionInWorkspace?.session.title}
                   batchCount={batches.length}
                   selectedBatchIndex={selectedBatchIndex}
                   onSelectBatch={(i) =>

@@ -1,7 +1,10 @@
 import { useState, useMemo, useEffect } from "react";
 import type { Doc } from "../../convex/_generated/dataModel";
 import { FileText } from "lucide-react";
-import type { ProjectWithSessions } from "./session-sidebar/workspaceTypes";
+import type {
+  ProjectRow,
+  ProjectWithSessions,
+} from "./session-sidebar/workspaceTypes";
 import { usePinnedProjectIds } from "@/hooks/usePinnedProjectIds";
 import {
   type NotesListDrill,
@@ -49,8 +52,9 @@ export function NotesListPanel({
       return 0;
     };
     if (sortMode === "name") {
-      const inboxGroup = copy.find((g) => g.project == null);
-      const projectGroups = copy.filter((g) => g.project != null);
+      const projectGroups = copy.filter(
+        (g): g is ProjectRow => g.project != null,
+      );
       projectGroups.sort((a, b) => {
         const order = sortProjects(a, b);
         if (order !== 0) return order;
@@ -58,18 +62,19 @@ export function NotesListPanel({
           sensitivity: "base",
         });
       });
-      return inboxGroup ? [inboxGroup, ...projectGroups] : projectGroups;
+      return projectGroups;
     }
-    const inboxGroup = copy.find((g) => g.project == null);
-    const projectGroups = copy.filter((g) => g.project != null);
+    const projectGroups = copy.filter(
+      (g): g is ProjectRow => g.project != null,
+    );
     projectGroups.sort((a, b) => {
       const order = sortProjects(a, b);
       if (order !== 0) return order;
-      const ta = groupActivityMs(a.sessions, a.project!.createdAt);
-      const tb = groupActivityMs(b.sessions, b.project!.createdAt);
+      const ta = groupActivityMs(a.sessions, a.project.createdAt);
+      const tb = groupActivityMs(b.sessions, b.project.createdAt);
       return tb - ta;
     });
-    return inboxGroup ? [inboxGroup, ...projectGroups] : projectGroups;
+    return projectGroups;
   }, [workspace, sortMode, pinnedIds]);
 
   const filteredGroups = useMemo(() => {
@@ -158,35 +163,37 @@ export function NotesListPanel({
             <>
               {filteredGroups.length === 0 ? (
                 <p className="text-center text-sm text-muted-foreground py-12">
-                  Nothing matches &quot;{searchQuery}&quot;
+                  {searchQuery.trim() ? (
+                    <>Nothing matches &quot;{searchQuery}&quot;</>
+                  ) : (
+                    <>
+                      No projects yet. Sessions without a project stay in{" "}
+                      <span className="font-medium text-foreground">Inbox</span>{" "}
+                      in the sidebar.
+                    </>
+                  )}
                 </p>
               ) : (
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {filteredGroups.map((group) => {
-                    const key = group.project?._id ?? "__inbox__";
-                    const projectId = group.project?._id;
-                    const isPinned = projectId
-                      ? pinnedIds.has(projectId as string)
-                      : false;
-                    const pinLabelId = projectId
-                      ? `pin-label-${projectId}`
-                      : undefined;
+                    const projectId = group.project._id;
+                    const isPinned = pinnedIds.has(projectId as string);
+                    const pinLabelId = `pin-label-${projectId}`;
                     return (
-                      <li key={key}>
+                      <li key={projectId}>
                         <ProjectSummaryCard
                           group={group}
                           isPinned={isPinned}
                           pinLabelId={pinLabelId}
                           onDrill={() =>
-                            onDrillChange(
-                              group.project
-                                ? { type: "project", id: group.project._id }
-                                : { type: "inbox" },
-                            )
+                            onDrillChange({
+                              type: "project",
+                              id: projectId,
+                            })
                           }
-                          onTogglePin={() => {
-                            if (projectId) toggleProjectPinned(projectId as string);
-                          }}
+                          onTogglePin={() =>
+                            toggleProjectPinned(projectId as string)
+                          }
                         />
                       </li>
                     );
@@ -202,9 +209,7 @@ export function NotesListPanel({
                 <div className="py-12 text-center">
                   <p className="text-sm text-muted-foreground">
                     {drillGroup.sessions.length === 0
-                      ? drill?.type === "inbox"
-                        ? "No notes in your inbox yet."
-                        : "No notes in this project yet."
+                      ? "No notes here yet."
                       : `Nothing matches "${searchQuery}"`}
                   </p>
                 </div>
@@ -215,11 +220,7 @@ export function NotesListPanel({
                       <button
                         type="button"
                         onClick={() => onSelectSession(session)}
-                        className={`flex min-h-30 w-full cursor-pointer flex-col gap-2 rounded-xl bg-card p-5 text-left shadow-sm transition-colors hover:border-border hover:bg-muted active:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
-                          drill?.type === "inbox"
-                            ? "border-4 border-border"
-                            : "border-4 border-border border-dashed"
-                        }`}
+                        className="flex min-h-30 w-full cursor-pointer flex-col gap-2 rounded-xl border-4 border-border border-dashed bg-card p-5 text-left shadow-sm transition-colors hover:border-border hover:bg-muted active:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                       >
                         <span className="font-semibold text-foreground leading-snug line-clamp-2">
                           {session.title}

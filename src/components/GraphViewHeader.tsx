@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { StepNavigator } from "@/components/StepNavigator";
 
 type GraphViewHeaderProps = {
+  sessionTitle: string | undefined;
   batchCount: number;
   selectedBatchIndex: number;
   onSelectBatch: (index: number) => void;
@@ -12,6 +13,7 @@ type GraphViewHeaderProps = {
 };
 
 export function GraphViewHeader({
+  sessionTitle,
   batchCount,
   selectedBatchIndex,
   onSelectBatch,
@@ -19,9 +21,21 @@ export function GraphViewHeader({
   onHistoryOpen,
   onEditorOpen,
 }: GraphViewHeaderProps) {
+  const sessionLabel =
+    sessionTitle != null && sessionTitle.trim() !== ""
+      ? sessionTitle.trim()
+      : "Loading…";
+
   return (
     <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 shrink-0 py-3 px-4 border-b border-border">
-      <div className="min-w-0" />
+      <div className="min-w-0 max-w-[min(32rem,62vw)] pr-2">
+        <p
+          className="w-full truncate text-left text-xl font-semibold tracking-tight text-foreground"
+          title={sessionLabel}
+        >
+          {sessionLabel}
+        </p>
+      </div>
       <div className="flex justify-center">
         <StepNavigator
           totalSteps={batchCount}
