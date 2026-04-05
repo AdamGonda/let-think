@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { useMemo, useRef, useCallback } from "react";
 import {
   useQuery,
   AuthLoading,
@@ -32,28 +32,26 @@ import { WorkPreferenceSync } from "./components/WorkPreferenceSync";
 import {
   selectCanExitWakeUp,
   selectDisplayWakeUpLayer,
+  selectEditorRevealReady,
   selectIsExitingWakeUp,
   selectIsWorkMode,
+  selectShowRestSessionWalkthrough,
   selectSurface,
   selectWorkModeNotesListDuringChatLoading,
   selectWorkModeSessionLoading,
 } from "./machines/appUiMachine";
+import { AppUiSessionBridge } from "./bridge/AppUiSessionBridge";
 import { useSessionEditorSync } from "./hooks/useSessionEditorSync";
 import { useDefaultSessionSelection } from "./hooks/useDefaultSessionSelection";
 import {
   buildNumberedConceptsFromGraph,
   referencedConceptIdsFromDraft,
 } from "./lib/conceptReferences";
-import { CHAT_MESSAGES_PAGE_SIZE, timings } from "@/config";
+import { CHAT_MESSAGES_PAGE_SIZE } from "@/config";
 import { WakeUpOverlay } from "./components/WakeUpOverlay";
 import { RestSessionWalkthrough } from "./components/RestSessionWalkthrough";
 import { GraphViewHeader } from "./components/GraphViewHeader";
 import { AppShell } from "./components/AppShell";
-import {
-  isRestWalkthroughDoneForSession,
-  markRestWalkthroughDoneForSession,
-} from "./lib/restSessionWalkthroughStorage";
-
 function App() {
   return (
     <>
@@ -77,8 +75,7 @@ function App() {
 function AppContent() {
   const activeSessionId = useAppUiSelector((s) => s.context.activeSessionId);
   const projectsWithSessions = useQuery(api.projects.listWithSessions);
-  const { handleCreateSessionForFirstMessage } =
-    useDefaultSessionSelection(projectsWithSessions);
+  const { handleCreateSessionForFirstMessage } = useDefaultSessionSelection();
   useSessionEditorSync(activeSessionId);
   const mainContentRef = useRef<HTMLDivElement>(null);
 
@@ -86,13 +83,18 @@ function AppContent() {
     <>
       <WorkPreferenceSync />
       <SessionDataProvider sessionId={activeSessionId}>
-        <AppContentBody
-          onCreateSessionForFirstMessage={
-            !activeSessionId ? handleCreateSessionForFirstMessage : undefined
-          }
+        <AppUiSessionBridge
           workspace={projectsWithSessions}
-          mainContentRef={mainContentRef}
-        />
+          activeSessionId={activeSessionId}
+        >
+          <AppContentBody
+            onCreateSessionForFirstMessage={
+              !activeSessionId ? handleCreateSessionForFirstMessage : undefined
+            }
+            workspace={projectsWithSessions}
+            mainContentRef={mainContentRef}
+          />
+        </AppUiSessionBridge>
       </SessionDataProvider>
     </>
   );
@@ -130,6 +132,11 @@ function AppContentBody({
   );
   const isWorkMode = useAppUiSelector(selectIsWorkMode);
   const canExitOverlay = useAppUiSelector(selectCanExitWakeUp);
+  const editorRevealReady = useAppUiSelector(selectEditorRevealReady);
+  const showRestSessionWalkthrough = useAppUiSelector(
+    selectShowRestSessionWalkthrough,
+  );
+  const hasChatHistory = useAppUiSelector((s) => s.context.hasChatHistory);
 
   const activeSessionInWorkspace =
     workspace && activeSessionId
@@ -154,65 +161,11 @@ function AppContentBody({
     breakRemainingMs,
     loadOlderMessages,
     canLoadOlderMessages,
-    messagesLoading,
   } = useSessionData();
-  const hasChatHistory = messages.length > 0 || canLoadOlderMessages;
-
-  const [restWalkthroughDismissed, setRestWalkthroughDismissed] =
-    useState(false);
-  useEffect(() => {
-    setRestWalkthroughDismissed(false);
-  }, [activeSessionId]);
-
-  const showRestSessionWalkthrough =
-    !isWorkMode &&
-    !!activeSessionId &&
-    !messagesLoading &&
-    messages.length === 0 &&
-    !isRestWalkthroughDoneForSession(activeSessionId) &&
-    !restWalkthroughDismissed;
 
   const handleRestWalkthroughComplete = useCallback(() => {
-    if (activeSessionId) {
-      markRestWalkthroughDoneForSession(activeSessionId);
-    }
-    setRestWalkthroughDismissed(true);
-  }, [activeSessionId]);
-
-  useEffect(() => {
-    if (!historyPanelOpen || !activeSessionId || messagesLoading) return;
-    if (!hasChatHistory) actor.send({ type: "HISTORY_CLOSE" });
-  }, [
-    historyPanelOpen,
-    activeSessionId,
-    messagesLoading,
-    hasChatHistory,
-    actor,
-  ]);
-  const isInBreak = breakRemainingMs !== null && breakRemainingMs > 0;
-
-  useEffect(() => {
-    actor.send({ type: "BREAK_CHANGED", inBreak: isInBreak });
-  }, [isInBreak, actor]);
-
-  const prevBatchesLengthRef = useRef(0);
-
-  useEffect(() => {
-    if (batches.length === 0) return;
-    const prevLen = prevBatchesLengthRef.current;
-    prevBatchesLengthRef.current = batches.length;
-    if (batches.length > prevLen) {
-      actor.send({
-        type: "SELECTED_BATCH_INDEX_SET",
-        index: batches.length - 1,
-      });
-    } else {
-      actor.send({
-        type: "SELECTED_BATCH_INDEX_SET",
-        index: Math.min(selectedBatchIndex, batches.length - 1),
-      });
-    }
-  }, [batches.length, selectedBatchIndex, actor]);
+    actor.send({ type: "REST_WALKTHROUGH_COMPLETE" });
+  }, [actor]);
 
   const numberedConcepts = useMemo(
     () =>
@@ -235,19 +188,6 @@ function AppContentBody({
   const chatVisible =
     viewMode === "graph" &&
     (batches.length === 0 || selectedBatchIndex === batches.length - 1);
-
-  const [editorRevealReady, setEditorRevealReady] = useState(false);
-  useEffect(() => {
-    if (!displayWakeUpLayer || isExitingOverlay) {
-      queueMicrotask(() => setEditorRevealReady(false));
-      return;
-    }
-    const id = setTimeout(
-      () => setEditorRevealReady(true),
-      timings.wakeUpEditorRevealMs,
-    );
-    return () => clearTimeout(id);
-  }, [displayWakeUpLayer, isExitingOverlay]);
 
   const setViewMode = useCallback(
     (mode: "graph" | "notesList") => {

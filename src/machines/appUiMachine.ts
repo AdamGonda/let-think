@@ -6,6 +6,8 @@ import {
   writeWorkPreference,
   type WorkPreferenceMode,
 } from "../lib/workPreferenceStorage";
+import { markRestWalkthroughDoneForSession } from "../lib/restSessionWalkthroughStorage";
+import { nextBatchIndexAfterLengthChange } from "../lib/batchIndexFromLengthChange";
 import { timings } from "@/config";
 
 export type SurfaceMode = "graph" | "notesList";
@@ -16,6 +18,8 @@ export type AppUiContext = {
   activeProjectId: Id<"projects"> | null;
   notesListDrill: NotesListDrill;
   selectedBatchIndex: number;
+  /** Last seen batches.length from bridge (for clamp when length changes). */
+  prevBatchesLength: number;
   draftInput: string;
   notes: string;
   chatLoading: boolean;
@@ -25,6 +29,18 @@ export type AppUiContext = {
   /** User dismissed the focus layer while demand could still be true. */
   overlayDismissed: boolean;
   historyPanelOpen: boolean;
+  /** Synced from bridge for UI selectors (rest walkthrough, history rules). */
+  hasChatHistory: boolean;
+  messagesLoading: boolean;
+  /** LocalStorage flag for active session (from bridge). */
+  restWalkthroughDoneForStorage: boolean;
+  /** User dismissed rest walkthrough for the current session. */
+  restWalkthroughDismissed: boolean;
+  /**
+   * Once true, we do not auto-select the first workspace session on load.
+   * Set when the user selects any session or we auto-select the first session.
+   */
+  hasEverHadSessionSelection: boolean;
 };
 
 export type AppUiEvent =
@@ -35,6 +51,20 @@ export type AppUiEvent =
   | { type: "CHAT_LOADING_END" }
   | { type: "MODEL_FINISHED" }
   | { type: "BREAK_CHANGED"; inBreak: boolean }
+  | { type: "CHAT_HISTORY_META"; hasChatHistory: boolean; messagesLoading: boolean }
+  | {
+      type: "REST_WALKTHROUGH_STORAGE_SYNC";
+      doneForActiveSession: boolean;
+    }
+  | { type: "BATCHES_LENGTH_CHANGED"; length: number }
+  | {
+      type: "WORKSPACE_SNAPSHOT";
+      inboxEmpty: boolean;
+      hasProjects: boolean;
+      firstSessionId: Id<"sessions"> | null;
+      firstProjectId: Id<"projects"> | null;
+    }
+  | { type: "REST_WALKTHROUGH_COMPLETE" }
   | { type: "EDITOR_OPEN" }
   | { type: "EDITOR_CLOSE" }
   | { type: "USER_EXIT_WAKE_UP" }
@@ -86,6 +116,15 @@ export const appUiMachine = setup({
       event.type === "VIEW_SET" && event.mode === "notesList",
     viewIsGraph: ({ event }) =>
       event.type === "VIEW_SET" && event.mode === "graph",
+    shouldClearForEmptyWorkspace: ({ event }) =>
+      event.type === "WORKSPACE_SNAPSHOT" &&
+      !event.hasProjects &&
+      event.inboxEmpty,
+    shouldAutoSelectFirstSession: ({ context, event }) =>
+      event.type === "WORKSPACE_SNAPSHOT" &&
+      event.firstSessionId != null &&
+      context.activeSessionId == null &&
+      !context.hasEverHadSessionSelection,
   },
   actions: {
     persistPreference: ({ context }) => {
@@ -127,12 +166,41 @@ export const appUiMachine = setup({
         if (event.type !== "ACTIVE_SESSION_SET") return null;
         return event.sessionId;
       },
+      restWalkthroughDismissed: () => false,
+      prevBatchesLength: ({ event, context }) => {
+        if (event.type !== "ACTIVE_SESSION_SET") return context.prevBatchesLength;
+        return 0;
+      },
+      hasEverHadSessionSelection: ({ event, context }) => {
+        if (event.type !== "ACTIVE_SESSION_SET") {
+          return context.hasEverHadSessionSelection;
+        }
+        return event.sessionId != null ? true : context.hasEverHadSessionSelection;
+      },
     }),
     setActiveProject: assign({
       activeProjectId: ({ event }) => {
         if (event.type !== "ACTIVE_PROJECT_SET") return null;
         return event.projectId;
       },
+    }),
+    clearWorkspaceSelection: assign({
+      activeSessionId: () => null,
+      activeProjectId: () => null,
+      prevBatchesLength: () => 0,
+    }),
+    autoSelectFirstWorkspaceSession: assign({
+      activeSessionId: ({ event }) => {
+        if (event.type !== "WORKSPACE_SNAPSHOT") return null;
+        return event.firstSessionId;
+      },
+      activeProjectId: ({ event }) => {
+        if (event.type !== "WORKSPACE_SNAPSHOT") return null;
+        return event.firstProjectId;
+      },
+      hasEverHadSessionSelection: () => true,
+      restWalkthroughDismissed: () => false,
+      prevBatchesLength: () => 0,
     }),
     setNotesListDrill: assign({
       notesListDrill: ({ event }) => {
@@ -168,10 +236,60 @@ export const appUiMachine = setup({
       inBreak: ({ event }) =>
         event.type === "BREAK_CHANGED" ? event.inBreak : false,
     }),
+    syncChatHistoryMeta: assign(({ context, event }) => {
+      if (event.type !== "CHAT_HISTORY_META") return {};
+      const next: Partial<AppUiContext> = {
+        hasChatHistory: event.hasChatHistory,
+        messagesLoading: event.messagesLoading,
+      };
+      const shouldCloseHistory =
+        context.historyPanelOpen &&
+        context.activeSessionId != null &&
+        !event.messagesLoading &&
+        !event.hasChatHistory;
+      if (shouldCloseHistory) {
+        return { ...next, historyPanelOpen: false };
+      }
+      return next;
+    }),
+    syncRestWalkthroughStorage: assign({
+      restWalkthroughDoneForStorage: ({ event, context }) => {
+        if (event.type !== "REST_WALKTHROUGH_STORAGE_SYNC") {
+          return context.restWalkthroughDoneForStorage;
+        }
+        return event.doneForActiveSession;
+      },
+    }),
+    applyBatchesLengthChanged: assign({
+      selectedBatchIndex: ({ context, event }) => {
+        if (event.type !== "BATCHES_LENGTH_CHANGED") {
+          return context.selectedBatchIndex;
+        }
+        const newLen = event.length;
+        if (newLen === 0) return context.selectedBatchIndex;
+        return nextBatchIndexAfterLengthChange({
+          prevLength: context.prevBatchesLength,
+          newLength: newLen,
+          currentIndex: context.selectedBatchIndex,
+        });
+      },
+      prevBatchesLength: ({ context, event }) => {
+        if (event.type !== "BATCHES_LENGTH_CHANGED") {
+          return context.prevBatchesLength;
+        }
+        return event.length === 0 ? context.prevBatchesLength : event.length;
+      },
+    }),
     editorOpenTrue: assign({ editorOpen: true }),
     editorClose: assign({ editorOpen: false }),
     historyOpen: assign({ historyPanelOpen: true }),
     historyClose: assign({ historyPanelOpen: false }),
+    persistRestWalkthroughDone: ({ context }) => {
+      if (context.activeSessionId) {
+        markRestWalkthroughDoneForSession(context.activeSessionId);
+      }
+    },
+    dismissRestWalkthroughUi: assign({ restWalkthroughDismissed: true }),
   },
 }).createMachine({
   id: "appUi",
@@ -180,11 +298,11 @@ export const appUiMachine = setup({
     const inp = input as Partial<AppUiContext> | undefined;
     return {
       preference: inp?.preference ?? readWorkPreference(),
-      surface: "graph",
       activeSessionId: inp?.activeSessionId ?? null,
       activeProjectId: inp?.activeProjectId ?? null,
       notesListDrill: inp?.notesListDrill ?? null,
       selectedBatchIndex: inp?.selectedBatchIndex ?? 0,
+      prevBatchesLength: inp?.prevBatchesLength ?? 0,
       draftInput: inp?.draftInput ?? "",
       notes: inp?.notes ?? "",
       chatLoading: false,
@@ -193,6 +311,11 @@ export const appUiMachine = setup({
       modelAwaitingDismissal: false,
       overlayDismissed: false,
       historyPanelOpen: false,
+      hasChatHistory: false,
+      messagesLoading: false,
+      restWalkthroughDoneForStorage: false,
+      restWalkthroughDismissed: false,
+      hasEverHadSessionSelection: inp?.hasEverHadSessionSelection ?? false,
     };
   },
   on: {
@@ -250,6 +373,28 @@ export const appUiMachine = setup({
     BREAK_CHANGED: {
       actions: "setBreak",
     },
+    CHAT_HISTORY_META: {
+      actions: "syncChatHistoryMeta",
+    },
+    REST_WALKTHROUGH_STORAGE_SYNC: {
+      actions: "syncRestWalkthroughStorage",
+    },
+    BATCHES_LENGTH_CHANGED: {
+      actions: "applyBatchesLengthChanged",
+    },
+    WORKSPACE_SNAPSHOT: [
+      {
+        guard: "shouldClearForEmptyWorkspace",
+        actions: "clearWorkspaceSelection",
+      },
+      {
+        guard: "shouldAutoSelectFirstSession",
+        actions: "autoSelectFirstWorkspaceSession",
+      },
+    ],
+    REST_WALKTHROUGH_COMPLETE: {
+      actions: ["persistRestWalkthroughDone", "dismissRestWalkthroughUi"],
+    },
     EDITOR_OPEN: {
       actions: "editorOpenTrue",
     },
@@ -287,16 +432,27 @@ export const appUiMachine = setup({
           },
         },
         visible: {
+          initial: "revealing",
+          on: {
+            USER_EXIT_WAKE_UP: {
+              target: "#appUi.wakeUp.exiting",
+              guard: "canExitWakeUp",
+            },
+          },
           always: {
             guard: "demandEnded",
             target: "off",
             actions: "clearOnDemandEnd",
           },
-          on: {
-            USER_EXIT_WAKE_UP: {
-              target: "exiting",
-              guard: "canExitWakeUp",
+          states: {
+            revealing: {
+              after: {
+                [timings.wakeUpEditorRevealMs]: {
+                  target: "ready",
+                },
+              },
             },
+            ready: {},
           },
         },
         exiting: {
@@ -328,14 +484,20 @@ export const appUiMachine = setup({
 
 type MachineSnapshot = import("xstate").SnapshotFrom<typeof appUiMachine>;
 
-function wakeUpState(snapshot: MachineSnapshot): "off" | "visible" | "exiting" | "dismissedLatch" {
+function wakeUpBranch(
+  snapshot: MachineSnapshot,
+): "off" | "visible" | "exiting" | "dismissedLatch" | null {
   const v = snapshot.value;
   if (typeof v === "object" && v !== null && "wakeUp" in v) {
-    const w = (v as { wakeUp: string }).wakeUp;
-    if (w === "off" || w === "visible" || w === "exiting" || w === "dismissedLatch")
-      return w;
+    const w = (v as { wakeUp: unknown }).wakeUp;
+    if (w === "off") return "off";
+    if (w === "exiting") return "exiting";
+    if (w === "dismissedLatch") return "dismissedLatch";
+    if (typeof w === "object" && w !== null && "visible" in w) {
+      return "visible";
+    }
   }
-  return "off";
+  return null;
 }
 
 function surfaceState(snapshot: MachineSnapshot): SurfaceMode {
@@ -359,12 +521,23 @@ export function selectShowWakeUpOverlay(snapshot: MachineSnapshot): boolean {
 
 /** Mount overlay container while animating out. */
 export function selectDisplayWakeUpLayer(snapshot: MachineSnapshot): boolean {
-  const w = wakeUpState(snapshot);
+  const w = wakeUpBranch(snapshot);
   return selectShowWakeUpOverlay(snapshot) || w === "exiting";
 }
 
 export function selectIsExitingWakeUp(snapshot: MachineSnapshot): boolean {
-  return wakeUpState(snapshot) === "exiting";
+  return wakeUpBranch(snapshot) === "exiting";
+}
+
+export function selectEditorRevealReady(snapshot: MachineSnapshot): boolean {
+  const v = snapshot.value;
+  if (typeof v === "object" && v !== null && "wakeUp" in v) {
+    const w = (v as { wakeUp: unknown }).wakeUp;
+    if (typeof w === "object" && w !== null && "visible" in w) {
+      return (w as { visible: string }).visible === "ready";
+    }
+  }
+  return false;
 }
 
 export function selectWorkModeSessionLoading(
@@ -403,4 +576,19 @@ export function selectIsWorkMode(snapshot: MachineSnapshot): boolean {
 
 export function selectSurface(snapshot: MachineSnapshot): SurfaceMode {
   return surfaceState(snapshot);
+}
+
+/** Rest-session empty-thread walkthrough (think mode). */
+export function selectShowRestSessionWalkthrough(
+  snapshot: MachineSnapshot,
+): boolean {
+  const c = snapshot.context;
+  return (
+    c.preference === "think" &&
+    sessionSelected(c) &&
+    !c.messagesLoading &&
+    !c.hasChatHistory &&
+    !c.restWalkthroughDoneForStorage &&
+    !c.restWalkthroughDismissed
+  );
 }
