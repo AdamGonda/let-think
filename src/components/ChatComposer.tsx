@@ -3,6 +3,8 @@ import { layout } from "@/config";
 import { CornerDownLeft, Loader2 } from "lucide-react";
 import { parseInputTokens } from "@/lib/chatMentions";
 import {
+  backspaceRemoveAtReferenceRange,
+  deleteForwardRemoveAtReferenceRange,
   ensureSpaceAfterValidAtReferences,
   type NumberedConcept,
 } from "@/lib/conceptReferences";
@@ -54,7 +56,7 @@ export function ChatComposer({
 }: ChatComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mirrorRef = useRef<HTMLDivElement>(null);
-  const cursorAfterAutoSpaceRef = useRef<number | null>(null);
+  const pendingSelectionRef = useRef<number | null>(null);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -64,13 +66,13 @@ export function ChatComposer({
   }, [input]);
 
   useLayoutEffect(() => {
-    const pos = cursorAfterAutoSpaceRef.current;
+    const pos = pendingSelectionRef.current;
     if (pos == null) return;
     const ta = textareaRef.current;
     if (ta) {
       ta.setSelectionRange(pos, pos);
     }
-    cursorAfterAutoSpaceRef.current = null;
+    pendingSelectionRef.current = null;
   }, [input]);
 
   const handleScroll = () => {
@@ -83,6 +85,45 @@ export function ChatComposer({
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       (e.target as HTMLTextAreaElement).form?.requestSubmit();
+      return;
+    }
+
+    if (
+      isDisabled ||
+      e.ctrlKey ||
+      e.metaKey ||
+      e.altKey ||
+      (e.key !== "Backspace" && e.key !== "Delete")
+    ) {
+      return;
+    }
+
+    const ta = e.currentTarget;
+    const start = ta.selectionStart ?? 0;
+    const end = ta.selectionEnd ?? 0;
+    if (start !== end) return;
+
+    const value = ta.value;
+
+    if (e.key === "Backspace") {
+      const range = backspaceRemoveAtReferenceRange(value, start);
+      if (range) {
+        e.preventDefault();
+        const newValue = value.slice(0, range.start) + value.slice(range.end);
+        pendingSelectionRef.current = range.start;
+        setInput(newValue);
+      }
+      return;
+    }
+
+    if (e.key === "Delete") {
+      const range = deleteForwardRemoveAtReferenceRange(value, start);
+      if (range) {
+        e.preventDefault();
+        const newValue = value.slice(0, range.start) + value.slice(range.end);
+        pendingSelectionRef.current = range.start;
+        setInput(newValue);
+      }
     }
   };
 
@@ -102,7 +143,7 @@ export function ChatComposer({
       return;
     }
     const delta = next.length - v.length;
-    cursorAfterAutoSpaceRef.current = Math.min(sel + delta, next.length);
+    pendingSelectionRef.current = Math.min(sel + delta, next.length);
     setInput(next);
   };
 

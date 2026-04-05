@@ -1,6 +1,49 @@
 /** Match @1, @2, … word boundaries (same semantics as chat input parsing). */
 export const AT_REFERENCE_PATTERN = String.raw`@(\d+)\b`;
 
+/**
+ * When Backspace removes the character before `cursor`, if that would delete part of an
+ * `@n` token, returns the full range to remove instead (the token, and a single following
+ * space if the cursor sits right after that space).
+ */
+export function backspaceRemoveAtReferenceRange(
+  value: string,
+  cursor: number,
+): { start: number; end: number } | null {
+  if (cursor <= 0) return null;
+
+  if (value[cursor - 1] === " ") {
+    const beforeSpace = value.slice(0, cursor - 1);
+    const m = beforeSpace.match(new RegExp(AT_REFERENCE_PATTERN + "$"));
+    if (m) {
+      const tokenStart = beforeSpace.length - m[0].length;
+      return { start: tokenStart, end: cursor };
+    }
+  }
+
+  const refRegex = new RegExp(AT_REFERENCE_PATTERN, "g");
+  let match: RegExpExecArray | null;
+  while ((match = refRegex.exec(value)) !== null) {
+    const matchEnd = match.index + match[0].length;
+    if (matchEnd === cursor) {
+      return { start: match.index, end: cursor };
+    }
+  }
+  return null;
+}
+
+/** When Delete removes at `cursor`, if an `@n` starts there, remove the whole token. */
+export function deleteForwardRemoveAtReferenceRange(
+  value: string,
+  cursor: number,
+): { start: number; end: number } | null {
+  if (cursor >= value.length) return null;
+  const rest = value.slice(cursor);
+  const m = rest.match(new RegExp("^" + AT_REFERENCE_PATTERN));
+  if (!m) return null;
+  return { start: cursor, end: cursor + m[0].length };
+}
+
 export type NumberedConcept = {
   id: string;
   name: string;
