@@ -320,7 +320,7 @@ export function SessionSidebar({
           >
             <FileText className="size-4.5 stroke-[1.75]" />
           </span>
-          {!isCollapsed && "Files"}
+          {!isCollapsed && "Projects"}
         </Button>
       </div>
       <nav
