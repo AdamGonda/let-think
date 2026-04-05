@@ -16,6 +16,8 @@ type UserCardCompactProps = {
   menuOpen: boolean;
   setMenuOpen: (open: boolean | ((o: boolean) => boolean)) => void;
   menuDisabled: boolean;
+  /** When menu is disabled, optional handler so the avatar can still do something (e.g. expand sidebar). */
+  onExpandSidebar?: () => void;
   isWorkMode: boolean;
   signOut: () => void | Promise<void>;
   onRunTutorial?: () => void;
@@ -30,6 +32,7 @@ export function UserCardCompact({
   menuOpen,
   setMenuOpen,
   menuDisabled,
+  onExpandSidebar,
   isWorkMode,
   signOut,
   onRunTutorial,
@@ -50,20 +53,38 @@ export function UserCardCompact({
         )}
       >
         {menuDisabled ? (
-          <div
-            className="flex cursor-default items-center justify-center rounded-md"
-            aria-label={`Account (${isWorkMode ? "Focus" : "Rest"} mode). Expand the sidebar to open the menu.`}
-            role="group"
-          >
-            <span className="relative inline-flex">
-              <UserAvatar
-                imageUrl={user.image}
-                name={user.name}
-                email={user.email}
-              />
-              <UserModeBadge isWorkMode={isWorkMode} />
-            </span>
-          </div>
+          onExpandSidebar ? (
+            <button
+              type="button"
+              className="flex cursor-pointer items-center justify-center rounded-md hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              aria-label="Expand sidebar"
+              onClick={onExpandSidebar}
+            >
+              <span className="relative inline-flex">
+                <UserAvatar
+                  imageUrl={user.image}
+                  name={user.name}
+                  email={user.email}
+                />
+                <UserModeBadge isWorkMode={isWorkMode} />
+              </span>
+            </button>
+          ) : (
+            <div
+              className="flex cursor-default items-center justify-center rounded-md"
+              aria-label={`Account (${isWorkMode ? "Focus" : "Rest"} mode). Expand the sidebar to open the menu.`}
+              role="group"
+            >
+              <span className="relative inline-flex">
+                <UserAvatar
+                  imageUrl={user.image}
+                  name={user.name}
+                  email={user.email}
+                />
+                <UserModeBadge isWorkMode={isWorkMode} />
+              </span>
+            </div>
+          )
         ) : (
           <button
             type="button"

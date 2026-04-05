@@ -11,12 +11,15 @@ interface UserCardProps {
   compact?: boolean;
   /** When true (e.g. sidebar collapsed), profile does not open the account menu. */
   menuDisabled?: boolean;
+  /** When compact + menu disabled, clicking the avatar runs this (e.g. expand sidebar). */
+  onExpandSidebar?: () => void;
   onRunTutorial?: () => void;
 }
 
 export function UserCard({
   compact = false,
   menuDisabled = false,
+  onExpandSidebar,
   onRunTutorial,
 }: UserCardProps) {
   const user = useQuery(api.users.currentUser);
@@ -51,6 +54,7 @@ export function UserCard({
         menuOpen={menuOpen}
         setMenuOpen={setMenuOpen}
         menuDisabled={menuDisabled}
+        onExpandSidebar={onExpandSidebar}
         isWorkMode={isWorkMode}
         signOut={signOut}
         onRunTutorial={onRunTutorial}

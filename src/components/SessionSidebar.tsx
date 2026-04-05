@@ -85,6 +85,7 @@ export const SessionSidebar = forwardRef<
         <UserCard
           compact={w.isCollapsed}
           menuDisabled={w.isCollapsed}
+          onExpandSidebar={() => w.setIsCollapsed(false)}
           onRunTutorial={onRunTutorial}
         />
       </div>
