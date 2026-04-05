@@ -1,7 +1,7 @@
 import { ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const FILE_BREADCRUMB_LEAF = "File";
+const GO_TO_SESSION_LEAF = "Go to session";
 
 const crumbButtonClass =
   "max-w-full cursor-pointer truncate rounded px-1 py-0.5 text-left font-medium text-foreground/90 transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
@@ -53,12 +53,12 @@ export function NoteBreadcrumb({
         <li className="min-w-0">
           <button
             type="button"
-            className={cn("block w-full min-w-0", crumbButtonClass)}
-            title={FILE_BREADCRUMB_LEAF}
-            aria-label={`Open session: ${sessionName}`}
+            className={cn("block w-full min-w-0 underline", crumbButtonClass)}
+            title={GO_TO_SESSION_LEAF}
+            aria-label={`Go to session: ${sessionName}`}
             onClick={onFileClick}
           >
-            {FILE_BREADCRUMB_LEAF}
+            {GO_TO_SESSION_LEAF}
           </button>
         </li>
       </ol>
