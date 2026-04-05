@@ -196,6 +196,11 @@ function AppContentBody({
 
   const setViewMode = useCallback(
     (mode: "graph" | "notesList") => {
+      // Opening Files from the sidebar should always show the top-level project grid,
+      // not a stale drill from a session opened earlier from the list.
+      if (mode === "notesList") {
+        actor.send({ type: "NOTES_LIST_DRILL_SET", drill: null });
+      }
       actor.send({ type: "VIEW_SET", mode });
     },
     [actor],
