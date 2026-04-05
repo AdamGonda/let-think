@@ -27,6 +27,8 @@ interface ConceptGraphOverlayProps {
   onSelectedBatchIndexChange?: (index: number) => void;
   /** Concept IDs referenced in chat (via @1, @2) – highlighted with glow */
   referencedConceptIds?: Set<string>;
+  /** When set, clicking a concept card appends `@n` to the chat draft (e.g. parent manages input). */
+  onCardReferenceClick?: (conceptNumber: number) => void;
 }
 
 export function ConceptGraphOverlay({
@@ -36,6 +38,7 @@ export function ConceptGraphOverlay({
   selectedBatchIndex: controlledBatchIndex,
   onSelectedBatchIndexChange,
   referencedConceptIds,
+  onCardReferenceClick,
 }: ConceptGraphOverlayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphViewportRef = useRef<HTMLDivElement>(null);
@@ -169,7 +172,31 @@ export function ConceptGraphOverlay({
                     key={node.id}
                     size="sm"
                     cornerRipple
-                    className="relative flex h-full min-h-[200px] flex-col transition-colors duration-200"
+                    role={onCardReferenceClick ? "button" : undefined}
+                    tabIndex={onCardReferenceClick ? 0 : undefined}
+                    onClick={
+                      onCardReferenceClick
+                        ? () => onCardReferenceClick(number)
+                        : undefined
+                    }
+                    onKeyDown={
+                      onCardReferenceClick
+                        ? (e) => {
+                            if (e.key === "Enter" || e.key === " ") {
+                              e.preventDefault();
+                              onCardReferenceClick(number);
+                            }
+                          }
+                        : undefined
+                    }
+                    className={`relative flex h-full min-h-[200px] flex-col transition-colors duration-200${
+                      onCardReferenceClick ? " cursor-pointer" : ""
+                    }`}
+                    aria-label={
+                      onCardReferenceClick
+                        ? `Add or remove @${number} in message`
+                        : undefined
+                    }
                     onMouseEnter={() => setHoveredNode(node)}
                     onMouseLeave={() => setHoveredNode(null)}
                     style={{

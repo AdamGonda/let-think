@@ -47,6 +47,7 @@ import { useDefaultSessionSelection } from "./hooks/useDefaultSessionSelection";
 import {
   buildNumberedConceptsFromGraph,
   referencedConceptIdsFromDraft,
+  toggleAtReferenceInDraft,
 } from "./lib/conceptReferences";
 import { CHAT_MESSAGES_PAGE_SIZE } from "@/config";
 import { WakeUpOverlay } from "./components/WakeUpOverlay";
@@ -171,6 +172,21 @@ function AppContentBody({
   const handleRestWalkthroughComplete = useCallback(() => {
     actor.send({ type: "REST_WALKTHROUGH_COMPLETE" });
   }, [actor]);
+
+  const handleCardReferenceClick = useCallback(
+    (conceptNumber: number) => {
+      actor.send({
+        type: "DRAFT_INPUT_SET",
+        value: toggleAtReferenceInDraft(draftInput, conceptNumber),
+      });
+      setTimeout(() => {
+        document
+          .querySelector<HTMLTextAreaElement>("[data-session-input-textarea]")
+          ?.focus();
+      }, 0);
+    },
+    [actor, draftInput],
+  );
 
   const numberedConcepts = useMemo(
     () =>
@@ -399,6 +415,9 @@ function AppContentBody({
                     actor.send({ type: "SELECTED_BATCH_INDEX_SET", index: i })
                   }
                   referencedConceptIds={referencedConceptIds}
+                  onCardReferenceClick={
+                    chatVisible ? handleCardReferenceClick : undefined
+                  }
                 />
               </div>
             </>

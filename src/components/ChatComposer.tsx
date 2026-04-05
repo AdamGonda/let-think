@@ -1,8 +1,27 @@
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useLayoutEffect } from "react";
 import { layout } from "@/config";
 import { CornerDownLeft, Loader2 } from "lucide-react";
 import { parseInputTokens } from "@/lib/chatMentions";
-import type { NumberedConcept } from "@/lib/conceptReferences";
+import {
+  ensureSpaceAfterValidAtReferences,
+  type NumberedConcept,
+} from "@/lib/conceptReferences";
+
+/** When false, skip {@link ensureSpaceAfterValidAtReferences} so backspace/delete does not re-add the space. */
+function shouldApplyAutoSpaceAfterRefs(
+  e: React.ChangeEvent<HTMLTextAreaElement>,
+  previousLength: number,
+): boolean {
+  const native = e.nativeEvent as InputEvent;
+  const t = native.inputType;
+  if (t) {
+    if (t === "historyUndo" || t === "historyRedo") return false;
+    if (t.startsWith("delete")) return false;
+    return true;
+  }
+  if (e.target.value.length < previousLength) return false;
+  return true;
+}
 
 type ChatComposerProps = {
   input: string;
@@ -35,12 +54,23 @@ export function ChatComposer({
 }: ChatComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mirrorRef = useRef<HTMLDivElement>(null);
+  const cursorAfterAutoSpaceRef = useRef<number | null>(null);
 
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
     el.style.height = `${Math.min(el.scrollHeight, 240)}px`;
+  }, [input]);
+
+  useLayoutEffect(() => {
+    const pos = cursorAfterAutoSpaceRef.current;
+    if (pos == null) return;
+    const ta = textareaRef.current;
+    if (ta) {
+      ta.setSelectionRange(pos, pos);
+    }
+    cursorAfterAutoSpaceRef.current = null;
   }, [input]);
 
   const handleScroll = () => {
@@ -54,6 +84,26 @@ export function ChatComposer({
       e.preventDefault();
       (e.target as HTMLTextAreaElement).form?.requestSubmit();
     }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const el = e.target;
+    const v = el.value;
+    const sel = el.selectionStart ?? v.length;
+
+    if (!shouldApplyAutoSpaceAfterRefs(e, input.length)) {
+      setInput(v);
+      return;
+    }
+
+    const next = ensureSpaceAfterValidAtReferences(v, numberedConcepts);
+    if (next === v) {
+      setInput(v);
+      return;
+    }
+    const delta = next.length - v.length;
+    cursorAfterAutoSpaceRef.current = Math.min(sel + delta, next.length);
+    setInput(next);
   };
 
   return (
@@ -117,11 +167,12 @@ export function ChatComposer({
               </div>
               <textarea
                 ref={textareaRef}
+                data-session-input-textarea
                 rows={1}
                 className="relative z-10 w-full min-h-[48px] max-h-[240px] py-3 px-4 pr-10 bg-transparent text-transparent caret-foreground font-inherit text-[0.95rem] leading-[1.5] placeholder:transparent focus:outline-none focus:ring-0 disabled:opacity-60 disabled:cursor-not-allowed resize-none overflow-y-auto"
                 style={{ color: "transparent" }}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
+                onChange={handleChange}
                 onScroll={handleScroll}
                 onKeyDown={handleKeyDown}
                 placeholder={placeholder}
