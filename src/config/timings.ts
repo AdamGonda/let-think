@@ -1,6 +1,6 @@
 /** Millisecond delays, debounces, and intervals used across the app. */
 export const timings = {
-  projectRowClickDelayMs: 250,
+  projectRowClickDelayMs: 150,
   wakeUpEditorRevealMs: 50,
   draftSaveDebounceMs: 400,
   copiedFeedbackMs: 2000,
