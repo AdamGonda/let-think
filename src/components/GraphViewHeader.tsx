@@ -10,6 +10,7 @@ type GraphViewHeaderProps = {
   hasChatHistory: boolean;
   onHistoryOpen: () => void;
   onEditorOpen: () => void;
+  onSessionTitleClick: () => void;
 };
 
 export function GraphViewHeader({
@@ -20,6 +21,7 @@ export function GraphViewHeader({
   hasChatHistory,
   onHistoryOpen,
   onEditorOpen,
+  onSessionTitleClick,
 }: GraphViewHeaderProps) {
   const sessionLabel =
     sessionTitle != null && sessionTitle.trim() !== ""
@@ -28,13 +30,16 @@ export function GraphViewHeader({
 
   return (
     <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 shrink-0 py-3 px-4 border-b border-border">
-      <div className="min-w-0 max-w-[min(32rem,62vw)] pr-2">
-        <p
-          className="w-full truncate text-left text-xl font-semibold tracking-tight text-foreground"
-          title={sessionLabel}
+      <div className="min-w-0 pr-2">
+        <button
+          type="button"
+          onClick={onSessionTitleClick}
+          className="inline-block max-w-[min(32rem,62vw)] cursor-pointer truncate text-left text-xl font-semibold tracking-tight text-foreground rounded-lg px-3.5 py-0 -mx-1 transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          title="Show on sidebar"
+          aria-label={`Session: ${sessionLabel}. Click to show in sidebar.`}
         >
           {sessionLabel}
-        </p>
+        </button>
       </div>
       <div className="flex justify-center">
         <StepNavigator

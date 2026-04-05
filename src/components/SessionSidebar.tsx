@@ -1,4 +1,10 @@
-import { useState, useEffect, useRef } from "react";
+import {
+  forwardRef,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id, Doc } from "../../convex/_generated/dataModel";
@@ -36,16 +42,26 @@ interface SessionSidebarProps {
   onRunTutorial?: () => void;
 }
 
-export function SessionSidebar({
-  workspace,
-  activeSessionId,
-  activeProjectId,
-  onSelectSession,
-  onSelectProject,
-  viewMode,
-  onViewModeChange,
-  onRunTutorial,
-}: SessionSidebarProps) {
+export type SessionSidebarHandle = {
+  expand: () => void;
+};
+
+export const SessionSidebar = forwardRef<
+  SessionSidebarHandle,
+  SessionSidebarProps
+>(function SessionSidebar(
+  {
+    workspace,
+    activeSessionId,
+    activeProjectId,
+    onSelectSession,
+    onSelectProject,
+    viewMode,
+    onViewModeChange,
+    onRunTutorial,
+  },
+  ref,
+) {
   const data = workspace;
   const createSession = useMutation(api.sessions.create);
   const createProject = useMutation(api.projects.create);
@@ -143,6 +159,24 @@ export function SessionSidebar({
     }
     setEditingSessionId(null);
   };
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      expand: () => {
+        setIsCollapsed(false);
+        if (activeSessionId) {
+          const id = activeSessionId;
+          requestAnimationFrame(() => {
+            document
+              .getElementById(`sidebar-session-${id}`)
+              ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+          });
+        }
+      },
+    }),
+    [activeSessionId],
+  );
 
   const handleRenameProject = async (id: Id<"projects">, name: string) => {
     if (name?.trim()) {
@@ -517,4 +551,6 @@ export function SessionSidebar({
       </div>
     </aside>
   );
-}
+});
+
+SessionSidebar.displayName = "SessionSidebar";

@@ -16,6 +16,7 @@ import { useAppUiActor, useAppUiSelector } from "./hooks/useAppUi";
 import {
   SessionSidebar,
   type ProjectWithSessions,
+  type SessionSidebarHandle,
 } from "./components/SessionSidebar";
 import { NotesListPanel } from "./components/NotesListPanel";
 import { Chat } from "./components/Chat";
@@ -78,6 +79,7 @@ function AppContent() {
   const { handleCreateSessionForFirstMessage } = useDefaultSessionSelection();
   useSessionEditorSync(activeSessionId);
   const mainContentRef = useRef<HTMLDivElement>(null);
+  const sessionSidebarRef = useRef<SessionSidebarHandle>(null);
 
   return (
     <>
@@ -93,6 +95,7 @@ function AppContent() {
             }
             workspace={projectsWithSessions}
             mainContentRef={mainContentRef}
+            sessionSidebarRef={sessionSidebarRef}
           />
         </AppUiSessionBridge>
       </SessionDataProvider>
@@ -104,10 +107,12 @@ function AppContentBody({
   onCreateSessionForFirstMessage,
   workspace,
   mainContentRef,
+  sessionSidebarRef,
 }: {
   onCreateSessionForFirstMessage?: () => Promise<Id<"sessions">>;
   workspace: ProjectWithSessions[] | undefined;
   mainContentRef: React.RefObject<HTMLDivElement | null>;
+  sessionSidebarRef: React.RefObject<SessionSidebarHandle | null>;
 }) {
   const activeSessionId = useAppUiSelector((s) => s.context.activeSessionId);
   const activeProjectId = useAppUiSelector((s) => s.context.activeProjectId);
@@ -294,6 +299,7 @@ function AppContentBody({
       toaster={<Toaster theme="dark" />}
     >
       <SessionSidebar
+        ref={sessionSidebarRef}
         workspace={workspace}
         activeSessionId={activeSessionId}
         activeProjectId={activeProjectId}
@@ -367,6 +373,9 @@ function AppContentBody({
                   hasChatHistory={hasChatHistory}
                   onHistoryOpen={() => actor.send({ type: "HISTORY_OPEN" })}
                   onEditorOpen={() => actor.send({ type: "EDITOR_OPEN" })}
+                  onSessionTitleClick={() =>
+                    sessionSidebarRef.current?.expand()
+                  }
                 />
               )}
               <div

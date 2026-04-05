@@ -48,6 +48,7 @@ export function SidebarSessionItem({
 
   return (
     <div
+      id={`sidebar-session-${session._id}`}
       draggable={!isEditing}
       onDragStart={(e) => {
         e.dataTransfer.setData("text/plain", session._id);
