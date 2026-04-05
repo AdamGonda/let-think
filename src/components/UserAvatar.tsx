@@ -7,6 +7,7 @@ type UserAvatarProps = {
   name?: string | null;
   email?: string | null;
   className?: string;
+  size?: "sm" | "default" | "lg";
 };
 
 export function UserAvatar({
@@ -14,6 +15,7 @@ export function UserAvatar({
   name,
   email,
   className,
+  size = "lg",
 }: UserAvatarProps) {
   const [imageError, setImageError] = useState(false);
 
@@ -25,7 +27,7 @@ export function UserAvatar({
   const initials = getUserInitials(name ?? email ?? undefined);
 
   return (
-    <Avatar size="lg" className={className}>
+    <Avatar size={size} className={className}>
       {imageUrl && !imageError ? (
         <AvatarImage
           src={imageUrl}

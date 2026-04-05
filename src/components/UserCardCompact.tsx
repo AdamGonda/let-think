@@ -1,6 +1,5 @@
 import type { RefObject } from "react";
-import { UserAvatar } from "./UserAvatar";
-import { UserModeBadge } from "./UserModeBadge";
+import { ProfileAvatarWithModeAccent } from "./ProfileAvatarWithModeAccent";
 import { UserMenuPanel } from "./UserMenuPanel";
 import { cn } from "@/lib/utils";
 
@@ -41,8 +40,10 @@ export function UserCardCompact({
     <div
       ref={containerRef}
       className={cn(
-        "relative w-full overflow-hidden transition-[min-height] duration-200 ease-out",
-        menuOpen ? "min-h-[180px]" : "min-h-14",
+        "relative w-full transition-[min-height] duration-200 ease-out",
+        menuOpen
+          ? "min-h-[180px] overflow-hidden"
+          : "min-h-14 overflow-x-visible overflow-y-hidden",
       )}
     >
       <div
@@ -60,14 +61,11 @@ export function UserCardCompact({
               aria-label="Expand sidebar"
               onClick={onExpandSidebar}
             >
-              <span className="relative inline-flex">
-                <UserAvatar
-                  imageUrl={user.image}
-                  name={user.name}
-                  email={user.email}
-                />
-                <UserModeBadge isWorkMode={isWorkMode} />
-              </span>
+              <ProfileAvatarWithModeAccent
+                imageUrl={user.image}
+                name={user.name}
+                email={user.email}
+              />
             </button>
           ) : (
             <div
@@ -75,14 +73,11 @@ export function UserCardCompact({
               aria-label={`Account (${isWorkMode ? "Focus" : "Rest"} mode). Expand the sidebar to open the menu.`}
               role="group"
             >
-              <span className="relative inline-flex">
-                <UserAvatar
-                  imageUrl={user.image}
-                  name={user.name}
-                  email={user.email}
-                />
-                <UserModeBadge isWorkMode={isWorkMode} />
-              </span>
+              <ProfileAvatarWithModeAccent
+                imageUrl={user.image}
+                name={user.name}
+                email={user.email}
+              />
             </div>
           )
         ) : (
@@ -95,14 +90,11 @@ export function UserCardCompact({
             aria-controls="user-card-menu"
             onClick={() => setMenuOpen((o) => !o)}
           >
-            <span className="relative inline-flex">
-              <UserAvatar
-                imageUrl={user.image}
-                name={user.name}
-                email={user.email}
-              />
-              <UserModeBadge isWorkMode={isWorkMode} />
-            </span>
+            <ProfileAvatarWithModeAccent
+              imageUrl={user.image}
+              name={user.name}
+              email={user.email}
+            />
           </button>
         )}
       </div>

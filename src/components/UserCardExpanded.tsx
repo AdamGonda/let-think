@@ -1,7 +1,7 @@
 import type { RefObject } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { UserAvatar } from "./UserAvatar";
+import { ProfileAvatarWithModeAccent } from "./ProfileAvatarWithModeAccent";
 import { UserCardModeToggle } from "./UserCardModeToggle";
 import { UserMenuPanel } from "./UserMenuPanel";
 import { cn } from "@/lib/utils";
@@ -53,7 +53,11 @@ export function UserCardExpanded({
           menuOpen ? "-translate-y-full pointer-events-none" : "translate-y-0",
         )}
       >
-        <UserAvatar imageUrl={user.image} name={user.name} email={user.email} />
+        <ProfileAvatarWithModeAccent
+          imageUrl={user.image}
+          name={user.name}
+          email={user.email}
+        />
         <div className="flex-1 min-w-0">
           <div className="flex min-w-0 items-center gap-2">
             <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
