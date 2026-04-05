@@ -1,22 +1,15 @@
-import { useState, useMemo, useEffect } from "react";
 import type { Doc } from "../../convex/_generated/dataModel";
-import { FileText } from "lucide-react";
-import type {
-  ProjectRow,
-  ProjectWithSessions,
-} from "./session-sidebar/workspaceTypes";
-import { usePinnedProjectIds } from "@/hooks/usePinnedProjectIds";
+import type { ProjectWithSessions } from "./session-sidebar/workspaceTypes";
 import {
-  type NotesListDrill,
-  type SortMode,
   groupDisplayName,
-  projectGroupMatchesQuery,
-  resolveDrillGroup,
   formatUpdatedLabel,
-  groupActivityMs,
+  type NotesListDrill,
 } from "@/lib/notesListUtils";
 import { NotesListToolbar } from "./notes-list/NotesListToolbar";
 import { ProjectSummaryCard } from "./notes-list/ProjectSummaryCard";
+import { NotesListLoading } from "./notes-list/NotesListLoading";
+import { NotesListEmptyState } from "./notes-list/NotesListEmptyState";
+import { useNotesListModel } from "@/hooks/useNotesListModel";
 
 export type { NotesListDrill };
 
@@ -33,107 +26,25 @@ export function NotesListPanel({
   onDrillChange,
   onSelectSession,
 }: NotesListPanelProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortMode, setSortMode] = useState<SortMode>("activity");
-  const { pinnedIds, toggleProjectPinned } = usePinnedProjectIds(workspace);
-
-  const totalSessions =
-    workspace?.reduce((n, g) => n + g.sessions.length, 0) ?? 0;
-
-  const sortedGroups = useMemo(() => {
-    if (!workspace) return [];
-    const copy = [...workspace];
-    const sortProjects = (a: ProjectWithSessions, b: ProjectWithSessions) => {
-      const pidA = a.project!._id as string;
-      const pidB = b.project!._id as string;
-      const pinA = pinnedIds.has(pidA);
-      const pinB = pinnedIds.has(pidB);
-      if (pinA !== pinB) return pinA ? -1 : 1;
-      return 0;
-    };
-    if (sortMode === "name") {
-      const projectGroups = copy.filter(
-        (g): g is ProjectRow => g.project != null,
-      );
-      projectGroups.sort((a, b) => {
-        const order = sortProjects(a, b);
-        if (order !== 0) return order;
-        return groupDisplayName(a).localeCompare(groupDisplayName(b), undefined, {
-          sensitivity: "base",
-        });
-      });
-      return projectGroups;
-    }
-    const projectGroups = copy.filter(
-      (g): g is ProjectRow => g.project != null,
-    );
-    projectGroups.sort((a, b) => {
-      const order = sortProjects(a, b);
-      if (order !== 0) return order;
-      const ta = groupActivityMs(a.sessions, a.project.createdAt);
-      const tb = groupActivityMs(b.sessions, b.project.createdAt);
-      return tb - ta;
-    });
-    return projectGroups;
-  }, [workspace, sortMode, pinnedIds]);
-
-  const filteredGroups = useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
-    if (!q) return sortedGroups;
-    return sortedGroups.filter((g) => projectGroupMatchesQuery(g, q));
-  }, [sortedGroups, searchQuery]);
-
-  const drillGroup = useMemo(
-    () => (workspace && drill ? resolveDrillGroup(workspace, drill) : undefined),
-    [workspace, drill],
-  );
-
-  useEffect(() => {
-    if (drill && workspace && !drillGroup) {
-      onDrillChange(null);
-    }
-  }, [drill, workspace, drillGroup, onDrillChange]);
-
-  const filteredDrillSessions = useMemo(() => {
-    if (!drillGroup) return [];
-    const q = searchQuery.trim().toLowerCase();
-    let sessions = [...drillGroup.sessions];
-    if (q) {
-      sessions = sessions.filter((s) =>
-        s.title.toLowerCase().includes(q),
-      );
-    }
-    if (sortMode === "name") {
-      sessions.sort((a, b) =>
-        a.title.localeCompare(b.title, undefined, { sensitivity: "base" }),
-      );
-    } else {
-      sessions.sort((a, b) => b.createdAt - a.createdAt);
-    }
-    return sessions;
-  }, [drillGroup, searchQuery, sortMode]);
+  const {
+    searchQuery,
+    setSearchQuery,
+    sortMode,
+    setSortMode,
+    pinnedIds,
+    toggleProjectPinned,
+    totalSessions,
+    filteredGroups,
+    drillGroup,
+    filteredDrillSessions,
+  } = useNotesListModel(workspace, drill, onDrillChange);
 
   if (!workspace) {
-    return (
-      <div className="flex flex-1 items-center justify-center text-muted-foreground text-base py-6 px-6">
-        Loading…
-      </div>
-    );
+    return <NotesListLoading />;
   }
 
   if (totalSessions === 0) {
-    return (
-      <div className="flex flex-1 flex-col items-center justify-center text-muted-foreground text-base py-12 px-6 text-center gap-3">
-        <div className="rounded-full bg-muted/50 p-4">
-          <FileText className="size-8 text-muted-foreground/60" />
-        </div>
-        <p className="font-medium text-foreground">No notes yet</p>
-        <p className="text-sm max-w-[280px]">
-          Create a session in the sidebar to start collecting thinking notes under
-          a project or in your inbox
-        </p>
-      </div>
-    );
+    return <NotesListEmptyState />;
   }
 
   const drilled = drill != null;

@@ -12,13 +12,9 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { useAppUiSelector } from "./useAppUi";
 import type { WorkPreferenceMode } from "../lib/workPreferenceStorage";
 import { timings } from "@/config";
+import { formatBreakCountdown } from "../lib/formatBreakCountdown";
 
-export function formatBreakCountdown(ms: number): string {
-  const totalSeconds = Math.ceil(ms / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-}
+export { formatBreakCountdown };
 
 export function useSessionManager(sessionId: Id<"sessions"> | null) {
   const authToken = useAuthToken();
@@ -41,6 +37,7 @@ export function useSessionManager(sessionId: Id<"sessions"> | null) {
 
   const [breakRemainingMs, setBreakRemainingMs] = useState<number | null>(null);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- layout-sync local countdown to Convex `breakEndsAt` */
   useLayoutEffect(() => {
     if (!state?.breakEndsAt) {
       setBreakRemainingMs(null);
@@ -54,6 +51,7 @@ export function useSessionManager(sessionId: Id<"sessions"> | null) {
     hasResetRef.current = false;
     setBreakRemainingMs(Math.max(0, state.breakEndsAt - Date.now()));
   }, [state?.breakEndsAt]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   useEffect(() => {
     if (breakRemainingMs === null || breakRemainingMs <= 0) return;

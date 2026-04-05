@@ -3,7 +3,7 @@ import { useAction, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useSessionData } from "../contexts/SessionDataContext";
-import { formatBreakCountdown } from "../hooks/useSessionManager";
+import { formatBreakCountdown } from "../lib/formatBreakCountdown";
 import {
   resolveAtReferences,
   type Mention,

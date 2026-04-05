@@ -1,7 +1,7 @@
 import { layout } from "@/config";
 import { Sigma } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatBreakCountdown } from "@/hooks/useSessionManager";
+import { formatBreakCountdown } from "@/lib/formatBreakCountdown";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { NoteBreadcrumb } from "@/components/NoteBreadcrumb";
 import type { Id } from "../../convex/_generated/dataModel";

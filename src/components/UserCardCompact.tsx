@@ -1,0 +1,105 @@
+import type { RefObject } from "react";
+import { UserAvatar } from "./UserAvatar";
+import { UserModeBadge } from "./UserModeBadge";
+import { UserMenuPanel } from "./UserMenuPanel";
+import { cn } from "@/lib/utils";
+
+type UserLike = {
+  image?: string | null;
+  name?: string | null;
+  email?: string | null;
+};
+
+type UserCardCompactProps = {
+  user: UserLike;
+  containerRef: RefObject<HTMLDivElement | null>;
+  menuOpen: boolean;
+  setMenuOpen: (open: boolean | ((o: boolean) => boolean)) => void;
+  menuDisabled: boolean;
+  isWorkMode: boolean;
+  signOut: () => void | Promise<void>;
+  onRunTutorial?: () => void;
+};
+
+const slideEase =
+  "transition-transform duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform";
+
+export function UserCardCompact({
+  user,
+  containerRef,
+  menuOpen,
+  setMenuOpen,
+  menuDisabled,
+  isWorkMode,
+  signOut,
+  onRunTutorial,
+}: UserCardCompactProps) {
+  return (
+    <div
+      ref={containerRef}
+      className={cn(
+        "relative w-full overflow-hidden transition-[min-height] duration-200 ease-out",
+        menuOpen ? "min-h-[180px]" : "min-h-14",
+      )}
+    >
+      <div
+        className={cn(
+          "absolute inset-x-0 top-0 flex justify-center py-1",
+          slideEase,
+          menuOpen ? "-translate-y-full pointer-events-none" : "translate-y-0",
+        )}
+      >
+        {menuDisabled ? (
+          <div
+            className="flex cursor-default items-center justify-center rounded-md"
+            aria-label={`Account (${isWorkMode ? "Focus" : "Rest"} mode). Expand the sidebar to open the menu.`}
+            role="group"
+          >
+            <span className="relative inline-flex">
+              <UserAvatar
+                imageUrl={user.image}
+                name={user.name}
+                email={user.email}
+              />
+              <UserModeBadge isWorkMode={isWorkMode} />
+            </span>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className="flex items-center justify-center rounded-md hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            aria-label={`Open account menu (${isWorkMode ? "Focus" : "Rest"} mode)`}
+            aria-expanded={menuOpen}
+            aria-haspopup="menu"
+            aria-controls="user-card-menu"
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            <span className="relative inline-flex">
+              <UserAvatar
+                imageUrl={user.image}
+                name={user.name}
+                email={user.email}
+              />
+              <UserModeBadge isWorkMode={isWorkMode} />
+            </span>
+          </button>
+        )}
+      </div>
+      <div
+        className={cn(
+          "absolute inset-x-0 top-0 py-0.5",
+          slideEase,
+          menuOpen
+            ? "translate-y-0"
+            : "translate-y-full pointer-events-none opacity-0",
+        )}
+      >
+        <UserMenuPanel
+          onClose={() => setMenuOpen(false)}
+          signOut={signOut}
+          onRunTutorial={onRunTutorial}
+        />
+      </div>
+    </div>
+  );
+}

@@ -4,28 +4,7 @@ import { useSessionData } from "../contexts/SessionDataContext";
 import type { ProjectWithSessions } from "../components/SessionSidebar";
 import type { Id } from "../../convex/_generated/dataModel";
 import { isRestWalkthroughDoneForSession } from "../lib/restSessionWalkthroughStorage";
-
-function buildWorkspaceSnapshot(workspace: ProjectWithSessions[] | undefined): {
-  inboxEmpty: boolean;
-  hasProjects: boolean;
-  firstSessionId: Id<"sessions"> | null;
-  firstProjectId: Id<"projects"> | null;
-} | null {
-  if (workspace === undefined) return null;
-  const hasProjects = workspace.some((g) => g.project != null);
-  const inboxGroup = workspace.find((g) => g.project == null);
-  const inboxEmpty = !inboxGroup || inboxGroup.sessions.length === 0;
-  const allSessions = workspace
-    .flatMap((g) => g.sessions)
-    .sort((a, b) => b.createdAt - a.createdAt);
-  const first = allSessions[0];
-  return {
-    inboxEmpty,
-    hasProjects,
-    firstSessionId: first?._id ?? null,
-    firstProjectId: first?.projectId ?? null,
-  };
-}
+import { buildWorkspaceSnapshot } from "../lib/workspaceQueries";
 
 /**
  * Maps Convex session/workspace data to machine snapshot events (single orchestration entry).

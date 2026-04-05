@@ -9,3 +9,7 @@ export type ProjectWithSessions = {
 export type ProjectRow = ProjectWithSessions & {
   project: Doc<"projects">;
 };
+
+export type SessionSidebarHandle = {
+  expand: () => void;
+};
