@@ -3,7 +3,6 @@ import type {
   ProjectRow,
   ProjectWithSessions,
 } from "@/components/session-sidebar/workspaceTypes";
-import { usePinnedProjectIds } from "@/hooks/usePinnedProjectIds";
 import {
   type NotesListDrill,
   type SortMode,
@@ -20,7 +19,6 @@ export function useNotesListModel(
 ) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("activity");
-  const { pinnedIds, toggleProjectPinned } = usePinnedProjectIds(workspace);
 
   const totalSessions =
     workspace?.reduce((n, g) => n + g.sessions.length, 0) ?? 0;
@@ -28,39 +26,27 @@ export function useNotesListModel(
   const sortedGroups = useMemo(() => {
     if (!workspace) return [];
     const copy = [...workspace];
-    const sortProjects = (a: ProjectWithSessions, b: ProjectWithSessions) => {
-      const pidA = a.project!._id as string;
-      const pidB = b.project!._id as string;
-      const pinA = pinnedIds.has(pidA);
-      const pinB = pinnedIds.has(pidB);
-      if (pinA !== pinB) return pinA ? -1 : 1;
-      return 0;
-    };
     if (sortMode === "name") {
       const projectGroups = copy.filter(
         (g): g is ProjectRow => g.project != null,
       );
-      projectGroups.sort((a, b) => {
-        const order = sortProjects(a, b);
-        if (order !== 0) return order;
-        return groupDisplayName(a).localeCompare(groupDisplayName(b), undefined, {
+      projectGroups.sort((a, b) =>
+        groupDisplayName(a).localeCompare(groupDisplayName(b), undefined, {
           sensitivity: "base",
-        });
-      });
+        }),
+      );
       return projectGroups;
     }
     const projectGroups = copy.filter(
       (g): g is ProjectRow => g.project != null,
     );
     projectGroups.sort((a, b) => {
-      const order = sortProjects(a, b);
-      if (order !== 0) return order;
       const ta = groupActivityMs(a.sessions, a.project.createdAt);
       const tb = groupActivityMs(b.sessions, b.project.createdAt);
       return tb - ta;
     });
     return projectGroups;
-  }, [workspace, sortMode, pinnedIds]);
+  }, [workspace, sortMode]);
 
   const filteredGroups = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
@@ -103,8 +89,6 @@ export function useNotesListModel(
     setSearchQuery,
     sortMode,
     setSortMode,
-    pinnedIds,
-    toggleProjectPinned,
     totalSessions,
     sortedGroups,
     filteredGroups,

@@ -31,8 +31,6 @@ export function NotesListPanel({
     setSearchQuery,
     sortMode,
     setSortMode,
-    pinnedIds,
-    toggleProjectPinned,
     totalSessions,
     filteredGroups,
     drillGroup,
@@ -88,22 +86,15 @@ export function NotesListPanel({
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {filteredGroups.map((group) => {
                     const projectId = group.project._id;
-                    const isPinned = pinnedIds.has(projectId as string);
-                    const pinLabelId = `pin-label-${projectId}`;
                     return (
                       <li key={projectId}>
                         <ProjectSummaryCard
                           group={group}
-                          isPinned={isPinned}
-                          pinLabelId={pinLabelId}
                           onDrill={() =>
                             onDrillChange({
                               type: "project",
                               id: projectId,
                             })
-                          }
-                          onTogglePin={() =>
-                            toggleProjectPinned(projectId as string)
                           }
                         />
                       </li>
