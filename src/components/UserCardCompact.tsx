@@ -40,10 +40,8 @@ export function UserCardCompact({
     <div
       ref={containerRef}
       className={cn(
-        "relative w-full transition-[min-height] duration-200 ease-out",
-        menuOpen
-          ? "min-h-[180px] overflow-hidden"
-          : "min-h-14 overflow-x-visible overflow-y-hidden",
+        "relative w-full min-w-0 max-w-full transition-[min-height] duration-200 ease-out",
+        menuOpen ? "min-h-[180px] overflow-hidden" : "min-h-14 overflow-hidden",
       )}
     >
       <div
@@ -57,7 +55,7 @@ export function UserCardCompact({
           onExpandSidebar ? (
             <button
               type="button"
-              className="flex cursor-pointer items-center justify-center rounded-md hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              className="flex max-w-full cursor-pointer items-center justify-center rounded-md hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
               aria-label="Expand sidebar"
               onClick={onExpandSidebar}
             >
@@ -83,7 +81,7 @@ export function UserCardCompact({
         ) : (
           <button
             type="button"
-            className="flex items-center justify-center rounded-md hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="flex max-w-full items-center justify-center rounded-md hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
             aria-label={`Open account menu (${isWorkMode ? "Focus" : "Rest"} mode)`}
             aria-expanded={menuOpen}
             aria-haspopup="menu"

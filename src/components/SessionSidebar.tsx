@@ -80,7 +80,7 @@ export const SessionSidebar = forwardRef<
       <div
         className={`flex flex-col gap-2 border-t border-border transition-[padding] duration-200 shrink-0 ${
           w.isCollapsed
-            ? "relative z-10 px-1 py-2 items-center mt-auto"
+            ? "relative z-10 min-w-0 w-full overflow-x-hidden px-1 py-2 items-center mt-auto"
             : "px-3 pt-3 pb-1.5"
         }`}
       >
