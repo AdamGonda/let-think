@@ -124,11 +124,18 @@ export function AppContentBody({
   const setViewMode = useCallback(
     (mode: "graph" | "notesList") => {
       if (mode === "notesList") {
-        actor.send({ type: "NOTES_LIST_DRILL_SET", drill: null });
+        if (activeSessionInWorkspace?.projectId) {
+          navigateDrillToSessionContext(
+            actor,
+            activeSessionInWorkspace.projectId,
+          );
+        } else {
+          actor.send({ type: "NOTES_LIST_DRILL_SET", drill: null });
+        }
       }
       actor.send({ type: "VIEW_SET", mode });
     },
-    [actor],
+    [actor, activeSessionInWorkspace],
   );
 
   const handleExitOverlay = useCallback(() => {
