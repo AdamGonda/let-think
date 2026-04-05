@@ -165,17 +165,33 @@ export const SessionSidebar = forwardRef<
     () => ({
       expand: () => {
         setIsCollapsed(false);
+        if (activeSessionId && data) {
+          for (const { project, sessions } of data) {
+            const hasActive = sessions.some((s) => s._id === activeSessionId);
+            if (hasActive && project) {
+              setExpandedProjectIds((prev) =>
+                prev.has(project._id)
+                  ? prev
+                  : new Set([...prev, project._id]),
+              );
+              setProjectsSectionOpen(true);
+              break;
+            }
+          }
+        }
         if (activeSessionId) {
           const id = activeSessionId;
           requestAnimationFrame(() => {
-            document
-              .getElementById(`sidebar-session-${id}`)
-              ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            requestAnimationFrame(() => {
+              document
+                .getElementById(`sidebar-session-${id}`)
+                ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            });
           });
         }
       },
     }),
-    [activeSessionId],
+    [activeSessionId, data],
   );
 
   const handleRenameProject = async (id: Id<"projects">, name: string) => {
