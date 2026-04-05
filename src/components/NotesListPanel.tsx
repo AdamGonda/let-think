@@ -134,7 +134,7 @@ export function NotesListPanel({
   const drilled = drill != null;
   const drillTitle = drillGroup ? groupDisplayName(drillGroup) : "";
   const drillHeading =
-    drilled && drillGroup ? `${drillTitle} sessions` : "Projects";
+    drilled && drillGroup ? `${drillTitle}` : "Projects";
 
   return (
     <div className="flex flex-1 flex-col min-h-0 bg-background">
@@ -218,7 +218,7 @@ export function NotesListPanel({
                         className={`flex min-h-30 w-full cursor-pointer flex-col gap-2 rounded-xl bg-card p-5 text-left shadow-sm transition-colors hover:border-border hover:bg-muted active:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
                           drill?.type === "inbox"
                             ? "border-4 border-border"
-                            : "border-2 border-border/90"
+                            : "border-4 border-border border-dashed"
                         }`}
                       >
                         <span className="font-semibold text-foreground leading-snug line-clamp-2">
