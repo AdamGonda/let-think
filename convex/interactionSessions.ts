@@ -7,14 +7,13 @@ import {
 } from "./_generated/server";
 import type { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { BREAK_MS, RESTRICT_INTERACTION_LIMIT } from "./constants";
 import {
-  BREAK_MS,
-  RESTRICT_INTERACTION_LIMIT,
-} from "./constants";
-
-function pickRandomLimit(): number {
-  return RESTRICT_INTERACTION_LIMIT;
-}
+  newRowAfterFirstInteraction,
+  patchAfterRecordInteraction,
+  pickInteractionLimit,
+  shouldSetBreakOptimistically,
+} from "./interactionPolicy";
 
 async function getUserRow(ctx: MutationCtx, userId: Id<"users">) {
   return ctx.db
@@ -83,22 +82,19 @@ export const recordInteraction = mutation({
     const existing = await getUserRow(ctx, userId);
     const now = Date.now();
     if (!existing) {
-      const limit = pickRandomLimit();
+      const limit = pickInteractionLimit();
+      const row = newRowAfterFirstInteraction(now, limit);
       await ctx.db.insert("userThinkInteractions", {
         userId,
-        limit,
-        used: 1,
-        breakEndsAt: limit === 1 ? now + BREAK_MS : undefined,
-        createdAt: now,
+        limit: row.limit,
+        used: row.used,
+        breakEndsAt: row.breakEndsAt,
+        createdAt: row.createdAt,
       });
       return;
     }
 
-    const used = existing.used + 1;
-    const breakEndsAt =
-      used >= existing.limit && !existing.breakEndsAt
-        ? now + BREAK_MS
-        : existing.breakEndsAt;
+    const { used, breakEndsAt } = patchAfterRecordInteraction(existing, now);
     await ctx.db.patch(existing._id, { used, breakEndsAt });
   },
 });
@@ -111,7 +107,7 @@ export const startBreakOptimistically = mutation({
     const existing = await getUserRow(ctx, userId);
     const now = Date.now();
     if (!existing) {
-      const limit = pickRandomLimit();
+      const limit = pickInteractionLimit();
       await ctx.db.insert("userThinkInteractions", {
         userId,
         limit,
@@ -121,7 +117,7 @@ export const startBreakOptimistically = mutation({
       return;
     }
 
-    if (existing.used >= existing.limit - 1 && !existing.breakEndsAt) {
+    if (shouldSetBreakOptimistically(existing)) {
       await ctx.db.patch(existing._id, {
         breakEndsAt: now + BREAK_MS,
       });
@@ -139,7 +135,7 @@ export const resetAfterBreak = mutation({
       await ctx.db.delete(existing._id);
     }
     const now = Date.now();
-    const limit = pickRandomLimit();
+    const limit = pickInteractionLimit();
     await ctx.db.insert("userThinkInteractions", {
       userId,
       limit,
