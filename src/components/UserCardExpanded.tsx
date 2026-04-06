@@ -57,6 +57,7 @@ export function UserCardExpanded({
           imageUrl={user.image}
           name={user.name}
           email={user.email}
+          showAccentRing={false}
         />
         <div className="flex-1 min-w-0">
           <div className="flex min-w-0 items-center gap-2">
