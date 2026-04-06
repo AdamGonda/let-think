@@ -3,8 +3,7 @@ import { MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ProfileAvatarWithModeAccent } from "./ProfileAvatarWithModeAccent";
 import { UserCardModeToggle } from "./UserCardModeToggle";
-import { UserMenuPanel } from "./UserMenuPanel";
-import { cn } from "@/lib/utils";
+import { UserCardMenuShell } from "./UserCardMenuShell";
 
 type UserLike = {
   image?: string | null;
@@ -24,9 +23,6 @@ type UserCardExpandedProps = {
   onRunTutorial?: () => void;
 };
 
-const slideEase =
-  "transition-transform duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform";
-
 export function UserCardExpanded({
   user,
   displayName,
@@ -39,20 +35,15 @@ export function UserCardExpanded({
   onRunTutorial,
 }: UserCardExpandedProps) {
   return (
-    <div
-      ref={containerRef}
-      className={cn(
-        "relative w-full min-w-0 overflow-hidden transition-[min-height] duration-200 ease-out",
-        menuOpen ? "min-h-[145px]" : "min-h-14",
-      )}
+    <UserCardMenuShell
+      containerRef={containerRef}
+      menuOpen={menuOpen}
+      setMenuOpen={setMenuOpen}
+      signOut={signOut}
+      onRunTutorial={onRunTutorial}
+      variant="expanded"
     >
-      <div
-        className={cn(
-          "absolute inset-x-0 top-0 flex items-center gap-3 pt-2 pb-1",
-          slideEase,
-          menuOpen ? "-translate-y-full pointer-events-none" : "translate-y-0",
-        )}
-      >
+      <>
         <ProfileAvatarWithModeAccent
           imageUrl={user.image}
           name={user.name}
@@ -84,22 +75,7 @@ export function UserCardExpanded({
             <MoreHorizontal className="size-4" />
           </Button>
         </div>
-      </div>
-      <div
-        className={cn(
-          "absolute inset-x-0 top-0 py-1",
-          slideEase,
-          menuOpen
-            ? "translate-y-0"
-            : "translate-y-full pointer-events-none opacity-0",
-        )}
-      >
-        <UserMenuPanel
-          onClose={() => setMenuOpen(false)}
-          signOut={signOut}
-          onRunTutorial={onRunTutorial}
-        />
-      </div>
-    </div>
+      </>
+    </UserCardMenuShell>
   );
 }

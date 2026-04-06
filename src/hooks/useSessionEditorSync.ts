@@ -9,6 +9,7 @@ import { useMutation, useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useAppUiActor, useAppUiSelector } from "./useAppUi";
+import { setDraftInput, setWakeNotes } from "@/lib/appUiCommands";
 
 /**
  * Keeps draft + thinking notes in sync with Convex: load on session change,
@@ -51,21 +52,18 @@ export function useSessionEditorSync(activeSessionId: Id<"sessions"> | null) {
 
     if (sessionChanged) {
       appliedStoredForSessionRef.current = null;
-      actor.send({
-        type: "DRAFT_INPUT_SET",
-        value: activeSessionId == null ? "" : (storedDraft ?? ""),
-      });
-      actor.send({ type: "NOTES_SET", value: "" });
+      setDraftInput(
+        actor,
+        activeSessionId == null ? "" : (storedDraft ?? ""),
+      );
+      setWakeNotes(actor, "");
       if (
         activeSessionId != null &&
         storedDraft !== undefined &&
         storedThinkingNotes !== undefined
       ) {
         appliedStoredForSessionRef.current = activeSessionId;
-        actor.send({
-          type: "NOTES_SET",
-          value: storedThinkingNotes ?? "",
-        });
+        setWakeNotes(actor, storedThinkingNotes ?? "");
       }
     } else if (
       activeSessionId != null &&
@@ -73,11 +71,8 @@ export function useSessionEditorSync(activeSessionId: Id<"sessions"> | null) {
       storedDraft !== undefined &&
       storedThinkingNotes !== undefined
     ) {
-      actor.send({ type: "DRAFT_INPUT_SET", value: storedDraft ?? "" });
-      actor.send({
-        type: "NOTES_SET",
-        value: storedThinkingNotes ?? "",
-      });
+      setDraftInput(actor, storedDraft ?? "");
+      setWakeNotes(actor, storedThinkingNotes ?? "");
       appliedStoredForSessionRef.current = activeSessionId;
     }
   }, [

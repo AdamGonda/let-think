@@ -86,8 +86,15 @@ export function useSessionManager(sessionId: Id<"sessions"> | null) {
       ? Math.max(0, state.limit - state.used)
       : null;
 
+  /** Prefer Convex interaction policy when loaded; UI preference only while query is pending. */
   const interactionRestriction: "open" | "restrict" =
-    restrictionFromPreference === "restrict" ? "restrict" : "open";
+    state !== undefined && state !== null
+      ? state.mode === "restrict"
+        ? "restrict"
+        : "open"
+      : restrictionFromPreference === "restrict"
+        ? "restrict"
+        : "open";
 
   const interactionCountsPending =
     isAuthenticated &&

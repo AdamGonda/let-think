@@ -1,14 +1,14 @@
 import { useState } from "react";
 import { useAction, useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import type { Id } from "../../convex/_generated/dataModel";
-import { useSessionData } from "../contexts/SessionDataContext";
-import { formatBreakCountdown } from "../lib/formatBreakCountdown";
+import { api } from "../../../convex/_generated/api";
+import type { Id } from "../../../convex/_generated/dataModel";
+import { useSessionData } from "../../contexts/SessionDataContext";
+import { formatBreakCountdown } from "../../lib/formatBreakCountdown";
 import {
   resolveAtReferences,
   type Mention,
-} from "../lib/chatMentions";
-import type { NumberedConcept } from "../lib/conceptReferences";
+} from "../../lib/chatMentions";
+import type { NumberedConcept } from "../../lib/conceptReferences";
 import { ChatComposer } from "./ChatComposer";
 
 export type { Mention };

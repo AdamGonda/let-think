@@ -26,7 +26,6 @@ export function SessionSidebarProjectsNav({
 }: SessionSidebarProjectsNavProps) {
   const {
     data,
-    allSessions,
     projectsSectionOpen,
     setProjectsSectionOpen,
     expandedProjectIds,

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import type { Id } from "../../convex/_generated/dataModel";
+import type { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { Loader2, X, Copy, Check } from "lucide-react";
 import {
@@ -9,12 +9,12 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import type { HistoryMention } from "@/lib/chatHistoryMentionSegments";
 import {
   CHAT_HISTORY_COLLAPSE_THRESHOLD,
   TOPIC_LOADING_TIMEOUT_MS,
   truncateAtWord,
   renderContentWithMentions,
-  type HistoryMention,
 } from "@/lib/chatHistoryRender";
 import { timings } from "@/config";
 

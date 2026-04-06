@@ -1,5 +1,6 @@
 import { useAppUiActor, useAppUiSelector } from "./useAppUi";
 import type { WorkPreferenceMode } from "../lib/workPreferenceStorage";
+import { setWorkPreferenceMode } from "@/lib/appUiCommands";
 
 export function useWorkPreference(): {
   mode: WorkPreferenceMode;
@@ -11,7 +12,6 @@ export function useWorkPreference(): {
   return {
     mode,
     isWorkMode: mode === "work",
-    setMode: (m: WorkPreferenceMode) =>
-      actor.send({ type: "PREFERENCE_SET", mode: m }),
+    setMode: (m: WorkPreferenceMode) => setWorkPreferenceMode(actor, m),
   };
 }

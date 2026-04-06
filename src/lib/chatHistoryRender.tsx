@@ -1,14 +1,11 @@
 import type { ReactNode } from "react";
+import {
+  buildMentionSegments,
+  type HistoryMention,
+} from "./chatHistoryMentionSegments";
 
 export const CHAT_HISTORY_COLLAPSE_THRESHOLD = 180;
 export const TOPIC_LOADING_TIMEOUT_MS = 30_000;
-
-export type HistoryMention = {
-  start: number;
-  end: number;
-  conceptId: string;
-  name: string;
-};
 
 export function truncateAtWord(content: string, maxLen: number): string {
   if (content.length <= maxLen) return content;
@@ -32,41 +29,14 @@ export function renderContentWithMentions(
 
   if (!mentions?.length) return display;
 
-  const sorted = [...mentions].sort((a, b) => a.start - b.start);
-  const segments: Array<{
-    type: "text" | "mention";
-    content: string;
-    name: string;
-  }> = [];
-  let pos = 0;
-  for (const m of sorted) {
-    if (m.start > pos) {
-      segments.push({
-        type: "text",
-        content: display.slice(pos, Math.min(m.start, contentEnd)),
-        name: "",
-      });
-    }
-    if (m.start < contentEnd) {
-      const end = Math.min(m.end, contentEnd);
-      segments.push({
-        type: "mention",
-        content: display.slice(m.start, end),
-        name: m.name,
-      });
-    }
-    pos = Math.max(pos, m.end);
-  }
-  if (pos < contentEnd) {
-    segments.push({
-      type: "text",
-      content: display.slice(pos, contentEnd),
-      name: "",
-    });
-  }
-  if (truncated) {
-    segments.push({ type: "text", content: "…", name: "" });
-  }
+  const segments = buildMentionSegments(
+    display,
+    mentions,
+    contentEnd,
+    !!truncated,
+  );
+
+  if (segments.length === 0) return display;
 
   return (
     <>

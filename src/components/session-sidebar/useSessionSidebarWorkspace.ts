@@ -17,6 +17,7 @@ import {
   setStoredProjectsSectionOpen,
 } from "@/lib/sidebarStorage";
 import { expandProjectRowForActiveSession } from "@/lib/sidebarExpansion";
+import { scrollSidebarSessionIntoView } from "@/lib/sidebarScroll";
 import type {
   ProjectWithSessions,
   SessionSidebarHandle,
@@ -242,14 +243,7 @@ export function useSessionSidebarWorkspace({
       () => setProjectsSectionOpen(true),
     );
     if (activeSessionId) {
-      const id = activeSessionId;
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          document
-            .getElementById(`sidebar-session-${id}`)
-            ?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-        });
-      });
+      scrollSidebarSessionIntoView(activeSessionId);
     }
   }, [data, activeSessionId]);
 

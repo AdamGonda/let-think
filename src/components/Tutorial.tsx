@@ -2,28 +2,12 @@ import { useEffect, useRef, useCallback } from "react";
 import { timings } from "@/config";
 import { driver, type Driver, type DriveStep, type Config } from "driver.js";
 import "driver.js/dist/driver.css";
+import {
+  getTutorialCompleted,
+  setTutorialCompleted,
+} from "@/lib/tutorialStorage";
 
-const STORAGE_KEY = "think-tutorial-completed";
-
-export function getTutorialCompleted(): boolean {
-  try {
-    return localStorage.getItem(STORAGE_KEY) === "true";
-  } catch {
-    return false;
-  }
-}
-
-export function setTutorialCompleted(value: boolean): void {
-  try {
-    if (value) {
-      localStorage.setItem(STORAGE_KEY, "true");
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
-    }
-  } catch {
-    /* ignore */
-  }
-}
+export { getTutorialCompleted, setTutorialCompleted } from "@/lib/tutorialStorage";
 
 function getSteps(): DriveStep[] {
   return [

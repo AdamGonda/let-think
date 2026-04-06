@@ -1,14 +1,11 @@
 import type { Doc } from "../../convex/_generated/dataModel";
 import type { ProjectWithSessions } from "./session-sidebar/workspaceTypes";
-import {
-  groupDisplayName,
-  formatUpdatedLabel,
-  type NotesListDrill,
-} from "@/lib/notesListUtils";
+import { groupDisplayName, type NotesListDrill } from "@/lib/notesListUtils";
 import { NotesListToolbar } from "./notes-list/NotesListToolbar";
 import { ProjectSummaryCard } from "./notes-list/ProjectSummaryCard";
 import { NotesListLoading } from "./notes-list/NotesListLoading";
 import { NotesListEmptyState } from "./notes-list/NotesListEmptyState";
+import { NotesListSessionCard } from "./notes-list/NotesListSessionCard";
 import { useNotesListModel } from "@/hooks/useNotesListModel";
 
 export type { NotesListDrill };
@@ -119,18 +116,10 @@ export function NotesListPanel({
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {filteredDrillSessions.map((session) => (
                     <li key={session._id}>
-                      <button
-                        type="button"
-                        onClick={() => onSelectSession(session)}
-                        className="flex min-h-30 w-full cursor-pointer flex-col gap-2 rounded-xl border-4 border-border border-dashed bg-card p-5 text-left shadow-sm transition-colors hover:border-border hover:bg-muted active:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                      >
-                        <span className="font-semibold text-foreground leading-snug line-clamp-2">
-                          {session.title}
-                        </span>
-                        <p className="text-xs text-muted-foreground/90 pt-1">
-                          {formatUpdatedLabel(session.createdAt)}
-                        </p>
-                      </button>
+                      <NotesListSessionCard
+                        session={session}
+                        onSelect={onSelectSession}
+                      />
                     </li>
                   ))}
                 </ul>
