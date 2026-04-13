@@ -32,8 +32,7 @@ async function generatePromptSummary(
 User prompt:
 ${trimmed.slice(0, PROMPT_SUMMARY_INPUT_MAX_CHARS)}`;
 
-  // Use main model first (known to work); fall back to flash models if needed
-  const modelsToTry = ["gemini-3-flash-preview"] //"gemini-3.1-pro-preview", "gemini-2.5-flash", "gemini-2.0-flash"];
+  const modelsToTry = ["gemini-3-flash-preview"];
   for (const modelId of modelsToTry) {
     try {
       const { text } = await generateText({
