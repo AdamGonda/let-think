@@ -10,7 +10,7 @@ hopefully it won't hallucinate as much.
 and cause mass hysteria and delusion.
 
 we use a reasoning model to generate around the user input
-and distill it and evolving context graph.
+and distill it and evolving context graph. 
 
 ## Setup
 
