@@ -21,7 +21,7 @@ import {
   buildNumberedConceptsFromGraph,
   referencedConceptIdsFromDraft,
 } from "../lib/conceptReferences";
-import { userInputForBatch } from "../lib/batchUserInput";
+import { userInputForBatch, userMessageForBatch } from "../lib/batchUserInput";
 import { findSessionInWorkspace } from "../lib/workspaceQueries";
 import { CHAT_MESSAGES_PAGE_SIZE } from "@/config";
 import { WakeUpOverlay } from "./WakeUpOverlay";
@@ -145,6 +145,15 @@ export function AppContentBody({
   /** Composer stays visible in graph mode even when the stepper is on an earlier batch. */
   const chatComposerVisible = viewMode === "graph";
 
+  const lockedHistorical = useMemo(() => {
+    if (isLatestBatch || batches.length === 0) return null;
+    const msg = userMessageForBatch(batches, messages, selectedBatchIndex);
+    if (msg) {
+      return { content: msg.content, mentions: msg.mentions };
+    }
+    return { content: batchUserPrompt, mentions: undefined };
+  }, [isLatestBatch, batches, messages, selectedBatchIndex, batchUserPrompt]);
+
   return (
     <AppShell
       wakeUpOverlay={
@@ -248,9 +257,7 @@ export function AppContentBody({
             draftInput={draftInput}
             setDraftInput={(v) => setDraftInput(actor, v)}
             onCreateSession={onCreateSessionForFirstMessage}
-            lockedUserInput={
-              !isLatestBatch && batches.length > 0 ? batchUserPrompt : null
-            }
+            lockedHistorical={lockedHistorical}
           />
         )}
         {viewMode === "graph" && (

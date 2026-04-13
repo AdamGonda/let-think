@@ -2,7 +2,10 @@ import { useState } from "react";
 import { useAction, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
-import { useSessionData } from "../../contexts/SessionDataContext";
+import {
+  useSessionData,
+  type SessionMessage,
+} from "../../contexts/SessionDataContext";
 import { formatBreakCountdown } from "../../lib/formatBreakCountdown";
 import {
   resolveAtReferences,
@@ -10,6 +13,7 @@ import {
 } from "../../lib/chatMentions";
 import type { NumberedConcept } from "../../lib/conceptReferences";
 import { ChatComposer } from "./ChatComposer";
+import { HistoricalBatchPrompt } from "./HistoricalBatchPrompt";
 
 export type { Mention };
 
@@ -23,8 +27,11 @@ interface ChatProps {
   setDraftInput?: (value: string) => void;
   onModelResponded?: () => void;
   workModeLoadingFrame?: boolean;
-  /** When set, the composer shows this text read-only (stepper on an earlier batch). */
-  lockedUserInput?: string | null;
+  /**
+   * When set (non-latest graph batch), shows collapsed read-only prompt with history-style
+   * mention rendering instead of the composer.
+   */
+  lockedHistorical?: Pick<SessionMessage, "content" | "mentions"> | null;
 }
 
 export function Chat({
@@ -37,14 +44,13 @@ export function Chat({
   setDraftInput,
   onModelResponded,
   workModeLoadingFrame = false,
-  lockedUserInput = null,
+  lockedHistorical = null,
 }: ChatProps) {
   const [internalInput, setInternalInput] = useState("");
   const draft = draftInput !== undefined ? draftInput : internalInput;
   const setInput =
     setDraftInput !== undefined ? setDraftInput : setInternalInput;
-  const composerLocked = lockedUserInput != null;
-  const input = composerLocked ? lockedUserInput : draft;
+  const input = draft;
   const sendMessage = useAction(api.chat.send);
   const recordInteraction = useMutation(api.interactionSessions.recordInteraction);
   const {
@@ -64,7 +70,7 @@ export function Chat({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (composerLocked) return;
+    if (lockedHistorical) return;
     if (!input.trim()) return;
 
     let effectiveSessionId = sessionId;
@@ -119,28 +125,36 @@ export function Chat({
   const isDisabled = isLoading || !canSubmit;
 
   const placeholder =
-    composerLocked && !input.trim()
-      ? "No saved prompt for this step"
-      : breakRemainingFormatted
-        ? `Wake up in ${breakRemainingFormatted}`
-        : sessionId || onCreateSession
-          ? numberedConcepts.length > 0
-            ? "Type, @ ref concepts"
-            : "Type..."
-          : "Select a session to start";
+    breakRemainingFormatted
+      ? `Wake up in ${breakRemainingFormatted}`
+      : sessionId || onCreateSession
+        ? numberedConcepts.length > 0
+          ? "Type, @ ref concepts"
+          : "Type..."
+        : "Select a session to start";
 
   const showInteractionLine =
-    !composerLocked &&
+    !lockedHistorical &&
     restrictInteractions &&
     sessionId &&
     breakRemainingMs === null &&
     (remaining != null || interactionCountsPending);
 
   const showUnlimitedInteractionLine =
-    !composerLocked &&
+    !lockedHistorical &&
     !restrictInteractions &&
     sessionId &&
     breakRemainingMs === null;
+
+  if (lockedHistorical) {
+    return (
+      <HistoricalBatchPrompt
+        content={lockedHistorical.content}
+        mentions={lockedHistorical.mentions}
+        workModeLoadingFrame={workModeLoadingFrame}
+      />
+    );
+  }
 
   return (
     <ChatComposer
@@ -148,7 +162,6 @@ export function Chat({
       setInput={setInput}
       placeholder={placeholder}
       numberedConcepts={numberedConcepts}
-      readOnly={composerLocked}
       isDisabled={isDisabled}
       isLoading={isLoading}
       workModeLoadingFrame={workModeLoadingFrame}

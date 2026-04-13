@@ -2,6 +2,7 @@ import type { SessionMessage } from "@/contexts/SessionDataContext";
 
 type BatchWithDescription = {
   description?: string;
+  nodeIds?: string[];
 };
 
 function normalizeForMatch(s: string): string {
@@ -40,4 +41,26 @@ export function userInputForBatch(
   }
 
   return userMessages[batchIndex]?.content ?? "";
+}
+
+/**
+ * User message row for a batch (for mention pills + resolved content), or null.
+ */
+export function userMessageForBatch(
+  batches: BatchWithDescription[],
+  messages: SessionMessage[] | undefined,
+  batchIndex: number,
+): SessionMessage | null {
+  const userMessages = (messages ?? []).filter((m) => m.role === "user");
+  const batchDesc = batches[batchIndex]?.description?.trim();
+  if (batchDesc) {
+    const norm = normalizeForMatch(batchDesc);
+    if (norm) {
+      const found = userMessages.find(
+        (m) => normalizeForMatch(m.content) === norm,
+      );
+      if (found) return found;
+    }
+  }
+  return userMessages[batchIndex] ?? null;
 }

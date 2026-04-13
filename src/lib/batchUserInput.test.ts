@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { userInputForBatch } from "./batchUserInput";
+import { userInputForBatch, userMessageForBatch } from "./batchUserInput";
 import type { SessionMessage } from "@/contexts/SessionDataContext";
 
 describe("userInputForBatch", () => {
@@ -16,5 +16,20 @@ describe("userInputForBatch", () => {
       { role: "assistant", content: "ok" },
     ];
     expect(userInputForBatch(batches, messages, 0)).toBe("first turn");
+  });
+});
+
+describe("userMessageForBatch", () => {
+  it("matches stored user message by batch description", () => {
+    const batches = [
+      { description: "hello", nodeIds: ["a"] },
+      { description: "second", nodeIds: ["b"] },
+    ];
+    const messages: SessionMessage[] = [
+      { role: "user", content: "hello" },
+      { role: "assistant", content: "…" },
+      { role: "user", content: "second" },
+    ];
+    expect(userMessageForBatch(batches, messages, 1)?.content).toBe("second");
   });
 });
