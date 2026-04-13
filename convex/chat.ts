@@ -60,7 +60,10 @@ export const generateTopicForMessage = internalAction({
     messageId: v.id("messages"),
     userContent: v.string(),
   },
-  handler: async (ctx, { messageId, userContent }) => {
+  handler: async (
+    ctx,
+    { messageId, userContent }
+  ): Promise<void> => {
     const google = createGoogleGenerativeAI({
       apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
     });

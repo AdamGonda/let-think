@@ -206,7 +206,10 @@ export const addMessages = mutation({
     assistantContent: v.string(),
     mentions: mentionValidator,
   },
-  handler: async (ctx, { sessionId, userContent, assistantContent, mentions }) => {
+  handler: async (
+    ctx,
+    { sessionId, userContent, assistantContent, mentions }
+  ): Promise<void> => {
     await requireSessionOwner(ctx, sessionId);
     const now = Date.now();
     const userMessageId = await ctx.db.insert("messages", {
@@ -315,7 +318,36 @@ export const internalLoadSessionForChatSend = internalQuery({
     sessionId: v.id("sessions"),
     userId: v.id("users"),
   },
-  handler: async (ctx, { sessionId, userId }) => {
+  handler: async (
+    ctx,
+    { sessionId, userId }
+  ): Promise<{
+    existingGraph: {
+      nodes: Array<{ id: string; name: string; description?: string }>;
+      edges: Array<{ source: string; target: string }>;
+      batches?: Array<{
+        id: string;
+        nodeIds: string[];
+        promptSummary?: string;
+        description?: string;
+      }>;
+    } | null;
+    messages: Array<{
+      _id: Id<"messages">;
+      _creationTime: number;
+      sessionId: Id<"sessions">;
+      role: "user" | "assistant" | "system";
+      content: string;
+      createdAt: number;
+      topic?: string;
+      mentions?: Array<{
+        start: number;
+        end: number;
+        conceptId: string;
+        name: string;
+      }>;
+    }>;
+  } | null> => {
     const session = await ctx.db.get(sessionId);
     if (!session || session.userId !== userId) return null;
     const row = await ctx.db
