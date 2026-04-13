@@ -203,7 +203,7 @@ export function AppContentBody({
       />
       <main
         className={clsx(
-          "flex flex-1 flex-col min-w-0",
+          "relative flex flex-1 flex-col min-w-0",
           (workModeSessionLoading || workModeNotesListDuringChatLoading) &&
             "rounded-md session-loading-inset-ring-pulse",
         )}
