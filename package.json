@@ -7,6 +7,7 @@
     "dev": "concurrently -n vite,convex -c blue,green \"vite\" \"npx convex dev\"",
     "dev:convex": "npx convex dev",
     "build": "tsc -b && vite build",
+    "typecheck:ci": "tsc -p tsconfig.ci.json --pretty false",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
