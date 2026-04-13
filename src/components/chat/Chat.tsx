@@ -74,7 +74,6 @@ export function Chat({
       rawContent,
       numberedConcepts,
     );
-    setInput("");
     if (restrictInteractions && remaining === 1) {
       startBreakOptimistically();
     }
@@ -101,11 +100,11 @@ export function Chat({
           await onInteractionComplete();
         }
       }
+      setInput("");
       setIsLoading(false);
       onModelResponded?.();
     } catch (err) {
       console.error("Chat error:", err);
-      setInput(rawContent);
       setIsLoading(false);
     }
   };

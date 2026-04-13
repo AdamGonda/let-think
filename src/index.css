@@ -196,6 +196,95 @@
   }
 }
 
+/* Focus / Work mode — pulse session-accent chrome while the model is loading */
+@keyframes session-accent-inset-ring-pulse {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 2px var(--session-accent);
+  }
+  50% {
+    box-shadow: inset 0 0 0 2px
+      color-mix(in srgb, var(--session-accent) 65%, transparent);
+  }
+}
+
+@keyframes session-accent-chat-chrome-pulse {
+  0%,
+  100% {
+    border-top-color: var(--session-accent);
+    border-left-color: var(--session-accent);
+    border-right-color: var(--session-accent);
+  }
+  50% {
+    border-top-color: color-mix(in srgb, var(--session-accent) 65%, transparent);
+    border-left-color: color-mix(in srgb, var(--session-accent) 65%, transparent);
+    border-right-color: color-mix(in srgb, var(--session-accent) 65%, transparent);
+  }
+}
+
+@keyframes session-accent-ref-glow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 2px var(--session-accent);
+  }
+  50% {
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--session-accent) 65%, transparent);
+  }
+}
+
+@keyframes session-accent-outline-pulse {
+  0%,
+  100% {
+    outline-color: var(--session-accent);
+  }
+  50% {
+    outline-color: color-mix(in srgb, var(--session-accent) 65%, transparent);
+  }
+}
+
+.session-loading-inset-ring-pulse {
+  animation: session-accent-inset-ring-pulse 6s ease-in-out infinite;
+}
+
+.session-loading-chat-chrome-pulse {
+  animation: session-accent-chat-chrome-pulse 6s ease-in-out infinite;
+}
+
+.session-accent-ref-glow-pulse {
+  animation: session-accent-ref-glow-pulse 6s ease-in-out infinite;
+}
+
+.session-accent-ref-outline-pulse {
+  animation: session-accent-outline-pulse 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .session-loading-inset-ring-pulse,
+  .session-loading-chat-chrome-pulse,
+  .session-accent-ref-glow-pulse,
+  .session-accent-ref-outline-pulse {
+    animation: none;
+  }
+
+  .session-loading-inset-ring-pulse {
+    box-shadow: inset 0 0 0 2px var(--session-accent);
+  }
+
+  .session-loading-chat-chrome-pulse {
+    border-top-color: var(--session-accent);
+    border-left-color: var(--session-accent);
+    border-right-color: var(--session-accent);
+  }
+
+  .session-accent-ref-glow-pulse {
+    box-shadow: 0 0 0 2px var(--session-accent);
+  }
+
+  .session-accent-ref-outline-pulse {
+    outline-color: var(--session-accent);
+  }
+}
+
 /* Wake up overlay – dissolve in / out */
 @keyframes wake-up-dissolve-in {
   from {

@@ -1,4 +1,5 @@
 import { useMemo, useCallback, type RefObject } from "react";
+import { clsx } from "clsx";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useSessionData } from "../contexts/SessionDataContext";
 import { useAppUiActor } from "../hooks/useAppUi";
@@ -189,11 +190,11 @@ export function AppContentBody({
         onRunTutorial={runTutorial}
       />
       <main
-        className={`flex flex-1 flex-col min-w-0${
-          workModeSessionLoading || workModeNotesListDuringChatLoading
-            ? " rounded-md ring-2 ring-(--session-accent) ring-inset"
-            : ""
-        }`}
+        className={clsx(
+          "flex flex-1 flex-col min-w-0",
+          (workModeSessionLoading || workModeNotesListDuringChatLoading) &&
+            "rounded-md session-loading-inset-ring-pulse",
+        )}
         data-tour="main-content"
         aria-busy={
           workModeSessionLoading || workModeNotesListDuringChatLoading

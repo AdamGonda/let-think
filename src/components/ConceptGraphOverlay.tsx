@@ -1,4 +1,5 @@
 import { useRef, useEffect, useLayoutEffect, useState, useMemo } from "react";
+import { clsx } from "clsx";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 
 type GraphNode = {
@@ -152,13 +153,13 @@ export function ConceptGraphOverlay({
           >
             <div
               key={selectedBatchIndex}
-              className={`grid min-h-full w-full grid-cols-1 gap-6 p-4 auto-rows-[minmax(200px,calc((100%-7.5rem)/6))] sm:grid-cols-2 sm:auto-rows-[minmax(200px,calc((100%-3rem)/3))] lg:grid-cols-3 lg:auto-rows-[minmax(200px,calc((100%-1.5rem)/2))] ${
-                showSwipeAnimation
-                  ? swipeDirection === "right"
+              className={clsx(
+                "grid min-h-full w-full grid-cols-1 gap-6 p-4 auto-rows-[minmax(200px,calc((100%-7.5rem)/6))] sm:grid-cols-2 sm:auto-rows-[minmax(200px,calc((100%-3rem)/3))] lg:grid-cols-3 lg:auto-rows-[minmax(200px,calc((100%-1.5rem)/2))]",
+                showSwipeAnimation &&
+                  (swipeDirection === "right"
                     ? "animate-batch-swipe-right"
-                    : "animate-batch-swipe-left"
-                  : ""
-              }`}
+                    : "animate-batch-swipe-left"),
+              )}
               onAnimationEnd={handleBatchAnimationEnd}
             >
               {currentBatchNodes.map(({ node, number }) => {
@@ -189,9 +190,11 @@ export function ConceptGraphOverlay({
                           }
                         : undefined
                     }
-                    className={`relative flex h-full min-h-[200px] flex-col transition-colors duration-200${
-                      onCardReferenceClick ? " cursor-pointer" : ""
-                    }`}
+                    className={clsx(
+                      "relative flex h-full min-h-[200px] flex-col transition-colors duration-200",
+                      onCardReferenceClick && "cursor-pointer",
+                      isReferenced && isLoading && "session-accent-ref-glow-pulse",
+                    )}
                     aria-label={
                       onCardReferenceClick
                         ? `Add or remove @${number} in message`
@@ -200,14 +203,20 @@ export function ConceptGraphOverlay({
                     onMouseEnter={() => setHoveredNode(node)}
                     onMouseLeave={() => setHoveredNode(null)}
                     style={{
-                      boxShadow: isReferenced
-                        ? "0 0 0 2px var(--session-accent)"
-                        : undefined,
+                      boxShadow:
+                        isReferenced && !isLoading
+                          ? "0 0 0 2px var(--session-accent)"
+                          : undefined,
                     }}
                   >
                     {showNumberBadge && (
                       <div
-                        className="absolute top-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-10"
+                        className={clsx(
+                          "absolute top-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-10",
+                          isReferenced &&
+                            isLoading &&
+                            "session-accent-ref-outline-pulse",
+                        )}
                         style={{
                           outline: isReferenced
                             ? "2px solid var(--session-accent)"
@@ -220,9 +229,12 @@ export function ConceptGraphOverlay({
                     )}
                     {/* Default: centered title only */}
                     <div
-                      className={`absolute inset-0 flex items-center justify-center px-6 py-4 transition-opacity duration-200 ${
-                        showDescription ? "opacity-0 pointer-events-none" : "opacity-100"
-                      }`}
+                      className={clsx(
+                        "absolute inset-0 flex items-center justify-center px-6 py-4 transition-opacity duration-200",
+                        showDescription
+                          ? "opacity-0 pointer-events-none"
+                          : "opacity-100",
+                      )}
                     >
                       <CardTitle className="text-xl sm:text-2xl font-semibold text-center">
                         {node.name}
@@ -231,11 +243,12 @@ export function ConceptGraphOverlay({
                     {/* Hover overlay: title at top, description below */}
                     {node.description && (
                       <div
-                        className={`absolute inset-0 flex flex-col p-6 overflow-hidden transition-all duration-200 ease-out ${
+                        className={clsx(
+                          "absolute inset-0 flex flex-col p-6 overflow-hidden transition-all duration-200 ease-out",
                           showDescription
                             ? "opacity-100 translate-y-0"
-                            : "opacity-0 pointer-events-none translate-y-2"
-                        }`}
+                            : "opacity-0 pointer-events-none translate-y-2",
+                        )}
                       >
                         <CardTitle className="text-lg sm:text-xl font-semibold shrink-0 text-left pr-10">
                           {node.name}
