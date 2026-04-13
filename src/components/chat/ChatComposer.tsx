@@ -31,6 +31,8 @@ type ChatComposerProps = {
   setInput: (value: string) => void;
   placeholder: string;
   numberedConcepts: NumberedConcept[];
+  /** When true, the field is read-only (e.g. viewing an earlier batch); user can still select/copy. */
+  readOnly?: boolean;
   isDisabled: boolean;
   isLoading: boolean;
   workModeLoadingFrame: boolean;
@@ -46,6 +48,7 @@ export function ChatComposer({
   setInput,
   placeholder,
   numberedConcepts,
+  readOnly = false,
   isDisabled,
   isLoading,
   workModeLoadingFrame,
@@ -83,6 +86,8 @@ export function ChatComposer({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (readOnly) return;
+
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       (e.target as HTMLTextAreaElement).form?.requestSubmit();
@@ -123,6 +128,8 @@ export function ChatComposer({
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    if (readOnly) return;
+
     const el = e.target;
     const v = el.value;
     const sel = el.selectionStart ?? v.length;
@@ -174,14 +181,23 @@ export function ChatComposer({
         )}
         <form
           className="flex flex-col gap-2"
-          onSubmit={onSubmit}
+          onSubmit={(e) => {
+            if (readOnly) {
+              e.preventDefault();
+              return;
+            }
+            onSubmit(e);
+          }}
           aria-busy={isLoading}
         >
           <div className="flex gap-2 items-end">
             <div className="flex-1 flex relative min-h-[48px] max-h-[240px] rounded-xl border border-input bg-background overflow-hidden">
               <div
                 ref={mirrorRef}
-                className="absolute inset-0 z-0 py-3 px-4 pr-10 overflow-y-auto pointer-events-none whitespace-pre-wrap break-words text-[0.95rem] leading-[1.5] text-zinc-950 dark:text-zinc-100"
+                className={clsx(
+                  "absolute inset-0 z-0 py-3 px-4 overflow-y-auto pointer-events-none whitespace-pre-wrap break-words text-[0.95rem] leading-[1.5] text-zinc-950 dark:text-zinc-100",
+                  readOnly ? "pr-4" : "pr-10",
+                )}
                 aria-hidden
               >
                 {input ? (
@@ -206,38 +222,49 @@ export function ChatComposer({
                 ref={textareaRef}
                 data-session-input-textarea
                 rows={1}
-                className="relative z-10 w-full min-h-[48px] max-h-[240px] py-3 px-4 pr-10 bg-transparent text-transparent caret-foreground font-inherit text-[0.95rem] leading-[1.5] placeholder:transparent focus:outline-none focus:ring-0 disabled:opacity-60 disabled:cursor-not-allowed resize-none overflow-y-auto"
+                readOnly={readOnly}
+                className={clsx(
+                  "relative z-10 w-full min-h-[48px] max-h-[240px] py-3 bg-transparent text-transparent caret-foreground font-inherit text-[0.95rem] leading-[1.5] placeholder:transparent focus:outline-none focus:ring-0 resize-none overflow-y-auto px-4",
+                  readOnly ? "pr-4" : "pr-10",
+                  readOnly
+                    ? "cursor-not-allowed"
+                    : "disabled:opacity-60 disabled:cursor-not-allowed",
+                )}
                 style={{ color: "transparent" }}
                 value={input}
                 onChange={handleChange}
                 onScroll={handleScroll}
                 onKeyDown={handleKeyDown}
                 placeholder={placeholder}
-                disabled={isDisabled}
+                disabled={!readOnly && isDisabled}
               />
-              <div
-                className="absolute right-3 top-1/2 -translate-y-1/2 z-20 pointer-events-none flex items-center"
-                title={isLoading ? "Generating response" : "Press Enter to send"}
-                aria-hidden={!isLoading}
-              >
-                {isLoading ? (
-                  <>
-                    <span className="sr-only">Generating response…</span>
-                    <Loader2
+              {(isLoading || !readOnly) && (
+                <div
+                  className="absolute right-3 top-1/2 -translate-y-1/2 z-20 pointer-events-none flex items-center"
+                  title={
+                    isLoading ? "Generating response" : "Press Enter to send"
+                  }
+                  aria-hidden={!isLoading}
+                >
+                  {isLoading ? (
+                    <>
+                      <span className="sr-only">Generating response…</span>
+                      <Loader2
+                        size={18}
+                        className="animate-spin text-(--session-accent)"
+                        strokeWidth={2}
+                        aria-hidden
+                      />
+                    </>
+                  ) : (
+                    <CornerDownLeft
                       size={18}
-                      className="animate-spin text-(--session-accent)"
+                      className="text-muted-foreground"
                       strokeWidth={2}
-                      aria-hidden
                     />
-                  </>
-                ) : (
-                  <CornerDownLeft
-                    size={18}
-                    className="text-muted-foreground"
-                    strokeWidth={2}
-                  />
-                )}
-              </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </form>

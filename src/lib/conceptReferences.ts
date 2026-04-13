@@ -163,9 +163,7 @@ export function ensureSpaceAfterValidAtReferences(
 export function referencedConceptIdsFromDraft(
   draftInput: string | undefined,
   numberedConcepts: NumberedConcept[],
-  isLatestBatch: boolean,
 ): Set<string> {
-  if (!isLatestBatch) return new Set<string>();
   const ids = new Set<string>();
   const conceptByNumber = conceptByNumberMap(numberedConcepts);
   const refRegex = new RegExp(AT_REFERENCE_PATTERN, "g");

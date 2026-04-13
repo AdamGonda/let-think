@@ -23,6 +23,8 @@ interface ChatProps {
   setDraftInput?: (value: string) => void;
   onModelResponded?: () => void;
   workModeLoadingFrame?: boolean;
+  /** When set, the composer shows this text read-only (stepper on an earlier batch). */
+  lockedUserInput?: string | null;
 }
 
 export function Chat({
@@ -35,11 +37,14 @@ export function Chat({
   setDraftInput,
   onModelResponded,
   workModeLoadingFrame = false,
+  lockedUserInput = null,
 }: ChatProps) {
   const [internalInput, setInternalInput] = useState("");
-  const input = draftInput !== undefined ? draftInput : internalInput;
+  const draft = draftInput !== undefined ? draftInput : internalInput;
   const setInput =
     setDraftInput !== undefined ? setDraftInput : setInternalInput;
+  const composerLocked = lockedUserInput != null;
+  const input = composerLocked ? lockedUserInput : draft;
   const sendMessage = useAction(api.chat.send);
   const recordInteraction = useMutation(api.interactionSessions.recordInteraction);
   const {
@@ -59,6 +64,7 @@ export function Chat({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (composerLocked) return;
     if (!input.trim()) return;
 
     let effectiveSessionId = sessionId;
@@ -113,22 +119,28 @@ export function Chat({
   const isDisabled = isLoading || !canSubmit;
 
   const placeholder =
-    breakRemainingFormatted
-      ? `Wake up in ${breakRemainingFormatted}`
-      : sessionId || onCreateSession
-        ? numberedConcepts.length > 0
-          ? "Type, @ ref concepts"
-          : "Type..."
-        : "Select a session to start";
+    composerLocked && !input.trim()
+      ? "No saved prompt for this step"
+      : breakRemainingFormatted
+        ? `Wake up in ${breakRemainingFormatted}`
+        : sessionId || onCreateSession
+          ? numberedConcepts.length > 0
+            ? "Type, @ ref concepts"
+            : "Type..."
+          : "Select a session to start";
 
   const showInteractionLine =
+    !composerLocked &&
     restrictInteractions &&
     sessionId &&
     breakRemainingMs === null &&
     (remaining != null || interactionCountsPending);
 
   const showUnlimitedInteractionLine =
-    !restrictInteractions && sessionId && breakRemainingMs === null;
+    !composerLocked &&
+    !restrictInteractions &&
+    sessionId &&
+    breakRemainingMs === null;
 
   return (
     <ChatComposer
@@ -136,6 +148,7 @@ export function Chat({
       setInput={setInput}
       placeholder={placeholder}
       numberedConcepts={numberedConcepts}
+      readOnly={composerLocked}
       isDisabled={isDisabled}
       isLoading={isLoading}
       workModeLoadingFrame={workModeLoadingFrame}

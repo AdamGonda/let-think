@@ -21,6 +21,7 @@ import {
   buildNumberedConceptsFromGraph,
   referencedConceptIdsFromDraft,
 } from "../lib/conceptReferences";
+import { userInputForBatch } from "../lib/batchUserInput";
 import { findSessionInWorkspace } from "../lib/workspaceQueries";
 import { CHAT_MESSAGES_PAGE_SIZE } from "@/config";
 import { WakeUpOverlay } from "./WakeUpOverlay";
@@ -127,20 +128,22 @@ export function AppContentBody({
   );
 
   const isLatestBatch =
-    batches.length > 0 && selectedBatchIndex === batches.length - 1;
-  const referencedConceptIds = useMemo(
-    () =>
-      referencedConceptIdsFromDraft(
-        draftInput,
-        numberedConcepts,
-        isLatestBatch,
-      ),
-    [draftInput, numberedConcepts, isLatestBatch],
+    batches.length === 0 || selectedBatchIndex === batches.length - 1;
+
+  const batchUserPrompt = useMemo(
+    () => userInputForBatch(batches, messages, selectedBatchIndex),
+    [batches, messages, selectedBatchIndex],
   );
 
-  const chatVisible =
-    viewMode === "graph" &&
-    (batches.length === 0 || selectedBatchIndex === batches.length - 1);
+  const referenceSourceText = isLatestBatch ? draftInput : batchUserPrompt;
+
+  const referencedConceptIds = useMemo(
+    () => referencedConceptIdsFromDraft(referenceSourceText, numberedConcepts),
+    [referenceSourceText, numberedConcepts],
+  );
+
+  /** Composer stays visible in graph mode even when the stepper is on an earlier batch. */
+  const chatComposerVisible = viewMode === "graph";
 
   return (
     <AppShell
@@ -223,16 +226,18 @@ export function AppContentBody({
               hasChatHistory={hasChatHistory}
               chatLoading={chatLoading}
               conceptGraph={conceptGraph}
-              chatVisible={chatVisible}
+              chatVisible={chatComposerVisible}
               referencedConceptIds={referencedConceptIds}
               onSelectBatch={(i) => setSelectedBatchIndex(actor, i)}
               onHistoryOpen={() => openHistoryPanel(actor)}
               onEditorOpen={() => openEditor(actor)}
-              onCardReferenceClick={handleCardReferenceClick}
+              onCardReferenceClick={
+                isLatestBatch ? handleCardReferenceClick : undefined
+              }
             />
           )}
         </div>
-        {chatVisible && (
+        {chatComposerVisible && (
           <Chat
             sessionId={activeSessionId}
             workModeLoadingFrame={workModeSessionLoading}
@@ -243,6 +248,9 @@ export function AppContentBody({
             draftInput={draftInput}
             setDraftInput={(v) => setDraftInput(actor, v)}
             onCreateSession={onCreateSessionForFirstMessage}
+            lockedUserInput={
+              !isLatestBatch && batches.length > 0 ? batchUserPrompt : null
+            }
           />
         )}
         {viewMode === "graph" && (

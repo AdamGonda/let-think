@@ -19,7 +19,7 @@ type AppContentGraphSurfaceProps = {
   onSelectBatch: (index: number) => void;
   onHistoryOpen: () => void;
   onEditorOpen: () => void;
-  onCardReferenceClick: (conceptNumber: number) => void;
+  onCardReferenceClick?: (conceptNumber: number) => void;
 };
 
 /**
@@ -68,9 +68,7 @@ export function AppContentGraphSurface({
           selectedBatchIndex={selectedBatchIndex}
           onSelectedBatchIndexChange={onSelectBatch}
           referencedConceptIds={referencedConceptIds}
-          onCardReferenceClick={
-            chatVisible ? onCardReferenceClick : undefined
-          }
+          onCardReferenceClick={chatVisible ? onCardReferenceClick : undefined}
         />
       </div>
     </>
