@@ -1,6 +1,7 @@
 import { useRef, useEffect, useLayoutEffect, useState, useMemo } from "react";
 import { clsx } from "clsx";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import { layout } from "@/config";
 
 type GraphNode = {
   id: string;
@@ -149,7 +150,10 @@ export function ConceptGraphOverlay({
         <>
           <div
             ref={graphViewportRef}
-            className="flex flex-1 p-1 min-h-0 min-w-0 overflow-auto relative py-4 items-start"
+            className={clsx(
+              "flex flex-1 p-1 min-h-0 min-w-0 overflow-auto relative items-start pt-4",
+              isLatestBatch ? "pb-4" : layout.graphViewportBottomPadNonLatestClass,
+            )}
           >
             <div
               key={selectedBatchIndex}

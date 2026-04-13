@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { clsx } from "clsx";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, X } from "lucide-react";
 import { layout } from "@/config";
 import { renderContentWithMentions } from "@/lib/chatHistoryRender";
 import type { HistoryMention } from "@/lib/chatHistoryMentionSegments";
@@ -13,7 +13,7 @@ type HistoricalBatchPromptProps = {
 
 /**
  * Read-only prompt for a non-latest graph batch: collapsed bar matches composer height.
- * Expanded content is absolutely positioned above the dock so it does not shrink the graph.
+ * Expanded state uses the same chrome but is fixed above the graph so cards stay full-size underneath.
  */
 export function HistoricalBatchPrompt({
   content,
@@ -23,75 +23,118 @@ export function HistoricalBatchPrompt({
   const [expanded, setExpanded] = useState(false);
   const trimmed = content.trim();
 
+  const chromeBorderClass = workModeLoadingFrame
+    ? "border-t-2 border-l-2 border-r-2 border-b-0 border-(--session-accent) session-loading-chat-chrome-pulse"
+    : "border border-b-0 border-border";
+
+  const chromeShellClass = clsx(
+    `w-full flex flex-col gap-3 rounded-t-2xl shadow-lg px-4 py-3 pb-4`,
+    layout.sessionInputChromeMinClass,
+    chromeBorderClass,
+  );
+
   return (
     <div
       className="flex flex-col items-center px-4 pt-4 shrink-0"
       data-tour="session-input"
     >
-      <div className={clsx("relative w-full", layout.mainColumnMaxWidthClass)}>
-        {expanded && trimmed ? (
+      <div className={clsx("w-full", layout.mainColumnMaxWidthClass)}>
+        {!trimmed ? (
           <div
-            className={clsx(
-              "absolute bottom-full left-0 right-0 mb-2 flex flex-col rounded-2xl border border-border bg-muted text-foreground shadow-xl",
-              layout.sessionInputExpandedOverlayZClass,
-              "max-h-[min(55vh,24rem)] overflow-y-auto px-4 py-3",
-            )}
-            role="dialog"
-            aria-label="User input"
+            className={clsx(chromeShellClass)}
+            style={{ backgroundColor: "#2B2B28" }}
           >
-            <p className="whitespace-pre-wrap break-words m-0 text-[0.95rem] leading-relaxed">
-              {renderContentWithMentions(trimmed, mentions)}
-            </p>
-          </div>
-        ) : null}
-
-        <div
-          className={clsx(
-            `w-full flex flex-col gap-3 rounded-t-2xl shadow-lg px-4 py-3 pb-4`,
-            layout.sessionInputChromeMinClass,
-            workModeLoadingFrame
-              ? "border-t-2 border-l-2 border-r-2 border-b-0 border-(--session-accent) session-loading-chat-chrome-pulse"
-              : "border border-b-0 border-border",
-          )}
-          style={{ backgroundColor: "#2B2B28" }}
-        >
-          {!trimmed ? (
             <p className="text-sm text-muted-foreground m-0 py-1 min-h-[48px] flex items-center">
               No saved prompt for this step.
             </p>
-          ) : (
+          </div>
+        ) : expanded ? (
+          <>
+            {/* Keeps graph height identical to collapsed dock; expanded UI is fixed on top. */}
+            <div className="invisible pointer-events-none w-full" aria-hidden>
+              <div
+                className={chromeShellClass}
+                style={{ backgroundColor: "#2B2B28" }}
+              >
+                <div className="flex min-h-[48px] w-full items-center rounded-xl border border-border/70 bg-background/60 px-3" />
+              </div>
+            </div>
+            <div
+              className={clsx(
+                "pointer-events-none fixed inset-x-0 bottom-0 flex justify-center px-4 pb-[max(0px,env(safe-area-inset-bottom))]",
+                layout.sessionInputExpandedOverlayZClass,
+              )}
+            >
+              <div
+                className={clsx(
+                  "pointer-events-auto w-full",
+                  layout.mainColumnMaxWidthClass,
+                )}
+              >
+                <div
+                  className={clsx(
+                    `w-full flex flex-col gap-3 rounded-t-2xl shadow-lg px-4 py-3 pb-4`,
+                    chromeBorderClass,
+                  )}
+                  style={{ backgroundColor: "#2B2B28" }}
+                  role="dialog"
+                  aria-label="User input"
+                >
+                  <div className="flex max-h-[min(55vh,24rem)] min-h-0 flex-col gap-2 overflow-hidden">
+                    <div className="flex shrink-0 items-center justify-between gap-2">
+                      <span className="text-sm font-medium text-foreground/90">
+                        see user input
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setExpanded(false)}
+                        className={clsx(
+                          "shrink-0 rounded-lg p-1.5 text-muted-foreground transition-colors",
+                          "hover:bg-background/50 hover:text-foreground",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                        )}
+                        aria-label="Close user input"
+                      >
+                        <X className="size-5" strokeWidth={2} aria-hidden />
+                      </button>
+                    </div>
+                    <div className="min-h-0 flex-1 overflow-y-auto pr-0.5">
+                      <p className="whitespace-pre-wrap break-words m-0 text-[0.95rem] leading-relaxed text-foreground">
+                        {renderContentWithMentions(trimmed, mentions)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div
+            className={clsx(chromeShellClass)}
+            style={{ backgroundColor: "#2B2B28" }}
+          >
             <button
               type="button"
-              onClick={() => setExpanded((v) => !v)}
+              onClick={() => setExpanded(true)}
               className={clsx(
                 "w-full flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/60 px-3",
                 "min-h-[48px] cursor-pointer transition-colors hover:bg-muted/40",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
               )}
-              aria-expanded={expanded}
+              aria-expanded={false}
             >
               <span className="text-sm font-medium text-foreground/90">
                 see user input
               </span>
-              {expanded ? (
-                <ChevronUp
-                  className="size-5 shrink-0 text-muted-foreground"
-                  strokeWidth={2}
-                  aria-hidden
-                />
-              ) : (
-                <ChevronDown
-                  className="size-5 shrink-0 text-muted-foreground"
-                  strokeWidth={2}
-                  aria-hidden
-                />
-              )}
-              <span className="sr-only">
-                {expanded ? "Hide user input" : "see user input"}
-              </span>
+              <ChevronDown
+                className="size-5 shrink-0 text-muted-foreground"
+                strokeWidth={2}
+                aria-hidden
+              />
+              <span className="sr-only">see user input</span>
             </button>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   );
