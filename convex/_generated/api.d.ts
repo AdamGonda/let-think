@@ -8,11 +8,16 @@
  * @module
  */
 
+import type * as auth from "../auth.js";
 import type * as chat from "../chat.js";
 import type * as chatPipeline from "../chatPipeline.js";
+import type * as constants from "../constants.js";
 import type * as http from "../http.js";
+import type * as interactionPolicy from "../interactionPolicy.js";
+import type * as interactionSessions from "../interactionSessions.js";
 import type * as projects from "../projects.js";
 import type * as sessions from "../sessions.js";
+import type * as users from "../users.js";
 
 import type {
   ApiFromModules,
@@ -21,11 +26,16 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  auth: typeof auth;
   chat: typeof chat;
   chatPipeline: typeof chatPipeline;
+  constants: typeof constants;
   http: typeof http;
+  interactionPolicy: typeof interactionPolicy;
+  interactionSessions: typeof interactionSessions;
   projects: typeof projects;
   sessions: typeof sessions;
+  users: typeof users;
 }>;
 
 /**

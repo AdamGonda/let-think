@@ -1,7 +1,8 @@
 "use node";
 
-import { action } from "./_generated/server";
-import { api } from "./_generated/api";
+import { action, internalAction } from "./_generated/server";
+import { api, internal } from "./_generated/api";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { generateText } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
@@ -11,24 +12,70 @@ import {
   extractConceptGraph,
   type ConceptGraph,
 } from "./chatPipeline";
+type ConceptNode = ConceptGraph["nodes"][number];
 import type { ModelMessage } from "ai";
+import {
+  BATCH_PROMPT_SUMMARY_MAX_CHARS,
+  PROMPT_SUMMARY_INPUT_MAX_CHARS,
+  PROMPT_SUMMARY_OUTPUT_MAX_CHARS,
+} from "./constants";
 
-/** Derive a one-word summary from user input for display between batches. */
-function summarizeToWord(text: string): string {
-  const stopWords = new Set([
-    "what", "how", "is", "are", "the", "a", "an", "to", "of", "in", "for",
-    "on", "with", "at", "by", "from", "why", "when", "where", "who", "which",
-  ]);
-  const words = text
-    .trim()
-    .toLowerCase()
-    .replace(/[^\w\s]/g, "")
-    .split(/\s+/)
-    .filter((w) => w.length > 2 && !stopWords.has(w));
-  const word = words[0] ?? text.trim().split(/\s+/)[0];
-  if (!word) return "—";
-  return word.charAt(0).toUpperCase() + word.slice(1);
+/** Generate a short topic/summary from user prompt via AI – fits in max 2 lines above history bubbles. */
+async function generatePromptSummary(
+  userContent: string,
+  model: ReturnType<typeof createGoogleGenerativeAI>
+): Promise<string> {
+  const trimmed = userContent.trim();
+  if (!trimmed) return "";
+  const prompt = `Summarize the following in one short phrase (max 8–12 words). Reply with only that phrase, nothing else.
+
+User prompt:
+${trimmed.slice(0, PROMPT_SUMMARY_INPUT_MAX_CHARS)}`;
+
+  const modelsToTry = ["gemini-3-flash-preview"];
+  for (const modelId of modelsToTry) {
+    try {
+      const { text } = await generateText({
+        model: model(modelId),
+        prompt,
+      });
+      const raw = text
+        .trim()
+        .replace(/\n+/g, " ")
+        .slice(0, PROMPT_SUMMARY_OUTPUT_MAX_CHARS);
+      const sentence = raw.replace(/^["'`]\s*|["'`]\s*$/g, "").trim();
+      if (sentence && sentence !== "—") {
+        return sentence.charAt(0).toUpperCase() + sentence.slice(1);
+      }
+    } catch (err) {
+      console.warn(`[generatePromptSummary] ${modelId} failed:`, err);
+    }
+  }
+  return "";
 }
+
+/** Runs when a user message is inserted – generates AI summary and patches the message. */
+export const generateTopicForMessage = internalAction({
+  args: {
+    messageId: v.id("messages"),
+    userContent: v.string(),
+  },
+  handler: async (
+    ctx,
+    { messageId, userContent }
+  ): Promise<void> => {
+    const google = createGoogleGenerativeAI({
+      apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+    });
+    const topic = await generatePromptSummary(userContent, google);
+    if (topic) {
+      await ctx.runMutation(internal.sessions.updateMessageTopic, {
+        messageId,
+        topic,
+      });
+    }
+  },
+});
 
 function toModelMessages(
   messages: Array<{ role: string; content?: string }>
@@ -50,12 +97,6 @@ function toModelMessages(
  */
 export const send = action({
   args: {
-    messages: v.array(
-      v.object({
-        role: v.string(),
-        content: v.optional(v.string()),
-      })
-    ),
     sessionId: v.id("sessions"),
     userContent: v.string(),
     selectedNodeContext: v.optional(
@@ -67,18 +108,39 @@ export const send = action({
         })
       )
     ),
+    mentions: v.optional(
+      v.array(
+        v.object({
+          start: v.number(),
+          end: v.number(),
+          conceptId: v.string(),
+          name: v.string(),
+        })
+      )
+    ),
   },
-  handler: async (ctx, { messages, sessionId, userContent, selectedNodeContext }) => {
+  handler: async (ctx, { sessionId, userContent, selectedNodeContext, mentions }): Promise<{ content: string; conceptGraph: ConceptGraph | null }> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Must be signed in");
+
+    const bundle = await ctx.runQuery(internal.sessions.internalLoadSessionForChatSend, {
+      sessionId,
+      userId,
+    });
+    if (!bundle) throw new Error("Session not found or access denied");
+
+    const { existingGraph: loadedGraph, messages: storedMessages } = bundle;
+    const existingGraph: ConceptGraph | null = loadedGraph;
+
     const google = createGoogleGenerativeAI({
       apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
     });
 
-    // 0. Fetch existing concept graph for this session
-    const existingGraph: ConceptGraph | null =
-      (await ctx.runQuery(api.sessions.getConceptGraph, { sessionId })) ?? null;
-
-    // 1. Convert and pre-process messages
-    let modelMessages = toModelMessages(messages);
+    // 0–1. Build model messages from DB + this user turn (avoids huge client payloads)
+    let modelMessages = toModelMessages([
+      ...storedMessages.map((m) => ({ role: m.role, content: m.content })),
+      { role: "user" as const, content: userContent },
+    ]);
     modelMessages = await preProcess(modelMessages, {
       sessionId,
       conceptGraph: existingGraph,
@@ -86,7 +148,7 @@ export const send = action({
       meta: {},
     });
 
-    // 2. Call LLM
+    // 2. Call LLM (main response); topic is generated separately when message is inserted
     const result = await generateText({
       model: google("gemini-3.1-pro-preview"),
       system: "You are a helpful assistant.",
@@ -102,20 +164,21 @@ export const send = action({
       meta: {},
     });
 
-    // 5. Persist messages and update graph
+    // 5. Persist messages (addMessages schedules topic generation on insert)
     await ctx.runMutation(api.sessions.addMessages, {
       sessionId,
       userContent,
       assistantContent: processedContent,
+      mentions,
     });
 
     let finalGraph: ConceptGraph | null = existingGraph;
     if (extractedGraph && extractedGraph.nodes.length > 0) {
-      const existingNodes = existingGraph?.nodes ?? [];
-      const existingNodeIds: Set<string> = new Set(existingNodes.map((n) => n.id));
+      const existingNodes: ConceptNode[] = existingGraph?.nodes ?? [];
+      const existingNodeIds: Set<string> = new Set(existingNodes.map((n: ConceptNode) => n.id));
       const newNodeIds: string[] = extractedGraph.nodes
-        .filter((n) => !existingNodeIds.has(n.id))
-        .map((n) => n.id);
+        .filter((n: ConceptNode) => !existingNodeIds.has(n.id))
+        .map((n: ConceptNode) => n.id);
       const existingBatches = existingGraph?.batches ?? [];
       const batches: Array<{
         id: string;
@@ -129,15 +192,19 @@ export const send = action({
               {
                 id: `batch-${Date.now()}`,
                 nodeIds: newNodeIds,
-                promptSummary: summarizeToWord(userContent),
+                promptSummary:
+                  userContent.slice(0, BATCH_PROMPT_SUMMARY_MAX_CHARS).trim() +
+                    (userContent.length > BATCH_PROMPT_SUMMARY_MAX_CHARS
+                      ? "…"
+                      : "") || undefined,
                 description: userContent.trim() || undefined,
               },
             ]
           : existingBatches;
       // Merge: keep existing nodes + add new ones (don't replace with extractedGraph!)
-      const mergedNodes = [
+      const mergedNodes: ConceptNode[] = [
         ...existingNodes,
-        ...extractedGraph.nodes.filter((n) => !existingNodeIds.has(n.id)),
+        ...extractedGraph.nodes.filter((n: ConceptNode) => !existingNodeIds.has(n.id)),
       ];
       const existingEdgeKeys = new Set(
         (existingGraph?.edges ?? []).map((e) => `${e.source}→${e.target}`)

@@ -1,12 +1,15 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const list = query({
   args: {},
   handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
     return ctx.db
       .query("projects")
-      .withIndex("by_created")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .order("desc")
       .collect();
   },
@@ -15,7 +18,10 @@ export const list = query({
 export const create = mutation({
   args: {},
   handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Must be signed in to create a project");
     const id = await ctx.db.insert("projects", {
+      userId,
       name: "New project",
       createdAt: Date.now(),
     });
@@ -29,6 +35,10 @@ export const updateName = mutation({
     name: v.string(),
   },
   handler: async (ctx, { id, name }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Must be signed in");
+    const project = await ctx.db.get(id);
+    if (!project || project.userId !== userId) throw new Error("Project not found or access denied");
     await ctx.db.patch(id, { name });
   },
 });
@@ -36,12 +46,17 @@ export const updateName = mutation({
 export const listWithSessions = query({
   args: {},
   handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
     const projects = await ctx.db
       .query("projects")
-      .withIndex("by_created")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
       .order("desc")
       .collect();
-    const allSessions = await ctx.db.query("sessions").collect();
+    const allSessions = await ctx.db
+      .query("sessions")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
     const inboxSessions = allSessions
       .filter((s) => s.projectId === undefined)
       .sort((a, b) => b.createdAt - a.createdAt);
@@ -77,6 +92,10 @@ export const listWithSessions = query({
 export const remove = mutation({
   args: { id: v.id("projects") },
   handler: async (ctx, { id }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Must be signed in");
+    const project = await ctx.db.get(id);
+    if (!project || project.userId !== userId) throw new Error("Project not found or access denied");
     const sessions = await ctx.db
       .query("sessions")
       .withIndex("by_project", (q) => q.eq("projectId", id))
@@ -88,6 +107,13 @@ export const remove = mutation({
         .collect();
       for (const msg of messages) {
         await ctx.db.delete(msg._id);
+      }
+      const graphRow = await ctx.db
+        .query("sessionConceptGraphs")
+        .withIndex("by_session", (q) => q.eq("sessionId", session._id))
+        .first();
+      if (graphRow) {
+        await ctx.db.delete(graphRow._id);
       }
       await ctx.db.delete(session._id);
     }
