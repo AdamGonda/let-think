@@ -32,6 +32,8 @@ interface ChatProps {
    * mention rendering instead of the composer.
    */
   lockedHistorical?: Pick<SessionMessage, "content" | "mentions"> | null;
+  /** Graph step index; used to reset historical prompt UI when navigating batches. */
+  selectedBatchIndex: number;
 }
 
 export function Chat({
@@ -45,6 +47,7 @@ export function Chat({
   onModelResponded,
   workModeLoadingFrame = false,
   lockedHistorical = null,
+  selectedBatchIndex,
 }: ChatProps) {
   const [internalInput, setInternalInput] = useState("");
   const draft = draftInput !== undefined ? draftInput : internalInput;
@@ -149,6 +152,7 @@ export function Chat({
   if (lockedHistorical) {
     return (
       <HistoricalBatchPrompt
+        key={`${sessionId ?? "none"}-${selectedBatchIndex}`}
         content={lockedHistorical.content}
         mentions={lockedHistorical.mentions}
         workModeLoadingFrame={workModeLoadingFrame}

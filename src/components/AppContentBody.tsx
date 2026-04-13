@@ -258,6 +258,7 @@ export function AppContentBody({
             setDraftInput={(v) => setDraftInput(actor, v)}
             onCreateSession={onCreateSessionForFirstMessage}
             lockedHistorical={lockedHistorical}
+            selectedBatchIndex={selectedBatchIndex}
           />
         )}
         {viewMode === "graph" && (
