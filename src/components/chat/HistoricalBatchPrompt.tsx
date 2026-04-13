@@ -37,7 +37,7 @@ export function HistoricalBatchPrompt({
               "max-h-[min(55vh,24rem)] overflow-y-auto px-4 py-3",
             )}
             role="dialog"
-            aria-label="Full prompt for this step"
+            aria-label="User input"
           >
             <p className="whitespace-pre-wrap break-words m-0 text-[0.95rem] leading-relaxed">
               {renderContentWithMentions(trimmed, mentions)}
@@ -65,13 +65,13 @@ export function HistoricalBatchPrompt({
               onClick={() => setExpanded((v) => !v)}
               className={clsx(
                 "w-full flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/60 px-3",
-                "min-h-[48px] transition-colors hover:bg-muted/40",
+                "min-h-[48px] cursor-pointer transition-colors hover:bg-muted/40",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
               )}
               aria-expanded={expanded}
             >
               <span className="text-sm font-medium text-foreground/90">
-                Prompt for this step
+                see user input
               </span>
               {expanded ? (
                 <ChevronUp
@@ -87,7 +87,7 @@ export function HistoricalBatchPrompt({
                 />
               )}
               <span className="sr-only">
-                {expanded ? "Hide prompt" : "Show prompt"}
+                {expanded ? "Hide user input" : "see user input"}
               </span>
             </button>
           )}
