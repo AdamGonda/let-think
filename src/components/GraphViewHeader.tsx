@@ -1,4 +1,4 @@
-import { FileText, History } from "lucide-react";
+import { Brain, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StepNavigator } from "@/components/StepNavigator";
 
@@ -69,7 +69,7 @@ export function GraphViewHeader({
           aria-label="Open file"
           data-tour="notes-btn"
         >
-          <FileText className="size-5" />
+          <Brain className="size-5" />
         </Button>
       </div>
     </header>

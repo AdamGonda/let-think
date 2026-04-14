@@ -20,6 +20,33 @@ import {
   PROMPT_SUMMARY_OUTPUT_MAX_CHARS,
 } from "./constants";
 
+function makeUniqueNodeId(candidate: string, usedIds: Set<string>): string {
+  const trimmed = candidate.trim() || "concept";
+  if (!usedIds.has(trimmed)) return trimmed;
+  let suffix = 2;
+  let next = `${trimmed}-${suffix}`;
+  while (usedIds.has(next)) {
+    suffix += 1;
+    next = `${trimmed}-${suffix}`;
+  }
+  return next;
+}
+
+function normalizeIncomingNodes(
+  incomingNodes: ConceptNode[],
+  existingNodes: ConceptNode[]
+): ConceptNode[] {
+  const usedIds = new Set(existingNodes.map((n) => n.id));
+  return incomingNodes.map((node) => {
+    const uniqueId = makeUniqueNodeId(node.id, usedIds);
+    usedIds.add(uniqueId);
+    return {
+      ...node,
+      id: uniqueId,
+    };
+  });
+}
+
 /** Generate a short topic/summary from user prompt via AI – fits in max 2 lines above history bubbles. */
 async function generatePromptSummary(
   userContent: string,
@@ -175,8 +202,12 @@ export const send = action({
     let finalGraph: ConceptGraph | null = existingGraph;
     if (extractedGraph && extractedGraph.nodes.length > 0) {
       const existingNodes: ConceptNode[] = existingGraph?.nodes ?? [];
+      const normalizedIncomingNodes = normalizeIncomingNodes(
+        extractedGraph.nodes,
+        existingNodes
+      );
       const existingNodeIds: Set<string> = new Set(existingNodes.map((n: ConceptNode) => n.id));
-      const newNodeIds: string[] = extractedGraph.nodes
+      const newNodeIds: string[] = normalizedIncomingNodes
         .filter((n: ConceptNode) => !existingNodeIds.has(n.id))
         .map((n: ConceptNode) => n.id);
       const existingBatches = existingGraph?.batches ?? [];
@@ -204,7 +235,7 @@ export const send = action({
       // Merge: keep existing nodes + add new ones (don't replace with extractedGraph!)
       const mergedNodes: ConceptNode[] = [
         ...existingNodes,
-        ...extractedGraph.nodes.filter((n: ConceptNode) => !existingNodeIds.has(n.id)),
+        ...normalizedIncomingNodes.filter((n: ConceptNode) => !existingNodeIds.has(n.id)),
       ];
       const existingEdgeKeys = new Set(
         (existingGraph?.edges ?? []).map((e) => `${e.source}→${e.target}`)
