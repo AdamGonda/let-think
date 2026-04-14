@@ -6,6 +6,7 @@ import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { NoteBreadcrumb } from "@/components/NoteBreadcrumb";
 import type { Id } from "../../convex/_generated/dataModel";
 import type { TopAppTarget } from "@/machines/appUiTypes";
+import { SpotifyPanel } from "@/components/spotify/SpotifyPanel";
 
 function SpotifyGlyph() {
   return (
@@ -67,13 +68,7 @@ export function WakeUpOverlay({
 }: WakeUpOverlayProps) {
   const renderTopTargetContent = () => {
     if (topAppTarget === "spotify") {
-      return (
-        <div className="flex-1 min-h-0 flex items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950/40 px-6 text-center">
-          <p className="text-zinc-300 text-lg">
-            Spotify content placeholder. Music-focused flow UI will live here.
-          </p>
-        </div>
-      );
+      return <SpotifyPanel active />;
     }
 
     if (topAppTarget === "game") {

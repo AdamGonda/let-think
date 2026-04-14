@@ -1,4 +1,5 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
+import { toast } from "sonner";
 import {
   useQuery,
   AuthLoading,
@@ -16,8 +17,23 @@ import { WorkPreferenceSync } from "./components/WorkPreferenceSync";
 import { AppUiSessionBridge } from "./bridge/AppUiSessionBridge";
 import { useSessionEditorSync } from "./hooks/useSessionEditorSync";
 import { useDefaultSessionSelection } from "./hooks/useDefaultSessionSelection";
+import {
+  parseSpotifyOAuthReturn,
+  stripSpotifyOAuthParams,
+} from "./lib/spotifyAuth";
 
 function App() {
+  useEffect(() => {
+    const { connected, error } = parseSpotifyOAuthReturn(window.location.search);
+    if (connected) {
+      toast.success("Spotify connected");
+      stripSpotifyOAuthParams();
+    } else if (error) {
+      toast.error(`Spotify: ${error}`);
+      stripSpotifyOAuthParams();
+    }
+  }, []);
+
   return (
     <>
       <AuthLoading>

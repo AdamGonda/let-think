@@ -17,6 +17,8 @@ import type * as interactionPolicy from "../interactionPolicy.js";
 import type * as interactionSessions from "../interactionSessions.js";
 import type * as projects from "../projects.js";
 import type * as sessions from "../sessions.js";
+import type * as spotify from "../spotify.js";
+import type * as spotifyActions from "../spotifyActions.js";
 import type * as users from "../users.js";
 
 import type {
@@ -35,6 +37,8 @@ declare const fullApi: ApiFromModules<{
   interactionSessions: typeof interactionSessions;
   projects: typeof projects;
   sessions: typeof sessions;
+  spotify: typeof spotify;
+  spotifyActions: typeof spotifyActions;
   users: typeof users;
 }>;
 
