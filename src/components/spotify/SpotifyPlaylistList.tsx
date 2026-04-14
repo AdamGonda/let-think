@@ -46,10 +46,10 @@ export function SpotifyPlaylistList({
             <button
               type="button"
               aria-current={p.uri === activePlaylistUri ? "true" : undefined}
-              className={`w-full cursor-pointer text-left rounded-lg px-3 py-2.5 text-sm transition-colors flex items-center gap-3 ${
+              className={`w-full cursor-pointer text-left rounded-lg px-3 py-2.5 text-sm transition-[color,background-color,border-color] flex items-center gap-3 border ${
                 p.uri === activePlaylistUri
-                  ? "bg-zinc-700/90 text-zinc-50 ring-1 ring-inset ring-zinc-500/60"
-                  : "text-zinc-200 hover:bg-zinc-800/80"
+                  ? "bg-zinc-700/90 text-zinc-50 ring-1 ring-inset ring-zinc-500/60 border-transparent"
+                  : "border-transparent text-zinc-200 hover:border-zinc-600/70"
               }`}
               onClick={() => onSelect(p)}
             >
