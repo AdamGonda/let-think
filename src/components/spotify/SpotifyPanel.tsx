@@ -1,10 +1,14 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useSpotifyController } from "@/hooks/useSpotifyController";
 import { SpotifyPlaylistList } from "./SpotifyPlaylistList";
 import { SpotifyTransport } from "./SpotifyTransport";
 import type { SpotifyPlaylistSummary } from "@/lib/spotifyClient";
+import {
+  consumeStoredSpotifyOAuthErrorMessage,
+  getSpotifyRuntimeErrorMessage,
+} from "@/lib/spotifyAuth";
 
 type SpotifyPanelProps = {
   /** When false, tear down the Web Playback SDK player to save resources. */
@@ -35,6 +39,11 @@ export function SpotifyPanel({ active }: SpotifyPanelProps) {
   } = useSpotifyController(active);
 
   const [actionLoading, setActionLoading] = useState(false);
+  const [oauthErrorMessage, setOauthErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    setOauthErrorMessage(consumeStoredSpotifyOAuthErrorMessage());
+  }, []);
 
   const onSelectPlaylist = useCallback(
     async (playlist: SpotifyPlaylistSummary) => {
@@ -43,8 +52,9 @@ export function SpotifyPanel({ active }: SpotifyPanelProps) {
         await playPlaylist(playlist.uri);
         toast.success(`Playing “${playlist.name}”`);
       } catch (e) {
+        const raw = e instanceof Error ? e.message : "Could not start playback";
         toast.error(
-          e instanceof Error ? e.message : "Could not start playback",
+          getSpotifyRuntimeErrorMessage(raw),
         );
       } finally {
         setActionLoading(false);
@@ -52,6 +62,34 @@ export function SpotifyPanel({ active }: SpotifyPanelProps) {
     },
     [playPlaylist],
   );
+
+  const onResetConnection = useCallback(async () => {
+    try {
+      const result = await disconnect();
+      if (!result.removedConnection && result.removedOauthStates === 0) {
+        toast.message("Spotify reset complete (nothing to clear).");
+        return;
+      }
+      toast.success(
+        `Spotify reset complete (${result.removedConnection ? "connection removed" : "no connection"}; ${result.removedOauthStates} OAuth state ${result.removedOauthStates === 1 ? "row" : "rows"} cleared).`,
+      );
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not reset Spotify");
+    }
+  }, [disconnect]);
+
+  const onDisconnect = useCallback(async () => {
+    try {
+      const result = await disconnect();
+      if (!result.removedConnection && result.removedOauthStates === 0) {
+        toast.message("Spotify already disconnected.");
+        return;
+      }
+      toast.success("Spotify disconnected.");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not disconnect Spotify");
+    }
+  }, [disconnect]);
 
   const transportDisabled =
     !deviceId ||
@@ -70,12 +108,26 @@ export function SpotifyPanel({ active }: SpotifyPanelProps) {
   if (!connected) {
     return (
       <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-4 rounded-xl border border-zinc-800 bg-zinc-950/40 px-6 text-center">
+        {oauthErrorMessage ? (
+          <p className="text-amber-300 text-sm max-w-md" role="alert">
+            {oauthErrorMessage}
+          </p>
+        ) : null}
         <p className="text-zinc-300 text-sm max-w-md">
           Connect your Spotify account to browse playlists and control playback
           in the browser (Spotify Premium required for Web Playback).
         </p>
         <Button type="button" onClick={() => void beginLogin()}>
           Connect Spotify
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="text-zinc-500"
+          onClick={() => void onResetConnection()}
+        >
+          Reset Spotify connection
         </Button>
       </div>
     );
@@ -127,7 +179,7 @@ export function SpotifyPanel({ active }: SpotifyPanelProps) {
           variant="ghost"
           size="sm"
           className="text-zinc-500"
-          onClick={() => void disconnect()}
+          onClick={() => void onDisconnect()}
         >
           Disconnect Spotify
         </Button>

@@ -18,7 +18,10 @@ import { AppUiSessionBridge } from "./bridge/AppUiSessionBridge";
 import { useSessionEditorSync } from "./hooks/useSessionEditorSync";
 import { useDefaultSessionSelection } from "./hooks/useDefaultSessionSelection";
 import {
+  clearStoredSpotifyOAuthError,
+  getSpotifyOAuthErrorMessage,
   parseSpotifyOAuthReturn,
+  storeSpotifyOAuthError,
   stripSpotifyOAuthParams,
 } from "./lib/spotifyAuth";
 
@@ -26,10 +29,12 @@ function App() {
   useEffect(() => {
     const { connected, error } = parseSpotifyOAuthReturn(window.location.search);
     if (connected) {
+      clearStoredSpotifyOAuthError();
       toast.success("Spotify connected");
       stripSpotifyOAuthParams();
     } else if (error) {
-      toast.error(`Spotify: ${error}`);
+      storeSpotifyOAuthError(error);
+      toast.error(getSpotifyOAuthErrorMessage(error));
       stripSpotifyOAuthParams();
     }
   }, []);

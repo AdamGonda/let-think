@@ -6,6 +6,7 @@ import {
   query,
 } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { internal } from "./_generated/api";
 
 export const getOauthStateByState = internalQuery({
   args: { state: v.string() },
@@ -33,6 +34,21 @@ export const deleteOauthState = internalMutation({
   args: { id: v.id("spotifyOauthStates") },
   handler: async (ctx, { id }) => {
     await ctx.db.delete(id);
+  },
+});
+
+export const deleteOauthStatesForUser = internalMutation({
+  args: { userId: v.id("users") },
+  returns: v.number(),
+  handler: async (ctx, { userId }) => {
+    const rows = await ctx.db
+      .query("spotifyOauthStates")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+    for (const row of rows) {
+      await ctx.db.delete(row._id);
+    }
+    return rows.length;
   },
 });
 
@@ -140,7 +156,11 @@ export const getConnectionStatus = query({
 
 export const disconnect = mutation({
   args: {},
-  returns: v.object({ ok: v.literal(true) }),
+  returns: v.object({
+    ok: v.literal(true),
+    removedConnection: v.boolean(),
+    removedOauthStates: v.number(),
+  }),
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) {
@@ -150,9 +170,18 @@ export const disconnect = mutation({
       .query("spotifyConnections")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .unique();
+    const removedConnection = Boolean(existing);
     if (existing) {
       await ctx.db.delete(existing._id);
     }
-    return { ok: true as const };
+    const removedOauthStates = await ctx.runMutation(
+      internal.spotify.deleteOauthStatesForUser,
+      { userId },
+    );
+    return {
+      ok: true as const,
+      removedConnection,
+      removedOauthStates,
+    };
   },
 });

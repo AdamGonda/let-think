@@ -6,6 +6,7 @@ import type {
   SpotifyPlaylistSummary,
   SpotifyWebPlayer,
 } from "@/lib/spotifyClient";
+import { getSpotifyRuntimeErrorMessage } from "@/lib/spotifyAuth";
 
 const SPOTIFY_SDK_SCRIPT = "https://sdk.scdn.co/spotify-player.js";
 
@@ -74,7 +75,7 @@ export function useSpotifyController(enabled: boolean) {
     playerRef.current = null;
     setDeviceId(null);
     setPlayerState(null);
-    await disconnectMutation();
+    return await disconnectMutation();
   }, [disconnectMutation]);
 
   const refreshPlaylists = useCallback(async () => {
@@ -85,8 +86,9 @@ export function useSpotifyController(enabled: boolean) {
       const { playlists: list } = await listPlaylistsAction();
       setPlaylists(list);
     } catch (e) {
+      const raw = e instanceof Error ? e.message : "Failed to load playlists";
       setPlaylistsError(
-        e instanceof Error ? e.message : "Failed to load playlists",
+        getSpotifyRuntimeErrorMessage(raw),
       );
     } finally {
       setPlaylistsLoading(false);
@@ -136,13 +138,19 @@ export function useSpotifyController(enabled: boolean) {
           }
         });
         player.addListener("initialization_error", (ev: unknown) => {
-          setSdkError((ev as { message: string }).message);
+          setSdkError(
+            getSpotifyRuntimeErrorMessage((ev as { message: string }).message),
+          );
         });
         player.addListener("authentication_error", (ev: unknown) => {
-          setSdkError((ev as { message: string }).message);
+          setSdkError(
+            getSpotifyRuntimeErrorMessage((ev as { message: string }).message),
+          );
         });
         player.addListener("account_error", (ev: unknown) => {
-          setSdkError((ev as { message: string }).message);
+          setSdkError(
+            getSpotifyRuntimeErrorMessage((ev as { message: string }).message),
+          );
         });
         player.addListener("player_state_changed", (state: unknown) => {
           setPlayerState(state as SpotifyPlaybackState);
@@ -156,7 +164,9 @@ export function useSpotifyController(enabled: boolean) {
       } catch (e) {
         if (!cancelled) {
           setSdkError(
-            e instanceof Error ? e.message : "Spotify player failed to start",
+            getSpotifyRuntimeErrorMessage(
+              e instanceof Error ? e.message : "Spotify player failed to start",
+            ),
           );
         }
       } finally {

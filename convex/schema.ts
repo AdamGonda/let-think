@@ -124,5 +124,5 @@ export default defineSchema({
     codeVerifier: v.string(),
     userId: v.id("users"),
     expiresAt: v.number(),
-  }).index("by_state", ["state"]),
+  }).index("by_state", ["state"]).index("by_user", ["userId"]),
 });

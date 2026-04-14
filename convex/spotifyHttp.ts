@@ -1,8 +1,13 @@
-"use node";
-
-import { Buffer } from "node:buffer";
 import { httpAction } from "./_generated/server";
 import { internal } from "./_generated/api";
+
+function parseJsonSafe(text: string): Record<string, unknown> | null {
+  try {
+    return JSON.parse(text) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+}
 
 function frontendOrigin(): string {
   return (
@@ -65,8 +70,7 @@ export const spotifyOAuthCallback = httpAction(async (ctx, request) => {
   };
   if (clientSecret) {
     headers.Authorization =
-      "Basic " +
-      Buffer.from(`${clientId}:${clientSecret}`, "utf8").toString("base64");
+      "Basic " + btoa(`${clientId}:${clientSecret}`);
   }
 
   const tokenRes = await fetch("https://accounts.spotify.com/api/token", {
@@ -74,11 +78,18 @@ export const spotifyOAuthCallback = httpAction(async (ctx, request) => {
     headers,
     body,
   });
-  const tokenJson = (await tokenRes.json()) as Record<string, unknown>;
+  const tokenText = await tokenRes.text();
+  const tokenJson = parseJsonSafe(tokenText);
   if (!tokenRes.ok) {
     await ctx.runMutation(internal.spotify.deleteOauthState, { id: row._id });
     return redirectWithError(
-      `token_exchange_failed:${tokenRes.status}:${JSON.stringify(tokenJson)}`,
+      `token_exchange_failed:${tokenRes.status}:${tokenText.slice(0, 200)}`,
+    );
+  }
+  if (!tokenJson) {
+    await ctx.runMutation(internal.spotify.deleteOauthState, { id: row._id });
+    return redirectWithError(
+      `token_exchange_invalid_json:${tokenRes.status}:${tokenText.slice(0, 200)}`,
     );
   }
 
@@ -94,13 +105,18 @@ export const spotifyOAuthCallback = httpAction(async (ctx, request) => {
   const meRes = await fetch("https://api.spotify.com/v1/me", {
     headers: { Authorization: `Bearer ${accessToken}` },
   });
-  const meJson = (await meRes.json()) as {
-    id?: string;
-    display_name?: string;
-  };
-  if (!meRes.ok || !meJson.id) {
+  const meText = await meRes.text();
+  const meJson = parseJsonSafe(meText) as
+    | {
+        id?: string;
+        display_name?: string;
+      }
+    | null;
+  if (!meRes.ok || !meJson?.id) {
     await ctx.runMutation(internal.spotify.deleteOauthState, { id: row._id });
-    return redirectWithError("spotify_me_failed");
+    return redirectWithError(
+      `spotify_me_failed:${meRes.status}:${meText.slice(0, 200)}`,
+    );
   }
 
   const accessTokenExpiresAt = Date.now() + expiresIn * 1000;
