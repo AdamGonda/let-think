@@ -247,6 +247,11 @@ const playbackArgs = v.union(
     command: v.literal("previous"),
     deviceId: v.string(),
   }),
+  v.object({
+    command: v.literal("seek"),
+    deviceId: v.string(),
+    positionMs: v.number(),
+  }),
 );
 
 export const playback = action({
@@ -321,6 +326,23 @@ export const playback = action({
       if (res.status !== 204 && res.status !== 202) {
         const t = await res.text();
         throw new Error(`Spotify next failed: ${res.status} ${t}`);
+      }
+      return { ok: true as const };
+    }
+
+    if (input.command === "seek") {
+      const ms = Math.max(0, Math.floor(input.positionMs));
+      const seekQ = `${deviceQ}&position_ms=${encodeURIComponent(String(ms))}`;
+      const res = await fetch(
+        `https://api.spotify.com/v1/me/player/seek${seekQ}`,
+        {
+          method: "PUT",
+          headers: { Authorization: `Bearer ${token}` },
+        },
+      );
+      if (res.status !== 204 && res.status !== 202) {
+        const t = await res.text();
+        throw new Error(`Spotify seek failed: ${res.status} ${t}`);
       }
       return { ok: true as const };
     }

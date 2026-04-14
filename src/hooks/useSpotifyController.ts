@@ -221,6 +221,25 @@ export function useSpotifyController(enabled: boolean) {
     await playbackAction({ input: { command: "previous", deviceId } });
   }, [deviceId, playbackAction]);
 
+  const seek = useCallback(
+    async (positionMs: number) => {
+      if (!deviceId) return;
+      await playbackAction({
+        input: {
+          command: "seek",
+          deviceId,
+          positionMs: Math.max(0, Math.floor(positionMs)),
+        },
+      });
+      const player = playerRef.current;
+      if (player) {
+        const s = await player.getCurrentState();
+        if (s) setPlayerState(s);
+      }
+    },
+    [deviceId, playbackAction],
+  );
+
   const isPlaying = playerState ? !playerState.paused : false;
   const currentTrackName =
     playerState?.track_window?.current_track?.name ?? null;
@@ -229,6 +248,28 @@ export function useSpotifyController(enabled: boolean) {
       ?.map((a) => a.name)
       .filter(Boolean)
       .join(", ") ?? null;
+
+  const currentTrack =
+    playerState?.track_window?.current_track ?? undefined;
+  const durationMs =
+    playerState?.duration ??
+    currentTrack?.duration_ms ??
+    null;
+  const positionMs = playerState?.position ?? null;
+
+  /** While playing, `player_state_changed` can be sparse; poll for a smooth playhead. */
+  useEffect(() => {
+    const player = playerRef.current;
+    if (!player || !isPlaying) return;
+    const tick = () => {
+      void player.getCurrentState().then((s) => {
+        if (s) setPlayerState(s);
+      });
+    };
+    tick();
+    const id = window.setInterval(tick, 400);
+    return () => clearInterval(id);
+  }, [isPlaying]);
 
   return {
     connection,
@@ -250,5 +291,8 @@ export function useSpotifyController(enabled: boolean) {
     isPlaying,
     currentTrackName,
     currentArtistName,
+    positionMs,
+    durationMs,
+    seek,
   };
 }

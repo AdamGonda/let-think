@@ -36,6 +36,9 @@ export function SpotifyPanel({ active }: SpotifyPanelProps) {
     isPlaying,
     currentTrackName,
     currentArtistName,
+    positionMs,
+    durationMs,
+    seek,
   } = useSpotifyController(active);
 
   const [actionLoading, setActionLoading] = useState(false);
@@ -159,10 +162,13 @@ export function SpotifyPanel({ active }: SpotifyPanelProps) {
         isPlaying={isPlaying}
         trackName={currentTrackName}
         artistName={currentArtistName}
+        positionMs={positionMs}
+        durationMs={durationMs}
         onPause={() => void pause()}
         onResume={() => void resume()}
         onPrevious={() => void previous()}
         onNext={() => void next()}
+        onSeek={(ms) => void seek(ms)}
       />
 
       <SpotifyPlaylistList

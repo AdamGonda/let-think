@@ -19,7 +19,8 @@ export type SpotifyPlaybackInput =
   | { command: "pause"; deviceId: string }
   | { command: "resume"; deviceId: string }
   | { command: "next"; deviceId: string }
-  | { command: "previous"; deviceId: string };
+  | { command: "previous"; deviceId: string }
+  | { command: "seek"; deviceId: string; positionMs: number };
 
 /** Minimal shape for `Spotify.Player` instance we use. */
 export type SpotifyWebPlayer = {
