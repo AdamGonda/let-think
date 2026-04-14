@@ -66,45 +66,6 @@ export function WakeUpOverlay({
   topAppTarget,
   onTopAppTargetChange,
 }: WakeUpOverlayProps) {
-  const renderTopTargetContent = () => {
-    if (topAppTarget === "spotify") {
-      return <SpotifyPanel active />;
-    }
-
-    if (topAppTarget === "game") {
-      return (
-        <div className="flex-1 min-h-0 flex items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950/40 px-6 text-center">
-          <p className="text-zinc-300 text-lg">
-            Game content placeholder. Game-related flow UI will live here.
-          </p>
-        </div>
-      );
-    }
-
-    return (
-      <>
-        {editorOpen && activeSessionInWorkspace && viewMode === "notesList" ? (
-          <NoteBreadcrumb
-            projectName={activeSessionInWorkspace.projectName}
-            sessionName={activeSessionInWorkspace.session.title}
-            onProjectClick={onBreadcrumbProjectClick}
-            onSessionClick={onBreadcrumbSessionClick}
-            onFileClick={onBreadcrumbFileClick}
-          />
-        ) : null}
-        <MarkdownEditor
-          value={notes}
-          onChange={(v) => onNotesChange(v ?? "")}
-          placeholder="Take notes…"
-          variant="focused"
-          dark={true}
-          autoFocus
-          autoFocusEnd
-        />
-      </>
-    );
-  };
-
   return (
     <div
       className={`fixed inset-0 ${layout.wakeUpOverlayZIndexClass} flex h-screen w-screen flex-col bg-background ${
@@ -178,7 +139,40 @@ export function WakeUpOverlay({
                 editorRevealReady ? "opacity-100" : "opacity-0"
               }`}
             >
-              {renderTopTargetContent()}
+              <div className={topAppTarget === "spotify" ? "flex-1 min-h-0 flex" : "hidden"}>
+                <SpotifyPanel />
+              </div>
+
+              {topAppTarget === "game" ? (
+                <div className="flex-1 min-h-0 flex items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950/40 px-6 text-center">
+                  <p className="text-zinc-300 text-lg">
+                    Game content placeholder. Game-related flow UI will live here.
+                  </p>
+                </div>
+              ) : null}
+
+              {topAppTarget === "file" ? (
+                <>
+                  {editorOpen && activeSessionInWorkspace && viewMode === "notesList" ? (
+                    <NoteBreadcrumb
+                      projectName={activeSessionInWorkspace.projectName}
+                      sessionName={activeSessionInWorkspace.session.title}
+                      onProjectClick={onBreadcrumbProjectClick}
+                      onSessionClick={onBreadcrumbSessionClick}
+                      onFileClick={onBreadcrumbFileClick}
+                    />
+                  ) : null}
+                  <MarkdownEditor
+                    value={notes}
+                    onChange={(v) => onNotesChange(v ?? "")}
+                    placeholder="Take notes…"
+                    variant="focused"
+                    dark={true}
+                    autoFocus
+                    autoFocusEnd
+                  />
+                </>
+              ) : null}
             </div>
           </div>
         )}

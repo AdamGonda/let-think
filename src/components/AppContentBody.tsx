@@ -24,6 +24,7 @@ import {
 import { userInputForBatch, userMessageForBatch } from "../lib/batchUserInput";
 import { findSessionInWorkspace } from "../lib/workspaceQueries";
 import { CHAT_MESSAGES_PAGE_SIZE } from "@/config";
+import { SpotifyPlayerProvider } from "@/contexts/SpotifyPlayerContext";
 import { WakeUpOverlay } from "./WakeUpOverlay";
 import { RestSessionWalkthrough } from "./RestSessionWalkthrough";
 import { AppShell } from "./AppShell";
@@ -157,134 +158,136 @@ export function AppContentBody({
   }, [isLatestBatch, batches, messages, selectedBatchIndex, batchUserPrompt]);
 
   return (
-    <AppShell
-      wakeUpOverlay={
-        displayWakeUpLayer ? (
-          <WakeUpOverlay
-            chatLoading={chatLoading}
-            isExitingOverlay={isExitingOverlay}
-            breakRemainingMs={breakRemainingMs}
-            editorOpen={editorOpen}
-            showOverlaySigma={showOverlaySigma}
-            workSigmaEditorFromSession={workSigmaEditorFromSession}
-            onSigmaClick={handleWakeUpSigmaClick}
-            editorRevealReady={editorRevealReady}
-            activeSessionId={activeSessionId}
-            activeSessionInWorkspace={activeSessionInWorkspace}
-            viewMode={viewMode}
-            notes={notes}
-            onNotesChange={(v) => setWakeNotes(actor, v)}
-            onBreadcrumbProjectClick={handleBreadcrumbProjectClick}
-            onBreadcrumbSessionClick={handleBreadcrumbSessionClick}
-            onBreadcrumbFileClick={handleBreadcrumbFileClick}
-            topAppTarget={topAppTarget}
-            onTopAppTargetChange={(target) => setTopAppTarget(actor, target)}
-          />
-        ) : null
-      }
-      restSessionWalkthrough={
-        showRestSessionWalkthrough ? (
-          <RestSessionWalkthrough
-            key={activeSessionId ?? undefined}
-            onComplete={handleRestWalkthroughComplete}
-          />
-        ) : null
-      }
-      tutorial={<Tutorial autoStart={!getTutorialCompleted()} />}
-      mainInert={!!displayWakeUpLayer || showRestSessionWalkthrough}
-      toaster={<Toaster theme="dark" />}
-    >
-      <SessionSidebar
-        ref={sessionSidebarRef}
-        workspace={workspace}
-        activeSessionId={activeSessionId}
-        activeProjectId={activeProjectId}
-        onSelectSession={onSelectSessionFromSidebar}
-        onSelectProject={onSelectProjectFromSidebar}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        onRunTutorial={runTutorial}
-      />
-      <main
-        className={clsx(
-          "relative flex flex-1 flex-col min-w-0",
-          (workModeSessionLoading || workModeNotesListDuringChatLoading) &&
-            "rounded-md session-loading-inset-ring-pulse",
-        )}
-        data-tour="main-content"
-        aria-busy={
-          workModeSessionLoading || workModeNotesListDuringChatLoading
-            ? true
-            : undefined
-        }
-      >
-        <div
-          ref={mainContentRef}
-          className="relative flex flex-1 min-h-0 flex-col"
-        >
-          {viewMode === "notesList" ? (
-            <NotesListPanel
-              workspace={workspace}
-              drill={notesListDrill}
-              onDrillChange={(drill) => setNotesListDrill(actor, drill)}
-              onSelectSession={onSelectSessionFromNotesList}
-            />
-          ) : (
-            <AppContentGraphSurface
-              sessionSidebarRef={sessionSidebarRef}
-              activeSessionId={activeSessionId}
-              activeSessionTitle={activeSessionInWorkspace?.session.title}
-              batchesLength={batches.length}
-              selectedBatchIndex={selectedBatchIndex}
-              hasChatHistory={hasChatHistory}
+    <SpotifyPlayerProvider>
+      <AppShell
+        wakeUpOverlay={
+          displayWakeUpLayer ? (
+            <WakeUpOverlay
               chatLoading={chatLoading}
-              conceptGraph={conceptGraph}
-              chatVisible={chatComposerVisible}
-              referencedConceptIds={referencedConceptIds}
-              onSelectBatch={(i) => setSelectedBatchIndex(actor, i)}
-              onHistoryOpen={() => openHistoryPanel(actor)}
-              onEditorOpen={() => openEditor(actor)}
-              onCardReferenceClick={
-                isLatestBatch ? handleCardReferenceClick : undefined
-              }
+              isExitingOverlay={isExitingOverlay}
+              breakRemainingMs={breakRemainingMs}
+              editorOpen={editorOpen}
+              showOverlaySigma={showOverlaySigma}
+              workSigmaEditorFromSession={workSigmaEditorFromSession}
+              onSigmaClick={handleWakeUpSigmaClick}
+              editorRevealReady={editorRevealReady}
+              activeSessionId={activeSessionId}
+              activeSessionInWorkspace={activeSessionInWorkspace}
+              viewMode={viewMode}
+              notes={notes}
+              onNotesChange={(v) => setWakeNotes(actor, v)}
+              onBreadcrumbProjectClick={handleBreadcrumbProjectClick}
+              onBreadcrumbSessionClick={handleBreadcrumbSessionClick}
+              onBreadcrumbFileClick={handleBreadcrumbFileClick}
+              topAppTarget={topAppTarget}
+              onTopAppTargetChange={(target) => setTopAppTarget(actor, target)}
+            />
+          ) : null
+        }
+        restSessionWalkthrough={
+          showRestSessionWalkthrough ? (
+            <RestSessionWalkthrough
+              key={activeSessionId ?? undefined}
+              onComplete={handleRestWalkthroughComplete}
+            />
+          ) : null
+        }
+        tutorial={<Tutorial autoStart={!getTutorialCompleted()} />}
+        mainInert={!!displayWakeUpLayer || showRestSessionWalkthrough}
+        toaster={<Toaster theme="dark" />}
+      >
+        <SessionSidebar
+          ref={sessionSidebarRef}
+          workspace={workspace}
+          activeSessionId={activeSessionId}
+          activeProjectId={activeProjectId}
+          onSelectSession={onSelectSessionFromSidebar}
+          onSelectProject={onSelectProjectFromSidebar}
+          viewMode={viewMode}
+          onViewModeChange={setViewMode}
+          onRunTutorial={runTutorial}
+        />
+        <main
+          className={clsx(
+            "relative flex flex-1 flex-col min-w-0",
+            (workModeSessionLoading || workModeNotesListDuringChatLoading) &&
+              "rounded-md session-loading-inset-ring-pulse",
+          )}
+          data-tour="main-content"
+          aria-busy={
+            workModeSessionLoading || workModeNotesListDuringChatLoading
+              ? true
+              : undefined
+          }
+        >
+          <div
+            ref={mainContentRef}
+            className="relative flex flex-1 min-h-0 flex-col"
+          >
+            {viewMode === "notesList" ? (
+              <NotesListPanel
+                workspace={workspace}
+                drill={notesListDrill}
+                onDrillChange={(drill) => setNotesListDrill(actor, drill)}
+                onSelectSession={onSelectSessionFromNotesList}
+              />
+            ) : (
+              <AppContentGraphSurface
+                sessionSidebarRef={sessionSidebarRef}
+                activeSessionId={activeSessionId}
+                activeSessionTitle={activeSessionInWorkspace?.session.title}
+                batchesLength={batches.length}
+                selectedBatchIndex={selectedBatchIndex}
+                hasChatHistory={hasChatHistory}
+                chatLoading={chatLoading}
+                conceptGraph={conceptGraph}
+                chatVisible={chatComposerVisible}
+                referencedConceptIds={referencedConceptIds}
+                onSelectBatch={(i) => setSelectedBatchIndex(actor, i)}
+                onHistoryOpen={() => openHistoryPanel(actor)}
+                onEditorOpen={() => openEditor(actor)}
+                onCardReferenceClick={
+                  isLatestBatch ? handleCardReferenceClick : undefined
+                }
+              />
+            )}
+          </div>
+          {chatComposerVisible && (
+            <Chat
+              sessionId={activeSessionId}
+              workModeLoadingFrame={workModeSessionLoading}
+              isLoading={chatLoading}
+              setIsLoading={(loading) => setChatLoading(actor, loading)}
+              onModelResponded={() => notifyModelFinished(actor)}
+              numberedConcepts={numberedConcepts}
+              draftInput={draftInput}
+              setDraftInput={(v) => setDraftInput(actor, v)}
+              onCreateSession={onCreateSessionForFirstMessage}
+              lockedHistorical={lockedHistorical}
+              selectedBatchIndex={selectedBatchIndex}
             />
           )}
-        </div>
-        {chatComposerVisible && (
-          <Chat
-            sessionId={activeSessionId}
-            workModeLoadingFrame={workModeSessionLoading}
-            isLoading={chatLoading}
-            setIsLoading={(loading) => setChatLoading(actor, loading)}
-            onModelResponded={() => notifyModelFinished(actor)}
-            numberedConcepts={numberedConcepts}
-            draftInput={draftInput}
-            setDraftInput={(v) => setDraftInput(actor, v)}
-            onCreateSession={onCreateSessionForFirstMessage}
-            lockedHistorical={lockedHistorical}
-            selectedBatchIndex={selectedBatchIndex}
-          />
-        )}
-        {viewMode === "graph" && (
-          <ChatHistoryPanel
-            isOpen={historyPanelOpen}
-            onClose={() => closeHistoryPanel(actor)}
-            messages={messages ?? []}
-            onLoadOlderMessages={
-              canLoadOlderMessages
-                ? () => loadOlderMessages(CHAT_MESSAGES_PAGE_SIZE)
-                : undefined
-            }
-            canLoadOlderMessages={canLoadOlderMessages}
-            batches={batches}
-            selectedBatchIndex={selectedBatchIndex}
-            onNavigateToStep={(batchIndex: number) => {
-              setSelectedBatchIndex(actor, batchIndex);
-              closeHistoryPanel(actor);
-            }}
-          />
-        )}
-      </main>
-    </AppShell>
+          {viewMode === "graph" && (
+            <ChatHistoryPanel
+              isOpen={historyPanelOpen}
+              onClose={() => closeHistoryPanel(actor)}
+              messages={messages ?? []}
+              onLoadOlderMessages={
+                canLoadOlderMessages
+                  ? () => loadOlderMessages(CHAT_MESSAGES_PAGE_SIZE)
+                  : undefined
+              }
+              canLoadOlderMessages={canLoadOlderMessages}
+              batches={batches}
+              selectedBatchIndex={selectedBatchIndex}
+              onNavigateToStep={(batchIndex: number) => {
+                setSelectedBatchIndex(actor, batchIndex);
+                closeHistoryPanel(actor);
+              }}
+            />
+          )}
+        </main>
+      </AppShell>
+    </SpotifyPlayerProvider>
   );
 }

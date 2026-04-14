@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { useSpotifyController } from "@/hooks/useSpotifyController";
+import { useSpotifyPlayer } from "@/contexts/SpotifyPlayerContext";
 import { SpotifyPlaylistList } from "./SpotifyPlaylistList";
 import { SpotifyTransport } from "./SpotifyTransport";
 import type { SpotifyPlaylistSummary } from "@/lib/spotifyClient";
@@ -10,12 +10,7 @@ import {
   getSpotifyRuntimeErrorMessage,
 } from "@/lib/spotifyAuth";
 
-type SpotifyPanelProps = {
-  /** When false, tear down the Web Playback SDK player to save resources. */
-  active: boolean;
-};
-
-export function SpotifyPanel({ active }: SpotifyPanelProps) {
+export function SpotifyPanel() {
   const {
     connection,
     connected,
@@ -39,7 +34,7 @@ export function SpotifyPanel({ active }: SpotifyPanelProps) {
     positionMs,
     durationMs,
     seek,
-  } = useSpotifyController(active);
+  } = useSpotifyPlayer();
 
   const [actionLoading, setActionLoading] = useState(false);
   const [oauthErrorMessage, setOauthErrorMessage] = useState<string | null>(null);
