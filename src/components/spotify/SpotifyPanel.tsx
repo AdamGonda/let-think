@@ -76,19 +76,6 @@ export function SpotifyPanel() {
     }
   }, [disconnect]);
 
-  const onDisconnect = useCallback(async () => {
-    try {
-      const result = await disconnect();
-      if (!result.removedConnection && result.removedOauthStates === 0) {
-        toast.message("Spotify already disconnected.");
-        return;
-      }
-      toast.success("Spotify disconnected.");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Could not disconnect Spotify");
-    }
-  }, [disconnect]);
-
   const transportDisabled =
     !deviceId ||
     playerInitializing ||
@@ -142,15 +129,19 @@ export function SpotifyPanel() {
         <p className="text-xs text-zinc-500 shrink-0">
           Starting Spotify in-browser player…
         </p>
-      ) : deviceId ? (
-        <p className="text-xs text-zinc-600 shrink-0 tabular-nums">
-          Device ready
-        </p>
-      ) : (
+      ) : !deviceId ? (
         <p className="text-xs text-zinc-500 shrink-0">
           Waiting for Spotify device…
         </p>
-      )}
+      ) : null}
+
+      <SpotifyPlaylistList
+        playlists={playlists}
+        loading={playlistsLoading}
+        error={playlistsError}
+        onSelect={onSelectPlaylist}
+        onRefresh={() => void refreshPlaylists()}
+      />
 
       <SpotifyTransport
         disabled={transportDisabled}
@@ -165,26 +156,6 @@ export function SpotifyPanel() {
         onNext={() => void next()}
         onSeek={(ms) => void seek(ms)}
       />
-
-      <SpotifyPlaylistList
-        playlists={playlists}
-        loading={playlistsLoading}
-        error={playlistsError}
-        onSelect={onSelectPlaylist}
-        onRefresh={() => void refreshPlaylists()}
-      />
-
-      <div className="shrink-0 pt-2">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="text-zinc-500"
-          onClick={() => void onDisconnect()}
-        >
-          Disconnect Spotify
-        </Button>
-      </div>
     </div>
   );
 }
