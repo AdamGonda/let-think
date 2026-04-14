@@ -10,7 +10,7 @@ import { SpotifyPanel } from "@/components/spotify/SpotifyPanel";
 
 function SpotifyGlyph() {
   return (
-    <svg viewBox="0 0 24 24" className="size-4" aria-hidden="true">
+    <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
       <path
         fill="currentColor"
         d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2Zm4.56 14.37a.63.63 0 0 1-.87.21c-2.38-1.46-5.37-1.79-8.89-.99a.63.63 0 1 1-.28-1.23c3.85-.88 7.15-.5 9.83 1.14a.63.63 0 0 1 .21.87Zm1.24-2.76a.79.79 0 0 1-1.08.26c-2.73-1.68-6.89-2.17-10.11-1.2a.79.79 0 1 1-.46-1.51c3.67-1.11 8.24-.57 11.4 1.37.37.23.48.71.25 1.08Zm.11-2.87c-3.27-1.94-8.67-2.12-11.79-1.16a.95.95 0 0 1-.56-1.82c3.58-1.09 9.54-.88 13.32 1.36a.95.95 0 1 1-.97 1.62Z"
@@ -94,7 +94,36 @@ export function WakeUpOverlay({
             <Sigma className="size-5" />
           </Button>
         ) : null}
-        <div className="shrink-0 py-8 flex flex-col items-center gap-3">
+        <div className="absolute top-3 left-4 z-10 flex flex-col items-center gap-2">
+          <Button
+            variant={topAppTarget === "spotify" ? "secondary" : "ghost"}
+            size="icon-sm"
+            onClick={() => onTopAppTargetChange("spotify")}
+            aria-label="Spotify mode"
+            aria-pressed={topAppTarget === "spotify"}
+          >
+            <SpotifyGlyph />
+          </Button>
+          <Button
+            variant={topAppTarget === "game" ? "secondary" : "ghost"}
+            size="icon-sm"
+            onClick={() => onTopAppTargetChange("game")}
+            aria-label="Game mode"
+            aria-pressed={topAppTarget === "game"}
+          >
+            <Gamepad2 className="size-5" />
+          </Button>
+          <Button
+            variant={topAppTarget === "file" ? "secondary" : "ghost"}
+            size="icon-sm"
+            onClick={() => onTopAppTargetChange("file")}
+            aria-label="File mode"
+            aria-pressed={topAppTarget === "file"}
+          >
+            <FileText className="size-5" />
+          </Button>
+        </div>
+        <div className="shrink-0 px-6 pt-4 pb-2 flex flex-col items-center gap-2">
           {breakRemainingMs != null &&
             breakRemainingMs > 0 &&
             !editorOpen && (
@@ -102,49 +131,26 @@ export function WakeUpOverlay({
                 {formatBreakCountdown(breakRemainingMs)}
               </span>
             )}
-          <div className="flex items-center gap-2">
-            <Button
-              variant={topAppTarget === "spotify" ? "secondary" : "ghost"}
-              size="icon-sm"
-              onClick={() => onTopAppTargetChange("spotify")}
-              aria-label="Spotify mode"
-              aria-pressed={topAppTarget === "spotify"}
-            >
-              <SpotifyGlyph />
-            </Button>
-            <Button
-              variant={topAppTarget === "game" ? "secondary" : "ghost"}
-              size="icon-sm"
-              onClick={() => onTopAppTargetChange("game")}
-              aria-label="Game mode"
-              aria-pressed={topAppTarget === "game"}
-            >
-              <Gamepad2 className="size-4" />
-            </Button>
-            <Button
-              variant={topAppTarget === "file" ? "secondary" : "ghost"}
-              size="icon-sm"
-              onClick={() => onTopAppTargetChange("file")}
-              aria-label="File mode"
-              aria-pressed={topAppTarget === "file"}
-            >
-              <FileText className="size-4" />
-            </Button>
-          </div>
         </div>
         {activeSessionId && (
-          <div className="flex-1 min-h-0 flex flex-col items-center px-6 pb-8 overflow-hidden">
+          <div className="flex-1 min-h-0 flex flex-col items-center justify-start px-6 pb-8 pt-2 overflow-hidden">
             <div
-              className={`relative w-full ${layout.mainColumnMaxWidthClass} flex-1 min-h-0 flex flex-col transition-opacity duration-150 ${
+              className={`relative w-full ${layout.mainColumnMaxWidthClass} flex-1 min-h-0 flex flex-col justify-start overflow-y-auto transition-opacity duration-150 ${
                 editorRevealReady ? "opacity-100" : "opacity-0"
               }`}
             >
-              <div className={topAppTarget === "spotify" ? "flex-1 min-h-0 flex" : "hidden"}>
+              <div
+                className={
+                  topAppTarget === "spotify"
+                    ? "flex-1 min-h-0 flex flex-col overflow-hidden"
+                    : "hidden"
+                }
+              >
                 <SpotifyPanel />
               </div>
 
               {topAppTarget === "game" ? (
-                <div className="flex-1 min-h-0 flex items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950/40 px-6 text-center">
+                <div className="flex-1 min-h-0 flex items-start justify-start rounded-xl border border-zinc-800 bg-zinc-950/40 px-6 py-5 text-left">
                   <p className="text-zinc-300 text-lg">
                     Game content placeholder. Game-related flow UI will live here.
                   </p>

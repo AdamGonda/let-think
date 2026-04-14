@@ -97,7 +97,7 @@ export function SpotifyPanel() {
 
   if (connection === undefined) {
     return (
-      <div className="flex-1 min-h-0 flex items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950/40 px-6">
+      <div className="flex-1 min-h-0 flex items-start justify-start rounded-xl border border-zinc-800 bg-zinc-950/40 px-6 py-5">
         <p className="text-zinc-500 text-sm">Loading Spotify…</p>
       </div>
     );
@@ -105,7 +105,7 @@ export function SpotifyPanel() {
 
   if (!connected) {
     return (
-      <div className="flex-1 min-h-0 flex flex-col items-center justify-center gap-4 rounded-xl border border-zinc-800 bg-zinc-950/40 px-6 text-center">
+      <div className="flex-1 min-h-0 flex flex-col items-center justify-start gap-4 rounded-xl border border-zinc-800 bg-zinc-950/40 px-6 py-5 text-center">
         {oauthErrorMessage ? (
           <p className="text-amber-300 text-sm max-w-md" role="alert">
             {oauthErrorMessage}
