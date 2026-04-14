@@ -5,6 +5,8 @@ type SpotifyPlaylistListProps = {
   playlists: SpotifyPlaylistSummary[];
   loading: boolean;
   error: string | null;
+  /** Spotify `spotify:playlist:…` URI for the context currently playing, from Web Playback state. */
+  activePlaylistUri: string | null;
   onSelect: (playlist: SpotifyPlaylistSummary) => void;
   onRefresh: () => void;
 };
@@ -13,6 +15,7 @@ export function SpotifyPlaylistList({
   playlists,
   loading,
   error,
+  activePlaylistUri,
   onSelect,
   onRefresh,
 }: SpotifyPlaylistListProps) {
@@ -34,7 +37,7 @@ export function SpotifyPlaylistList({
       {error ? (
         <p className="text-sm text-red-400/90">{error}</p>
       ) : null}
-      <ul className="flex-1 min-h-0 overflow-y-auto space-y-1 pr-1">
+      <ul className="flex-1 min-h-0 overflow-y-auto space-y-1 px-0.5 py-0.5">
         {loading && playlists.length === 0 ? (
           <li className="text-sm text-zinc-500 py-4">Loading playlists…</li>
         ) : null}
@@ -42,7 +45,12 @@ export function SpotifyPlaylistList({
           <li key={p.id}>
             <button
               type="button"
-              className="w-full text-left rounded-lg px-3 py-2.5 text-sm text-zinc-200 hover:bg-zinc-800/80 transition-colors flex items-center gap-3"
+              aria-current={p.uri === activePlaylistUri ? "true" : undefined}
+              className={`w-full cursor-pointer text-left rounded-lg px-3 py-2.5 text-sm transition-colors flex items-center gap-3 ${
+                p.uri === activePlaylistUri
+                  ? "bg-zinc-700/90 text-zinc-50 ring-1 ring-inset ring-zinc-500/60"
+                  : "text-zinc-200 hover:bg-zinc-800/80"
+              }`}
               onClick={() => onSelect(p)}
             >
               {p.imageUrl ? (

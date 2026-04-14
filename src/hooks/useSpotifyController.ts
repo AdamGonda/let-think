@@ -257,6 +257,10 @@ export function useSpotifyController(enabled: boolean) {
     null;
   const positionMs = playerState?.position ?? null;
 
+  const contextUri = playerState?.context?.uri ?? null;
+  const playingPlaylistUri =
+    contextUri?.startsWith("spotify:playlist:") === true ? contextUri : null;
+
   /** While playing, `player_state_changed` can be sparse; poll for a smooth playhead. */
   useEffect(() => {
     const player = playerRef.current;
@@ -294,5 +298,6 @@ export function useSpotifyController(enabled: boolean) {
     positionMs,
     durationMs,
     seek,
+    playingPlaylistUri,
   };
 }

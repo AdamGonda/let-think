@@ -40,6 +40,10 @@ export type SpotifyWebPlayer = {
 
 export type SpotifyPlaybackState = {
   paused: boolean;
+  /** Present on Web Playback SDK state; identifies album/playlist context when applicable. */
+  context?: {
+    uri: string | null;
+  } | null;
   track_window?: {
     current_track?: {
       name?: string;

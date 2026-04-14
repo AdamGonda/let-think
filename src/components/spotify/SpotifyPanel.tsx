@@ -34,6 +34,7 @@ export function SpotifyPanel() {
     positionMs,
     durationMs,
     seek,
+    playingPlaylistUri,
   } = useSpotifyPlayer();
 
   const [actionLoading, setActionLoading] = useState(false);
@@ -139,6 +140,7 @@ export function SpotifyPanel() {
         playlists={playlists}
         loading={playlistsLoading}
         error={playlistsError}
+        activePlaylistUri={playingPlaylistUri}
         onSelect={onSelectPlaylist}
         onRefresh={() => void refreshPlaylists()}
       />
