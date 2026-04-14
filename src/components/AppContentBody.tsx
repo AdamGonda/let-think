@@ -38,6 +38,7 @@ import {
   setDraftInput,
   setNotesListDrill,
   setSelectedBatchIndex,
+  setTopAppTarget,
   setWakeNotes,
 } from "@/lib/appUiCommands";
 
@@ -74,6 +75,7 @@ export function AppContentBody({
     editorRevealReady,
     showRestSessionWalkthrough,
     hasChatHistory,
+    topAppTarget,
   } = useAppContentSelectors();
   const actor = useAppUiActor();
 
@@ -175,6 +177,8 @@ export function AppContentBody({
             onBreadcrumbProjectClick={handleBreadcrumbProjectClick}
             onBreadcrumbSessionClick={handleBreadcrumbSessionClick}
             onBreadcrumbFileClick={handleBreadcrumbFileClick}
+            topAppTarget={topAppTarget}
+            onTopAppTargetChange={(target) => setTopAppTarget(actor, target)}
           />
         ) : null
       }

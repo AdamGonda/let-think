@@ -1,7 +1,12 @@
 import { assign, setup } from "xstate";
 import { readWorkPreference } from "../lib/workPreferenceStorage";
 import { timings } from "@/config";
-import type { AppUiContext, AppUiEvent, SurfaceMode } from "./appUiTypes";
+import type {
+  AppUiContext,
+  AppUiEvent,
+  SurfaceMode,
+  TopAppTarget,
+} from "./appUiTypes";
 import {
   reduceBatchesLengthChanged,
   reduceChatHistoryMeta,
@@ -184,6 +189,12 @@ export const appUiMachine = setup({
     historyOpen: assign({ historyPanelOpen: true }),
     historyClose: assign({ historyPanelOpen: false }),
     dismissRestWalkthroughUi: assign({ restWalkthroughDismissed: true }),
+    setTopAppTarget: assign({
+      topAppTarget: ({ event, context }) => {
+        if (event.type !== "TOP_APP_TARGET_SET") return context.topAppTarget;
+        return event.target;
+      },
+    }),
   },
 }).createMachine({
   id: "appUi",
@@ -210,6 +221,7 @@ export const appUiMachine = setup({
       restWalkthroughDoneForStorage: false,
       restWalkthroughDismissed: false,
       hasEverHadSessionSelection: inp?.hasEverHadSessionSelection ?? false,
+      topAppTarget: inp?.topAppTarget ?? "file",
     };
   },
   on: {
@@ -300,6 +312,9 @@ export const appUiMachine = setup({
     },
     HISTORY_CLOSE: {
       actions: "historyClose",
+    },
+    TOP_APP_TARGET_SET: {
+      actions: "setTopAppTarget",
     },
   },
   states: {
@@ -470,6 +485,10 @@ export function selectIsWorkMode(snapshot: MachineSnapshot): boolean {
 
 export function selectSurface(snapshot: MachineSnapshot): SurfaceMode {
   return surfaceState(snapshot);
+}
+
+export function selectTopAppTarget(snapshot: MachineSnapshot): TopAppTarget {
+  return snapshot.context.topAppTarget;
 }
 
 /** Rest-session empty-thread walkthrough (think mode). */

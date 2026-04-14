@@ -11,7 +11,7 @@ import type { Doc, Id } from "../../convex/_generated/dataModel";
 import type { AppUiActorRef } from "../contexts/appUiActorContext";
 import type { NotesListDrill } from "./notesListUtils";
 import type { WorkPreferenceMode } from "./workPreferenceStorage";
-import type { SurfaceMode } from "../machines/appUiTypes";
+import type { SurfaceMode, TopAppTarget } from "../machines/appUiTypes";
 
 /**
  * Select session, project, and Files drill to match the session's project/inbox.
@@ -94,6 +94,10 @@ export function openHistoryPanel(actor: AppUiActorRef): void {
 
 export function closeHistoryPanel(actor: AppUiActorRef): void {
   actor.send({ type: "HISTORY_CLOSE" });
+}
+
+export function setTopAppTarget(actor: AppUiActorRef, target: TopAppTarget): void {
+  actor.send({ type: "TOP_APP_TARGET_SET", target });
 }
 
 export function setSelectedBatchIndex(actor: AppUiActorRef, index: number): void {

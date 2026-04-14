@@ -10,6 +10,7 @@ import {
   selectIsWorkMode,
   selectShowRestSessionWalkthrough,
   selectSurface,
+  selectTopAppTarget,
   selectWorkModeNotesListDuringChatLoading,
   selectWorkModeSessionLoading,
 } from "../machines/appUiMachine";
@@ -40,6 +41,7 @@ export type AppContentSelectors = {
     typeof selectShowRestSessionWalkthrough
   >;
   hasChatHistory: AppSnapshot["context"]["hasChatHistory"];
+  topAppTarget: ReturnType<typeof selectTopAppTarget>;
 };
 
 function shallowEqualSelectors(
@@ -66,7 +68,8 @@ function shallowEqualSelectors(
     a.canExitOverlay === b.canExitOverlay &&
     a.editorRevealReady === b.editorRevealReady &&
     a.showRestSessionWalkthrough === b.showRestSessionWalkthrough &&
-    a.hasChatHistory === b.hasChatHistory
+    a.hasChatHistory === b.hasChatHistory &&
+    a.topAppTarget === b.topAppTarget
   );
 }
 
@@ -92,6 +95,7 @@ function selectAppContentSnapshot(s: AppSnapshot): AppContentSelectors {
     editorRevealReady: selectEditorRevealReady(s),
     showRestSessionWalkthrough: selectShowRestSessionWalkthrough(s),
     hasChatHistory: s.context.hasChatHistory,
+    topAppTarget: selectTopAppTarget(s),
   };
 }
 

@@ -3,6 +3,7 @@ import type { NotesListDrill } from "../lib/notesListUtils";
 import type { WorkPreferenceMode } from "../lib/workPreferenceStorage";
 
 export type SurfaceMode = "graph" | "notesList";
+export type TopAppTarget = "spotify" | "game" | "file";
 
 export type AppUiContext = {
   preference: WorkPreferenceMode;
@@ -33,6 +34,7 @@ export type AppUiContext = {
    * Set when the user selects any session or we auto-select the first session.
    */
   hasEverHadSessionSelection: boolean;
+  topAppTarget: TopAppTarget;
 };
 
 export type AppUiEvent =
@@ -67,4 +69,5 @@ export type AppUiEvent =
   | { type: "DRAFT_INPUT_SET"; value: string }
   | { type: "NOTES_SET"; value: string }
   | { type: "HISTORY_OPEN" }
-  | { type: "HISTORY_CLOSE" };
+  | { type: "HISTORY_CLOSE" }
+  | { type: "TOP_APP_TARGET_SET"; target: TopAppTarget };
