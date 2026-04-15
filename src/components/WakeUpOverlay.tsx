@@ -100,15 +100,6 @@ export function WakeUpOverlay({
           }`}
         >
           <Button
-            variant={topAppTarget === "game" ? "secondary" : "ghost"}
-            size="icon-sm"
-            onClick={() => onTopAppTargetChange("game")}
-            aria-label="Game mode"
-            aria-pressed={topAppTarget === "game"}
-          >
-            <Gamepad2 className="size-5" />
-          </Button>
-          <Button
             variant={topAppTarget === "file" ? "secondary" : "ghost"}
             size="icon-sm"
             onClick={() => onTopAppTargetChange("file")}
@@ -125,6 +116,15 @@ export function WakeUpOverlay({
             aria-pressed={topAppTarget === "spotify"}
           >
             <SpotifyGlyph />
+          </Button>
+          <Button
+            variant={topAppTarget === "game" ? "secondary" : "ghost"}
+            size="icon-sm"
+            onClick={() => onTopAppTargetChange("game")}
+            aria-label="Game mode"
+            aria-pressed={topAppTarget === "game"}
+          >
+            <Gamepad2 className="size-5" />
           </Button>
         </div>
         <div className="shrink-0 px-6 pt-4 pb-2 flex flex-col items-center gap-2">
