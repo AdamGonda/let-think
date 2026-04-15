@@ -7,5 +7,6 @@ export const timings = {
   tutorialStartDelayMs: 600,
   breakCountdownTickMs: 1000,
   wakeUpExitMs: 300,
+  sidebarCollapseAfterEditorOpenMs: 420,
   paginationDotsSpringMs: 300,
 } as const;

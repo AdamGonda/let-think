@@ -1,4 +1,4 @@
-import { useMemo, useCallback, type RefObject } from "react";
+import { useMemo, useCallback, useEffect, useRef, type RefObject } from "react";
 import { clsx } from "clsx";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useSessionData } from "../contexts/SessionDataContext";
@@ -23,7 +23,7 @@ import {
 } from "../lib/conceptReferences";
 import { userInputForBatch, userMessageForBatch } from "../lib/batchUserInput";
 import { findSessionInWorkspace } from "../lib/workspaceQueries";
-import { CHAT_MESSAGES_PAGE_SIZE } from "@/config";
+import { CHAT_MESSAGES_PAGE_SIZE, timings } from "@/config";
 import { SpotifyPlayerProvider } from "@/contexts/SpotifyPlayerContext";
 import { WakeUpOverlay } from "./WakeUpOverlay";
 import { RestSessionWalkthrough } from "./RestSessionWalkthrough";
@@ -77,8 +77,13 @@ export function AppContentBody({
     showRestSessionWalkthrough,
     hasChatHistory,
     topAppTarget,
+    sidebarCollapseRequestSeq,
   } = useAppContentSelectors();
   const actor = useAppUiActor();
+  const sidebarCollapseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
+  const lastSidebarCollapseRequestSeqRef = useRef(sidebarCollapseRequestSeq);
 
   const activeSessionInWorkspace = useMemo(
     () => findSessionInWorkspace(workspace, activeSessionId),
@@ -156,6 +161,26 @@ export function AppContentBody({
     }
     return { content: batchUserPrompt, mentions: undefined };
   }, [isLatestBatch, batches, messages, selectedBatchIndex, batchUserPrompt]);
+
+  useEffect(() => {
+    if (sidebarCollapseRequestSeq === lastSidebarCollapseRequestSeqRef.current) {
+      return;
+    }
+    lastSidebarCollapseRequestSeqRef.current = sidebarCollapseRequestSeq;
+    if (sidebarCollapseTimeoutRef.current != null) {
+      clearTimeout(sidebarCollapseTimeoutRef.current);
+    }
+    sidebarCollapseTimeoutRef.current = setTimeout(() => {
+      sessionSidebarRef.current?.collapse();
+      sidebarCollapseTimeoutRef.current = null;
+    }, timings.sidebarCollapseAfterEditorOpenMs);
+    return () => {
+      if (sidebarCollapseTimeoutRef.current != null) {
+        clearTimeout(sidebarCollapseTimeoutRef.current);
+        sidebarCollapseTimeoutRef.current = null;
+      }
+    };
+  }, [sidebarCollapseRequestSeq, sessionSidebarRef]);
 
   return (
     <SpotifyPlayerProvider>

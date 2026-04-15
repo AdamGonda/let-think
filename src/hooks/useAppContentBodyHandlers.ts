@@ -69,7 +69,8 @@ export function useAppContentBodyHandlers({
   const handleReturnToGraphFromEditorOverlay = useCallback(() => {
     setViewMode("graph");
     closeEditor(actor);
-  }, [setViewMode, actor]);
+    sessionSidebarRef.current?.collapse();
+  }, [setViewMode, actor, sessionSidebarRef]);
 
   const handleBreadcrumbProjectClick = useCallback(() => {
     clearNotesListDrill(actor);
@@ -87,8 +88,7 @@ export function useAppContentBodyHandlers({
 
   const handleBreadcrumbFileClick = useCallback(() => {
     handleReturnToGraphFromEditorOverlay();
-    sessionSidebarRef.current?.expand();
-  }, [handleReturnToGraphFromEditorOverlay, sessionSidebarRef]);
+  }, [handleReturnToGraphFromEditorOverlay]);
 
   const handleCardReferenceClick = useCallback(
     (conceptNumber: number) => {

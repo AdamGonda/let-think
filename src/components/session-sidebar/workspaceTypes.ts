@@ -12,4 +12,5 @@ export type ProjectRow = ProjectWithSessions & {
 
 export type SessionSidebarHandle = {
   expand: () => void;
+  collapse: () => void;
 };

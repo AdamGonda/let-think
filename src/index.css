@@ -363,6 +363,21 @@ body {
 .md-editor-focused .w-md-editor-area {
   flex: 1;
   min-height: 0;
+  /* Soften clipped lines at the viewport edges instead of hard cutoffs. */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 2.5rem,
+    #000 calc(100% - 3.5rem),
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent 0,
+    #000 2.5rem,
+    #000 calc(100% - 3.5rem),
+    transparent 100%
+  );
 }
 /* Padding only on container; text-input uses padding:inherit so cursor aligns with text */
 /* Extra bottom padding = scroll past end (like VS Code) so cursor isn't stuck at viewport bottom */

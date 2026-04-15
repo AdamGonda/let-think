@@ -251,6 +251,7 @@ export function useSessionSidebarWorkspace({
     imperativeRef,
     () => ({
       expand: expandIntoView,
+      collapse: () => setIsCollapsed(true),
     }),
     [expandIntoView],
   );

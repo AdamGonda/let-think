@@ -42,6 +42,7 @@ export type AppContentSelectors = {
   >;
   hasChatHistory: AppSnapshot["context"]["hasChatHistory"];
   topAppTarget: ReturnType<typeof selectTopAppTarget>;
+  sidebarCollapseRequestSeq: AppSnapshot["context"]["sidebarCollapseRequestSeq"];
 };
 
 function shallowEqualSelectors(
@@ -69,7 +70,8 @@ function shallowEqualSelectors(
     a.editorRevealReady === b.editorRevealReady &&
     a.showRestSessionWalkthrough === b.showRestSessionWalkthrough &&
     a.hasChatHistory === b.hasChatHistory &&
-    a.topAppTarget === b.topAppTarget
+    a.topAppTarget === b.topAppTarget &&
+    a.sidebarCollapseRequestSeq === b.sidebarCollapseRequestSeq
   );
 }
 
@@ -96,6 +98,7 @@ function selectAppContentSnapshot(s: AppSnapshot): AppContentSelectors {
     showRestSessionWalkthrough: selectShowRestSessionWalkthrough(s),
     hasChatHistory: s.context.hasChatHistory,
     topAppTarget: selectTopAppTarget(s),
+    sidebarCollapseRequestSeq: s.context.sidebarCollapseRequestSeq,
   };
 }
 

@@ -184,7 +184,11 @@ export const appUiMachine = setup({
     applyBatchesLengthChanged: assign(({ context, event }) =>
       reduceBatchesLengthChanged(context, event as AppUiEvent),
     ),
-    editorOpenTrue: assign({ editorOpen: true }),
+    editorOpenTrue: assign({
+      editorOpen: true,
+      sidebarCollapseRequestSeq: ({ context }) =>
+        context.sidebarCollapseRequestSeq + 1,
+    }),
     editorClose: assign({ editorOpen: false }),
     historyOpen: assign({ historyPanelOpen: true }),
     historyClose: assign({ historyPanelOpen: false }),
@@ -222,6 +226,7 @@ export const appUiMachine = setup({
       restWalkthroughDismissed: false,
       hasEverHadSessionSelection: inp?.hasEverHadSessionSelection ?? false,
       topAppTarget: inp?.topAppTarget ?? "file",
+      sidebarCollapseRequestSeq: inp?.sidebarCollapseRequestSeq ?? 0,
     };
   },
   on: {

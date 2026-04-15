@@ -35,6 +35,8 @@ export type AppUiContext = {
    */
   hasEverHadSessionSelection: boolean;
   topAppTarget: TopAppTarget;
+  /** Monotonic token to trigger delayed sidebar collapse after editor opens. */
+  sidebarCollapseRequestSeq: number;
 };
 
 export type AppUiEvent =
