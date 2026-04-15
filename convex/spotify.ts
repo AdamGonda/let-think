@@ -6,7 +6,6 @@ import {
   query,
 } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { internal } from "./_generated/api";
 
 export const getOauthStateByState = internalQuery({
   args: { state: v.string() },
@@ -174,10 +173,14 @@ export const disconnect = mutation({
     if (existing) {
       await ctx.db.delete(existing._id);
     }
-    const removedOauthStates = await ctx.runMutation(
-      internal.spotify.deleteOauthStatesForUser,
-      { userId },
-    );
+    const oauthStates = await ctx.db
+      .query("spotifyOauthStates")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+    for (const row of oauthStates) {
+      await ctx.db.delete(row._id);
+    }
+    const removedOauthStates = oauthStates.length;
     return {
       ok: true as const,
       removedConnection,
