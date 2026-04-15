@@ -84,6 +84,12 @@ export function useSessionSidebarWorkspace({
   }, [projectsSectionOpen]);
 
   useEffect(() => {
+    if (!projectsSectionOpen) {
+      setExpandedProjectIds(new Set());
+    }
+  }, [projectsSectionOpen]);
+
+  useEffect(() => {
     if (!data) return;
     expandProjectRowForActiveSession(
       data,
