@@ -8,11 +8,13 @@ import {
   selectEditorRevealReady,
   selectIsExitingWakeUp,
   selectIsWorkMode,
+  selectShowOverlaySigma,
   selectShowRestSessionWalkthrough,
   selectSurface,
   selectTopAppTarget,
   selectWorkModeNotesListDuringChatLoading,
   selectWorkModeSessionLoading,
+  selectWorkSigmaEditorFromSession,
 } from "../machines/appUiMachine";
 
 type AppSnapshot = SnapshotFrom<typeof appUiMachine>;
@@ -43,6 +45,9 @@ export type AppContentSelectors = {
   hasChatHistory: AppSnapshot["context"]["hasChatHistory"];
   topAppTarget: ReturnType<typeof selectTopAppTarget>;
   sidebarCollapseRequestSeq: AppSnapshot["context"]["sidebarCollapseRequestSeq"];
+  sidebarCollapseImmediateSeq: AppSnapshot["context"]["sidebarCollapseImmediateSeq"];
+  workSigmaEditorFromSession: ReturnType<typeof selectWorkSigmaEditorFromSession>;
+  showOverlaySigma: ReturnType<typeof selectShowOverlaySigma>;
 };
 
 function shallowEqualSelectors(
@@ -71,7 +76,10 @@ function shallowEqualSelectors(
     a.showRestSessionWalkthrough === b.showRestSessionWalkthrough &&
     a.hasChatHistory === b.hasChatHistory &&
     a.topAppTarget === b.topAppTarget &&
-    a.sidebarCollapseRequestSeq === b.sidebarCollapseRequestSeq
+    a.sidebarCollapseRequestSeq === b.sidebarCollapseRequestSeq &&
+    a.sidebarCollapseImmediateSeq === b.sidebarCollapseImmediateSeq &&
+    a.workSigmaEditorFromSession === b.workSigmaEditorFromSession &&
+    a.showOverlaySigma === b.showOverlaySigma
   );
 }
 
@@ -99,6 +107,9 @@ function selectAppContentSnapshot(s: AppSnapshot): AppContentSelectors {
     hasChatHistory: s.context.hasChatHistory,
     topAppTarget: selectTopAppTarget(s),
     sidebarCollapseRequestSeq: s.context.sidebarCollapseRequestSeq,
+    sidebarCollapseImmediateSeq: s.context.sidebarCollapseImmediateSeq,
+    workSigmaEditorFromSession: selectWorkSigmaEditorFromSession(s),
+    showOverlaySigma: selectShowOverlaySigma(s),
   };
 }
 

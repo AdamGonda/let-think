@@ -35,8 +35,12 @@ export type AppUiContext = {
    */
   hasEverHadSessionSelection: boolean;
   topAppTarget: TopAppTarget;
-  /** Monotonic token to trigger delayed sidebar collapse after editor opens. */
+  /** Mirrors `surface` parallel state for guards that only receive `context`. */
+  surfaceMode: SurfaceMode;
+  /** Monotonic token: UI collapses sidebar after delayed open-editor policy (machine timers). */
   sidebarCollapseRequestSeq: number;
+  /** Monotonic token: UI collapses sidebar immediately (return-to-graph, etc.). */
+  sidebarCollapseImmediateSeq: number;
 };
 
 export type AppUiEvent =
@@ -72,4 +76,12 @@ export type AppUiEvent =
   | { type: "NOTES_SET"; value: string }
   | { type: "HISTORY_OPEN" }
   | { type: "HISTORY_CLOSE" }
-  | { type: "TOP_APP_TARGET_SET"; target: TopAppTarget };
+  | { type: "TOP_APP_TARGET_SET"; target: TopAppTarget }
+  /** User intents — orchestration owned by the machine (see appUiCommands). */
+  | { type: "INTENT_WAKE_SIGMA_CLICK" }
+  | { type: "INTENT_BREADCRUMB_PROJECT_CLICK" }
+  | { type: "INTENT_BREADCRUMB_SESSION_CLICK" }
+  | { type: "INTENT_BREADCRUMB_FILE_CLICK" }
+  | { type: "INTENT_OPEN_NOTES_LIST" }
+  | { type: "INTENT_RETURN_GRAPH_FROM_EDITOR" }
+  | { type: "INTENT_SELECT_SESSION_FROM_SIDEBAR"; sessionId: Id<"sessions"> | null };

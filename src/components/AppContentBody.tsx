@@ -23,7 +23,7 @@ import {
 } from "../lib/conceptReferences";
 import { userInputForBatch, userMessageForBatch } from "../lib/batchUserInput";
 import { findSessionInWorkspace } from "../lib/workspaceQueries";
-import { CHAT_MESSAGES_PAGE_SIZE, timings } from "@/config";
+import { CHAT_MESSAGES_PAGE_SIZE } from "@/config";
 import { SpotifyPlayerProvider } from "@/contexts/SpotifyPlayerContext";
 import { WakeUpOverlay } from "./WakeUpOverlay";
 import { RestSessionWalkthrough } from "./RestSessionWalkthrough";
@@ -71,19 +71,17 @@ export function AppContentBody({
     isExitingOverlay,
     workModeSessionLoading,
     workModeNotesListDuringChatLoading,
-    isWorkMode,
-    canExitOverlay,
     editorRevealReady,
     showRestSessionWalkthrough,
     hasChatHistory,
     topAppTarget,
     sidebarCollapseRequestSeq,
+    sidebarCollapseImmediateSeq,
+    workSigmaEditorFromSession,
+    showOverlaySigma,
   } = useAppContentSelectors();
   const actor = useAppUiActor();
-  const sidebarCollapseTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
-    null,
-  );
-  const lastSidebarCollapseRequestSeqRef = useRef(sidebarCollapseRequestSeq);
+  const prevSidebarCollapseRef = useRef({ d: 0, i: 0 });
 
   const activeSessionInWorkspace = useMemo(
     () => findSessionInWorkspace(workspace, activeSessionId),
@@ -105,8 +103,6 @@ export function AppContentBody({
     handleBreadcrumbSessionClick,
     handleBreadcrumbFileClick,
     handleCardReferenceClick,
-    workSigmaEditorFromSession,
-    showOverlaySigma,
     handleWakeUpSigmaClick,
     onSelectSessionFromNotesList,
     onSelectSessionFromSidebar,
@@ -114,12 +110,6 @@ export function AppContentBody({
   } = useAppContentBodyHandlers({
     actor,
     draftInput,
-    activeSessionInWorkspace,
-    sessionSidebarRef,
-    canExitOverlay,
-    editorOpen,
-    viewMode,
-    isWorkMode,
   });
 
   const handleRestWalkthroughComplete = useCallback(() => {
@@ -162,25 +152,18 @@ export function AppContentBody({
     return { content: batchUserPrompt, mentions: undefined };
   }, [isLatestBatch, batches, messages, selectedBatchIndex, batchUserPrompt]);
 
+  /** Imperative sidebar adapter — reacts to XState collapse tokens (delayed + immediate). */
   useEffect(() => {
-    if (sidebarCollapseRequestSeq === lastSidebarCollapseRequestSeqRef.current) {
-      return;
-    }
-    lastSidebarCollapseRequestSeqRef.current = sidebarCollapseRequestSeq;
-    if (sidebarCollapseTimeoutRef.current != null) {
-      clearTimeout(sidebarCollapseTimeoutRef.current);
-    }
-    sidebarCollapseTimeoutRef.current = setTimeout(() => {
-      sessionSidebarRef.current?.collapse();
-      sidebarCollapseTimeoutRef.current = null;
-    }, timings.sidebarCollapseAfterEditorOpenMs);
-    return () => {
-      if (sidebarCollapseTimeoutRef.current != null) {
-        clearTimeout(sidebarCollapseTimeoutRef.current);
-        sidebarCollapseTimeoutRef.current = null;
-      }
+    const p = prevSidebarCollapseRef.current;
+    const dChanged = sidebarCollapseRequestSeq !== p.d;
+    const iChanged = sidebarCollapseImmediateSeq !== p.i;
+    if (!dChanged && !iChanged) return;
+    prevSidebarCollapseRef.current = {
+      d: sidebarCollapseRequestSeq,
+      i: sidebarCollapseImmediateSeq,
     };
-  }, [sidebarCollapseRequestSeq, sessionSidebarRef]);
+    sessionSidebarRef.current?.collapse();
+  }, [sidebarCollapseRequestSeq, sidebarCollapseImmediateSeq, sessionSidebarRef]);
 
   return (
     <SpotifyPlayerProvider>

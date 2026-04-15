@@ -1,94 +1,53 @@
-import { useCallback, type RefObject } from "react";
+import { useCallback } from "react";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 import type { AppUiActorRef } from "@/contexts/appUiActorContext";
 import {
-  clearNotesListDrill,
-  closeEditor,
-  exitWakeUpOverlay,
-  navigateDrillToSessionContext,
+  intentBreadcrumbFileClick,
+  intentBreadcrumbProjectClick,
+  intentBreadcrumbSessionClick,
+  intentOpenNotesList,
+  intentSelectSessionFromSidebar,
+  intentWakeSigmaClick,
   openSessionInFilesWithEditor,
   setActiveProject,
-  setActiveSession,
   setDraftInput,
-  setViewMode as sendViewMode,
 } from "@/lib/appUiCommands";
-import { findSessionInWorkspace } from "@/lib/workspaceQueries";
 import { toggleAtReferenceInDraft } from "@/lib/conceptReferences";
-import type { SessionSidebarHandle } from "@/components/session-sidebar/workspaceTypes";
-
-type ActiveSessionInWorkspace = ReturnType<
-  typeof findSessionInWorkspace
->;
 
 type UseAppContentBodyHandlersArgs = {
   actor: AppUiActorRef;
   draftInput: string;
-  activeSessionInWorkspace: ActiveSessionInWorkspace;
-  sessionSidebarRef: RefObject<SessionSidebarHandle | null>;
-  canExitOverlay: boolean;
-  editorOpen: boolean;
-  viewMode: "graph" | "notesList";
-  isWorkMode: boolean;
 };
 
 /**
- * Orchestration handlers for app shell / graph / wake-up flows (SRP: intent wiring, not layout).
+ * App shell intents — dispatch to XState via appUiCommands (no local orchestration).
  */
 export function useAppContentBodyHandlers({
   actor,
   draftInput,
-  activeSessionInWorkspace,
-  sessionSidebarRef,
-  canExitOverlay,
-  editorOpen,
-  viewMode,
-  isWorkMode,
 }: UseAppContentBodyHandlersArgs) {
   const setViewMode = useCallback(
     (mode: "graph" | "notesList") => {
       if (mode === "notesList") {
-        if (activeSessionInWorkspace?.projectId) {
-          navigateDrillToSessionContext(
-            actor,
-            activeSessionInWorkspace.projectId,
-          );
-        } else {
-          clearNotesListDrill(actor);
-        }
+        intentOpenNotesList(actor);
+      } else {
+        actor.send({ type: "VIEW_SET", mode: "graph" });
       }
-      sendViewMode(actor, mode);
     },
-    [actor, activeSessionInWorkspace],
+    [actor],
   );
 
-  const handleExitOverlay = useCallback(() => {
-    if (!canExitOverlay) return;
-    exitWakeUpOverlay(actor);
-  }, [canExitOverlay, actor]);
-
-  const handleReturnToGraphFromEditorOverlay = useCallback(() => {
-    setViewMode("graph");
-    closeEditor(actor);
-    sessionSidebarRef.current?.collapse();
-  }, [setViewMode, actor, sessionSidebarRef]);
-
   const handleBreadcrumbProjectClick = useCallback(() => {
-    clearNotesListDrill(actor);
-    handleExitOverlay();
-  }, [handleExitOverlay, actor]);
+    intentBreadcrumbProjectClick(actor);
+  }, [actor]);
 
   const handleBreadcrumbSessionClick = useCallback(() => {
-    if (!activeSessionInWorkspace) return;
-    navigateDrillToSessionContext(
-      actor,
-      activeSessionInWorkspace.projectId,
-    );
-    handleExitOverlay();
-  }, [activeSessionInWorkspace, handleExitOverlay, actor]);
+    intentBreadcrumbSessionClick(actor);
+  }, [actor]);
 
   const handleBreadcrumbFileClick = useCallback(() => {
-    handleReturnToGraphFromEditorOverlay();
-  }, [handleReturnToGraphFromEditorOverlay]);
+    intentBreadcrumbFileClick(actor);
+  }, [actor]);
 
   const handleCardReferenceClick = useCallback(
     (conceptNumber: number) => {
@@ -105,24 +64,9 @@ export function useAppContentBodyHandlers({
     [actor, draftInput],
   );
 
-  const workSigmaEditorFromSession =
-    isWorkMode && editorOpen && viewMode === "graph";
-  const overlaySigmaStandardExit =
-    canExitOverlay && !(editorOpen && viewMode === "notesList");
-  const showOverlaySigma =
-    workSigmaEditorFromSession || overlaySigmaStandardExit;
-
   const handleWakeUpSigmaClick = useCallback(() => {
-    if (workSigmaEditorFromSession) {
-      handleReturnToGraphFromEditorOverlay();
-    } else {
-      handleExitOverlay();
-    }
-  }, [
-    workSigmaEditorFromSession,
-    handleReturnToGraphFromEditorOverlay,
-    handleExitOverlay,
-  ]);
+    intentWakeSigmaClick(actor);
+  }, [actor]);
 
   const onSelectSessionFromNotesList = useCallback(
     (session: Doc<"sessions">) => {
@@ -133,10 +77,9 @@ export function useAppContentBodyHandlers({
 
   const onSelectSessionFromSidebar = useCallback(
     (id: Id<"sessions"> | null) => {
-      setActiveSession(actor, id);
-      if (viewMode === "notesList") setViewMode("graph");
+      intentSelectSessionFromSidebar(actor, id);
     },
-    [actor, viewMode, setViewMode],
+    [actor],
   );
 
   const onSelectProjectFromSidebar = useCallback(
@@ -148,14 +91,10 @@ export function useAppContentBodyHandlers({
 
   return {
     setViewMode,
-    handleExitOverlay,
-    handleReturnToGraphFromEditorOverlay,
     handleBreadcrumbProjectClick,
     handleBreadcrumbSessionClick,
     handleBreadcrumbFileClick,
     handleCardReferenceClick,
-    workSigmaEditorFromSession,
-    showOverlaySigma,
     handleWakeUpSigmaClick,
     onSelectSessionFromNotesList,
     onSelectSessionFromSidebar,

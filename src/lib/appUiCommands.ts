@@ -68,6 +68,38 @@ export function setViewMode(actor: AppUiActorRef, mode: SurfaceMode): void {
   actor.send({ type: "VIEW_SET", mode });
 }
 
+/** Open project notes list with drill synced from active project (XState intent). */
+export function intentOpenNotesList(actor: AppUiActorRef): void {
+  actor.send({ type: "INTENT_OPEN_NOTES_LIST" });
+}
+
+export function intentWakeSigmaClick(actor: AppUiActorRef): void {
+  actor.send({ type: "INTENT_WAKE_SIGMA_CLICK" });
+}
+
+export function intentBreadcrumbProjectClick(actor: AppUiActorRef): void {
+  actor.send({ type: "INTENT_BREADCRUMB_PROJECT_CLICK" });
+}
+
+export function intentBreadcrumbSessionClick(actor: AppUiActorRef): void {
+  actor.send({ type: "INTENT_BREADCRUMB_SESSION_CLICK" });
+}
+
+export function intentBreadcrumbFileClick(actor: AppUiActorRef): void {
+  actor.send({ type: "INTENT_BREADCRUMB_FILE_CLICK" });
+}
+
+export function intentReturnGraphFromEditor(actor: AppUiActorRef): void {
+  actor.send({ type: "INTENT_RETURN_GRAPH_FROM_EDITOR" });
+}
+
+export function intentSelectSessionFromSidebar(
+  actor: AppUiActorRef,
+  sessionId: Id<"sessions"> | null,
+): void {
+  actor.send({ type: "INTENT_SELECT_SESSION_FROM_SIDEBAR", sessionId });
+}
+
 export function clearNotesListDrill(actor: AppUiActorRef): void {
   actor.send({ type: "NOTES_LIST_DRILL_SET", drill: null });
 }

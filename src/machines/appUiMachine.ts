@@ -1,4 +1,4 @@
-import { assign, setup } from "xstate";
+import { assign, enqueueActions, raise, setup } from "xstate";
 import { readWorkPreference } from "../lib/workPreferenceStorage";
 import { timings } from "@/config";
 import type {
@@ -62,6 +62,10 @@ export const appUiMachine = setup({
       event.firstSessionId != null &&
       context.activeSessionId == null &&
       !context.hasEverHadSessionSelection,
+    isWorkSigmaEditorReturnPath: ({ context }) =>
+      context.preference === "work" &&
+      context.editorOpen &&
+      context.surfaceMode === "graph",
   },
   actions: {
     togglePreference: assign({
@@ -184,10 +188,61 @@ export const appUiMachine = setup({
     applyBatchesLengthChanged: assign(({ context, event }) =>
       reduceBatchesLengthChanged(context, event as AppUiEvent),
     ),
-    editorOpenTrue: assign({
-      editorOpen: true,
+    assignEditorOpenTrue: assign({ editorOpen: true }),
+    incrementSidebarCollapseRequestSeq: assign({
       sidebarCollapseRequestSeq: ({ context }) =>
         context.sidebarCollapseRequestSeq + 1,
+    }),
+    incrementSidebarCollapseImmediateSeq: assign({
+      sidebarCollapseImmediateSeq: ({ context }) =>
+        context.sidebarCollapseImmediateSeq + 1,
+    }),
+    assignSurfaceModeNotesList: assign({ surfaceMode: "notesList" }),
+    assignSurfaceModeGraph: assign({ surfaceMode: "graph" }),
+    raiseExitWakeUp: raise({ type: "USER_EXIT_WAKE_UP" }),
+    assignNotesListDrillForOpenNotesIntent: assign(({ context }) => {
+      if (context.activeProjectId != null) {
+        return {
+          notesListDrill: {
+            type: "project" as const,
+            id: context.activeProjectId,
+          },
+        };
+      }
+      return { notesListDrill: null };
+    }),
+    returnToGraphFromEditor: enqueueActions(({ enqueue }) => {
+      enqueue.raise({ type: "VIEW_SET", mode: "graph" });
+      enqueue.raise({ type: "EDITOR_CLOSE" });
+    }),
+    intentBreadcrumbProject: enqueueActions(({ enqueue }) => {
+      enqueue.raise({ type: "NOTES_LIST_DRILL_SET", drill: null });
+      enqueue.raise({ type: "USER_EXIT_WAKE_UP" });
+    }),
+    intentBreadcrumbSession: enqueueActions(({ enqueue, context }) => {
+      const pid = context.activeProjectId;
+      if (pid != null) {
+        enqueue.raise({ type: "ACTIVE_PROJECT_SET", projectId: pid });
+        enqueue.raise({
+          type: "NOTES_LIST_DRILL_SET",
+          drill: { type: "project", id: pid },
+        });
+      } else {
+        enqueue.raise({ type: "ACTIVE_PROJECT_SET", projectId: null });
+        enqueue.raise({
+          type: "NOTES_LIST_DRILL_SET",
+          drill: { type: "inbox" },
+        });
+      }
+      enqueue.raise({ type: "USER_EXIT_WAKE_UP" });
+    }),
+    intentSelectSessionFromSidebar: enqueueActions(({ enqueue, context, event }) => {
+      if (event.type !== "INTENT_SELECT_SESSION_FROM_SIDEBAR") return;
+      const wasNotesList = context.surfaceMode === "notesList";
+      enqueue.raise({ type: "ACTIVE_SESSION_SET", sessionId: event.sessionId });
+      if (wasNotesList) {
+        enqueue.raise({ type: "VIEW_SET", mode: "graph" });
+      }
     }),
     editorClose: assign({ editorOpen: false }),
     historyOpen: assign({ historyPanelOpen: true }),
@@ -216,7 +271,7 @@ export const appUiMachine = setup({
       notes: inp?.notes ?? "",
       chatLoading: false,
       inBreak: false,
-      editorOpen: false,
+      editorOpen: inp?.editorOpen ?? false,
       modelAwaitingDismissal: false,
       overlayDismissed: false,
       historyPanelOpen: false,
@@ -226,7 +281,9 @@ export const appUiMachine = setup({
       restWalkthroughDismissed: false,
       hasEverHadSessionSelection: inp?.hasEverHadSessionSelection ?? false,
       topAppTarget: inp?.topAppTarget ?? "file",
+      surfaceMode: inp?.surfaceMode ?? "graph",
       sidebarCollapseRequestSeq: inp?.sidebarCollapseRequestSeq ?? 0,
+      sidebarCollapseImmediateSeq: inp?.sidebarCollapseImmediateSeq ?? 0,
     };
   },
   on: {
@@ -265,10 +322,12 @@ export const appUiMachine = setup({
     VIEW_SET: [
       {
         guard: "viewIsNotesList",
+        actions: "assignSurfaceModeNotesList",
         target: ".surface.notesList",
       },
       {
         guard: "viewIsGraph",
+        actions: "assignSurfaceModeGraph",
         target: ".surface.graph",
       },
     ],
@@ -307,10 +366,46 @@ export const appUiMachine = setup({
       actions: "dismissRestWalkthroughUi",
     },
     EDITOR_OPEN: {
-      actions: "editorOpenTrue",
+      actions: "assignEditorOpenTrue",
+      reenter: true,
+      target: ".sidebarCollapsePolicy.pendingDelayed",
     },
     EDITOR_CLOSE: {
       actions: "editorClose",
+    },
+    INTENT_WAKE_SIGMA_CLICK: [
+      {
+        guard: "isWorkSigmaEditorReturnPath",
+        actions: [
+          "returnToGraphFromEditor",
+          "incrementSidebarCollapseImmediateSeq",
+        ],
+      },
+      {
+        guard: "canExitWakeUp",
+        actions: "raiseExitWakeUp",
+      },
+    ],
+    INTENT_BREADCRUMB_PROJECT_CLICK: {
+      guard: "canExitWakeUp",
+      actions: "intentBreadcrumbProject",
+    },
+    INTENT_BREADCRUMB_SESSION_CLICK: {
+      guard: "canExitWakeUp",
+      actions: "intentBreadcrumbSession",
+    },
+    INTENT_BREADCRUMB_FILE_CLICK: {
+      actions: ["returnToGraphFromEditor", "incrementSidebarCollapseImmediateSeq"],
+    },
+    INTENT_OPEN_NOTES_LIST: {
+      actions: ["assignNotesListDrillForOpenNotesIntent", "assignSurfaceModeNotesList"],
+      target: ".surface.notesList",
+    },
+    INTENT_RETURN_GRAPH_FROM_EDITOR: {
+      actions: ["returnToGraphFromEditor", "incrementSidebarCollapseImmediateSeq"],
+    },
+    INTENT_SELECT_SESSION_FROM_SIDEBAR: {
+      actions: "intentSelectSessionFromSidebar",
     },
     HISTORY_OPEN: {
       actions: "historyOpen",
@@ -334,6 +429,25 @@ export const appUiMachine = setup({
       states: {
         graph: {},
         notesList: {},
+      },
+    },
+    sidebarCollapsePolicy: {
+      initial: "idle",
+      states: {
+        idle: {},
+        pendingDelayed: {
+          after: {
+            [timings.sidebarCollapseAfterEditorOpenMs]: {
+              target: "idle",
+              actions: "incrementSidebarCollapseRequestSeq",
+            },
+          },
+          on: {
+            EDITOR_CLOSE: {
+              target: "idle",
+            },
+          },
+        },
       },
     },
     wakeUp: {
@@ -494,6 +608,28 @@ export function selectSurface(snapshot: MachineSnapshot): SurfaceMode {
 
 export function selectTopAppTarget(snapshot: MachineSnapshot): TopAppTarget {
   return snapshot.context.topAppTarget;
+}
+
+/** Work mode: editor open on graph — Σ returns to graph from session editor overlay. */
+export function selectWorkSigmaEditorFromSession(
+  snapshot: MachineSnapshot,
+): boolean {
+  const c = snapshot.context;
+  return (
+    c.preference === "work" &&
+    c.editorOpen &&
+    surfaceState(snapshot) === "graph"
+  );
+}
+
+/** Whether wake overlay shows Σ (work editor return or standard exit when allowed). */
+export function selectShowOverlaySigma(snapshot: MachineSnapshot): boolean {
+  const c = snapshot.context;
+  const workSigma = selectWorkSigmaEditorFromSession(snapshot);
+  const canExit = selectCanExitWakeUp(snapshot);
+  const overlaySigmaStandardExit =
+    canExit && !(c.editorOpen && surfaceState(snapshot) === "notesList");
+  return workSigma || overlaySigmaStandardExit;
 }
 
 /** Rest-session empty-thread walkthrough (think mode). */
