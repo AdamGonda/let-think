@@ -94,16 +94,11 @@ export function WakeUpOverlay({
             <Sigma className="size-5" />
           </Button>
         ) : null}
-        <div className="absolute top-3 left-4 z-10 flex flex-col items-center gap-2">
-          <Button
-            variant={topAppTarget === "spotify" ? "secondary" : "ghost"}
-            size="icon-sm"
-            onClick={() => onTopAppTargetChange("spotify")}
-            aria-label="Spotify mode"
-            aria-pressed={topAppTarget === "spotify"}
-          >
-            <SpotifyGlyph />
-          </Button>
+        <div
+          className={`absolute right-4 z-10 flex flex-col items-center gap-2 ${
+            showOverlaySigma ? "top-14" : "top-3"
+          }`}
+        >
           <Button
             variant={topAppTarget === "game" ? "secondary" : "ghost"}
             size="icon-sm"
@@ -121,6 +116,15 @@ export function WakeUpOverlay({
             aria-pressed={topAppTarget === "file"}
           >
             <FileText className="size-5" />
+          </Button>
+          <Button
+            variant={topAppTarget === "spotify" ? "secondary" : "ghost"}
+            size="icon-sm"
+            onClick={() => onTopAppTargetChange("spotify")}
+            aria-label="Spotify mode"
+            aria-pressed={topAppTarget === "spotify"}
+          >
+            <SpotifyGlyph />
           </Button>
         </div>
         <div className="shrink-0 px-6 pt-4 pb-2 flex flex-col items-center gap-2">
