@@ -20,6 +20,7 @@ export type { Mention };
 interface ChatProps {
   sessionId: Id<"sessions"> | null;
   onCreateSession?: () => Promise<Id<"sessions">>;
+  autoCollapseSignal?: string;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
   numberedConcepts?: NumberedConcept[];
@@ -39,6 +40,7 @@ interface ChatProps {
 export function Chat({
   sessionId,
   onCreateSession,
+  autoCollapseSignal = "",
   isLoading,
   setIsLoading,
   numberedConcepts = [],
@@ -156,6 +158,7 @@ export function Chat({
         content={lockedHistorical.content}
         mentions={lockedHistorical.mentions}
         workModeLoadingFrame={workModeLoadingFrame}
+        autoCollapseSignal={autoCollapseSignal}
       />
     );
   }

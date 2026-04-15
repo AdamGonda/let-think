@@ -75,13 +75,12 @@ export function AppContentBody({
     showRestSessionWalkthrough,
     hasChatHistory,
     topAppTarget,
-    sidebarCollapseRequestSeq,
-    sidebarCollapseImmediateSeq,
+    uiCollapseSignal,
     workSigmaEditorFromSession,
     showOverlaySigma,
   } = useAppContentSelectors();
   const actor = useAppUiActor();
-  const prevSidebarCollapseRef = useRef({ d: 0, i: 0 });
+  const prevCollapseSignalRef = useRef<string>("");
 
   const activeSessionInWorkspace = useMemo(
     () => findSessionInWorkspace(workspace, activeSessionId),
@@ -154,16 +153,10 @@ export function AppContentBody({
 
   /** Imperative sidebar adapter — reacts to XState collapse tokens (delayed + immediate). */
   useEffect(() => {
-    const p = prevSidebarCollapseRef.current;
-    const dChanged = sidebarCollapseRequestSeq !== p.d;
-    const iChanged = sidebarCollapseImmediateSeq !== p.i;
-    if (!dChanged && !iChanged) return;
-    prevSidebarCollapseRef.current = {
-      d: sidebarCollapseRequestSeq,
-      i: sidebarCollapseImmediateSeq,
-    };
+    if (uiCollapseSignal === prevCollapseSignalRef.current) return;
+    prevCollapseSignalRef.current = uiCollapseSignal;
     sessionSidebarRef.current?.collapse();
-  }, [sidebarCollapseRequestSeq, sidebarCollapseImmediateSeq, sessionSidebarRef]);
+  }, [uiCollapseSignal, sessionSidebarRef]);
 
   return (
     <SpotifyPlayerProvider>
@@ -264,6 +257,7 @@ export function AppContentBody({
             <Chat
               sessionId={activeSessionId}
               workModeLoadingFrame={workModeSessionLoading}
+              autoCollapseSignal={uiCollapseSignal}
               isLoading={chatLoading}
               setIsLoading={(loading) => setChatLoading(actor, loading)}
               onModelResponded={() => notifyModelFinished(actor)}

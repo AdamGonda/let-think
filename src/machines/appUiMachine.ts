@@ -610,6 +610,12 @@ export function selectTopAppTarget(snapshot: MachineSnapshot): TopAppTarget {
   return snapshot.context.topAppTarget;
 }
 
+/** General collapse signal token for UI elements that should close together. */
+export function selectUiCollapseSignal(snapshot: MachineSnapshot): string {
+  const { sidebarCollapseRequestSeq, sidebarCollapseImmediateSeq } = snapshot.context;
+  return `${sidebarCollapseRequestSeq}:${sidebarCollapseImmediateSeq}`;
+}
+
 /** Work mode: editor open on graph — Σ returns to graph from session editor overlay. */
 export function selectWorkSigmaEditorFromSession(
   snapshot: MachineSnapshot,

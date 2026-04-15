@@ -1,6 +1,7 @@
 import {
   useState,
   useLayoutEffect,
+  useEffect,
   useRef,
   type TransitionEvent,
 } from "react";
@@ -14,6 +15,7 @@ type HistoricalBatchPromptProps = {
   content: string;
   mentions?: HistoryMention[];
   workModeLoadingFrame?: boolean;
+  autoCollapseSignal?: string;
 };
 
 function prefersReducedMotion(): boolean {
@@ -32,6 +34,7 @@ export function HistoricalBatchPrompt({
   content,
   mentions,
   workModeLoadingFrame = false,
+  autoCollapseSignal = "",
 }: HistoricalBatchPromptProps) {
   const [expanded, setExpanded] = useState(false);
   /** Body region: grid 1fr (open) vs 0fr (collapsed height animation). */
@@ -65,6 +68,13 @@ export function HistoricalBatchPrompt({
       }
     };
   }, [expanded]);
+
+  useEffect(() => {
+    collapseClosePendingRef.current = false;
+    setIsCollapsing(false);
+    setBodyExpanded(false);
+    setExpanded(false);
+  }, [autoCollapseSignal]);
 
   const openPanel = () => {
     collapseClosePendingRef.current = false;
