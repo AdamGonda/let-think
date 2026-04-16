@@ -26,7 +26,7 @@ function getSteps(): DriveStep[] {
       popover: {
         title: "New session",
         description:
-          "Start a new thinking session. Each session builds a concept graph from your ideas. Click here whenever you want to begin fresh.",
+          "Start a fresh thinking thread. Each session keeps its own messages, concept graph, and notes context.",
         side: "right",
         align: "center",
       },
@@ -36,7 +36,7 @@ function getSteps(): DriveStep[] {
       popover: {
         title: "Projects",
         description:
-          "Create projects to organize related sessions. Drag and drop sessions between projects. Double-click to rename.",
+          "Group related sessions into projects. Drag sessions between projects and rename items inline as your workspace grows.",
         side: "right",
         align: "center",
       },
@@ -44,9 +44,9 @@ function getSteps(): DriveStep[] {
     {
       element: "[data-tour='notes-toggle']",
       popover: {
-        title: "Project notes",
+        title: "Project notes view",
         description:
-          "Switch to a list view of all your sessions and notes. Great for scanning and jumping between sessions.",
+          "Toggle between graph mode and a list view for project sessions and notes. Useful for scanning and jumping quickly.",
         side: "right",
         align: "center",
       },
@@ -58,7 +58,7 @@ function getSteps(): DriveStep[] {
       popover: {
         title: "Concept graph",
         description:
-          "As you chat, the AI extracts concepts and builds a graph. Each step adds new nodes. Use the arrows above to move between steps and see how ideas evolved.",
+          "Every response adds a graph batch. Move across steps to inspect how ideas evolved, then continue from the latest step.",
         side: "bottom",
         align: "center",
       },
@@ -70,7 +70,7 @@ function getSteps(): DriveStep[] {
       popover: {
         title: "Session input",
         description:
-          "Type your thoughts here and press Enter to send. Use <strong>@1</strong>, <strong>@2</strong>, etc. to reference concepts from the latest step—this gives the AI context about what you're building on.",
+          "Type and press Enter to send. Use <strong>@1</strong>, <strong>@2</strong>, etc. to reference numbered concepts from the current graph context.",
         side: "top",
         align: "center",
       },
@@ -80,9 +80,9 @@ function getSteps(): DriveStep[] {
         document.querySelector("[data-tour='notes-btn']") ??
         document.querySelector("[data-tour='main-content']")!,
       popover: {
-        title: "Thinking notes",
+        title: "Wake-up notes",
         description:
-          "While the AI thinks, you enter a focused \"Wake up\" mode to take notes. Your notes stay private and help you capture ideas as they form.",
+          "During thinking/break windows, use this to capture private notes. It keeps momentum without interrupting your session flow.",
         side: "bottom",
         align: "end",
       },
@@ -94,7 +94,7 @@ function getSteps(): DriveStep[] {
       popover: {
         title: "Conversation history",
         description:
-          "Browse the full conversation and jump to any step in the concept graph. Useful for revisiting earlier parts of your thinking.",
+          "Open the full thread, review older messages, and jump directly to a graph step when you want to revisit earlier reasoning.",
         side: "bottom",
         align: "end",
       },

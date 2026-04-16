@@ -1,64 +1,111 @@
 # Think
 
-Think won't blast you with a bunch of text. It will help you think through a problem
-by breaking it down into smaller concepts.
-it does not try to look smart, and act like a conscious AI
-it is an honest take on the use of the underlying technology of LLMs.
+Think is a focused thinking workspace.  
+Instead of only generating chat text, it turns each exchange into an evolving concept graph so you can branch ideas, revisit prior steps, and continue from specific concepts.
 
-no emotional manipulation from the model to think you are the best and smartest.
-hopefully it won't hallucinate as much.
-and cause mass hysteria and delusion.
+## Quick Start
 
-we use a reasoning model to generate around the user input
-and distill it and evolving context graph. 
-
-## Setup
-
-1. **Install dependencies** (already done):
+1. **Install dependencies**
    ```bash
    npm install
    ```
 
-2. **Initialize Convex** (creates `.env.local` with `VITE_CONVEX_URL`):
+2. **Initialize Convex** (creates `.env.local` with `VITE_CONVEX_URL`)
    ```bash
    npx convex dev
    ```
-   This will prompt you to sign in and create a Convex project. It will generate the `convex/_generated` folder and populate `.env.local`.
+   This prompts sign-in, creates/selects a Convex project, and generates `convex/_generated`.
 
-3. **Set Google AI API key** in Convex Dashboard:
-   - Go to [dashboard.convex.dev](https://dashboard.convex.dev)
-   - Select your project → Settings → Environment Variables
-   - Add `GOOGLE_GENERATIVE_AI_API_KEY` with your Google AI API key (Gemini 3.1 Pro Preview)
+3. **Set server environment variables** in Convex Dashboard
+   - Open [dashboard.convex.dev](https://dashboard.convex.dev)
+   - Project -> Settings -> Environment Variables
+   - Add `GOOGLE_GENERATIVE_AI_API_KEY` (used by chat actions)
+   - Add Spotify credentials if you use Spotify integration:
+     - `SPOTIFY_CLIENT_ID`
+     - `SPOTIFY_CLIENT_SECRET`
+     - `SPOTIFY_REDIRECT_URI`
 
-4. **Run the app**:
+4. **Run the app**
    ```bash
-   # Terminal 1: Convex (push functions, run mutations)
-   npm run dev:convex
-
-   # Terminal 2: Vite dev server
    npm run dev
    ```
+   `npm run dev` starts both Vite and `npx convex dev` concurrently.
 
 ## Environment Variables
 
 | Variable | Where | Description |
 |----------|-------|-------------|
 | `VITE_CONVEX_URL` | `.env.local` | Convex deployment URL (auto-set by `npx convex dev`) |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | Convex Dashboard | For Gemini 3.1 Pro Preview chat (never expose to client) |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Convex Dashboard | Server-side LLM key for chat + concept graph generation |
+| `SPOTIFY_CLIENT_ID` | Convex Dashboard | Spotify OAuth client id |
+| `SPOTIFY_CLIENT_SECRET` | Convex Dashboard | Spotify OAuth client secret |
+| `SPOTIFY_REDIRECT_URI` | Convex Dashboard | OAuth callback URL |
 
-Add client-side vars with the `VITE_` prefix in `.env` or `.env.local`. Vite auto-loads `.env`, `.env.local`, `.env.[mode]` and injects `VITE_*` vars at build time.
+Use the `VITE_` prefix only for client-safe values.
 
-## Project Structure
+## App Tutorial (In-Product)
+
+The onboarding tutorial is implemented in `src/components/Tutorial.tsx` and launched automatically for first-time users.
+
+It currently covers:
+- Main workspace and graph-first flow
+- Creating sessions and projects from the sidebar
+- Switching between graph and project-notes list views
+- Chat input with `@` concept references
+- Wake-up note-taking and history navigation
+
+You can replay it from the sidebar ("Run tutorial"), which dispatches the `think:run-tutorial` event.
+
+## Architecture (Current)
+
+### Frontend
+
+- `src/App.tsx` gates the app by Convex auth state, then mounts providers and workspace content.
+- `AppUiProvider` + UI actor hooks coordinate view state (graph/list mode, overlays, selected batch, loading frames, history panel, editor state).
+- `SessionDataProvider` loads session-bound data (messages, graph, interaction caps, timers, pagination).
+- `AppContentBody` composes the shell:
+  - `SessionSidebar` for projects/sessions/navigation actions
+  - Graph/list surface (`AppContentGraphSurface` or `NotesListPanel`)
+  - `Chat` composer (or `HistoricalBatchPrompt` when browsing earlier graph batches)
+  - overlays (`WakeUpOverlay`, rest walkthrough, tutorial)
+
+### Backend (Convex)
+
+- `convex/schema.ts` models:
+  - `projects`, `sessions`, `messages`
+  - `sessionConceptGraphs` (graph stored separate from session row)
+  - interaction tracking tables for think/work mode
+  - Spotify OAuth/token tables
+- `convex/sessions.ts` handles secure session/message CRUD, draft/notes persistence, paginated message history, and concept graph persistence.
+- `convex/chatPipeline.ts` defines LLM pre/post processing:
+  - injects system prompt and optional selected-concept context
+  - extracts concept graph JSON from assistant output
+  - strips graph block from user-visible assistant text
+
+### Runtime Flow
+
+1. User sends prompt in `Chat`.
+2. Backend action runs chat pipeline and persists user/assistant messages.
+3. Extracted concept graph is merged/persisted per session.
+4. UI re-renders graph + batch navigation; users can reference concept nodes via `@N` in the next prompt.
+
+## High-Level Structure
 
 ```
 ├── convex/
-│   ├── http.ts      # HTTP router
-│   ├── schema.ts    # Sessions & messages tables
-│   └── sessions.ts  # Queries & mutations for chat sessions
+│   ├── schema.ts              # Data model + indexes
+│   ├── sessions.ts            # Session/message queries and mutations
+│   ├── chat.ts                # Chat actions (send, topic generation)
+│   └── chatPipeline.ts        # LLM pre/post processing and graph extraction
 ├── src/
+│   ├── App.tsx                # Auth gating + provider composition
 │   ├── components/
-│   │   ├── Chat.tsx          # Chat UI with Vercel AI SDK
-│   │   └── SessionSidebar.tsx # Session list & new chat
-│   └── App.tsx      # Main layout: sidebar + chat
-└── .env.example    # Template for required env vars
+│   │   ├── AppContentBody.tsx # Main shell layout and panel orchestration
+│   │   ├── SessionSidebar.tsx # Session/project navigation UI
+│   │   ├── Tutorial.tsx       # Driver.js onboarding tour
+│   │   └── chat/Chat.tsx      # Composer + send flow
+│   ├── contexts/              # App UI + session data providers
+│   ├── hooks/                 # UI selectors, handlers, sync hooks
+│   └── lib/                   # Storage, mentions, graph helpers, auth utilities
+└── package.json               # Scripts and dependencies
 ```
