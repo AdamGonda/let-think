@@ -138,16 +138,16 @@ export function WakeUpOverlay({
             )}
         </div>
         {activeSessionId && (
-          <div className="flex-1 min-h-0 flex flex-col items-center justify-start px-6 pb-8 pt-2 overflow-hidden">
+          <div className="flex-1 min-h-0 flex flex-col items-stretch justify-start px-6 pb-8 pt-2 overflow-hidden">
             <div
-              className={`relative w-full ${layout.mainColumnMaxWidthClass} flex-1 min-h-0 flex flex-col justify-start overflow-y-auto transition-opacity duration-150 ${
+              className={`relative flex w-full flex-1 min-h-0 flex-col justify-start overflow-y-auto transition-opacity duration-150 ${
                 editorRevealReady ? "opacity-100" : "opacity-0"
               }`}
             >
               <div
                 className={
                   topAppTarget === "spotify"
-                    ? "flex-1 min-h-0 flex flex-col overflow-hidden"
+                    ? `mx-auto flex w-full ${layout.mainColumnMaxWidthClass} min-h-0 flex-1 flex-col overflow-hidden`
                     : "hidden"
                 }
               >
@@ -155,7 +155,9 @@ export function WakeUpOverlay({
               </div>
 
               {topAppTarget === "game" ? (
-                <div className="flex-1 min-h-0 flex items-start justify-start rounded-xl border border-zinc-800 bg-zinc-950/40 px-6 py-5 text-left">
+                <div
+                  className={`mx-auto flex w-full ${layout.mainColumnMaxWidthClass} min-h-0 flex-1 items-start justify-start rounded-xl border border-zinc-800 bg-zinc-950/40 px-6 py-5 text-left`}
+                >
                   <p className="text-zinc-300 text-lg">
                     Game content placeholder. Game-related flow UI will live here.
                   </p>
@@ -175,15 +177,19 @@ export function WakeUpOverlay({
                       onFileClick={onBreadcrumbFileClick}
                     />
                   ) : null}
-                  <MarkdownEditor
-                    value={notes}
-                    onChange={(v) => onNotesChange(v ?? "")}
-                    placeholder="Take notes…"
-                    variant="focused"
-                    dark={true}
-                    autoFocus
-                    autoFocusEnd
-                  />
+                  <div
+                    className={`mx-auto flex w-full min-h-0 flex-1 flex-col justify-start ${layout.mainColumnMaxWidthClass}`}
+                  >
+                    <MarkdownEditor
+                      value={notes}
+                      onChange={(v) => onNotesChange(v ?? "")}
+                      placeholder="Take notes…"
+                      variant="focused"
+                      dark={true}
+                      autoFocus
+                      autoFocusEnd
+                    />
+                  </div>
                 </>
               ) : null}
             </div>
