@@ -91,6 +91,7 @@ export const appUiMachine = setup({
       chatLoading: false,
       editorOpen: false,
       modelAwaitingDismissal: false,
+      showFileNoteBreadcrumbFromProjectNotes: false,
     }),
     sessionCleared: assign({
       chatLoading: false,
@@ -98,6 +99,7 @@ export const appUiMachine = setup({
       modelAwaitingDismissal: false,
       overlayDismissed: false,
       historyPanelOpen: false,
+      showFileNoteBreadcrumbFromProjectNotes: false,
     }),
     setActiveSessionId: assign({
       activeSessionId: ({ event }) => {
@@ -126,6 +128,7 @@ export const appUiMachine = setup({
       activeSessionId: () => null,
       activeProjectId: () => null,
       prevBatchesLength: () => 0,
+      showFileNoteBreadcrumbFromProjectNotes: false,
     }),
     autoSelectFirstWorkspaceSession: assign({
       activeSessionId: ({ event }) => {
@@ -189,6 +192,12 @@ export const appUiMachine = setup({
       reduceBatchesLengthChanged(context, event as AppUiEvent),
     ),
     assignEditorOpenTrue: assign({ editorOpen: true }),
+    setFileNoteBreadcrumbSource: assign({
+      showFileNoteBreadcrumbFromProjectNotes: ({ event }) => {
+        if (event.type !== "FILE_NOTE_BREADCRUMB_SOURCE_SET") return false;
+        return event.fromProjectNotesExplorer;
+      },
+    }),
     incrementSidebarCollapseRequestSeq: assign({
       sidebarCollapseRequestSeq: ({ context }) =>
         context.sidebarCollapseRequestSeq + 1,
@@ -215,6 +224,12 @@ export const appUiMachine = setup({
       enqueue.raise({ type: "VIEW_SET", mode: "graph" });
       enqueue.raise({ type: "EDITOR_CLOSE" });
     }),
+    /** Breadcrumb "Go to session": graph + close editor + leave file-explorer drill. */
+    goToSessionFromExplorerBreadcrumb: enqueueActions(({ enqueue }) => {
+      enqueue.raise({ type: "VIEW_SET", mode: "graph" });
+      enqueue.raise({ type: "EDITOR_CLOSE" });
+      enqueue.raise({ type: "NOTES_LIST_DRILL_SET", drill: null });
+    }),
     intentBreadcrumbProject: enqueueActions(({ enqueue }) => {
       enqueue.raise({ type: "NOTES_LIST_DRILL_SET", drill: null });
       enqueue.raise({ type: "USER_EXIT_WAKE_UP" });
@@ -238,13 +253,20 @@ export const appUiMachine = setup({
     }),
     intentSelectSessionFromSidebar: enqueueActions(({ enqueue, context, event }) => {
       if (event.type !== "INTENT_SELECT_SESSION_FROM_SIDEBAR") return;
+      enqueue.raise({
+        type: "FILE_NOTE_BREADCRUMB_SOURCE_SET",
+        fromProjectNotesExplorer: false,
+      });
       const wasNotesList = context.surfaceMode === "notesList";
       enqueue.raise({ type: "ACTIVE_SESSION_SET", sessionId: event.sessionId });
       if (wasNotesList) {
         enqueue.raise({ type: "VIEW_SET", mode: "graph" });
       }
     }),
-    editorClose: assign({ editorOpen: false }),
+    editorClose: assign({
+      editorOpen: false,
+      showFileNoteBreadcrumbFromProjectNotes: false,
+    }),
     historyOpen: assign({ historyPanelOpen: true }),
     historyClose: assign({ historyPanelOpen: false }),
     dismissRestWalkthroughUi: assign({ restWalkthroughDismissed: true }),
@@ -284,9 +306,14 @@ export const appUiMachine = setup({
       surfaceMode: inp?.surfaceMode ?? "graph",
       sidebarCollapseRequestSeq: inp?.sidebarCollapseRequestSeq ?? 0,
       sidebarCollapseImmediateSeq: inp?.sidebarCollapseImmediateSeq ?? 0,
+      showFileNoteBreadcrumbFromProjectNotes:
+        inp?.showFileNoteBreadcrumbFromProjectNotes ?? false,
     };
   },
   on: {
+    FILE_NOTE_BREADCRUMB_SOURCE_SET: {
+      actions: "setFileNoteBreadcrumbSource",
+    },
     ACTIVE_SESSION_SET: [
       {
         guard: "sessionBecameInactive",
@@ -365,11 +392,6 @@ export const appUiMachine = setup({
     REST_WALKTHROUGH_COMPLETE: {
       actions: "dismissRestWalkthroughUi",
     },
-    EDITOR_OPEN: {
-      actions: "assignEditorOpenTrue",
-      reenter: true,
-      target: ".sidebarCollapsePolicy.pendingDelayed",
-    },
     EDITOR_CLOSE: {
       actions: "editorClose",
     },
@@ -395,7 +417,10 @@ export const appUiMachine = setup({
       actions: "intentBreadcrumbSession",
     },
     INTENT_BREADCRUMB_FILE_CLICK: {
-      actions: ["returnToGraphFromEditor", "incrementSidebarCollapseImmediateSeq"],
+      actions: [
+        "goToSessionFromExplorerBreadcrumb",
+        "incrementSidebarCollapseImmediateSeq",
+      ],
     },
     INTENT_OPEN_NOTES_LIST: {
       actions: ["assignNotesListDrillForOpenNotesIntent", "assignSurfaceModeNotesList"],
@@ -433,6 +458,13 @@ export const appUiMachine = setup({
     },
     sidebarCollapsePolicy: {
       initial: "idle",
+      /** Handle here (not on machine root) so sibling `surface` is not reset to `graph`. */
+      on: {
+        EDITOR_OPEN: {
+          actions: "assignEditorOpenTrue",
+          target: ".pendingDelayed",
+        },
+      },
       states: {
         idle: {},
         pendingDelayed: {

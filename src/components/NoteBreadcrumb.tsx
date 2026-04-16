@@ -12,6 +12,7 @@ interface NoteBreadcrumbProps {
   onProjectClick: () => void;
   onSessionClick: () => void;
   onFileClick: () => void;
+  fileLabel?: string;
 }
 
 export function NoteBreadcrumb({
@@ -20,6 +21,7 @@ export function NoteBreadcrumb({
   onProjectClick,
   onSessionClick,
   onFileClick,
+  fileLabel = GO_TO_SESSION_LEAF,
 }: NoteBreadcrumbProps) {
   return (
     <nav aria-label="Breadcrumb" className="mb-3 w-full shrink-0">
@@ -54,11 +56,11 @@ export function NoteBreadcrumb({
           <button
             type="button"
             className={cn("block w-full min-w-0 underline", crumbButtonClass)}
-            title={GO_TO_SESSION_LEAF}
-            aria-label={`Go to session: ${sessionName}`}
+            title={fileLabel}
+            aria-label={`${fileLabel}: ${sessionName}`}
             onClick={onFileClick}
           >
-            {GO_TO_SESSION_LEAF}
+            {fileLabel}
           </button>
         </li>
       </ol>

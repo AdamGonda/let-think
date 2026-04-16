@@ -24,6 +24,11 @@ function ctx(partial: Partial<AppUiContext>): AppUiContext {
     restWalkthroughDoneForStorage: false,
     restWalkthroughDismissed: false,
     hasEverHadSessionSelection: false,
+    showFileNoteBreadcrumbFromProjectNotes: false,
+    topAppTarget: "file" as const,
+    surfaceMode: "graph" as const,
+    sidebarCollapseRequestSeq: 0,
+    sidebarCollapseImmediateSeq: 0,
     ...partial,
   };
 }

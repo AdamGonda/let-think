@@ -40,6 +40,7 @@ function baseInput(over: Partial<AppUiContext> = {}): Partial<AppUiContext> {
     surfaceMode: "graph",
     sidebarCollapseRequestSeq: 0,
     sidebarCollapseImmediateSeq: 0,
+    showFileNoteBreadcrumbFromProjectNotes: false,
     ...over,
   };
 }
@@ -177,9 +178,14 @@ describe("intent orchestration", () => {
     actor.stop();
   });
 
-  it("INTENT_BREADCRUMB_FILE_CLICK closes editor and bumps immediate collapse seq", () => {
+  it("INTENT_BREADCRUMB_FILE_CLICK closes editor, exits explorer drill, bumps immediate collapse seq", () => {
+    const pid = "proj_xyz789" as Id<"projects">;
     const actor = createActor(appUiMachine, {
-      input: baseInput({ editorOpen: true, surfaceMode: "notesList" }),
+      input: baseInput({
+        editorOpen: true,
+        surfaceMode: "notesList",
+        notesListDrill: { type: "project", id: pid },
+      }),
     });
     actor.start();
     const imm = actor.getSnapshot().context.sidebarCollapseImmediateSeq;
@@ -187,6 +193,27 @@ describe("intent orchestration", () => {
     expect(actor.getSnapshot().context.editorOpen).toBe(false);
     expect(actor.getSnapshot().context.sidebarCollapseImmediateSeq).toBe(imm + 1);
     expect(selectSurface(actor.getSnapshot())).toBe("graph");
+    expect(actor.getSnapshot().context.notesListDrill).toBeNull();
+    actor.stop();
+  });
+
+  it("EDITOR_OPEN keeps notes list surface + drill (explorer stays behind overlay)", () => {
+    const pid = "proj_xyz789" as Id<"projects">;
+    const actor = createActor(appUiMachine, {
+      input: baseInput({
+        surfaceMode: "notesList",
+        notesListDrill: { type: "project", id: pid },
+      }),
+    });
+    actor.start();
+    actor.send({ type: "VIEW_SET", mode: "notesList" });
+    actor.send({ type: "EDITOR_OPEN" });
+    expect(selectSurface(actor.getSnapshot())).toBe("notesList");
+    expect(actor.getSnapshot().context.notesListDrill).toEqual({
+      type: "project",
+      id: pid,
+    });
+    expect(actor.getSnapshot().context.editorOpen).toBe(true);
     actor.stop();
   });
 
@@ -213,6 +240,23 @@ describe("intent orchestration", () => {
     expect(actor.getSnapshot().context.sidebarCollapseRequestSeq).toBe(0);
     actor.stop();
     vi.useRealTimers();
+  });
+
+  it("file overlay breadcrumb flag clears when selecting session from sidebar", () => {
+    const actor = createActor(appUiMachine, {
+      input: baseInput({
+        showFileNoteBreadcrumbFromProjectNotes: true,
+      }),
+    });
+    actor.start();
+    actor.send({
+      type: "INTENT_SELECT_SESSION_FROM_SIDEBAR",
+      sessionId: "other_sess" as Id<"sessions">,
+    });
+    expect(actor.getSnapshot().context.showFileNoteBreadcrumbFromProjectNotes).toBe(
+      false,
+    );
+    actor.stop();
   });
 
   it("INTENT_SELECT_SESSION_FROM_SIDEBAR switches to graph when on notes list", () => {

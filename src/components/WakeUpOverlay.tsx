@@ -36,7 +36,8 @@ type WakeUpOverlayProps = {
         projectId: Id<"projects"> | null;
       }
     | undefined;
-  viewMode: "graph" | "notesList";
+  /** True only when the session was opened from the Project notes grid (not the sidebar tree). */
+  showFileNoteBreadcrumbFromProjectNotes: boolean;
   notes: string;
   onNotesChange: (value: string) => void;
   onBreadcrumbProjectClick: () => void;
@@ -57,7 +58,7 @@ export function WakeUpOverlay({
   editorRevealReady,
   activeSessionId,
   activeSessionInWorkspace,
-  viewMode,
+  showFileNoteBreadcrumbFromProjectNotes,
   notes,
   onNotesChange,
   onBreadcrumbProjectClick,
@@ -163,7 +164,9 @@ export function WakeUpOverlay({
 
               {topAppTarget === "file" ? (
                 <>
-                  {editorOpen && activeSessionInWorkspace && viewMode === "notesList" ? (
+                  {editorOpen &&
+                  activeSessionInWorkspace &&
+                  showFileNoteBreadcrumbFromProjectNotes ? (
                     <NoteBreadcrumb
                       projectName={activeSessionInWorkspace.projectName}
                       sessionName={activeSessionInWorkspace.session.title}

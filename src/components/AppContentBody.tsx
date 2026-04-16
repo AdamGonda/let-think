@@ -60,6 +60,7 @@ export function AppContentBody({
     activeSessionId,
     activeProjectId,
     notesListDrill,
+    showFileNoteBreadcrumbFromProjectNotes,
     selectedBatchIndex,
     draftInput,
     notes,
@@ -174,7 +175,9 @@ export function AppContentBody({
               editorRevealReady={editorRevealReady}
               activeSessionId={activeSessionId}
               activeSessionInWorkspace={activeSessionInWorkspace}
-              viewMode={viewMode}
+              showFileNoteBreadcrumbFromProjectNotes={
+                showFileNoteBreadcrumbFromProjectNotes
+              }
               notes={notes}
               onNotesChange={(v) => setWakeNotes(actor, v)}
               onBreadcrumbProjectClick={handleBreadcrumbProjectClick}

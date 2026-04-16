@@ -41,6 +41,11 @@ export type AppUiContext = {
   sidebarCollapseRequestSeq: number;
   /** Monotonic token: UI collapses sidebar immediately (return-to-graph, etc.). */
   sidebarCollapseImmediateSeq: number;
+  /**
+   * File overlay breadcrumb only after opening a session from the Project notes grid
+   * (`openSessionInFilesWithEditor`), not from the sidebar project tree.
+   */
+  showFileNoteBreadcrumbFromProjectNotes: boolean;
 };
 
 export type AppUiEvent =
@@ -77,6 +82,7 @@ export type AppUiEvent =
   | { type: "HISTORY_OPEN" }
   | { type: "HISTORY_CLOSE" }
   | { type: "TOP_APP_TARGET_SET"; target: TopAppTarget }
+  | { type: "FILE_NOTE_BREADCRUMB_SOURCE_SET"; fromProjectNotesExplorer: boolean }
   /** User intents — orchestration owned by the machine (see appUiCommands). */
   | { type: "INTENT_WAKE_SIGMA_CLICK" }
   | { type: "INTENT_BREADCRUMB_PROJECT_CLICK" }
