@@ -1,5 +1,6 @@
 import { useRef, useEffect, useLayoutEffect, useState, useMemo } from "react";
 import { clsx } from "clsx";
+import { Clipboard } from "lucide-react";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { layout } from "@/config";
 
@@ -31,6 +32,10 @@ interface ConceptGraphOverlayProps {
   referencedConceptIds?: Set<string>;
   /** When set, clicking a concept card appends `@n` to the chat draft (e.g. parent manages input). */
   onCardReferenceClick?: (conceptNumber: number) => void;
+  /** Dedicated copy-selection toggle independent from `@n` draft references. */
+  onCardCopySelectToggle?: (conceptId: string) => void;
+  /** Current concept IDs selected for copy-to-notes. */
+  copySelectedConceptIds?: Set<string>;
 }
 
 export function ConceptGraphOverlay({
@@ -41,6 +46,8 @@ export function ConceptGraphOverlay({
   onSelectedBatchIndexChange,
   referencedConceptIds,
   onCardReferenceClick,
+  onCardCopySelectToggle,
+  copySelectedConceptIds,
 }: ConceptGraphOverlayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphViewportRef = useRef<HTMLDivElement>(null);
@@ -171,6 +178,7 @@ export function ConceptGraphOverlay({
                 const showDescription = isHovered && node.description;
                 const isReferenced = referencedConceptIds?.has(node.id);
                 const showNumberBadge = isLatestBatch;
+                const isCopySelected = copySelectedConceptIds?.has(node.id);
 
                 return (
                   <Card
@@ -181,7 +189,15 @@ export function ConceptGraphOverlay({
                     tabIndex={onCardReferenceClick ? 0 : undefined}
                     onClick={
                       onCardReferenceClick
-                        ? () => onCardReferenceClick(number)
+                        ? (e) => {
+                            if (
+                              e.target instanceof Element &&
+                              e.target.closest("[data-card-copy-button='true']")
+                            ) {
+                              return;
+                            }
+                            onCardReferenceClick(number);
+                          }
                         : undefined
                     }
                     onKeyDown={
@@ -266,6 +282,42 @@ export function ConceptGraphOverlay({
                           {node.description}
                         </CardContent>
                       </div>
+                    )}
+                    {showNumberBadge && onCardCopySelectToggle && (
+                      <button
+                        type="button"
+                        data-card-copy-button="true"
+                        className={clsx(
+                          "absolute bottom-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-10 transition-colors cursor-pointer",
+                          "hover:text-foreground",
+                        )}
+                        aria-label={
+                          isCopySelected
+                            ? `Unselect ${node.name} for notes copy`
+                            : `Select ${node.name} for notes copy`
+                        }
+                        onPointerDown={(e) => {
+                          e.stopPropagation();
+                        }}
+                        onMouseDown={(e) => {
+                          e.stopPropagation();
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onCardCopySelectToggle(node.id);
+                        }}
+                        onKeyDown={(e) => {
+                          e.stopPropagation();
+                        }}
+                        style={{
+                          outline: isCopySelected
+                            ? "2px solid rgb(251 146 60)"
+                            : undefined,
+                          outlineOffset: 2,
+                        }}
+                      >
+                        <Clipboard className="size-3.5" aria-hidden="true" />
+                      </button>
                     )}
                   </Card>
                 );

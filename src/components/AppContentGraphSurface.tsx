@@ -20,6 +20,8 @@ type AppContentGraphSurfaceProps = {
   onHistoryOpen: () => void;
   onEditorOpen: () => void;
   onCardReferenceClick?: (conceptNumber: number) => void;
+  onCardCopySelectToggle?: (conceptId: string) => void;
+  copySelectedConceptIds?: Set<string>;
 };
 
 /**
@@ -40,6 +42,8 @@ export function AppContentGraphSurface({
   onHistoryOpen,
   onEditorOpen,
   onCardReferenceClick,
+  onCardCopySelectToggle,
+  copySelectedConceptIds,
 }: AppContentGraphSurfaceProps) {
   return (
     <>
@@ -69,6 +73,8 @@ export function AppContentGraphSurface({
           onSelectedBatchIndexChange={onSelectBatch}
           referencedConceptIds={referencedConceptIds}
           onCardReferenceClick={chatVisible ? onCardReferenceClick : undefined}
+          onCardCopySelectToggle={chatVisible ? onCardCopySelectToggle : undefined}
+          copySelectedConceptIds={copySelectedConceptIds}
         />
       </div>
     </>

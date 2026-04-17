@@ -1,4 +1,11 @@
-import { useMemo, useCallback, useEffect, useRef, type RefObject } from "react";
+import {
+  useMemo,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
 import { clsx } from "clsx";
 import { toast } from "sonner";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -22,7 +29,6 @@ import {
   buildNumberedConceptsFromGraph,
   formatReferenceTitleBullets,
   referencedConceptIdsFromDraft,
-  selectedConceptTitlesFromDraft,
 } from "../lib/conceptReferences";
 import { userInputForBatch, userMessageForBatch } from "../lib/batchUserInput";
 import { findSessionInWorkspace } from "../lib/workspaceQueries";
@@ -114,6 +120,9 @@ export function AppContentBody({
     actor,
     draftInput,
   });
+  const [copySelectedConceptIds, setCopySelectedConceptIds] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   const handleRestWalkthroughComplete = useCallback(() => {
     if (activeSessionId) {
@@ -131,6 +140,10 @@ export function AppContentBody({
   const isLatestBatch =
     batches.length === 0 || selectedBatchIndex === batches.length - 1;
 
+  useEffect(() => {
+    setCopySelectedConceptIds(new Set());
+  }, [activeSessionId, selectedBatchIndex]);
+
   const batchUserPrompt = useMemo(
     () => userInputForBatch(batches, messages, selectedBatchIndex),
     [batches, messages, selectedBatchIndex],
@@ -144,7 +157,9 @@ export function AppContentBody({
   );
 
   const handleEditorOpen = useCallback(() => {
-    const selectedTitles = selectedConceptTitlesFromDraft(draftInput, numberedConcepts);
+    const selectedTitles = numberedConcepts
+      .filter((concept) => copySelectedConceptIds.has(concept.id))
+      .map((concept) => concept.name);
     const clipboardPayload = formatReferenceTitleBullets(selectedTitles);
     openEditor(actor);
     if (!clipboardPayload || typeof navigator === "undefined" || !navigator.clipboard) {
@@ -158,7 +173,19 @@ export function AppContentBody({
       .catch(() => {
         toast.error("Could not copy selected references");
       });
-  }, [actor, draftInput, numberedConcepts]);
+  }, [actor, copySelectedConceptIds, numberedConcepts]);
+
+  const handleCardCopySelectToggle = useCallback((conceptId: string) => {
+    setCopySelectedConceptIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(conceptId)) {
+        next.delete(conceptId);
+      } else {
+        next.add(conceptId);
+      }
+      return next;
+    });
+  }, []);
 
   /** Composer stays visible in graph mode even when the stepper is on an earlier batch. */
   const chatComposerVisible = viewMode === "graph";
@@ -273,6 +300,10 @@ export function AppContentBody({
                 onCardReferenceClick={
                   isLatestBatch ? handleCardReferenceClick : undefined
                 }
+                onCardCopySelectToggle={
+                  isLatestBatch ? handleCardCopySelectToggle : undefined
+                }
+                copySelectedConceptIds={copySelectedConceptIds}
               />
             )}
           </div>
