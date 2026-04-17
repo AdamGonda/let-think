@@ -39,6 +39,7 @@ type WakeUpOverlayProps = {
   /** True only when the session was opened from the Project notes grid (not the sidebar tree). */
   showFileNoteBreadcrumbFromProjectNotes: boolean;
   notes: string;
+  notesSelectionRange: { start: number; end: number } | null;
   onNotesChange: (value: string) => void;
   onBreadcrumbProjectClick: () => void;
   onBreadcrumbSessionClick: () => void;
@@ -60,6 +61,7 @@ export function WakeUpOverlay({
   activeSessionInWorkspace,
   showFileNoteBreadcrumbFromProjectNotes,
   notes,
+  notesSelectionRange,
   onNotesChange,
   onBreadcrumbProjectClick,
   onBreadcrumbSessionClick,
@@ -183,6 +185,7 @@ export function WakeUpOverlay({
                     <MarkdownEditor
                       value={notes}
                       onChange={(v) => onNotesChange(v ?? "")}
+                      selectionRange={notesSelectionRange}
                       placeholder="Take notes…"
                       variant="focused"
                       dark={true}

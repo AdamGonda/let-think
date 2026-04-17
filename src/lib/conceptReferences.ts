@@ -194,13 +194,17 @@ export function formatReferenceTitleBullets(titles: string[]): string {
 
 /** Render markdown bullets with optional description text for each selected concept. */
 export function formatReferenceConceptBullets(
-  concepts: Array<{ name: string; description?: string }>,
+  concepts: Array<{ number?: number; name: string; description?: string }>,
 ): string {
-  return concepts
-    .map((concept) => {
-      const titleLine = `- ${concept.name}`;
-      if (!concept.description?.trim()) return titleLine;
-      return `${titleLine}\n  ${concept.description.trim()}`;
-    })
-    .join("\n");
+  const blocks = concepts.map((concept) => {
+    const referenceLine =
+      typeof concept.number === "number" ? `@${concept.number}` : null;
+    const titleLine = `- ${concept.name}`;
+    const descriptionLine = concept.description?.trim() || null;
+    return [referenceLine, titleLine, descriptionLine]
+      .filter((line): line is string => !!line)
+      .join("\n");
+  });
+  if (blocks.length === 0) return "";
+  return `------\n${blocks.join("\n------\n")}\n------`;
 }

@@ -52,6 +52,7 @@ function scrollCaretToEyeLevel(
 interface MarkdownEditorProps {
   value: string;
   onChange: (value: string | undefined) => void;
+  selectionRange?: { start: number; end: number } | null;
   placeholder?: string;
   className?: string;
   minHeight?: string;
@@ -68,6 +69,7 @@ interface MarkdownEditorProps {
 export function MarkdownEditor({
   value,
   onChange,
+  selectionRange = null,
   placeholder = "Write in markdown…",
   className = "",
   minHeight = "120px",
@@ -79,10 +81,12 @@ export function MarkdownEditor({
   const isFocused = variant === "focused";
   const wrapperRef = useRef<HTMLDivElement>(null);
   const endCursorAppliedRef = useRef(false);
+  const appliedSelectionRef = useRef<string | null>(null);
 
   /* Replace @uiw autoFocusEnd (broken with large bottom padding) for non-empty notes */
   useEffect(() => {
     if (!isFocused || !autoFocusEnd) return;
+    if (selectionRange) return;
     if (value.length === 0) {
       endCursorAppliedRef.current = false;
       return;
@@ -113,6 +117,37 @@ export function MarkdownEditor({
     });
     return () => cancelAnimationFrame(id);
   }, [isFocused, autoFocusEnd, value]);
+
+  useEffect(() => {
+    if (!selectionRange) return;
+    const key = `${selectionRange.start}:${selectionRange.end}:${value.length}`;
+    if (appliedSelectionRef.current === key) return;
+    const applySelection = () => {
+      const textarea = wrapperRef.current?.querySelector(
+        ".w-md-editor-text-input",
+      ) as HTMLTextAreaElement | null;
+      const scrollArea = wrapperRef.current?.querySelector(
+        ".w-md-editor-area",
+      ) as HTMLElement | null;
+      if (!textarea) return false;
+      const start = Math.max(0, Math.min(selectionRange.start, textarea.value.length));
+      const end = Math.max(start, Math.min(selectionRange.end, textarea.value.length));
+      textarea.focus();
+      textarea.setSelectionRange(start, end);
+      if (scrollArea) {
+        scrollCaretToEyeLevel(textarea, scrollArea);
+      }
+      appliedSelectionRef.current = key;
+      return true;
+    };
+    const first = requestAnimationFrame(() => {
+      if (applySelection()) return;
+      requestAnimationFrame(() => {
+        applySelection();
+      });
+    });
+    return () => cancelAnimationFrame(first);
+  }, [selectionRange, value]);
 
   useEffect(() => {
     if (!autoFocus) return;

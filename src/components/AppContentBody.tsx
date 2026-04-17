@@ -59,6 +59,28 @@ export type AppContentBodyProps = {
   sessionSidebarRef: RefObject<SessionSidebarHandle | null>;
 };
 
+type AppendedRange = {
+  start: number;
+  end: number;
+};
+
+function appendToNotesEnd(
+  currentNotes: string,
+  addition: string,
+): { text: string; appendedRange: AppendedRange | null } {
+  const trimmedAddition = addition.trim();
+  if (!trimmedAddition) {
+    return { text: currentNotes, appendedRange: null };
+  }
+  if (!currentNotes.trim()) {
+    return { text: trimmedAddition, appendedRange: { start: 0, end: trimmedAddition.length } };
+  }
+  const separator = currentNotes.endsWith("\n\n") ? "" : "\n\n";
+  const start = currentNotes.length + separator.length;
+  const text = `${currentNotes}${separator}${trimmedAddition}`;
+  return { text, appendedRange: { start, end: text.length } };
+}
+
 export function AppContentBody({
   onCreateSessionForFirstMessage,
   workspace,
@@ -123,6 +145,9 @@ export function AppContentBody({
   const [copySelectedConceptIds, setCopySelectedConceptIds] = useState<Set<string>>(
     () => new Set(),
   );
+  const [notesSelectionRange, setNotesSelectionRange] = useState<AppendedRange | null>(
+    null,
+  );
 
   const handleRestWalkthroughComplete = useCallback(() => {
     if (activeSessionId) {
@@ -160,24 +185,24 @@ export function AppContentBody({
     const selectedConcepts = numberedConcepts
       .filter((concept) => copySelectedConceptIds.has(concept.id))
       .map((concept) => ({
+        number: concept.number,
         name: concept.name,
         description: concept.description,
       }));
     const clipboardPayload = formatReferenceConceptBullets(selectedConcepts);
     openEditor(actor);
     setCopySelectedConceptIds(new Set());
-    if (!clipboardPayload || typeof navigator === "undefined" || !navigator.clipboard) {
+    if (!clipboardPayload) {
+      setNotesSelectionRange(null);
       return;
     }
-    void navigator.clipboard
-      .writeText(clipboardPayload)
-      .then(() => {
-        toast.success("Copied selected references");
-      })
-      .catch(() => {
-        toast.error("Could not copy selected references");
-      });
-  }, [actor, copySelectedConceptIds, numberedConcepts]);
+    const appended = appendToNotesEnd(notes, clipboardPayload);
+    setWakeNotes(actor, appended.text);
+    setNotesSelectionRange(appended.appendedRange);
+    toast.success(
+      selectedConcepts.length === 1 ? "concept inserted" : "concepts inserted",
+    );
+  }, [actor, copySelectedConceptIds, notes, numberedConcepts]);
 
   const handleCardCopySelectToggle = useCallback((conceptId: string) => {
     setCopySelectedConceptIds((previous) => {
@@ -230,6 +255,7 @@ export function AppContentBody({
                 showFileNoteBreadcrumbFromProjectNotes
               }
               notes={notes}
+              notesSelectionRange={notesSelectionRange}
               onNotesChange={(v) => setWakeNotes(actor, v)}
               onBreadcrumbProjectClick={handleBreadcrumbProjectClick}
               onBreadcrumbSessionClick={handleBreadcrumbSessionClick}
