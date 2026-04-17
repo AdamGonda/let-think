@@ -185,41 +185,10 @@ export function ConceptGraphOverlay({
                     key={node.id}
                     size="sm"
                     cornerRipple
-                    role={onCardReferenceClick ? "button" : undefined}
-                    tabIndex={onCardReferenceClick ? 0 : undefined}
-                    onClick={
-                      onCardReferenceClick
-                        ? (e) => {
-                            if (
-                              e.target instanceof Element &&
-                              e.target.closest("[data-card-copy-button='true']")
-                            ) {
-                              return;
-                            }
-                            onCardReferenceClick(number);
-                          }
-                        : undefined
-                    }
-                    onKeyDown={
-                      onCardReferenceClick
-                        ? (e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              onCardReferenceClick(number);
-                            }
-                          }
-                        : undefined
-                    }
                     className={clsx(
                       "relative flex h-full min-h-[200px] flex-col transition-colors duration-200",
-                      onCardReferenceClick && "cursor-pointer",
                       isReferenced && isLoading && "session-accent-ref-glow-pulse",
                     )}
-                    aria-label={
-                      onCardReferenceClick
-                        ? `Add or remove @${number} in message`
-                        : undefined
-                    }
                     onMouseEnter={() => setHoveredNode(node)}
                     onMouseLeave={() => setHoveredNode(null)}
                     style={{
@@ -230,27 +199,49 @@ export function ConceptGraphOverlay({
                     }}
                   >
                     {showNumberBadge && (
-                      <div
-                        className={clsx(
-                          "absolute top-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-10",
-                          isReferenced &&
-                            isLoading &&
-                            "session-accent-ref-outline-pulse",
-                        )}
-                        style={{
-                          outline: isReferenced
-                            ? "2px solid var(--session-accent)"
-                            : undefined,
-                          outlineOffset: 2,
-                        }}
-                      >
-                        {number}
-                      </div>
+                      onCardReferenceClick ? (
+                        <button
+                          type="button"
+                          className={clsx(
+                            "absolute top-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-20 pointer-events-auto cursor-pointer transition-colors hover:bg-muted/80",
+                            isReferenced &&
+                              isLoading &&
+                              "session-accent-ref-outline-pulse",
+                          )}
+                          aria-label={`Add or remove @${number} in message`}
+                          onClick={() => onCardReferenceClick(number)}
+                          style={{
+                            outline: isReferenced
+                              ? "2px solid var(--session-accent)"
+                              : undefined,
+                            outlineOffset: 2,
+                          }}
+                        >
+                          {number}
+                        </button>
+                      ) : (
+                        <div
+                          className={clsx(
+                            "absolute top-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-20 pointer-events-auto",
+                            isReferenced &&
+                              isLoading &&
+                              "session-accent-ref-outline-pulse",
+                          )}
+                          style={{
+                            outline: isReferenced
+                              ? "2px solid var(--session-accent)"
+                              : undefined,
+                            outlineOffset: 2,
+                          }}
+                        >
+                          {number}
+                        </div>
+                      )
                     )}
                     {/* Default: centered title only */}
                     <div
                       className={clsx(
-                        "absolute inset-0 flex items-center justify-center px-6 py-4 transition-opacity duration-200",
+                        "absolute inset-0 pointer-events-none flex items-center justify-center px-6 py-4 transition-opacity duration-200",
                         showDescription
                           ? "opacity-0 pointer-events-none"
                           : "opacity-100",
@@ -264,7 +255,7 @@ export function ConceptGraphOverlay({
                     {node.description && (
                       <div
                         className={clsx(
-                          "absolute inset-0 flex flex-col p-6 overflow-hidden transition-all duration-200 ease-out",
+                          "absolute inset-0 pointer-events-none flex flex-col p-6 overflow-hidden transition-all duration-200 ease-out",
                           showDescription
                             ? "opacity-100 translate-y-0"
                             : "opacity-0 pointer-events-none translate-y-2",
@@ -286,9 +277,8 @@ export function ConceptGraphOverlay({
                     {showNumberBadge && onCardCopySelectToggle && (
                       <button
                         type="button"
-                        data-card-copy-button="true"
                         className={clsx(
-                          "absolute bottom-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-10 transition-colors cursor-pointer",
+                          "absolute bottom-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-20 pointer-events-auto transition-colors cursor-pointer",
                           "hover:text-foreground",
                         )}
                         aria-label={
@@ -296,18 +286,8 @@ export function ConceptGraphOverlay({
                             ? `Unselect ${node.name} for notes copy`
                             : `Select ${node.name} for notes copy`
                         }
-                        onPointerDown={(e) => {
-                          e.stopPropagation();
-                        }}
-                        onMouseDown={(e) => {
-                          e.stopPropagation();
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
+                        onClick={() => {
                           onCardCopySelectToggle(node.id);
-                        }}
-                        onKeyDown={(e) => {
-                          e.stopPropagation();
                         }}
                         style={{
                           outline: isCopySelected
