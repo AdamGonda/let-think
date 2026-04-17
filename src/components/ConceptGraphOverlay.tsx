@@ -1,6 +1,6 @@
 import { useRef, useEffect, useLayoutEffect, useState, useMemo } from "react";
 import { clsx } from "clsx";
-import { Clipboard } from "lucide-react";
+import { Copy } from "lucide-react";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { layout } from "@/config";
 
@@ -316,7 +316,7 @@ export function ConceptGraphOverlay({
                           outlineOffset: 2,
                         }}
                       >
-                        <Clipboard className="size-3.5" aria-hidden="true" />
+                        <Copy className="size-3.5" aria-hidden="true" />
                       </button>
                     )}
                   </Card>

@@ -165,6 +165,7 @@ export function AppContentBody({
       }));
     const clipboardPayload = formatReferenceConceptBullets(selectedConcepts);
     openEditor(actor);
+    setCopySelectedConceptIds(new Set());
     if (!clipboardPayload || typeof navigator === "undefined" || !navigator.clipboard) {
       return;
     }
