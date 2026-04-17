@@ -174,3 +174,20 @@ export function referencedConceptIdsFromDraft(
   }
   return ids;
 }
+
+/** Selected concept titles ordered by concept number based on `@n` references in draft. */
+export function selectedConceptTitlesFromDraft(
+  draftInput: string | undefined,
+  numberedConcepts: NumberedConcept[],
+): string[] {
+  const selectedIds = referencedConceptIdsFromDraft(draftInput, numberedConcepts);
+  if (selectedIds.size === 0) return [];
+  return numberedConcepts
+    .filter((concept) => selectedIds.has(concept.id))
+    .map((concept) => concept.name);
+}
+
+/** Render bullet list lines suitable for direct paste into markdown notes. */
+export function formatReferenceTitleBullets(titles: string[]): string {
+  return titles.map((title) => `- ${title}`).join("\n");
+}

@@ -1,5 +1,6 @@
 import { useMemo, useCallback, useEffect, useRef, type RefObject } from "react";
 import { clsx } from "clsx";
+import { toast } from "sonner";
 import type { Id } from "../../convex/_generated/dataModel";
 import { useSessionData } from "../contexts/SessionDataContext";
 import { useAppUiActor } from "../hooks/useAppUi";
@@ -19,7 +20,9 @@ import { AppContentGraphSurface } from "./AppContentGraphSurface";
 import { Toaster } from "./ui/sonner";
 import {
   buildNumberedConceptsFromGraph,
+  formatReferenceTitleBullets,
   referencedConceptIdsFromDraft,
+  selectedConceptTitlesFromDraft,
 } from "../lib/conceptReferences";
 import { userInputForBatch, userMessageForBatch } from "../lib/batchUserInput";
 import { findSessionInWorkspace } from "../lib/workspaceQueries";
@@ -140,6 +143,23 @@ export function AppContentBody({
     [referenceSourceText, numberedConcepts],
   );
 
+  const handleEditorOpen = useCallback(() => {
+    const selectedTitles = selectedConceptTitlesFromDraft(draftInput, numberedConcepts);
+    const clipboardPayload = formatReferenceTitleBullets(selectedTitles);
+    openEditor(actor);
+    if (!clipboardPayload || typeof navigator === "undefined" || !navigator.clipboard) {
+      return;
+    }
+    void navigator.clipboard
+      .writeText(clipboardPayload)
+      .then(() => {
+        toast.success("Copied selected references");
+      })
+      .catch(() => {
+        toast.error("Could not copy selected references");
+      });
+  }, [actor, draftInput, numberedConcepts]);
+
   /** Composer stays visible in graph mode even when the stepper is on an earlier batch. */
   const chatComposerVisible = viewMode === "graph";
 
@@ -249,7 +269,7 @@ export function AppContentBody({
                 referencedConceptIds={referencedConceptIds}
                 onSelectBatch={(i) => setSelectedBatchIndex(actor, i)}
                 onHistoryOpen={() => openHistoryPanel(actor)}
-                onEditorOpen={() => openEditor(actor)}
+                onEditorOpen={handleEditorOpen}
                 onCardReferenceClick={
                   isLatestBatch ? handleCardReferenceClick : undefined
                 }

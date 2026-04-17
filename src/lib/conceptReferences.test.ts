@@ -3,11 +3,14 @@ import {
   appendAtReferenceToDraft,
   AT_REFERENCE_PATTERN,
   ensureSpaceAfterValidAtReferences,
+  formatReferenceTitleBullets,
+  selectedConceptTitlesFromDraft,
   toggleAtReferenceInDraft,
   type NumberedConcept,
 } from "./conceptReferences";
 
 const c1: NumberedConcept = { id: "n1", name: "One", number: 1 };
+const c2: NumberedConcept = { id: "n2", name: "Two", number: 2 };
 
 describe("AT_REFERENCE_PATTERN", () => {
   it("matches @n at word boundary", () => {
@@ -33,5 +36,20 @@ describe("ensureSpaceAfterValidAtReferences", () => {
 
   it("does not duplicate space", () => {
     expect(ensureSpaceAfterValidAtReferences("@1 x", [c1])).toBe("@1 x");
+  });
+});
+
+describe("selectedConceptTitlesFromDraft", () => {
+  it("returns selected concept titles in concept number order", () => {
+    expect(selectedConceptTitlesFromDraft("@2 @1 @99", [c1, c2])).toEqual([
+      "One",
+      "Two",
+    ]);
+  });
+});
+
+describe("formatReferenceTitleBullets", () => {
+  it("formats titles as markdown bullet lines", () => {
+    expect(formatReferenceTitleBullets(["One", "Two"])).toBe("- One\n- Two");
   });
 });
