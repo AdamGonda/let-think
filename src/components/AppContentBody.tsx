@@ -27,7 +27,7 @@ import { AppContentGraphSurface } from "./AppContentGraphSurface";
 import { Toaster } from "./ui/sonner";
 import {
   buildNumberedConceptsFromGraph,
-  formatReferenceTitleBullets,
+  formatReferenceConceptBullets,
   referencedConceptIdsFromDraft,
 } from "../lib/conceptReferences";
 import { userInputForBatch, userMessageForBatch } from "../lib/batchUserInput";
@@ -157,10 +157,13 @@ export function AppContentBody({
   );
 
   const handleEditorOpen = useCallback(() => {
-    const selectedTitles = numberedConcepts
+    const selectedConcepts = numberedConcepts
       .filter((concept) => copySelectedConceptIds.has(concept.id))
-      .map((concept) => concept.name);
-    const clipboardPayload = formatReferenceTitleBullets(selectedTitles);
+      .map((concept) => ({
+        name: concept.name,
+        description: concept.description,
+      }));
+    const clipboardPayload = formatReferenceConceptBullets(selectedConcepts);
     openEditor(actor);
     if (!clipboardPayload || typeof navigator === "undefined" || !navigator.clipboard) {
       return;

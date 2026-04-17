@@ -3,6 +3,7 @@ import {
   appendAtReferenceToDraft,
   AT_REFERENCE_PATTERN,
   ensureSpaceAfterValidAtReferences,
+  formatReferenceConceptBullets,
   formatReferenceTitleBullets,
   selectedConceptTitlesFromDraft,
   toggleAtReferenceInDraft,
@@ -51,5 +52,16 @@ describe("selectedConceptTitlesFromDraft", () => {
 describe("formatReferenceTitleBullets", () => {
   it("formats titles as markdown bullet lines", () => {
     expect(formatReferenceTitleBullets(["One", "Two"])).toBe("- One\n- Two");
+  });
+});
+
+describe("formatReferenceConceptBullets", () => {
+  it("formats selected concepts with optional descriptions", () => {
+    expect(
+      formatReferenceConceptBullets([
+        { name: "One", description: "First concept description." },
+        { name: "Two" },
+      ]),
+    ).toBe("- One\n  First concept description.\n- Two");
   });
 });

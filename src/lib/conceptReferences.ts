@@ -191,3 +191,16 @@ export function selectedConceptTitlesFromDraft(
 export function formatReferenceTitleBullets(titles: string[]): string {
   return titles.map((title) => `- ${title}`).join("\n");
 }
+
+/** Render markdown bullets with optional description text for each selected concept. */
+export function formatReferenceConceptBullets(
+  concepts: Array<{ name: string; description?: string }>,
+): string {
+  return concepts
+    .map((concept) => {
+      const titleLine = `- ${concept.name}`;
+      if (!concept.description?.trim()) return titleLine;
+      return `${titleLine}\n  ${concept.description.trim()}`;
+    })
+    .join("\n");
+}
