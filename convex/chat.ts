@@ -21,6 +21,7 @@ import {
   PROMPT_SUMMARY_INPUT_MAX_CHARS,
   PROMPT_SUMMARY_OUTPUT_MAX_CHARS,
 } from "./constants";
+import { modelConfig } from "./modelConfig";
 
 function makeUniqueNodeId(candidate: string, usedIds: Set<string>): string {
   const trimmed = candidate.trim() || "concept";
@@ -61,7 +62,7 @@ async function generatePromptSummary(
 User prompt:
 ${trimmed.slice(0, PROMPT_SUMMARY_INPUT_MAX_CHARS)}`;
 
-  const modelsToTry = ["gemini-3-flash-preview"];
+  const modelsToTry = modelConfig.titleAndHeaderModels;
   for (const modelId of modelsToTry) {
     try {
       const { text } = await generateText({
@@ -183,7 +184,7 @@ export const send = action({
 
     // 2. Call LLM (main response); topic is generated separately when message is inserted
     const result = await generateText({
-      model: google("gemini-3.1-pro-preview"),
+      model: google(modelConfig.mainContextGraphModel),
       system: "You are a helpful assistant.",
       messages: modelMessages,
     });
