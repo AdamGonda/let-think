@@ -81,7 +81,8 @@ export function MarkdownEditor({
   const isFocused = variant === "focused";
   const wrapperRef = useRef<HTMLDivElement>(null);
   const endCursorAppliedRef = useRef(false);
-  const appliedSelectionRef = useRef<string | null>(null);
+  /** Last programmatic range we applied — keyed by start/end only (not value length). */
+  const appliedSelectionRangeKeyRef = useRef<string | null>(null);
 
   /* Replace @uiw autoFocusEnd (broken with large bottom padding) for non-empty notes */
   useEffect(() => {
@@ -119,9 +120,13 @@ export function MarkdownEditor({
   }, [isFocused, autoFocusEnd, value]);
 
   useEffect(() => {
-    if (!selectionRange) return;
-    const key = `${selectionRange.start}:${selectionRange.end}:${value.length}`;
-    if (appliedSelectionRef.current === key) return;
+    if (!selectionRange) {
+      appliedSelectionRangeKeyRef.current = null;
+      return;
+    }
+    const rangeKey = `${selectionRange.start}:${selectionRange.end}`;
+    if (appliedSelectionRangeKeyRef.current === rangeKey) return;
+
     const applySelection = () => {
       const textarea = wrapperRef.current?.querySelector(
         ".w-md-editor-text-input",
@@ -137,7 +142,7 @@ export function MarkdownEditor({
       if (scrollArea) {
         scrollCaretToEyeLevel(textarea, scrollArea);
       }
-      appliedSelectionRef.current = key;
+      appliedSelectionRangeKeyRef.current = rangeKey;
       return true;
     };
     const first = requestAnimationFrame(() => {
@@ -147,7 +152,7 @@ export function MarkdownEditor({
       });
     });
     return () => cancelAnimationFrame(first);
-  }, [selectionRange, value]);
+  }, [selectionRange]);
 
   useEffect(() => {
     if (!autoFocus) return;
