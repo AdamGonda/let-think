@@ -10,12 +10,14 @@ import {
   preProcess,
   postProcess,
   extractConceptGraph,
+  buildConceptGraphPromptWindow,
   type ConceptGraph,
 } from "./chatPipeline";
 type ConceptNode = ConceptGraph["nodes"][number];
 import type { ModelMessage } from "ai";
 import {
   BATCH_PROMPT_SUMMARY_MAX_CHARS,
+  CONCEPT_GRAPH_PROMPT_BATCH_WINDOW,
   PROMPT_SUMMARY_INPUT_MAX_CHARS,
   PROMPT_SUMMARY_OUTPUT_MAX_CHARS,
 } from "./constants";
@@ -168,9 +170,13 @@ export const send = action({
       ...storedMessages.map((m) => ({ role: m.role, content: m.content })),
       { role: "user" as const, content: userContent },
     ]);
+    const promptConceptGraph = buildConceptGraphPromptWindow(
+      existingGraph,
+      CONCEPT_GRAPH_PROMPT_BATCH_WINDOW
+    );
     modelMessages = await preProcess(modelMessages, {
       sessionId,
-      conceptGraph: existingGraph,
+      conceptGraph: promptConceptGraph,
       selectedNodes: selectedNodeContext,
       meta: {},
     });
@@ -199,6 +205,7 @@ export const send = action({
       mentions,
     });
 
+    // Merge/persist always uses the full graph from the DB; the LLM only saw a recent window.
     let finalGraph: ConceptGraph | null = existingGraph;
     if (extractedGraph && extractedGraph.nodes.length > 0) {
       const existingNodes: ConceptNode[] = existingGraph?.nodes ?? [];

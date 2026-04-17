@@ -12,6 +12,50 @@ export type ConceptGraph = {
   } >;
 };
 
+/** Matches branching rule in `preProcess` (nodes per assistant turn). */
+const FALLBACK_NODES_PER_BATCH_ESTIMATE = 6;
+
+/**
+ * Builds a token-efficient prompt slice: last `batchWindowSize` batches, nodes referenced
+ * by those batches only, and edges with both endpoints in that node set.
+ * If `batches` is missing/empty, falls back to the last `batchWindowSize * FALLBACK_NODES_PER_BATCH_ESTIMATE`
+ * nodes (by array order) so legacy graphs still get partial context.
+ */
+export function buildConceptGraphPromptWindow(
+  full: ConceptGraph | null,
+  batchWindowSize: number
+): ConceptGraph | null {
+  if (!full || full.nodes.length === 0) return null;
+
+  const batches = full.batches;
+  if (batches && batches.length > 0) {
+    const windowBatches = batches.slice(-batchWindowSize);
+    const nodeIdSet = new Set<string>();
+    for (const b of windowBatches) {
+      for (const id of b.nodeIds) {
+        nodeIdSet.add(id);
+      }
+    }
+    const nodes = full.nodes.filter((n) => nodeIdSet.has(n.id));
+    const edges = full.edges.filter(
+      (e) => nodeIdSet.has(e.source) && nodeIdSet.has(e.target)
+    );
+    return {
+      nodes,
+      edges,
+      batches: windowBatches,
+    };
+  }
+
+  const tailCount = batchWindowSize * FALLBACK_NODES_PER_BATCH_ESTIMATE;
+  const tailNodes = full.nodes.slice(-tailCount);
+  const nodeIdSet = new Set(tailNodes.map((n) => n.id));
+  const edges = full.edges.filter(
+    (e) => nodeIdSet.has(e.source) && nodeIdSet.has(e.target)
+  );
+  return { nodes: tailNodes, edges };
+}
+
 /** Extract CONCEPT GRAPH from LLM response (expects ```json ... ``` block, prefers last one at end). */
 export function extractConceptGraph(text: string): ConceptGraph | null {
   let matches = [...text.matchAll(/```json\s*([\s\S]*?)```/g)];
@@ -69,7 +113,7 @@ export function stripConceptGraphBlock(text: string): string {
 
 export type PipelineContext = {
   sessionId?: string;
-  /** Existing concept graph to merge new nodes into */
+  /** Recent window of the concept graph for the prompt (not necessarily full session graph) */
   conceptGraph?: ConceptGraph | null;
   /** User-selected nodes to add as context to the prompt */
   selectedNodes?: Array<{ id: string; name: string; description?: string }>;
@@ -88,7 +132,7 @@ export async function preProcess(
   const existing = ctx?.conceptGraph;
   const fixedConceptNodeCount = 6;
   const graphContext = existing
-    ? `\n\nEXISTING CONCEPT GRAPH (merge new nodes into this):\n${JSON.stringify(existing)}`
+    ? `\n\nEXISTING CONCEPT GRAPH — recent window only (last batches). The full session graph may have more nodes; merge by adding NEW nodes with NEW ids, never reusing an id listed below):\n${JSON.stringify(existing)}`
     : "";
 
   const selectedContext =
@@ -104,7 +148,7 @@ IF NO CONCEPT GRAPH EXISTS IN CONTEXT:
 Generate a new CONCEPT GRAPH from scratch based on the ideas in your response.
 
 IF CONCEPT GRAPH EXISTS:
-Add new nodes to the CONCEPT GRAPH based on ideas in your response.
+Add new nodes to the CONCEPT GRAPH based on ideas in your response. Treat the graph above as a recent slice; your new nodes must still use ids that do not collide with any id in this window (the server tracks the full graph).
 
 Rules:
 - The user has set BRANCHING to ${fixedConceptNodeCount}. Generate exactly ${fixedConceptNodeCount} concepts (nodes) based on ideas in your response.

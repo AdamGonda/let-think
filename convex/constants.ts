@@ -13,5 +13,8 @@ export const PROMPT_SUMMARY_OUTPUT_MAX_CHARS = 100;
 /** Stored preview of user prompt on concept graph batches. */
 export const BATCH_PROMPT_SUMMARY_MAX_CHARS = 60;
 
+/** How many recent batches to include in the LLM prompt (token budget). */
+export const CONCEPT_GRAPH_PROMPT_BATCH_WINDOW = 3;
+
 /** Auto title from first user message when session title is still default. */
 export const SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS = 50;
