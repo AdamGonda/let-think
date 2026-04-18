@@ -265,7 +265,7 @@ export function ConceptGraphOverlay({
                           {node.name}
                         </CardTitle>
                         <CardContent
-                          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden text-muted-foreground text-sm sm:text-base lg:text-lg xl:text-xl leading-relaxed pt-4 text-left px-0"
+                          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden text-muted-foreground text-sm sm:text-base lg:text-lg xl:text-xl sm:leading-relaxed lg:leading-normal pt-4 text-left px-0"
                           style={{
                             fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
                           }}
