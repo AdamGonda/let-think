@@ -35,13 +35,9 @@ import { findSessionInWorkspace } from "../lib/workspaceQueries";
 import { CHAT_MESSAGES_PAGE_SIZE } from "@/config";
 import { SpotifyPlayerProvider } from "@/contexts/SpotifyPlayerContext";
 import { WakeUpOverlay } from "./WakeUpOverlay";
-import { RestSessionWalkthrough } from "./RestSessionWalkthrough";
 import { AppShell } from "./AppShell";
-import { markRestWalkthroughDoneForSession } from "@/lib/restSessionWalkthroughStorage";
 import {
   closeHistoryPanel,
-  completeRestWalkthroughUi,
-  notifyModelFinished,
   openEditor,
   openHistoryPanel,
   setChatLoading,
@@ -101,14 +97,13 @@ export function AppContentBody({
     viewMode,
     displayWakeUpLayer,
     isExitingOverlay,
-    workModeSessionLoading,
-    workModeNotesListDuringChatLoading,
+    chatLoadingOnGraphFrame,
+    chatLoadingOnNotesList,
     editorRevealReady,
-    showRestSessionWalkthrough,
     hasChatHistory,
     topAppTarget,
     uiCollapseSignal,
-    workSigmaEditorFromSession,
+    sigmaEditorFromSession,
     showOverlaySigma,
   } = useAppContentSelectors();
   const actor = useAppUiActor();
@@ -123,7 +118,6 @@ export function AppContentBody({
     conceptGraph,
     messages,
     batches,
-    breakRemainingMs,
     loadOlderMessages,
     canLoadOlderMessages,
   } = useSessionData();
@@ -148,13 +142,6 @@ export function AppContentBody({
   const [notesSelectionRange, setNotesSelectionRange] = useState<AppendedRange | null>(
     null,
   );
-
-  const handleRestWalkthroughComplete = useCallback(() => {
-    if (activeSessionId) {
-      markRestWalkthroughDoneForSession(activeSessionId);
-    }
-    completeRestWalkthroughUi(actor);
-  }, [actor, activeSessionId]);
 
   const numberedConcepts = useMemo(
     () =>
@@ -243,10 +230,9 @@ export function AppContentBody({
             <WakeUpOverlay
               chatLoading={chatLoading}
               isExitingOverlay={isExitingOverlay}
-              breakRemainingMs={breakRemainingMs}
               editorOpen={editorOpen}
               showOverlaySigma={showOverlaySigma}
-              workSigmaEditorFromSession={workSigmaEditorFromSession}
+              sigmaEditorFromSession={sigmaEditorFromSession}
               onSigmaClick={handleWakeUpSigmaClick}
               editorRevealReady={editorRevealReady}
               activeSessionId={activeSessionId}
@@ -265,16 +251,8 @@ export function AppContentBody({
             />
           ) : null
         }
-        restSessionWalkthrough={
-          showRestSessionWalkthrough ? (
-            <RestSessionWalkthrough
-              key={activeSessionId ?? undefined}
-              onComplete={handleRestWalkthroughComplete}
-            />
-          ) : null
-        }
         tutorial={<Tutorial autoStart={!getTutorialCompleted()} />}
-        mainInert={!!displayWakeUpLayer || showRestSessionWalkthrough}
+        mainInert={!!displayWakeUpLayer}
         toaster={<Toaster theme="dark" />}
       >
         <SessionSidebar
@@ -291,14 +269,12 @@ export function AppContentBody({
         <main
           className={clsx(
             "relative flex flex-1 flex-col min-w-0",
-            (workModeSessionLoading || workModeNotesListDuringChatLoading) &&
+            (chatLoadingOnGraphFrame || chatLoadingOnNotesList) &&
               "rounded-md session-loading-inset-ring-pulse",
           )}
           data-tour="main-content"
           aria-busy={
-            workModeSessionLoading || workModeNotesListDuringChatLoading
-              ? true
-              : undefined
+            chatLoadingOnGraphFrame || chatLoadingOnNotesList ? true : undefined
           }
         >
           <div
@@ -340,11 +316,10 @@ export function AppContentBody({
           {chatComposerVisible && (
             <Chat
               sessionId={activeSessionId}
-              workModeLoadingFrame={workModeSessionLoading}
+              sessionLoadingFrame={chatLoadingOnGraphFrame}
               autoCollapseSignal={uiCollapseSignal}
               isLoading={chatLoading}
               setIsLoading={(loading) => setChatLoading(actor, loading)}
-              onModelResponded={() => notifyModelFinished(actor)}
               numberedConcepts={numberedConcepts}
               draftInput={draftInput}
               setDraftInput={(v) => setDraftInput(actor, v)}

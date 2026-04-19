@@ -14,7 +14,7 @@ import type { HistoryMention } from "@/lib/chatHistoryMentionSegments";
 type HistoricalBatchPromptProps = {
   content: string;
   mentions?: HistoryMention[];
-  workModeLoadingFrame?: boolean;
+  sessionLoadingFrame?: boolean;
   autoCollapseSignal?: string;
 };
 
@@ -33,7 +33,7 @@ function prefersReducedMotion(): boolean {
 export function HistoricalBatchPrompt({
   content,
   mentions,
-  workModeLoadingFrame = false,
+  sessionLoadingFrame = false,
   autoCollapseSignal = "",
 }: HistoricalBatchPromptProps) {
   const [expanded, setExpanded] = useState(false);
@@ -103,7 +103,7 @@ export function HistoricalBatchPrompt({
     setExpanded(false);
   };
 
-  const chromeBorderClass = workModeLoadingFrame
+  const chromeBorderClass = sessionLoadingFrame
     ? "border-t-2 border-l-2 border-r-2 border-b-0 border-(--session-accent) session-loading-chat-chrome-pulse"
     : "border border-b-0 border-border";
 

@@ -82,7 +82,7 @@ function getSteps(): DriveStep[] {
       popover: {
         title: "Wake-up notes",
         description:
-          "During thinking/break windows, use this to capture private notes. It keeps momentum without interrupting your session flow.",
+          "Use this to capture private notes alongside your session. It keeps momentum without interrupting your flow.",
         side: "bottom",
         align: "end",
       },

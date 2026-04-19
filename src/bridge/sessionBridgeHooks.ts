@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import type { AppUiActorRef } from "@/contexts/appUiActorContext";
 import type { ProjectWithSessions } from "@/components/SessionSidebar";
 import type { Id } from "../../convex/_generated/dataModel";
-import { isRestWalkthroughDoneForSession } from "@/lib/restSessionWalkthroughStorage";
 import { buildWorkspaceSnapshot } from "@/lib/workspaceQueries";
 
 export function useSyncChatHistoryMeta(
@@ -22,15 +21,6 @@ export function useSyncChatHistoryMeta(
       messagesLoading: next.ml,
     });
   }, [hasChatHistory, messagesLoading, actor]);
-}
-
-export function useSyncBreakState(actor: AppUiActorRef, isInBreak: boolean): void {
-  const prevBreakRef = useRef<boolean | null>(null);
-  useEffect(() => {
-    if (prevBreakRef.current === isInBreak) return;
-    prevBreakRef.current = isInBreak;
-    actor.send({ type: "BREAK_CHANGED", inBreak: isInBreak });
-  }, [isInBreak, actor]);
 }
 
 export function useSyncBatchesLength(
@@ -65,19 +55,4 @@ export function useSyncWorkspaceSnapshot(
     prevWorkspaceKeyRef.current = key;
     actor.send({ type: "WORKSPACE_SNAPSHOT", ...snap });
   }, [workspace, actor]);
-}
-
-export function useSyncRestWalkthroughStorage(
-  actor: AppUiActorRef,
-  activeSessionId: Id<"sessions"> | null,
-): void {
-  useEffect(() => {
-    const done =
-      activeSessionId != null &&
-      isRestWalkthroughDoneForSession(activeSessionId);
-    actor.send({
-      type: "REST_WALKTHROUGH_STORAGE_SYNC",
-      doneForActiveSession: done,
-    });
-  }, [activeSessionId, actor]);
 }

@@ -1,9 +1,3 @@
-/** Think-mode break duration after interaction limit is reached. */
-export const BREAK_MS = 10 * 60 * 1000;
-
-/** Interactions allowed in restrict mode before a break. */
-export const RESTRICT_INTERACTION_LIMIT = 3;
-
 /** User prompt slice sent to the summarization model. */
 export const PROMPT_SUMMARY_INPUT_MAX_CHARS = 500;
 

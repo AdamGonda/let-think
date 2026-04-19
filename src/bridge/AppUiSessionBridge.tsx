@@ -5,9 +5,7 @@ import type { ProjectWithSessions } from "../components/SessionSidebar";
 import type { Id } from "../../convex/_generated/dataModel";
 import {
   useSyncBatchesLength,
-  useSyncBreakState,
   useSyncChatHistoryMeta,
-  useSyncRestWalkthroughStorage,
   useSyncWorkspaceSnapshot,
 } from "./sessionBridgeHooks";
 
@@ -29,17 +27,13 @@ export function AppUiSessionBridge({
     messagesLoading,
     canLoadOlderMessages,
     batches,
-    breakRemainingMs,
   } = useSessionData();
 
   const hasChatHistory = messages.length > 0 || canLoadOlderMessages;
-  const isInBreak = breakRemainingMs !== null && breakRemainingMs > 0;
 
   useSyncChatHistoryMeta(actor, hasChatHistory, messagesLoading);
-  useSyncBreakState(actor, isInBreak);
   useSyncBatchesLength(actor, activeSessionId, batches.length);
   useSyncWorkspaceSnapshot(actor, workspace);
-  useSyncRestWalkthroughStorage(actor, activeSessionId);
 
   return <>{children}</>;
 }

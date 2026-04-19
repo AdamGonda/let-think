@@ -1,5 +1,4 @@
 import { assign, enqueueActions, raise, setup } from "xstate";
-import { readWorkPreference } from "../lib/workPreferenceStorage";
 import { timings } from "@/config";
 import type {
   AppUiContext,
@@ -18,17 +17,9 @@ export function sessionSelected(c: AppUiContext): boolean {
   return c.activeSessionId != null;
 }
 
-/** Focus layer "demand" — same formula as previous overlayActive. */
+/** Focus layer "demand" — editor overlay (former unlimited/work path). */
 export function focusLayerDemand(c: AppUiContext): boolean {
-  if (c.preference === "work") {
-    return c.inBreak || c.editorOpen;
-  }
-  return (
-    c.chatLoading ||
-    c.inBreak ||
-    c.editorOpen ||
-    c.modelAwaitingDismissal
-  );
+  return c.editorOpen;
 }
 
 export const appUiMachine = setup({
@@ -42,8 +33,7 @@ export const appUiMachine = setup({
       !context.overlayDismissed &&
       sessionSelected(context),
     demandEnded: ({ context }) => !focusLayerDemand(context),
-    canExitWakeUp: ({ context }) =>
-      !context.chatLoading && !context.inBreak,
+    canExitWakeUp: ({ context }) => !context.chatLoading,
     canLeaveDismissedLatch: ({ context }) => !focusLayerDemand(context),
     sessionBecameInactive: ({ event }) =>
       event.type === "ACTIVE_SESSION_SET" && event.sessionId === null,
@@ -62,41 +52,25 @@ export const appUiMachine = setup({
       event.firstSessionId != null &&
       context.activeSessionId == null &&
       !context.hasEverHadSessionSelection,
-    isWorkSigmaEditorReturnPath: ({ context }) =>
-      context.preference === "work" &&
-      context.editorOpen &&
-      context.surfaceMode === "graph",
+    isSigmaEditorReturnPath: ({ context }) =>
+      context.editorOpen && context.surfaceMode === "graph",
   },
   actions: {
-    togglePreference: assign({
-      preference: ({ context }) =>
-        context.preference === "think" ? "work" : "think",
-    }),
-    setPreference: assign({
-      preference: ({ event }) => {
-        if (event.type !== "PREFERENCE_SET") return readWorkPreference();
-        return event.mode;
-      },
-    }),
     clearOnDemandEnd: assign({
       overlayDismissed: false,
-      modelAwaitingDismissal: false,
     }),
     clearDismissedAfterLatch: assign({
       overlayDismissed: false,
-      modelAwaitingDismissal: false,
     }),
     completeUserExit: assign({
       overlayDismissed: true,
       chatLoading: false,
       editorOpen: false,
-      modelAwaitingDismissal: false,
       showFileNoteBreadcrumbFromProjectNotes: false,
     }),
     sessionCleared: assign({
       chatLoading: false,
       editorOpen: false,
-      modelAwaitingDismissal: false,
       overlayDismissed: false,
       historyPanelOpen: false,
       showFileNoteBreadcrumbFromProjectNotes: false,
@@ -106,7 +80,6 @@ export const appUiMachine = setup({
         if (event.type !== "ACTIVE_SESSION_SET") return null;
         return event.sessionId;
       },
-      restWalkthroughDismissed: () => false,
       prevBatchesLength: ({ event, context }) => {
         if (event.type !== "ACTIVE_SESSION_SET") return context.prevBatchesLength;
         return 0;
@@ -140,7 +113,6 @@ export const appUiMachine = setup({
         return event.firstProjectId;
       },
       hasEverHadSessionSelection: () => true,
-      restWalkthroughDismissed: () => false,
       prevBatchesLength: () => 0,
     }),
     setNotesListDrill: assign({
@@ -169,25 +141,9 @@ export const appUiMachine = setup({
     }),
     startChatLoading: assign({ chatLoading: true }),
     endChatLoading: assign({ chatLoading: false }),
-    modelFinishedThink: assign({
-      modelAwaitingDismissal: ({ context }) =>
-        context.preference === "think" ? true : context.modelAwaitingDismissal,
-    }),
-    setBreak: assign({
-      inBreak: ({ event }) =>
-        event.type === "BREAK_CHANGED" ? event.inBreak : false,
-    }),
     syncChatHistoryMeta: assign(({ context, event }) =>
       reduceChatHistoryMeta(context, event as AppUiEvent),
     ),
-    syncRestWalkthroughStorage: assign({
-      restWalkthroughDoneForStorage: ({ event, context }) => {
-        if (event.type !== "REST_WALKTHROUGH_STORAGE_SYNC") {
-          return context.restWalkthroughDoneForStorage;
-        }
-        return event.doneForActiveSession;
-      },
-    }),
     applyBatchesLengthChanged: assign(({ context, event }) =>
       reduceBatchesLengthChanged(context, event as AppUiEvent),
     ),
@@ -269,7 +225,6 @@ export const appUiMachine = setup({
     }),
     historyOpen: assign({ historyPanelOpen: true }),
     historyClose: assign({ historyPanelOpen: false }),
-    dismissRestWalkthroughUi: assign({ restWalkthroughDismissed: true }),
     setTopAppTarget: assign({
       topAppTarget: ({ event, context }) => {
         if (event.type !== "TOP_APP_TARGET_SET") return context.topAppTarget;
@@ -283,7 +238,6 @@ export const appUiMachine = setup({
   context: ({ input }) => {
     const inp = input as Partial<AppUiContext> | undefined;
     return {
-      preference: inp?.preference ?? readWorkPreference(),
       activeSessionId: inp?.activeSessionId ?? null,
       activeProjectId: inp?.activeProjectId ?? null,
       notesListDrill: inp?.notesListDrill ?? null,
@@ -292,15 +246,11 @@ export const appUiMachine = setup({
       draftInput: inp?.draftInput ?? "",
       notes: inp?.notes ?? "",
       chatLoading: false,
-      inBreak: false,
       editorOpen: inp?.editorOpen ?? false,
-      modelAwaitingDismissal: false,
       overlayDismissed: false,
       historyPanelOpen: false,
       hasChatHistory: false,
       messagesLoading: false,
-      restWalkthroughDoneForStorage: false,
-      restWalkthroughDismissed: false,
       hasEverHadSessionSelection: inp?.hasEverHadSessionSelection ?? false,
       topAppTarget: inp?.topAppTarget ?? "file",
       surfaceMode: inp?.surfaceMode ?? "graph",
@@ -340,12 +290,6 @@ export const appUiMachine = setup({
     NOTES_SET: {
       actions: "setNotes",
     },
-    PREFERENCE_TOGGLE: {
-      actions: "togglePreference",
-    },
-    PREFERENCE_SET: {
-      actions: "setPreference",
-    },
     VIEW_SET: [
       {
         guard: "viewIsNotesList",
@@ -364,17 +308,8 @@ export const appUiMachine = setup({
     CHAT_LOADING_END: {
       actions: "endChatLoading",
     },
-    MODEL_FINISHED: {
-      actions: "modelFinishedThink",
-    },
-    BREAK_CHANGED: {
-      actions: "setBreak",
-    },
     CHAT_HISTORY_META: {
       actions: "syncChatHistoryMeta",
-    },
-    REST_WALKTHROUGH_STORAGE_SYNC: {
-      actions: "syncRestWalkthroughStorage",
     },
     BATCHES_LENGTH_CHANGED: {
       actions: "applyBatchesLengthChanged",
@@ -389,15 +324,12 @@ export const appUiMachine = setup({
         actions: "autoSelectFirstWorkspaceSession",
       },
     ],
-    REST_WALKTHROUGH_COMPLETE: {
-      actions: "dismissRestWalkthroughUi",
-    },
     EDITOR_CLOSE: {
       actions: "editorClose",
     },
     INTENT_WAKE_SIGMA_CLICK: [
       {
-        guard: "isWorkSigmaEditorReturnPath",
+        guard: "isSigmaEditorReturnPath",
         actions: [
           "returnToGraphFromEditor",
           "incrementSidebarCollapseImmediateSeq",
@@ -443,12 +375,6 @@ export const appUiMachine = setup({
     },
   },
   states: {
-    preference: {
-      initial: "ready",
-      states: {
-        ready: {},
-      },
-    },
     surface: {
       initial: "graph",
       states: {
@@ -600,25 +526,23 @@ export function selectEditorRevealReady(snapshot: MachineSnapshot): boolean {
   return false;
 }
 
-export function selectWorkModeSessionLoading(
+export function selectChatLoadingOnGraphFrame(
   snapshot: MachineSnapshot,
 ): boolean {
   const c = snapshot.context;
   return (
-    c.preference === "work" &&
     c.chatLoading &&
     sessionSelected(c) &&
     surfaceState(snapshot) === "graph"
   );
 }
 
-/** Work mode + LLM loading while on Files — show Σ to return to graph (overlay Σ is absent here). */
-export function selectWorkModeNotesListDuringChatLoading(
+/** LLM loading while on Files — show Σ to return to graph (overlay Σ is absent here). */
+export function selectChatLoadingOnNotesList(
   snapshot: MachineSnapshot,
 ): boolean {
   const c = snapshot.context;
   return (
-    c.preference === "work" &&
     c.chatLoading &&
     sessionSelected(c) &&
     surfaceState(snapshot) === "notesList"
@@ -627,11 +551,7 @@ export function selectWorkModeNotesListDuringChatLoading(
 
 export function selectCanExitWakeUp(snapshot: MachineSnapshot): boolean {
   const c = snapshot.context;
-  return !c.chatLoading && !c.inBreak;
-}
-
-export function selectIsWorkMode(snapshot: MachineSnapshot): boolean {
-  return snapshot.context.preference === "work";
+  return !c.chatLoading;
 }
 
 export function selectSurface(snapshot: MachineSnapshot): SurfaceMode {
@@ -648,39 +568,20 @@ export function selectUiCollapseSignal(snapshot: MachineSnapshot): string {
   return `${sidebarCollapseRequestSeq}:${sidebarCollapseImmediateSeq}`;
 }
 
-/** Work mode: editor open on graph — Σ returns to graph from session editor overlay. */
-export function selectWorkSigmaEditorFromSession(
+/** Editor open on graph — Σ returns to graph from session editor overlay. */
+export function selectSigmaEditorFromSession(
   snapshot: MachineSnapshot,
 ): boolean {
   const c = snapshot.context;
-  return (
-    c.preference === "work" &&
-    c.editorOpen &&
-    surfaceState(snapshot) === "graph"
-  );
+  return c.editorOpen && surfaceState(snapshot) === "graph";
 }
 
-/** Whether wake overlay shows Σ (work editor return or standard exit when allowed). */
+/** Whether wake overlay shows Σ (editor return or standard exit when allowed). */
 export function selectShowOverlaySigma(snapshot: MachineSnapshot): boolean {
   const c = snapshot.context;
-  const workSigma = selectWorkSigmaEditorFromSession(snapshot);
+  const sigma = selectSigmaEditorFromSession(snapshot);
   const canExit = selectCanExitWakeUp(snapshot);
   const overlaySigmaStandardExit =
     canExit && !(c.editorOpen && surfaceState(snapshot) === "notesList");
-  return workSigma || overlaySigmaStandardExit;
-}
-
-/** Rest-session empty-thread walkthrough (think mode). */
-export function selectShowRestSessionWalkthrough(
-  snapshot: MachineSnapshot,
-): boolean {
-  const c = snapshot.context;
-  return (
-    c.preference === "think" &&
-    sessionSelected(c) &&
-    !c.messagesLoading &&
-    !c.hasChatHistory &&
-    !c.restWalkthroughDoneForStorage &&
-    !c.restWalkthroughDismissed
-  );
+  return sigma || overlaySigmaStandardExit;
 }

@@ -7,10 +7,9 @@ import {
   appUiMachine,
   focusLayerDemand,
   selectShowOverlaySigma,
-  selectShowRestSessionWalkthrough,
   selectShowWakeUpOverlay,
+  selectSigmaEditorFromSession,
   selectSurface,
-  selectWorkSigmaEditorFromSession,
   sessionSelected,
 } from "./appUiMachine";
 
@@ -18,7 +17,6 @@ const sid = "jd7abc123" as Id<"sessions">;
 
 function baseInput(over: Partial<AppUiContext> = {}): Partial<AppUiContext> {
   return {
-    preference: "think",
     activeSessionId: sid,
     activeProjectId: null,
     notesListDrill: null,
@@ -27,15 +25,11 @@ function baseInput(over: Partial<AppUiContext> = {}): Partial<AppUiContext> {
     draftInput: "",
     notes: "",
     chatLoading: false,
-    inBreak: false,
     editorOpen: false,
-    modelAwaitingDismissal: false,
     overlayDismissed: false,
     historyPanelOpen: false,
     hasChatHistory: false,
     messagesLoading: false,
-    restWalkthroughDoneForStorage: false,
-    restWalkthroughDismissed: false,
     hasEverHadSessionSelection: true,
     surfaceMode: "graph",
     sidebarCollapseRequestSeq: 0,
@@ -54,45 +48,13 @@ describe("sessionSelected / focusLayerDemand", () => {
     expect(sessionSelected(fullCtx({ activeSessionId: null }))).toBe(false);
   });
 
-  it("work mode: demand true only for break or editor", () => {
+  it("demand true only when editor open", () => {
     const c = fullCtx({
-      preference: "work",
       chatLoading: true,
       editorOpen: false,
-      inBreak: false,
     });
     expect(focusLayerDemand(c)).toBe(false);
     expect(focusLayerDemand({ ...c, editorOpen: true })).toBe(true);
-    expect(focusLayerDemand({ ...c, inBreak: true, editorOpen: false })).toBe(true);
-  });
-
-  it("think mode: chatLoading implies demand", () => {
-    expect(focusLayerDemand(fullCtx({ chatLoading: true }))).toBe(true);
-  });
-});
-
-describe("selectShowRestSessionWalkthrough", () => {
-  it("true when think session, not loading, no history, walkthrough not done/dismissed", () => {
-    const actor = createActor(appUiMachine, {
-      input: baseInput(),
-    });
-    actor.start();
-    expect(selectShowRestSessionWalkthrough(actor.getSnapshot())).toBe(true);
-    actor.stop();
-  });
-
-  it("false when has chat history", () => {
-    const actor = createActor(appUiMachine, {
-      input: baseInput(),
-    });
-    actor.start();
-    actor.send({
-      type: "CHAT_HISTORY_META",
-      hasChatHistory: true,
-      messagesLoading: false,
-    });
-    expect(selectShowRestSessionWalkthrough(actor.getSnapshot())).toBe(false);
-    actor.stop();
   });
 });
 
@@ -107,12 +69,12 @@ describe("selectors from running actor", () => {
     actor.stop();
   });
 
-  it("wake-up overlay when demand and session selected", () => {
+  it("wake-up overlay when editor demand and session selected", () => {
     const actor = createActor(appUiMachine, {
       input: baseInput({ overlayDismissed: false }),
     });
     actor.start();
-    actor.send({ type: "CHAT_LOADING_START" });
+    actor.send({ type: "EDITOR_OPEN" });
     expect(selectShowWakeUpOverlay(actor.getSnapshot())).toBe(true);
     actor.stop();
   });
@@ -144,16 +106,15 @@ describe("intent orchestration", () => {
     actor.stop();
   });
 
-  it("INTENT_WAKE_SIGMA_CLICK closes editor and bumps immediate collapse in work mode on graph", () => {
+  it("INTENT_WAKE_SIGMA_CLICK closes editor and bumps immediate collapse on graph", () => {
     const actor = createActor(appUiMachine, {
       input: baseInput({
-        preference: "work",
         editorOpen: true,
         surfaceMode: "graph",
       }),
     });
     actor.start();
-    expect(selectWorkSigmaEditorFromSession(actor.getSnapshot())).toBe(true);
+    expect(selectSigmaEditorFromSession(actor.getSnapshot())).toBe(true);
     const imm = actor.getSnapshot().context.sidebarCollapseImmediateSeq;
     actor.send({ type: "INTENT_WAKE_SIGMA_CLICK" });
     expect(actor.getSnapshot().context.editorOpen).toBe(false);
@@ -161,12 +122,10 @@ describe("intent orchestration", () => {
     actor.stop();
   });
 
-  it("selectShowOverlaySigma matches think editor + notesList sigma rule", () => {
+  it("selectShowOverlaySigma: editor on notesList hides sigma; on graph shows", () => {
     const actor = createActor(appUiMachine, {
       input: baseInput({
-        preference: "think",
         editorOpen: true,
-        inBreak: false,
         chatLoading: false,
       }),
     });

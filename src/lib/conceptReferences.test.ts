@@ -62,6 +62,8 @@ describe("formatReferenceConceptBullets", () => {
         { name: "One", description: "First concept description." },
         { name: "Two" },
       ]),
-    ).toBe("- One\n  First concept description.\n- Two");
+    ).toBe(
+      "------\n- One\nFirst concept description.\n------\n- Two\n------",
+    );
   });
 });

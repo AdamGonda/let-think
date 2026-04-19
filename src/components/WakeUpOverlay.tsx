@@ -1,7 +1,6 @@
 import { layout } from "@/config";
 import { FileText, Gamepad2, Sigma } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { formatBreakCountdown } from "@/lib/formatBreakCountdown";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { NoteBreadcrumb } from "@/components/NoteBreadcrumb";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -22,10 +21,9 @@ function SpotifyGlyph() {
 type WakeUpOverlayProps = {
   chatLoading: boolean;
   isExitingOverlay: boolean;
-  breakRemainingMs: number | null;
   editorOpen: boolean;
   showOverlaySigma: boolean;
-  workSigmaEditorFromSession: boolean;
+  sigmaEditorFromSession: boolean;
   onSigmaClick: () => void;
   editorRevealReady: boolean;
   activeSessionId: Id<"sessions"> | null;
@@ -51,10 +49,9 @@ type WakeUpOverlayProps = {
 export function WakeUpOverlay({
   chatLoading,
   isExitingOverlay,
-  breakRemainingMs,
   editorOpen,
   showOverlaySigma,
-  workSigmaEditorFromSession,
+  sigmaEditorFromSession,
   onSigmaClick,
   editorRevealReady,
   activeSessionId,
@@ -89,7 +86,7 @@ export function WakeUpOverlay({
             className="absolute top-3 right-4 z-10"
             onClick={onSigmaClick}
             aria-label={
-              workSigmaEditorFromSession
+              sigmaEditorFromSession
                 ? "Return to concept graph"
                 : "Summarize and return to session"
             }
@@ -129,15 +126,6 @@ export function WakeUpOverlay({
           >
             <Gamepad2 className="size-5" />
           </Button>
-        </div>
-        <div className="shrink-0 px-6 pt-4 pb-2 flex flex-col items-center gap-2">
-          {breakRemainingMs != null &&
-            breakRemainingMs > 0 &&
-            !editorOpen && (
-              <span className="text-muted-foreground text-lg font-medium tabular-nums">
-                {formatBreakCountdown(breakRemainingMs)}
-              </span>
-            )}
         </div>
         {activeSessionId && (
           <div className="flex-1 min-h-0 flex flex-col items-stretch justify-start px-6 pb-8 pt-2 overflow-hidden">

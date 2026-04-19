@@ -49,18 +49,7 @@ export type SessionDataContextValue = {
   canLoadOlderMessages: boolean;
   /** Batches derived from concept graph */
   batches: NonNullable<ConceptGraphData["batches"]>;
-  /** Interactions remaining until long break */
-  remaining: number | null;
-  /** Break countdown in ms when in break */
-  breakRemainingMs: number | null;
-  /** "open" = unlimited; "restrict" = capped interactions + break */
-  interactionRestriction: "open" | "restrict";
-  /** True while remaining count is unknown (query loading or session not yet patched to restrict) */
-  interactionCountsPending: boolean;
-  /** Session manager actions */
   canSend: boolean;
-  onInteractionComplete: () => Promise<void>;
-  startBreakOptimistically: () => Promise<void>;
 };
 
 const SessionDataContext = createContext<SessionDataContextValue | null>(null);
@@ -109,15 +98,7 @@ export function SessionDataProvider({
   const messagesLoading = messagesStatus === "LoadingFirstPage";
   const canLoadOlderMessages = messagesStatus === "CanLoadMore";
 
-  const {
-    remaining,
-    breakRemainingMs,
-    interactionRestriction,
-    interactionCountsPending,
-    canSend,
-    onInteractionComplete,
-    startBreakOptimistically,
-  } = useSessionManager(sessionId);
+  const { canSend } = useSessionManager(sessionId);
 
   const batches = useMemo(
     () => conceptGraph?.batches ?? [],
@@ -132,13 +113,7 @@ export function SessionDataProvider({
       messagesLoading,
       canLoadOlderMessages,
       batches,
-      remaining,
-      breakRemainingMs,
-      interactionRestriction,
-      interactionCountsPending,
       canSend,
-      onInteractionComplete,
-      startBreakOptimistically,
     }),
     [
       conceptGraph,
@@ -147,13 +122,7 @@ export function SessionDataProvider({
       messagesLoading,
       canLoadOlderMessages,
       batches,
-      remaining,
-      breakRemainingMs,
-      interactionRestriction,
-      interactionCountsPending,
       canSend,
-      onInteractionComplete,
-      startBreakOptimistically,
     ]
   );
 

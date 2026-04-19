@@ -7,15 +7,13 @@ import {
   selectDisplayWakeUpLayer,
   selectEditorRevealReady,
   selectIsExitingWakeUp,
-  selectIsWorkMode,
   selectShowOverlaySigma,
-  selectShowRestSessionWalkthrough,
   selectSurface,
   selectTopAppTarget,
   selectUiCollapseSignal,
-  selectWorkModeNotesListDuringChatLoading,
-  selectWorkModeSessionLoading,
-  selectWorkSigmaEditorFromSession,
+  selectChatLoadingOnNotesList,
+  selectChatLoadingOnGraphFrame,
+  selectSigmaEditorFromSession,
 } from "../machines/appUiMachine";
 
 type AppSnapshot = SnapshotFrom<typeof appUiMachine>;
@@ -34,20 +32,14 @@ export type AppContentSelectors = {
   viewMode: ReturnType<typeof selectSurface>;
   displayWakeUpLayer: ReturnType<typeof selectDisplayWakeUpLayer>;
   isExitingOverlay: ReturnType<typeof selectIsExitingWakeUp>;
-  workModeSessionLoading: ReturnType<typeof selectWorkModeSessionLoading>;
-  workModeNotesListDuringChatLoading: ReturnType<
-    typeof selectWorkModeNotesListDuringChatLoading
-  >;
-  isWorkMode: ReturnType<typeof selectIsWorkMode>;
+  chatLoadingOnGraphFrame: ReturnType<typeof selectChatLoadingOnGraphFrame>;
+  chatLoadingOnNotesList: ReturnType<typeof selectChatLoadingOnNotesList>;
   canExitOverlay: ReturnType<typeof selectCanExitWakeUp>;
   editorRevealReady: ReturnType<typeof selectEditorRevealReady>;
-  showRestSessionWalkthrough: ReturnType<
-    typeof selectShowRestSessionWalkthrough
-  >;
   hasChatHistory: AppSnapshot["context"]["hasChatHistory"];
   topAppTarget: ReturnType<typeof selectTopAppTarget>;
   uiCollapseSignal: ReturnType<typeof selectUiCollapseSignal>;
-  workSigmaEditorFromSession: ReturnType<typeof selectWorkSigmaEditorFromSession>;
+  sigmaEditorFromSession: ReturnType<typeof selectSigmaEditorFromSession>;
   showOverlaySigma: ReturnType<typeof selectShowOverlaySigma>;
 };
 
@@ -70,17 +62,14 @@ function shallowEqualSelectors(
     a.viewMode === b.viewMode &&
     a.displayWakeUpLayer === b.displayWakeUpLayer &&
     a.isExitingOverlay === b.isExitingOverlay &&
-    a.workModeSessionLoading === b.workModeSessionLoading &&
-    a.workModeNotesListDuringChatLoading ===
-      b.workModeNotesListDuringChatLoading &&
-    a.isWorkMode === b.isWorkMode &&
+    a.chatLoadingOnGraphFrame === b.chatLoadingOnGraphFrame &&
+    a.chatLoadingOnNotesList === b.chatLoadingOnNotesList &&
     a.canExitOverlay === b.canExitOverlay &&
     a.editorRevealReady === b.editorRevealReady &&
-    a.showRestSessionWalkthrough === b.showRestSessionWalkthrough &&
     a.hasChatHistory === b.hasChatHistory &&
     a.topAppTarget === b.topAppTarget &&
     a.uiCollapseSignal === b.uiCollapseSignal &&
-    a.workSigmaEditorFromSession === b.workSigmaEditorFromSession &&
+    a.sigmaEditorFromSession === b.sigmaEditorFromSession &&
     a.showOverlaySigma === b.showOverlaySigma
   );
 }
@@ -101,17 +90,14 @@ function selectAppContentSnapshot(s: AppSnapshot): AppContentSelectors {
     viewMode: selectSurface(s),
     displayWakeUpLayer: selectDisplayWakeUpLayer(s),
     isExitingOverlay: selectIsExitingWakeUp(s),
-    workModeSessionLoading: selectWorkModeSessionLoading(s),
-    workModeNotesListDuringChatLoading:
-      selectWorkModeNotesListDuringChatLoading(s),
-    isWorkMode: selectIsWorkMode(s),
+    chatLoadingOnGraphFrame: selectChatLoadingOnGraphFrame(s),
+    chatLoadingOnNotesList: selectChatLoadingOnNotesList(s),
     canExitOverlay: selectCanExitWakeUp(s),
     editorRevealReady: selectEditorRevealReady(s),
-    showRestSessionWalkthrough: selectShowRestSessionWalkthrough(s),
     hasChatHistory: s.context.hasChatHistory,
     topAppTarget: selectTopAppTarget(s),
     uiCollapseSignal: selectUiCollapseSignal(s),
-    workSigmaEditorFromSession: selectWorkSigmaEditorFromSession(s),
+    sigmaEditorFromSession: selectSigmaEditorFromSession(s),
     showOverlaySigma: selectShowOverlaySigma(s),
   };
 }

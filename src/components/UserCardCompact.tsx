@@ -1,5 +1,5 @@
 import type { RefObject } from "react";
-import { ProfileAvatarWithModeAccent } from "./ProfileAvatarWithModeAccent";
+import { UserAvatar } from "./UserAvatar";
 import { UserCardMenuShell } from "./UserCardMenuShell";
 
 type UserLike = {
@@ -16,7 +16,6 @@ type UserCardCompactProps = {
   menuDisabled: boolean;
   /** When menu is disabled, optional handler so the avatar can still do something (e.g. expand sidebar). */
   onExpandSidebar?: () => void;
-  isWorkMode: boolean;
   signOut: () => void | Promise<void>;
   onRunTutorial?: () => void;
 };
@@ -28,7 +27,6 @@ export function UserCardCompact({
   setMenuOpen,
   menuDisabled,
   onExpandSidebar,
-  isWorkMode,
   signOut,
   onRunTutorial,
 }: UserCardCompactProps) {
@@ -49,22 +47,26 @@ export function UserCardCompact({
             aria-label="Expand sidebar"
             onClick={onExpandSidebar}
           >
-            <ProfileAvatarWithModeAccent
+            <UserAvatar
               imageUrl={user.image}
               name={user.name}
               email={user.email}
+              size="default"
+              className="after:hidden"
             />
           </button>
         ) : (
           <div
             className="flex cursor-default items-center justify-center rounded-md"
-            aria-label={`Account (${isWorkMode ? "Focus" : "Rest"} mode). Expand the sidebar to open the menu.`}
+            aria-label="Account. Expand the sidebar to open the menu."
             role="group"
           >
-            <ProfileAvatarWithModeAccent
+            <UserAvatar
               imageUrl={user.image}
               name={user.name}
               email={user.email}
+              size="default"
+              className="after:hidden"
             />
           </div>
         )
@@ -72,16 +74,18 @@ export function UserCardCompact({
         <button
           type="button"
           className="flex max-w-full items-center justify-center rounded-md hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
-          aria-label={`Open account menu (${isWorkMode ? "Focus" : "Rest"} mode)`}
+          aria-label="Open account menu"
           aria-expanded={menuOpen}
           aria-haspopup="menu"
           aria-controls="user-card-menu"
           onClick={() => setMenuOpen((o) => !o)}
         >
-          <ProfileAvatarWithModeAccent
+          <UserAvatar
             imageUrl={user.image}
             name={user.name}
             email={user.email}
+            size="default"
+            className="after:hidden"
           />
         </button>
       )}

@@ -33,11 +33,7 @@ type ChatComposerProps = {
   numberedConcepts: NumberedConcept[];
   isDisabled: boolean;
   isLoading: boolean;
-  workModeLoadingFrame: boolean;
-  showInteractionLine: boolean;
-  showUnlimitedInteractionLine: boolean;
-  remaining: number | null | undefined;
-  interactionCountsPending: boolean;
+  sessionLoadingFrame: boolean;
   onSubmit: (e: React.FormEvent) => void;
 };
 
@@ -48,11 +44,7 @@ export function ChatComposer({
   numberedConcepts,
   isDisabled,
   isLoading,
-  workModeLoadingFrame,
-  showInteractionLine,
-  showUnlimitedInteractionLine,
-  remaining,
-  interactionCountsPending,
+  sessionLoadingFrame,
   onSubmit,
 }: ChatComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -151,28 +143,12 @@ export function ChatComposer({
         className={clsx(
           `w-full ${layout.mainColumnMaxWidthClass} flex flex-col gap-3 rounded-t-2xl shadow-lg px-4 py-3 pb-4`,
           layout.sessionInputChromeMinClass,
-          workModeLoadingFrame
+          sessionLoadingFrame
             ? "border-t-2 border-l-2 border-r-2 border-b-0 border-(--session-accent) session-loading-chat-chrome-pulse"
             : "border border-b-0 border-border",
         )}
         style={{ backgroundColor: "#2B2B28" }}
       >
-        {showInteractionLine && (
-          <p className="text-sm font-medium text-muted-foreground tabular-nums min-h-[1.25em]">
-            <span className="inline-block min-w-[2ch] text-right">
-              {interactionCountsPending ? "$" : remaining}
-            </span>{" "}
-            {interactionCountsPending || remaining !== 1
-              ? "interactions"
-              : "interaction"}{" "}
-            until long break
-          </p>
-        )}
-        {showUnlimitedInteractionLine && (
-          <p className="text-sm font-medium text-muted-foreground min-h-[1.25em]">
-            Unlimited interactions
-          </p>
-        )}
         <form
           className="flex flex-col gap-2"
           onSubmit={onSubmit}

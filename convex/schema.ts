@@ -45,10 +45,6 @@ export default defineSchema({
     projectId: v.optional(v.id("projects")),
     title: v.string(),
     createdAt: v.number(),
-    /** "open" = no interaction cap; "restrict" = 3 interactions then long break */
-    interactionRestriction: v.optional(
-      v.union(v.literal("open"), v.literal("restrict")),
-    ),
     /** User's draft for next chat message, preserved across sessions */
     draftInput: v.optional(v.string()),
     /** Notes written during thinking/break period, separate from chat draft */
@@ -80,28 +76,6 @@ export default defineSchema({
       )
     ),
   }).index("by_session", ["sessionId"]),
-
-  /**
-   * Think-mode interaction cap per user (not per chat session).
-   * Absent row = Work/unlimited for server purposes until applyWorkPreferenceMode("restrict").
-   */
-  userThinkInteractions: defineTable({
-    userId: v.id("users"),
-    limit: v.number(),
-    used: v.number(),
-    breakEndsAt: v.optional(v.number()),
-    createdAt: v.number(),
-  }).index("by_user", ["userId"]),
-
-  /** Legacy per-session cap (unused). Run `internal.interactionSessions.deleteLegacyInteractionSessions` then drop. */
-  interactionSessions: defineTable({
-    sessionId: v.id("sessions"),
-    userId: v.id("users"),
-    limit: v.number(),
-    used: v.number(),
-    breakEndsAt: v.optional(v.number()),
-    createdAt: v.number(),
-  }).index("by_session", ["sessionId"]).index("by_user", ["userId"]),
 
   /**
    * Spotify OAuth + API — one row per app user (Convex Auth user id).

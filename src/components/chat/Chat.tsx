@@ -1,12 +1,11 @@
 import { useState } from "react";
-import { useAction, useMutation } from "convex/react";
+import { useAction } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import {
   useSessionData,
   type SessionMessage,
 } from "../../contexts/SessionDataContext";
-import { formatBreakCountdown } from "../../lib/formatBreakCountdown";
 import {
   resolveAtReferences,
   type Mention,
@@ -26,8 +25,7 @@ interface ChatProps {
   numberedConcepts?: NumberedConcept[];
   draftInput?: string;
   setDraftInput?: (value: string) => void;
-  onModelResponded?: () => void;
-  workModeLoadingFrame?: boolean;
+  sessionLoadingFrame?: boolean;
   /**
    * When set (non-latest graph batch), shows collapsed read-only prompt with history-style
    * mention rendering instead of the composer.
@@ -46,8 +44,7 @@ export function Chat({
   numberedConcepts = [],
   draftInput,
   setDraftInput,
-  onModelResponded,
-  workModeLoadingFrame = false,
+  sessionLoadingFrame = false,
   lockedHistorical = null,
   selectedBatchIndex,
 }: ChatProps) {
@@ -57,21 +54,7 @@ export function Chat({
     setDraftInput !== undefined ? setDraftInput : setInternalInput;
   const input = draft;
   const sendMessage = useAction(api.chat.send);
-  const recordInteraction = useMutation(api.interactionSessions.recordInteraction);
-  const {
-    canSend,
-    remaining,
-    breakRemainingMs,
-    onInteractionComplete,
-    startBreakOptimistically,
-    interactionRestriction,
-    interactionCountsPending,
-  } = useSessionData();
-  const restrictInteractions = interactionRestriction === "restrict";
-  const breakRemainingFormatted =
-    breakRemainingMs != null && breakRemainingMs > 0
-      ? formatBreakCountdown(breakRemainingMs)
-      : null;
+  const { canSend } = useSessionData();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -91,9 +74,6 @@ export function Chat({
       rawContent,
       numberedConcepts,
     );
-    if (restrictInteractions && remaining === 1) {
-      startBreakOptimistically();
-    }
     setIsLoading(true);
 
     try {
@@ -110,16 +90,8 @@ export function Chat({
             : undefined,
         mentions: mentions.length > 0 ? mentions : undefined,
       });
-      if (restrictInteractions) {
-        if (createdViaCallback) {
-          await recordInteraction({});
-        } else {
-          await onInteractionComplete();
-        }
-      }
       setInput("");
       setIsLoading(false);
-      onModelResponded?.();
     } catch (err) {
       console.error("Chat error:", err);
       setIsLoading(false);
@@ -130,26 +102,11 @@ export function Chat({
   const isDisabled = isLoading || !canSubmit;
 
   const placeholder =
-    breakRemainingFormatted
-      ? `Wake up in ${breakRemainingFormatted}`
-      : sessionId || onCreateSession
-        ? numberedConcepts.length > 0
-          ? "Type, @ ref concepts"
-          : "Type..."
-        : "Select a session to start";
-
-  const showInteractionLine =
-    !lockedHistorical &&
-    restrictInteractions &&
-    sessionId &&
-    breakRemainingMs === null &&
-    (remaining != null || interactionCountsPending);
-
-  const showUnlimitedInteractionLine =
-    !lockedHistorical &&
-    !restrictInteractions &&
-    sessionId &&
-    breakRemainingMs === null;
+    sessionId || onCreateSession
+      ? numberedConcepts.length > 0
+        ? "Type, @ ref concepts"
+        : "Type..."
+      : "Select a session to start";
 
   if (lockedHistorical) {
     return (
@@ -157,7 +114,7 @@ export function Chat({
         key={`${sessionId ?? "none"}-${selectedBatchIndex}`}
         content={lockedHistorical.content}
         mentions={lockedHistorical.mentions}
-        workModeLoadingFrame={workModeLoadingFrame}
+        sessionLoadingFrame={sessionLoadingFrame}
         autoCollapseSignal={autoCollapseSignal}
       />
     );
@@ -171,11 +128,7 @@ export function Chat({
       numberedConcepts={numberedConcepts}
       isDisabled={isDisabled}
       isLoading={isLoading}
-      workModeLoadingFrame={workModeLoadingFrame}
-      showInteractionLine={!!showInteractionLine}
-      showUnlimitedInteractionLine={!!showUnlimitedInteractionLine}
-      remaining={remaining}
-      interactionCountsPending={interactionCountsPending}
+      sessionLoadingFrame={sessionLoadingFrame}
       onSubmit={handleSubmit}
     />
   );

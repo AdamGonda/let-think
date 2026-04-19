@@ -3,7 +3,6 @@ import { useDismissOnOutsideAndEscape } from "../hooks/useDismissOnOutsideAndEsc
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useWorkPreference } from "../hooks/useWorkPreference";
 import { UserCardCompact } from "./UserCardCompact";
 import { UserCardExpanded } from "./UserCardExpanded";
 
@@ -24,13 +23,8 @@ export function UserCard({
 }: UserCardProps) {
   const user = useQuery(api.users.currentUser);
   const { signOut } = useAuthActions();
-  const { isWorkMode, setMode } = useWorkPreference();
   const [menuOpen, setMenuOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-
-  const toggleWorkMode = () => {
-    setMode(isWorkMode ? "think" : "work");
-  };
 
   useDismissOnOutsideAndEscape(containerRef, menuOpen, () =>
     setMenuOpen(false),
@@ -55,7 +49,6 @@ export function UserCard({
         setMenuOpen={setMenuOpen}
         menuDisabled={menuDisabled}
         onExpandSidebar={onExpandSidebar}
-        isWorkMode={isWorkMode}
         signOut={signOut}
         onRunTutorial={onRunTutorial}
       />
@@ -69,8 +62,6 @@ export function UserCard({
       containerRef={containerRef}
       menuOpen={menuOpen}
       setMenuOpen={setMenuOpen}
-      isWorkMode={isWorkMode}
-      onToggleWorkMode={toggleWorkMode}
       signOut={signOut}
       onRunTutorial={onRunTutorial}
     />

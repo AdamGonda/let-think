@@ -26,7 +26,6 @@ export default mergeConfig(
           'src/hooks/useNotesListModel.ts',
           'src/hooks/useSessionManager.ts',
           'convex/chatPipeline.ts',
-          'convex/interactionPolicy.ts',
         ],
         exclude: ['**/*.d.ts', '**/convex/_generated/**'],
         thresholds: {

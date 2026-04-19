@@ -5,7 +5,6 @@ import { reduceBatchesLengthChanged, reduceChatHistoryMeta } from "./appUiReduce
 
 function ctx(partial: Partial<AppUiContext>): AppUiContext {
   return {
-    preference: "think",
     activeSessionId: null,
     activeProjectId: null,
     notesListDrill: null,
@@ -14,15 +13,11 @@ function ctx(partial: Partial<AppUiContext>): AppUiContext {
     draftInput: "",
     notes: "",
     chatLoading: false,
-    inBreak: false,
     editorOpen: false,
-    modelAwaitingDismissal: false,
     overlayDismissed: false,
     historyPanelOpen: false,
     hasChatHistory: true,
     messagesLoading: false,
-    restWalkthroughDoneForStorage: false,
-    restWalkthroughDismissed: false,
     hasEverHadSessionSelection: false,
     showFileNoteBreadcrumbFromProjectNotes: false,
     topAppTarget: "file" as const,
@@ -35,7 +30,7 @@ function ctx(partial: Partial<AppUiContext>): AppUiContext {
 
 describe("reduceChatHistoryMeta", () => {
   it("returns empty for non-matching event", () => {
-    expect(reduceChatHistoryMeta(ctx({}), { type: "PREFERENCE_TOGGLE" })).toEqual(
+    expect(reduceChatHistoryMeta(ctx({}), { type: "VIEW_SET", mode: "graph" })).toEqual(
       {},
     );
   });
@@ -75,7 +70,7 @@ describe("reduceChatHistoryMeta", () => {
 describe("reduceBatchesLengthChanged", () => {
   it("returns empty for wrong event type", () => {
     expect(
-      reduceBatchesLengthChanged(ctx({}), { type: "PREFERENCE_TOGGLE" }),
+      reduceBatchesLengthChanged(ctx({}), { type: "VIEW_SET", mode: "graph" }),
     ).toEqual({});
   });
 

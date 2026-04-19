@@ -1,8 +1,7 @@
 import type { RefObject } from "react";
 import { MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ProfileAvatarWithModeAccent } from "./ProfileAvatarWithModeAccent";
-import { UserCardModeToggle } from "./UserCardModeToggle";
+import { UserAvatar } from "./UserAvatar";
 import { UserCardMenuShell } from "./UserCardMenuShell";
 
 type UserLike = {
@@ -17,8 +16,6 @@ type UserCardExpandedProps = {
   containerRef: RefObject<HTMLDivElement | null>;
   menuOpen: boolean;
   setMenuOpen: (open: boolean | ((o: boolean) => boolean)) => void;
-  isWorkMode: boolean;
-  onToggleWorkMode: () => void;
   signOut: () => void | Promise<void>;
   onRunTutorial?: () => void;
 };
@@ -29,8 +26,6 @@ export function UserCardExpanded({
   containerRef,
   menuOpen,
   setMenuOpen,
-  isWorkMode,
-  onToggleWorkMode,
   signOut,
   onRunTutorial,
 }: UserCardExpandedProps) {
@@ -44,21 +39,18 @@ export function UserCardExpanded({
       variant="expanded"
     >
       <>
-        <ProfileAvatarWithModeAccent
+        <UserAvatar
           imageUrl={user.image}
           name={user.name}
           email={user.email}
-          showAccentRing={false}
+          size="default"
+          className="after:hidden"
         />
         <div className="flex-1 min-w-0">
           <div className="flex min-w-0 items-center gap-2">
             <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
               {displayName}
             </p>
-            <UserCardModeToggle
-              isWorkMode={isWorkMode}
-              onToggle={onToggleWorkMode}
-            />
           </div>
           <p className="truncate text-xs text-muted-foreground">Free plan</p>
         </div>

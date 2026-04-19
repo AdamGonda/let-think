@@ -13,7 +13,7 @@ import { useAppUiSelector } from "./hooks/useAppUi";
 import { AppContentBody } from "./components/AppContentBody";
 import { type SessionSidebarHandle } from "./components/SessionSidebar";
 import { SignIn } from "./components/SignIn";
-import { WorkPreferenceSync } from "./components/WorkPreferenceSync";
+import { useSessionAccentCssVars } from "./hooks/useSessionAccentCssVars";
 import { AppUiSessionBridge } from "./bridge/AppUiSessionBridge";
 import { useSessionEditorSync } from "./hooks/useSessionEditorSync";
 import { useDefaultSessionSelection } from "./hooks/useDefaultSessionSelection";
@@ -63,12 +63,12 @@ function AppContent() {
   const projectsWithSessions = useQuery(api.projects.listWithSessions);
   const { handleCreateSessionForFirstMessage } = useDefaultSessionSelection();
   useSessionEditorSync(activeSessionId);
+  useSessionAccentCssVars();
   const mainContentRef = useRef<HTMLDivElement>(null);
   const sessionSidebarRef = useRef<SessionSidebarHandle>(null);
 
   return (
     <>
-      <WorkPreferenceSync />
       <SessionDataProvider sessionId={activeSessionId}>
         <AppUiSessionBridge
           workspace={projectsWithSessions}

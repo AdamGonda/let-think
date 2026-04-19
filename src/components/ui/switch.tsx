@@ -3,9 +3,9 @@ import { cn } from "@/lib/utils";
 const DEFAULT_TRACK = "bg-[#6e6e6e]";
 
 export interface SwitchInternalLabel {
-  /** Shown inside the track on the right when unchecked (knob left), e.g. Rest. */
+  /** Shown inside the track on the right when unchecked (knob left). */
   off: string;
-  /** Shown inside the track on the left when checked (knob right), e.g. Focus. */
+  /** Shown inside the track on the left when checked (knob right). */
   on: string;
 }
 

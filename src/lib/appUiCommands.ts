@@ -2,15 +2,14 @@
  * App UI command layer — components call these instead of raw `actor.send` where possible.
  *
  * Event categories (see `AppUiEvent` in `appUiMachine`):
- * - **Bridge sync** — facts from Convex/session runtime (`CHAT_HISTORY_META`, `BREAK_CHANGED`,
- *   `BATCHES_LENGTH_CHANGED`, `WORKSPACE_SNAPSHOT`, `REST_WALKTHROUGH_STORAGE_SYNC`). Only bridge/hooks.
+ * - **Bridge sync** — facts from Convex/session runtime (`CHAT_HISTORY_META`,
+ *   `BATCHES_LENGTH_CHANGED`, `WORKSPACE_SNAPSHOT`). Only bridge/hooks.
  * - **User intent** — navigation and editing (`VIEW_SET`, `ACTIVE_SESSION_SET`, `EDITOR_OPEN`, …).
  *   Prefer these command functions from UI.
  */
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 import type { AppUiActorRef } from "../contexts/appUiActorContext";
 import type { NotesListDrill } from "./notesListUtils";
-import type { WorkPreferenceMode } from "./workPreferenceStorage";
 import type { SurfaceMode, TopAppTarget } from "../machines/appUiTypes";
 
 /**
@@ -158,14 +157,6 @@ export function setChatLoading(actor: AppUiActorRef, loading: boolean): void {
   );
 }
 
-export function notifyModelFinished(actor: AppUiActorRef): void {
-  actor.send({ type: "MODEL_FINISHED" });
-}
-
-export function completeRestWalkthroughUi(actor: AppUiActorRef): void {
-  actor.send({ type: "REST_WALKTHROUGH_COMPLETE" });
-}
-
 export function setActiveSession(
   actor: AppUiActorRef,
   sessionId: Id<"sessions"> | null,
@@ -182,11 +173,4 @@ export function setActiveProject(
   projectId: Id<"projects"> | null,
 ): void {
   actor.send({ type: "ACTIVE_PROJECT_SET", projectId });
-}
-
-export function setWorkPreferenceMode(
-  actor: AppUiActorRef,
-  mode: WorkPreferenceMode,
-): void {
-  actor.send({ type: "PREFERENCE_SET", mode });
 }

@@ -13,8 +13,6 @@ import type * as chat from "../chat.js";
 import type * as chatPipeline from "../chatPipeline.js";
 import type * as constants from "../constants.js";
 import type * as http from "../http.js";
-import type * as interactionPolicy from "../interactionPolicy.js";
-import type * as interactionSessions from "../interactionSessions.js";
 import type * as modelConfig from "../modelConfig.js";
 import type * as projects from "../projects.js";
 import type * as sessions from "../sessions.js";
@@ -35,8 +33,6 @@ declare const fullApi: ApiFromModules<{
   chatPipeline: typeof chatPipeline;
   constants: typeof constants;
   http: typeof http;
-  interactionPolicy: typeof interactionPolicy;
-  interactionSessions: typeof interactionSessions;
   modelConfig: typeof modelConfig;
   projects: typeof projects;
   sessions: typeof sessions;
