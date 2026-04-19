@@ -20,10 +20,6 @@ Instead of only generating chat text, it turns each exchange into an evolving co
    - Open [dashboard.convex.dev](https://dashboard.convex.dev)
    - Project -> Settings -> Environment Variables
    - Add `GOOGLE_GENERATIVE_AI_API_KEY` (used by chat actions)
-   - Add Spotify credentials if you use Spotify integration:
-     - `SPOTIFY_CLIENT_ID`
-     - `SPOTIFY_CLIENT_SECRET`
-     - `SPOTIFY_REDIRECT_URI`
 
 4. **Run the app**
    ```bash
@@ -37,9 +33,6 @@ Instead of only generating chat text, it turns each exchange into an evolving co
 |----------|-------|-------------|
 | `VITE_CONVEX_URL` | `.env.local` | Convex deployment URL (auto-set by `npx convex dev`) |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Convex Dashboard | Server-side LLM key for chat + concept graph generation |
-| `SPOTIFY_CLIENT_ID` | Convex Dashboard | Spotify OAuth client id |
-| `SPOTIFY_CLIENT_SECRET` | Convex Dashboard | Spotify OAuth client secret |
-| `SPOTIFY_REDIRECT_URI` | Convex Dashboard | OAuth callback URL |
 
 Use the `VITE_` prefix only for client-safe values.
 
@@ -75,7 +68,6 @@ You can replay it from the sidebar ("Run tutorial"), which dispatches the `think
   - `projects`, `sessions`, `messages`
   - `sessionConceptGraphs` (graph stored separate from session row)
   - interaction tracking tables for think/work mode
-  - Spotify OAuth/token tables
 - `convex/sessions.ts` handles secure session/message CRUD, draft/notes persistence, paginated message history, and concept graph persistence.
 - `convex/chatPipeline.ts` defines LLM pre/post processing:
   - injects system prompt and optional selected-concept context

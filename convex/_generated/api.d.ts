@@ -16,9 +16,6 @@ import type * as http from "../http.js";
 import type * as modelConfig from "../modelConfig.js";
 import type * as projects from "../projects.js";
 import type * as sessions from "../sessions.js";
-import type * as spotify from "../spotify.js";
-import type * as spotifyActions from "../spotifyActions.js";
-import type * as spotifyHttp from "../spotifyHttp.js";
 import type * as users from "../users.js";
 
 import type {
@@ -36,9 +33,6 @@ declare const fullApi: ApiFromModules<{
   modelConfig: typeof modelConfig;
   projects: typeof projects;
   sessions: typeof sessions;
-  spotify: typeof spotify;
-  spotifyActions: typeof spotifyActions;
-  spotifyHttp: typeof spotifyHttp;
   users: typeof users;
 }>;
 

@@ -2,7 +2,7 @@ import type { Id } from "../../convex/_generated/dataModel";
 import type { NotesListDrill } from "../lib/notesListUtils";
 
 export type SurfaceMode = "graph" | "notesList";
-export type TopAppTarget = "spotify" | "game" | "file";
+export type TopAppTarget = "game" | "file";
 
 export type AppUiContext = {
   activeSessionId: Id<"sessions"> | null;

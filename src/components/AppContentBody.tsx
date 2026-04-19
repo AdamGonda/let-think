@@ -33,7 +33,6 @@ import {
 import { userInputForBatch, userMessageForBatch } from "../lib/batchUserInput";
 import { findSessionInWorkspace } from "../lib/workspaceQueries";
 import { CHAT_MESSAGES_PAGE_SIZE } from "@/config";
-import { SpotifyPlayerProvider } from "@/contexts/SpotifyPlayerContext";
 import { WakeUpOverlay } from "./WakeUpOverlay";
 import { AppShell } from "./AppShell";
 import {
@@ -223,8 +222,7 @@ export function AppContentBody({
   }, [uiCollapseSignal, sessionSidebarRef]);
 
   return (
-    <SpotifyPlayerProvider>
-      <AppShell
+    <AppShell
         wakeUpOverlay={
           displayWakeUpLayer ? (
             <WakeUpOverlay
@@ -349,6 +347,5 @@ export function AppContentBody({
           )}
         </main>
       </AppShell>
-    </SpotifyPlayerProvider>
   );
 }

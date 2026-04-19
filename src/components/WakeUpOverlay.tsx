@@ -5,18 +5,6 @@ import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { NoteBreadcrumb } from "@/components/NoteBreadcrumb";
 import type { Id } from "../../convex/_generated/dataModel";
 import type { TopAppTarget } from "@/machines/appUiTypes";
-import { SpotifyPanel } from "@/components/spotify/SpotifyPanel";
-
-function SpotifyGlyph() {
-  return (
-    <svg viewBox="0 0 24 24" className="size-5" aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2Zm4.56 14.37a.63.63 0 0 1-.87.21c-2.38-1.46-5.37-1.79-8.89-.99a.63.63 0 1 1-.28-1.23c3.85-.88 7.15-.5 9.83 1.14a.63.63 0 0 1 .21.87Zm1.24-2.76a.79.79 0 0 1-1.08.26c-2.73-1.68-6.89-2.17-10.11-1.2a.79.79 0 1 1-.46-1.51c3.67-1.11 8.24-.57 11.4 1.37.37.23.48.71.25 1.08Zm.11-2.87c-3.27-1.94-8.67-2.12-11.79-1.16a.95.95 0 0 1-.56-1.82c3.58-1.09 9.54-.88 13.32 1.36a.95.95 0 1 1-.97 1.62Z"
-      />
-    </svg>
-  );
-}
 
 type WakeUpOverlayProps = {
   chatLoading: boolean;
@@ -109,15 +97,6 @@ export function WakeUpOverlay({
             <FileText className="size-5" />
           </Button>
           <Button
-            variant={topAppTarget === "spotify" ? "secondary" : "ghost"}
-            size="icon-sm"
-            onClick={() => onTopAppTargetChange("spotify")}
-            aria-label="Spotify mode"
-            aria-pressed={topAppTarget === "spotify"}
-          >
-            <SpotifyGlyph />
-          </Button>
-          <Button
             variant={topAppTarget === "game" ? "secondary" : "ghost"}
             size="icon-sm"
             onClick={() => onTopAppTargetChange("game")}
@@ -134,16 +113,6 @@ export function WakeUpOverlay({
                 editorRevealReady ? "opacity-100" : "opacity-0"
               }`}
             >
-              <div
-                className={
-                  topAppTarget === "spotify"
-                    ? `mx-auto flex w-full ${layout.mainColumnMaxWidthClass} min-h-0 flex-1 flex-col overflow-hidden`
-                    : "hidden"
-                }
-              >
-                <SpotifyPanel />
-              </div>
-
               {topAppTarget === "game" ? (
                 <div
                   className={`mx-auto flex w-full ${layout.mainColumnMaxWidthClass} min-h-0 flex-1 items-start justify-start rounded-xl border border-zinc-800 bg-zinc-950/40 px-6 py-5 text-left`}

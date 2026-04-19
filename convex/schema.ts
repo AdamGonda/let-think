@@ -76,27 +76,4 @@ export default defineSchema({
       )
     ),
   }).index("by_session", ["sessionId"]),
-
-  /**
-   * Spotify OAuth + API — one row per app user (Convex Auth user id).
-   * Secrets never exposed to client queries; only server actions read tokens.
-   */
-  spotifyConnections: defineTable({
-    userId: v.id("users"),
-    spotifyUserId: v.string(),
-    displayName: v.optional(v.string()),
-    refreshToken: v.string(),
-    accessToken: v.string(),
-    accessTokenExpiresAt: v.number(),
-    scope: v.string(),
-    updatedAt: v.number(),
-  }).index("by_user", ["userId"]),
-
-  /** Short-lived PKCE OAuth state rows (cleaned up after callback or expiry). */
-  spotifyOauthStates: defineTable({
-    state: v.string(),
-    codeVerifier: v.string(),
-    userId: v.id("users"),
-    expiresAt: v.number(),
-  }).index("by_state", ["state"]).index("by_user", ["userId"]),
 });
