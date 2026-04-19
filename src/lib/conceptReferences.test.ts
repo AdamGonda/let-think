@@ -3,6 +3,7 @@ import {
   appendAtReferenceToDraft,
   AT_REFERENCE_PATTERN,
   ensureSpaceAfterValidAtReferences,
+  formatConceptPlainForClipboard,
   formatReferenceConceptBullets,
   formatReferenceTitleBullets,
   selectedConceptTitlesFromDraft,
@@ -52,6 +53,21 @@ describe("selectedConceptTitlesFromDraft", () => {
 describe("formatReferenceTitleBullets", () => {
   it("formats titles as markdown bullet lines", () => {
     expect(formatReferenceTitleBullets(["One", "Two"])).toBe("- One\n- Two");
+  });
+});
+
+describe("formatConceptPlainForClipboard", () => {
+  it("outputs title and description without refs or separators", () => {
+    expect(
+      formatConceptPlainForClipboard({
+        name: "Alpha",
+        description: "Details here.",
+      }),
+    ).toBe("Alpha\n\nDetails here.");
+  });
+
+  it("returns title only when no description", () => {
+    expect(formatConceptPlainForClipboard({ name: "Beta" })).toBe("Beta");
   });
 });
 

@@ -192,6 +192,19 @@ export function formatReferenceTitleBullets(titles: string[]): string {
   return titles.map((title) => `- ${title}`).join("\n");
 }
 
+/** Title and optional description for clipboard — no `@n` refs or `------` blocks. */
+export function formatConceptPlainForClipboard(concept: {
+  name: string;
+  description?: string;
+}): string {
+  const title = concept.name.trim();
+  const desc = concept.description?.trim();
+  if (!title && !desc) return "";
+  if (!desc) return title;
+  if (!title) return desc;
+  return `${title}\n\n${desc}`;
+}
+
 /** Render markdown bullets with optional description text for each selected concept. */
 export function formatReferenceConceptBullets(
   concepts: Array<{ number?: number; name: string; description?: string }>,

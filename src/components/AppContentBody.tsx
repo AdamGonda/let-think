@@ -3,7 +3,6 @@ import {
   useCallback,
   useEffect,
   useRef,
-  useState,
   type RefObject,
 } from "react";
 import { clsx } from "clsx";
@@ -27,7 +26,7 @@ import { AppContentGraphSurface } from "./AppContentGraphSurface";
 import { Toaster } from "./ui/sonner";
 import {
   buildNumberedConceptsFromGraph,
-  formatReferenceConceptBullets,
+  formatConceptPlainForClipboard,
   referencedConceptIdsFromDraft,
 } from "../lib/conceptReferences";
 import { userInputForBatch, userMessageForBatch } from "../lib/batchUserInput";
@@ -52,28 +51,6 @@ export type AppContentBodyProps = {
   mainContentRef: RefObject<HTMLDivElement | null>;
   sessionSidebarRef: RefObject<SessionSidebarHandle | null>;
 };
-
-type AppendedRange = {
-  start: number;
-  end: number;
-};
-
-function appendToNotesEnd(
-  currentNotes: string,
-  addition: string,
-): { text: string; appendedRange: AppendedRange | null } {
-  const trimmedAddition = addition.trim();
-  if (!trimmedAddition) {
-    return { text: currentNotes, appendedRange: null };
-  }
-  if (!currentNotes.trim()) {
-    return { text: trimmedAddition, appendedRange: { start: 0, end: trimmedAddition.length } };
-  }
-  const separator = currentNotes.endsWith("\n\n") ? "" : "\n\n";
-  const start = currentNotes.length + separator.length;
-  const text = `${currentNotes}${separator}${trimmedAddition}`;
-  return { text, appendedRange: { start, end: text.length } };
-}
 
 export function AppContentBody({
   onCreateSessionForFirstMessage,
@@ -133,13 +110,6 @@ export function AppContentBody({
     actor,
     draftInput,
   });
-  const [copySelectedConceptIds, setCopySelectedConceptIds] = useState<Set<string>>(
-    () => new Set(),
-  );
-  const [notesSelectionRange, setNotesSelectionRange] = useState<AppendedRange | null>(
-    null,
-  );
-
   const numberedConcepts = useMemo(
     () =>
       buildNumberedConceptsFromGraph(conceptGraph, batches, selectedBatchIndex),
@@ -148,10 +118,6 @@ export function AppContentBody({
 
   const isLatestBatch =
     batches.length === 0 || selectedBatchIndex === batches.length - 1;
-
-  useEffect(() => {
-    setCopySelectedConceptIds(new Set());
-  }, [activeSessionId, selectedBatchIndex]);
 
   const batchUserPrompt = useMemo(
     () => userInputForBatch(batches, messages, selectedBatchIndex),
@@ -166,39 +132,20 @@ export function AppContentBody({
   );
 
   const handleEditorOpen = useCallback(() => {
-    const selectedConcepts = numberedConcepts
-      .filter((concept) => copySelectedConceptIds.has(concept.id))
-      .map((concept) => ({
-        number: concept.number,
-        name: concept.name,
-        description: concept.description,
-      }));
-    const clipboardPayload = formatReferenceConceptBullets(selectedConcepts);
     openEditor(actor);
-    setCopySelectedConceptIds(new Set());
-    if (!clipboardPayload) {
-      setNotesSelectionRange(null);
-      return;
-    }
-    const appended = appendToNotesEnd(notes, clipboardPayload);
-    setWakeNotes(actor, appended.text);
-    setNotesSelectionRange(appended.appendedRange);
-    toast.success(
-      selectedConcepts.length === 1 ? "concept inserted" : "concepts inserted",
-    );
-  }, [actor, copySelectedConceptIds, notes, numberedConcepts]);
+  }, [actor]);
 
-  const handleCardCopySelectToggle = useCallback((conceptId: string) => {
-    setCopySelectedConceptIds((previous) => {
-      const next = new Set(previous);
-      if (next.has(conceptId)) {
-        next.delete(conceptId);
-      } else {
-        next.add(conceptId);
+  const handleConceptCopy = useCallback(
+    async (concept: { name: string; description?: string }) => {
+      const text = formatConceptPlainForClipboard(concept);
+      if (!text) {
+        throw new Error("NO_CLIPBOARD_TEXT");
       }
-      return next;
-    });
-  }, []);
+      await navigator.clipboard.writeText(text);
+      toast.success("Copied to clipboard");
+    },
+    [],
+  );
 
   /** Composer stays visible in graph mode even when the stepper is on an earlier batch. */
   const chatComposerVisible = viewMode === "graph";
@@ -237,7 +184,7 @@ export function AppContentBody({
                 showFileNoteBreadcrumbFromProjectNotes
               }
               notes={notes}
-              notesSelectionRange={notesSelectionRange}
+              notesSelectionRange={null}
               onNotesChange={(v) => setWakeNotes(actor, v)}
               onBreadcrumbProjectClick={handleBreadcrumbProjectClick}
               onBreadcrumbSessionClick={handleBreadcrumbSessionClick}
@@ -300,10 +247,7 @@ export function AppContentBody({
                 onCardReferenceClick={
                   isLatestBatch ? handleCardReferenceClick : undefined
                 }
-                onCardCopySelectToggle={
-                  isLatestBatch ? handleCardCopySelectToggle : undefined
-                }
-                copySelectedConceptIds={copySelectedConceptIds}
+                onConceptCopy={isLatestBatch ? handleConceptCopy : undefined}
               />
             )}
           </div>

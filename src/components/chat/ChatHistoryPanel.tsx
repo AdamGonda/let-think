@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { Loader2, X, Copy, Check } from "lucide-react";
@@ -87,13 +87,38 @@ export function ChatHistoryPanel({
   }, [userMessages, batches]);
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
-  const handleCopy = (e: React.MouseEvent, content: string, key: string) => {
+  useEffect(() => {
+    return () => {
+      if (copyFeedbackTimeoutRef.current != null) {
+        clearTimeout(copyFeedbackTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleCopy = async (
+    e: MouseEvent<HTMLButtonElement>,
+    content: string,
+    key: string,
+  ) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(content);
-    setCopiedKey(key);
-    setTimeout(() => setCopiedKey(null), timings.copiedFeedbackMs);
-    toast.success("Copied to clipboard");
+    try {
+      await navigator.clipboard.writeText(content);
+      toast.success("Copied to clipboard");
+      if (copyFeedbackTimeoutRef.current != null) {
+        clearTimeout(copyFeedbackTimeoutRef.current);
+      }
+      setCopiedKey(key);
+      copyFeedbackTimeoutRef.current = setTimeout(() => {
+        setCopiedKey(null);
+        copyFeedbackTimeoutRef.current = null;
+      }, timings.copiedFeedbackMs);
+    } catch {
+      /* clipboard denied */
+    }
   };
 
   const toggleExpanded = (key: string) => {
@@ -204,13 +229,22 @@ export function ChatHistoryPanel({
                                   size="icon-sm"
                                   className="absolute right-1 top-1 h-7 w-7 opacity-0 group-hover/card:opacity-100 transition-opacity z-10 bg-background/80 rounded-md"
                                   onClick={(e) => handleCopy(e, msg.content, key)}
-                                  aria-label="Copy message"
-                                  title="Copy message"
+                                  aria-label={
+                                    copiedKey === key ? "Copied" : "Copy message"
+                                  }
+                                  title={
+                                    copiedKey === key ? "Copied" : "Copy message"
+                                  }
                                 >
                                   {copiedKey === key ? (
-                                    <Check className="size-3.5 text-green-600" />
+                                    <span className="animate-concept-copy-tick">
+                                      <Check
+                                        className="size-3.5 text-green-600"
+                                        aria-hidden="true"
+                                      />
+                                    </span>
                                   ) : (
-                                    <Copy className="size-3.5" />
+                                    <Copy className="size-3.5" aria-hidden="true" />
                                   )}
                                 </Button>
                               )}

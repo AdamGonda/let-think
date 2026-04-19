@@ -3,6 +3,7 @@ export const timings = {
   projectRowClickDelayMs: 150,
   wakeUpEditorRevealMs: 50,
   draftSaveDebounceMs: 400,
+  /** Checkmark duration after copy — matches conversation history + graph cards */
   copiedFeedbackMs: 2000,
   tutorialStartDelayMs: 600,
   breakCountdownTickMs: 1000,

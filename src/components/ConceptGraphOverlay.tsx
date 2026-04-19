@@ -1,8 +1,16 @@
-import { useRef, useEffect, useLayoutEffect, useState, useMemo } from "react";
+import {
+  useRef,
+  useEffect,
+  useLayoutEffect,
+  useState,
+  useMemo,
+  useCallback,
+  type MouseEvent,
+} from "react";
 import { clsx } from "clsx";
-import { Copy } from "lucide-react";
+import { Check, Copy } from "lucide-react";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
-import { layout } from "@/config";
+import { layout, timings } from "@/config";
 
 type GraphNode = {
   id: string;
@@ -32,10 +40,14 @@ interface ConceptGraphOverlayProps {
   referencedConceptIds?: Set<string>;
   /** When set, clicking a concept card appends `@n` to the chat draft (e.g. parent manages input). */
   onCardReferenceClick?: (conceptNumber: number) => void;
-  /** Dedicated copy-selection toggle independent from `@n` draft references. */
-  onCardCopySelectToggle?: (conceptId: string) => void;
-  /** Current concept IDs selected for copy-to-notes. */
-  copySelectedConceptIds?: Set<string>;
+  /**
+   * Copy a single concept to the system clipboard (same structured text as notes insert used).
+   * Only wired on the latest batch when the parent enables it.
+   */
+  onConceptCopy?: (concept: {
+    name: string;
+    description?: string;
+  }) => void | Promise<void>;
 }
 
 export function ConceptGraphOverlay({
@@ -46,12 +58,15 @@ export function ConceptGraphOverlay({
   onSelectedBatchIndexChange,
   referencedConceptIds,
   onCardReferenceClick,
-  onCardCopySelectToggle,
-  copySelectedConceptIds,
+  onConceptCopy,
 }: ConceptGraphOverlayProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const graphViewportRef = useRef<HTMLDivElement>(null);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
+  const [copiedNodeId, setCopiedNodeId] = useState<string | null>(null);
+  const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   const [internalBatchIndex, setInternalBatchIndex] = useState<number>(0);
 
   const isControlled = controlledBatchIndex !== undefined && onSelectedBatchIndexChange != null;
@@ -122,6 +137,40 @@ export function ConceptGraphOverlay({
 
   const isEmpty = !graph?.nodes?.length;
 
+  useEffect(() => {
+    return () => {
+      if (copyFeedbackTimeoutRef.current != null) {
+        clearTimeout(copyFeedbackTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const handleConceptCopyClick = useCallback(
+    async (e: MouseEvent<HTMLButtonElement>, node: GraphNode) => {
+      e.stopPropagation();
+      if (!onConceptCopy) return;
+      try {
+        await Promise.resolve(
+          onConceptCopy({
+            name: node.name,
+            description: node.description,
+          }),
+        );
+        if (copyFeedbackTimeoutRef.current != null) {
+          clearTimeout(copyFeedbackTimeoutRef.current);
+        }
+        setCopiedNodeId(node.id);
+        copyFeedbackTimeoutRef.current = setTimeout(() => {
+          setCopiedNodeId(null);
+          copyFeedbackTimeoutRef.current = null;
+        }, timings.copiedFeedbackMs);
+      } catch {
+        /* clipboard denied or copy handler failed */
+      }
+    },
+    [onConceptCopy],
+  );
+
   // Current batch nodes only – single-batch view
   const currentBatchNodes = useMemo(() => {
     const safeIndex = Math.min(
@@ -178,8 +227,9 @@ export function ConceptGraphOverlay({
                 const showDescription = isHovered && node.description;
                 const isReferenced = referencedConceptIds?.has(node.id);
                 const showNumberBadge = isLatestBatch;
-                const isCopySelected = copySelectedConceptIds?.has(node.id);
-
+                const copyFeedbackVisible =
+                  isHovered || copiedNodeId === node.id;
+                const isCopyJustDone = copiedNodeId === node.id;
                 return (
                   <Card
                     key={node.id}
@@ -274,29 +324,34 @@ export function ConceptGraphOverlay({
                         </CardContent>
                       </div>
                     )}
-                    {showNumberBadge && onCardCopySelectToggle && (
+                    {showNumberBadge && onConceptCopy && (
                       <button
                         type="button"
                         className={clsx(
-                          "absolute bottom-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-20 pointer-events-auto transition-colors cursor-pointer",
-                          "hover:text-foreground",
+                          "absolute bottom-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-20 cursor-pointer",
+                          "transition-opacity duration-200 ease-out",
+                          "hover:bg-muted/80 hover:text-foreground",
+                          copyFeedbackVisible
+                            ? "opacity-100 pointer-events-auto"
+                            : "opacity-0 pointer-events-none",
                         )}
                         aria-label={
-                          isCopySelected
-                            ? `Unselect ${node.name} for notes copy`
-                            : `Select ${node.name} for notes copy`
+                          isCopyJustDone
+                            ? `Copied ${node.name}`
+                            : `Copy ${node.name} to clipboard`
                         }
-                        onClick={() => {
-                          onCardCopySelectToggle(node.id);
-                        }}
-                        style={{
-                          outline: isCopySelected
-                            ? "2px solid rgb(251 146 60)"
-                            : undefined,
-                          outlineOffset: 2,
-                        }}
+                        onClick={(e) => handleConceptCopyClick(e, node)}
                       >
-                        <Copy className="size-3.5" aria-hidden="true" />
+                        {isCopyJustDone ? (
+                          <span className="animate-concept-copy-tick">
+                            <Check
+                              className="size-3.5 text-green-600"
+                              aria-hidden="true"
+                            />
+                          </span>
+                        ) : (
+                          <Copy className="size-3.5" aria-hidden="true" />
+                        )}
                       </button>
                     )}
                   </Card>
