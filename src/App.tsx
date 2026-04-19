@@ -1,39 +1,25 @@
 import { useRef } from "react";
-import {
-  useQuery,
-  AuthLoading,
-  Unauthenticated,
-  Authenticated,
-} from "convex/react";
+import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { SessionDataProvider } from "./contexts/SessionDataContext";
 import { AppUiProvider } from "./contexts/AppUiProvider";
 import { useAppUiSelector } from "./hooks/useAppUi";
 import { AppContentBody } from "./components/AppContentBody";
 import { type SessionSidebarHandle } from "./components/SessionSidebar";
-import { SignIn } from "./components/SignIn";
 import { useSessionAccentCssVars } from "./hooks/useSessionAccentCssVars";
 import { AppUiSessionBridge } from "./bridge/AppUiSessionBridge";
 import { useSessionEditorSync } from "./hooks/useSessionEditorSync";
 import { useDefaultSessionSelection } from "./hooks/useDefaultSessionSelection";
 
-function App() {
+/**
+ * Authenticated workspace (routes, session UI). Public marketing and sign-in live
+ * in TanStack Router (`src/router.tsx`).
+ */
+export function AuthenticatedApp() {
   return (
-    <>
-      <AuthLoading>
-        <div className="flex h-screen w-screen items-center justify-center bg-background">
-          <span className="text-muted-foreground">Loading…</span>
-        </div>
-      </AuthLoading>
-      <Unauthenticated>
-        <SignIn />
-      </Unauthenticated>
-      <Authenticated>
-        <AppUiProvider>
-          <AppContent />
-        </AppUiProvider>
-      </Authenticated>
-    </>
+    <AppUiProvider>
+      <AppContent />
+    </AppUiProvider>
   );
 }
 
@@ -66,5 +52,3 @@ function AppContent() {
     </>
   );
 }
-
-export default App;

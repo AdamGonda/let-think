@@ -5,3 +5,9 @@
 
 [build.environment]
   NPM_FLAGS = "--include=dev"
+
+# Client-side routing (TanStack Router): serve index.html for deep links and refresh.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
