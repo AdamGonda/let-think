@@ -49,6 +49,8 @@ export default defineSchema({
     draftInput: v.optional(v.string()),
     /** Notes written during thinking/break period, separate from chat draft */
     thinkingNotes: v.optional(v.string()),
+    /** Present on some stored sessions (e.g. "open"); kept optional for backward compatibility */
+    interactionRestriction: v.optional(v.string()),
   }).index("by_created", ["createdAt"]).index("by_project", ["projectId", "createdAt"]).index("by_user", ["userId", "createdAt"]),
 
   /** Concept graph per session — kept separate so listing sessions stays bandwidth-light. */
