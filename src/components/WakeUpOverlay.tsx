@@ -1,10 +1,9 @@
 import { layout } from "@/config";
-import { FileText, Gamepad2, Sigma } from "lucide-react";
+import { Sigma } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { NoteBreadcrumb } from "@/components/NoteBreadcrumb";
 import type { Id } from "../../convex/_generated/dataModel";
-import type { TopAppTarget } from "@/machines/appUiTypes";
 
 type WakeUpOverlayProps = {
   chatLoading: boolean;
@@ -30,8 +29,6 @@ type WakeUpOverlayProps = {
   onBreadcrumbProjectClick: () => void;
   onBreadcrumbSessionClick: () => void;
   onBreadcrumbFileClick: () => void;
-  topAppTarget: TopAppTarget;
-  onTopAppTargetChange: (target: TopAppTarget) => void;
 };
 
 export function WakeUpOverlay({
@@ -51,8 +48,6 @@ export function WakeUpOverlay({
   onBreadcrumbProjectClick,
   onBreadcrumbSessionClick,
   onBreadcrumbFileClick,
-  topAppTarget,
-  onTopAppTargetChange,
 }: WakeUpOverlayProps) {
   return (
     <div
@@ -82,30 +77,6 @@ export function WakeUpOverlay({
             <Sigma className="size-5" />
           </Button>
         ) : null}
-        <div
-          className={`absolute right-4 z-10 flex flex-col items-center gap-2 ${
-            showOverlaySigma ? "top-14" : "top-3"
-          }`}
-        >
-          <Button
-            variant={topAppTarget === "file" ? "secondary" : "ghost"}
-            size="icon-sm"
-            onClick={() => onTopAppTargetChange("file")}
-            aria-label="File mode"
-            aria-pressed={topAppTarget === "file"}
-          >
-            <FileText className="size-5" />
-          </Button>
-          <Button
-            variant={topAppTarget === "game" ? "secondary" : "ghost"}
-            size="icon-sm"
-            onClick={() => onTopAppTargetChange("game")}
-            aria-label="Game mode"
-            aria-pressed={topAppTarget === "game"}
-          >
-            <Gamepad2 className="size-5" />
-          </Button>
-        </div>
         {activeSessionId && (
           <div className="flex-1 min-h-0 flex flex-col items-stretch justify-start px-6 pb-8 pt-2 overflow-hidden">
             <div
@@ -113,45 +84,31 @@ export function WakeUpOverlay({
                 editorRevealReady ? "opacity-100" : "opacity-0"
               }`}
             >
-              {topAppTarget === "game" ? (
-                <div
-                  className={`mx-auto flex w-full ${layout.mainColumnMaxWidthClass} min-h-0 flex-1 items-start justify-start rounded-xl border border-zinc-800 bg-zinc-950/40 px-6 py-5 text-left`}
-                >
-                  <p className="text-zinc-300 text-lg">
-                    Game content placeholder. Game-related flow UI will live here.
-                  </p>
-                </div>
+              {editorOpen &&
+              activeSessionInWorkspace &&
+              showFileNoteBreadcrumbFromProjectNotes ? (
+                <NoteBreadcrumb
+                  projectName={activeSessionInWorkspace.projectName}
+                  sessionName={activeSessionInWorkspace.session.title}
+                  onProjectClick={onBreadcrumbProjectClick}
+                  onSessionClick={onBreadcrumbSessionClick}
+                  onFileClick={onBreadcrumbFileClick}
+                />
               ) : null}
-
-              {topAppTarget === "file" ? (
-                <>
-                  {editorOpen &&
-                  activeSessionInWorkspace &&
-                  showFileNoteBreadcrumbFromProjectNotes ? (
-                    <NoteBreadcrumb
-                      projectName={activeSessionInWorkspace.projectName}
-                      sessionName={activeSessionInWorkspace.session.title}
-                      onProjectClick={onBreadcrumbProjectClick}
-                      onSessionClick={onBreadcrumbSessionClick}
-                      onFileClick={onBreadcrumbFileClick}
-                    />
-                  ) : null}
-                  <div
-                    className={`mx-auto flex w-full min-h-0 flex-1 flex-col justify-start ${layout.mainColumnMaxWidthClass}`}
-                  >
-                    <MarkdownEditor
-                      value={notes}
-                      onChange={(v) => onNotesChange(v ?? "")}
-                      selectionRange={notesSelectionRange}
-                      placeholder="Take notes…"
-                      variant="focused"
-                      dark={true}
-                      autoFocus
-                      autoFocusEnd
-                    />
-                  </div>
-                </>
-              ) : null}
+              <div
+                className={`mx-auto flex w-full min-h-0 flex-1 flex-col justify-start ${layout.mainColumnMaxWidthClass}`}
+              >
+                <MarkdownEditor
+                  value={notes}
+                  onChange={(v) => onNotesChange(v ?? "")}
+                  selectionRange={notesSelectionRange}
+                  placeholder="Take notes…"
+                  variant="focused"
+                  dark={true}
+                  autoFocus
+                  autoFocusEnd
+                />
+              </div>
             </div>
           </div>
         )}

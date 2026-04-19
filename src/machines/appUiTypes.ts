@@ -2,7 +2,6 @@ import type { Id } from "../../convex/_generated/dataModel";
 import type { NotesListDrill } from "../lib/notesListUtils";
 
 export type SurfaceMode = "graph" | "notesList";
-export type TopAppTarget = "game" | "file";
 
 export type AppUiContext = {
   activeSessionId: Id<"sessions"> | null;
@@ -26,7 +25,6 @@ export type AppUiContext = {
    * Set when the user selects any session or we auto-select the first session.
    */
   hasEverHadSessionSelection: boolean;
-  topAppTarget: TopAppTarget;
   /** Mirrors `surface` parallel state for guards that only receive `context`. */
   surfaceMode: SurfaceMode;
   /** Monotonic token: UI collapses sidebar after delayed open-editor policy (machine timers). */
@@ -64,7 +62,6 @@ export type AppUiEvent =
   | { type: "NOTES_SET"; value: string }
   | { type: "HISTORY_OPEN" }
   | { type: "HISTORY_CLOSE" }
-  | { type: "TOP_APP_TARGET_SET"; target: TopAppTarget }
   | { type: "FILE_NOTE_BREADCRUMB_SOURCE_SET"; fromProjectNotesExplorer: boolean }
   /** User intents — orchestration owned by the machine (see appUiCommands). */
   | { type: "INTENT_WAKE_SIGMA_CLICK" }

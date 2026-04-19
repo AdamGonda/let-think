@@ -43,7 +43,6 @@ import {
   setDraftInput,
   setNotesListDrill,
   setSelectedBatchIndex,
-  setTopAppTarget,
   setWakeNotes,
 } from "@/lib/appUiCommands";
 
@@ -100,7 +99,6 @@ export function AppContentBody({
     chatLoadingOnNotesList,
     editorRevealReady,
     hasChatHistory,
-    topAppTarget,
     uiCollapseSignal,
     sigmaEditorFromSession,
     showOverlaySigma,
@@ -244,8 +242,6 @@ export function AppContentBody({
               onBreadcrumbProjectClick={handleBreadcrumbProjectClick}
               onBreadcrumbSessionClick={handleBreadcrumbSessionClick}
               onBreadcrumbFileClick={handleBreadcrumbFileClick}
-              topAppTarget={topAppTarget}
-              onTopAppTargetChange={(target) => setTopAppTarget(actor, target)}
             />
           ) : null
         }

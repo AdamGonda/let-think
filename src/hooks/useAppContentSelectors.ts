@@ -9,7 +9,6 @@ import {
   selectIsExitingWakeUp,
   selectShowOverlaySigma,
   selectSurface,
-  selectTopAppTarget,
   selectUiCollapseSignal,
   selectChatLoadingOnNotesList,
   selectChatLoadingOnGraphFrame,
@@ -37,7 +36,6 @@ export type AppContentSelectors = {
   canExitOverlay: ReturnType<typeof selectCanExitWakeUp>;
   editorRevealReady: ReturnType<typeof selectEditorRevealReady>;
   hasChatHistory: AppSnapshot["context"]["hasChatHistory"];
-  topAppTarget: ReturnType<typeof selectTopAppTarget>;
   uiCollapseSignal: ReturnType<typeof selectUiCollapseSignal>;
   sigmaEditorFromSession: ReturnType<typeof selectSigmaEditorFromSession>;
   showOverlaySigma: ReturnType<typeof selectShowOverlaySigma>;
@@ -67,7 +65,6 @@ function shallowEqualSelectors(
     a.canExitOverlay === b.canExitOverlay &&
     a.editorRevealReady === b.editorRevealReady &&
     a.hasChatHistory === b.hasChatHistory &&
-    a.topAppTarget === b.topAppTarget &&
     a.uiCollapseSignal === b.uiCollapseSignal &&
     a.sigmaEditorFromSession === b.sigmaEditorFromSession &&
     a.showOverlaySigma === b.showOverlaySigma
@@ -95,7 +92,6 @@ function selectAppContentSnapshot(s: AppSnapshot): AppContentSelectors {
     canExitOverlay: selectCanExitWakeUp(s),
     editorRevealReady: selectEditorRevealReady(s),
     hasChatHistory: s.context.hasChatHistory,
-    topAppTarget: selectTopAppTarget(s),
     uiCollapseSignal: selectUiCollapseSignal(s),
     sigmaEditorFromSession: selectSigmaEditorFromSession(s),
     showOverlaySigma: selectShowOverlaySigma(s),

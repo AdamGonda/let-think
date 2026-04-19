@@ -1,11 +1,6 @@
 import { assign, enqueueActions, raise, setup } from "xstate";
 import { timings } from "@/config";
-import type {
-  AppUiContext,
-  AppUiEvent,
-  SurfaceMode,
-  TopAppTarget,
-} from "./appUiTypes";
+import type { AppUiContext, AppUiEvent, SurfaceMode } from "./appUiTypes";
 import {
   reduceBatchesLengthChanged,
   reduceChatHistoryMeta,
@@ -225,12 +220,6 @@ export const appUiMachine = setup({
     }),
     historyOpen: assign({ historyPanelOpen: true }),
     historyClose: assign({ historyPanelOpen: false }),
-    setTopAppTarget: assign({
-      topAppTarget: ({ event, context }) => {
-        if (event.type !== "TOP_APP_TARGET_SET") return context.topAppTarget;
-        return event.target;
-      },
-    }),
   },
 }).createMachine({
   id: "appUi",
@@ -252,7 +241,6 @@ export const appUiMachine = setup({
       hasChatHistory: false,
       messagesLoading: false,
       hasEverHadSessionSelection: inp?.hasEverHadSessionSelection ?? false,
-      topAppTarget: inp?.topAppTarget ?? "file",
       surfaceMode: inp?.surfaceMode ?? "graph",
       sidebarCollapseRequestSeq: inp?.sidebarCollapseRequestSeq ?? 0,
       sidebarCollapseImmediateSeq: inp?.sidebarCollapseImmediateSeq ?? 0,
@@ -369,9 +357,6 @@ export const appUiMachine = setup({
     },
     HISTORY_CLOSE: {
       actions: "historyClose",
-    },
-    TOP_APP_TARGET_SET: {
-      actions: "setTopAppTarget",
     },
   },
   states: {
@@ -556,10 +541,6 @@ export function selectCanExitWakeUp(snapshot: MachineSnapshot): boolean {
 
 export function selectSurface(snapshot: MachineSnapshot): SurfaceMode {
   return surfaceState(snapshot);
-}
-
-export function selectTopAppTarget(snapshot: MachineSnapshot): TopAppTarget {
-  return snapshot.context.topAppTarget;
 }
 
 /** General collapse signal token for UI elements that should close together. */
