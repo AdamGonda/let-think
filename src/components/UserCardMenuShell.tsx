@@ -19,14 +19,14 @@ type UserCardMenuShellProps = {
 const shellByVariant = {
   compact: {
     container: "relative w-full min-w-0 max-w-full transition-[min-height] duration-200 ease-out",
-    openMinH: "min-h-[220px] overflow-hidden",
+    openMinH: "min-h-[152px] overflow-hidden",
     closedMinH: "min-h-14 overflow-hidden",
     headerRow: "absolute inset-x-0 top-0 flex justify-center py-1",
     menuWrap: "absolute inset-x-0 top-0 py-0.5",
   },
   expanded: {
     container: "relative w-full min-w-0 overflow-hidden transition-[min-height] duration-200 ease-out",
-    openMinH: "min-h-[185px]",
+    openMinH: "min-h-[156px]",
     closedMinH: "min-h-14",
     headerRow: "absolute inset-x-0 top-0 flex items-center gap-3 pt-2 pb-1",
     menuWrap: "absolute inset-x-0 top-0 py-1",
