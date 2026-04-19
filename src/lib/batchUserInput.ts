@@ -46,6 +46,22 @@ export function userInputForBatch(
 /**
  * User message row for a batch (for mention pills + resolved content), or null.
  */
+/**
+ * Chronological index among user-only messages (oldest = 0) for the user message
+ * that {@link userMessageForBatch} resolves for this batch — same mapping the graph uses.
+ */
+export function userMessageChronoIndexForBatch(
+  batches: BatchWithDescription[],
+  messages: SessionMessage[] | undefined,
+  batchIndex: number,
+): number | null {
+  const userMessages = (messages ?? []).filter((m) => m.role === "user");
+  const msg = userMessageForBatch(batches, messages, batchIndex);
+  if (!msg) return null;
+  const idx = userMessages.indexOf(msg);
+  return idx >= 0 ? idx : null;
+}
+
 export function userMessageForBatch(
   batches: BatchWithDescription[],
   messages: SessionMessage[] | undefined,

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { userInputForBatch, userMessageForBatch } from "./batchUserInput";
+import {
+  userInputForBatch,
+  userMessageForBatch,
+  userMessageChronoIndexForBatch,
+} from "./batchUserInput";
 import type { SessionMessage } from "@/contexts/SessionDataContext";
 
 describe("userInputForBatch", () => {
@@ -31,5 +35,20 @@ describe("userMessageForBatch", () => {
       { role: "user", content: "second" },
     ];
     expect(userMessageForBatch(batches, messages, 1)?.content).toBe("second");
+  });
+});
+
+describe("userMessageChronoIndexForBatch", () => {
+  it("returns the chrono index of the resolved user message", () => {
+    const batches = [
+      { description: "hello", nodeIds: ["a"] },
+      { description: "second", nodeIds: ["b"] },
+    ];
+    const messages: SessionMessage[] = [
+      { role: "user", content: "hello" },
+      { role: "assistant", content: "…" },
+      { role: "user", content: "second" },
+    ];
+    expect(userMessageChronoIndexForBatch(batches, messages, 1)).toBe(1);
   });
 });

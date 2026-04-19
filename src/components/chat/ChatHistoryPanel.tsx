@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent,
+} from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { Loader2, X, Copy, Check } from "lucide-react";
@@ -17,6 +24,7 @@ import {
   renderContentWithMentions,
 } from "@/lib/chatHistoryRender";
 import { timings } from "@/config";
+import { userMessageChronoIndexForBatch } from "@/lib/batchUserInput";
 
 interface UserMessage {
   _id?: Id<"messages">;
@@ -85,11 +93,52 @@ export function ChatHistoryPanel({
     }
     return result;
   }, [userMessages, batches]);
+
+  const selectedChronoIndex = useMemo(
+    () =>
+      userMessageChronoIndexForBatch(batches, messages, selectedBatchIndex),
+    [batches, messages, selectedBatchIndex],
+  );
+
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
+  const historyScrollRef = useRef<HTMLDivElement | null>(null);
+  const selectedItemRef = useRef<HTMLLIElement | null>(null);
+
+  useLayoutEffect(() => {
+    if (!isOpen || selectedChronoIndex == null) return;
+    const scrollSelectedToTop = () => {
+      const c = historyScrollRef.current;
+      const item = selectedItemRef.current;
+      if (!c || !item) return;
+      c.scrollTop =
+        item.getBoundingClientRect().top -
+        c.getBoundingClientRect().top +
+        c.scrollTop;
+    };
+
+    scrollSelectedToTop();
+    let raf0 = 0;
+    let raf1 = 0;
+    let raf2 = 0;
+    raf0 = requestAnimationFrame(() => {
+      scrollSelectedToTop();
+      raf1 = requestAnimationFrame(() => {
+        scrollSelectedToTop();
+        raf2 = requestAnimationFrame(scrollSelectedToTop);
+      });
+    });
+    const t = window.setTimeout(scrollSelectedToTop, 250);
+    return () => {
+      cancelAnimationFrame(raf0);
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+      window.clearTimeout(t);
+    };
+  }, [isOpen, selectedBatchIndex, selectedChronoIndex, userMessages.length]);
 
   useEffect(() => {
     return () => {
@@ -151,7 +200,10 @@ export function ChatHistoryPanel({
             <X className="size-5" />
           </Button>
         </SheetHeader>
-        <div className="flex-1 overflow-y-auto py-6 px-4">
+        <div
+          ref={historyScrollRef}
+          className="flex-1 overflow-y-auto py-6 px-4"
+        >
           {canLoadOlderMessages && onLoadOlderMessages && (
             <div className="flex justify-center pb-4">
               <Button
@@ -183,7 +235,8 @@ export function ChatHistoryPanel({
                   const batchIndex = batchIndexByChronoIndex[chronoIndex] ?? -1;
                   const hasStep = batchIndex >= 0;
                   const isSelectedStep =
-                    hasStep && batchIndex === selectedBatchIndex;
+                    selectedChronoIndex !== null &&
+                    chronoIndex === selectedChronoIndex;
 
                   const dotBase =
                     "absolute left-[7px] top-3 size-3 -translate-x-1/2 shrink-0 ring-4 ring-background z-10 rounded-full";
@@ -191,7 +244,11 @@ export function ChatHistoryPanel({
                   const dotRest = "bg-foreground";
 
                   return (
-                    <li key={key} className="relative flex pb-6 last:pb-0">
+                    <li
+                      key={key}
+                      ref={isSelectedStep ? selectedItemRef : undefined}
+                      className="relative flex pb-6 last:pb-0"
+                    >
                       {hasStep && onNavigateToStep ? (
                         <button
                           type="button"
