@@ -218,36 +218,10 @@ export function ChatHistoryPanel({
                             topicOrSubject ||
                             truncateAtWord(msg.content, 60) +
                               (msg.content.length > 60 ? "…" : "");
-                          const hasHeader = isPendingTopic || !!topic;
                           const headerClassName =
                             "rounded-t-md -mx-4 -mt-3 mb-3 px-4 py-2 bg-muted/80 border-b border-border";
                           return (
                             <div className="group/card relative rounded-2xl rounded-tl-md px-4 py-3 bg-muted text-foreground text-[0.95rem] leading-relaxed shadow-sm border border-border">
-                              {hasHeader && (
-                                <Button
-                                  variant="ghost"
-                                  size="icon-sm"
-                                  className="absolute right-1 top-1 h-7 w-7 opacity-0 group-hover/card:opacity-100 transition-opacity z-10 bg-background/80 rounded-md"
-                                  onClick={(e) => handleCopy(e, msg.content, key)}
-                                  aria-label={
-                                    copiedKey === key ? "Copied" : "Copy message"
-                                  }
-                                  title={
-                                    copiedKey === key ? "Copied" : "Copy message"
-                                  }
-                                >
-                                  {copiedKey === key ? (
-                                    <span className="animate-concept-copy-tick">
-                                      <Check
-                                        className="size-3.5 text-green-600"
-                                        aria-hidden="true"
-                                      />
-                                    </span>
-                                  ) : (
-                                    <Copy className="size-3.5" aria-hidden="true" />
-                                  )}
-                                </Button>
-                              )}
                               {isPendingTopic ? (
                                 <div
                                   className={`header-section ${headerClassName} flex items-center gap-2`}
@@ -295,15 +269,51 @@ export function ChatHistoryPanel({
                                   </Button>
                                 </div>
                               ) : null}
-                              <p className="whitespace-pre-wrap break-words m-0">
-                                {renderContentWithMentions(
-                                  msg.content,
-                                  msg.mentions,
-                                  showFull
-                                    ? undefined
-                                    : CHAT_HISTORY_COLLAPSE_THRESHOLD,
-                                )}
-                              </p>
+                              {msg.content.trim() ? (
+                                <div className="flex items-end gap-2">
+                                  <p className="flex-1 min-w-0 whitespace-pre-wrap break-words m-0">
+                                    {renderContentWithMentions(
+                                      msg.content,
+                                      msg.mentions,
+                                      showFull
+                                        ? undefined
+                                        : CHAT_HISTORY_COLLAPSE_THRESHOLD,
+                                    )}
+                                  </p>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon-sm"
+                                    className="shrink-0 h-7 w-7 mb-px opacity-0 group-hover/card:opacity-100 transition-opacity bg-background/80 rounded-md self-end"
+                                    onClick={(e) =>
+                                      handleCopy(e, msg.content, key)
+                                    }
+                                    aria-label={
+                                      copiedKey === key
+                                        ? "Copied user message"
+                                        : "Copy user message"
+                                    }
+                                    title={
+                                      copiedKey === key
+                                        ? "Copied"
+                                        : "Copy user message"
+                                    }
+                                  >
+                                    {copiedKey === key ? (
+                                      <span className="animate-concept-copy-tick">
+                                        <Check
+                                          className="size-3.5 text-green-600"
+                                          aria-hidden="true"
+                                        />
+                                      </span>
+                                    ) : (
+                                      <Copy
+                                        className="size-3.5"
+                                        aria-hidden="true"
+                                      />
+                                    )}
+                                  </Button>
+                                </div>
+                              ) : null}
                             </div>
                           );
                         })()}
