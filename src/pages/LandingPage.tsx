@@ -3,7 +3,6 @@ import {
   FolderKanban,
   MessageSquare,
   Network,
-  Sparkles,
   FileText,
 } from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
@@ -43,7 +42,7 @@ export function LandingPage() {
       <header className="border-b border-border/60 bg-background/80 backdrop-blur-sm">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <span className="text-sm font-semibold tracking-[0.2em] uppercase text-muted-foreground">
-            Think
+            LET THINK
           </span>
           <Link
             to="/login"
@@ -56,17 +55,16 @@ export function LandingPage() {
 
       <main className="mx-auto max-w-5xl px-4 pb-20 pt-16 sm:px-6 sm:pt-24">
         <div className="mx-auto max-w-2xl text-center">
-          <p className="mb-4 inline-flex items-center gap-2 rounded-full border border-border/80 bg-muted/40 px-3 py-1 text-xs font-medium text-muted-foreground">
-            <Sparkles className="size-3.5" aria-hidden />
-            For people who think in threads, not tabs
-          </p>
-          <h1 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl">
-            A calm workspace for deep work and connected ideas
+          <h1 className="text-balance text-5xl leading-[1.02] font-semibold tracking-tight sm:text-6xl md:text-7xl">
+            we let you think
+            <br />
+            with ideas efortlessly
           </h1>
-          <p className="mt-5 text-pretty text-base text-muted-foreground sm:text-lg">
-            Think brings together sessions, projects, notes, and an AI copilot in
-            one place—so researchers, writers, and builders can structure thought
-            without juggling a dozen tools.
+          <h2 className="mt-8 text-pretty text-2xl leading-tight font-medium text-foreground sm:text-3xl">
+            The clutter free AI helper
+          </h2>
+          <p className="mt-5 text-pretty text-lg leading-relaxed text-muted-foreground sm:text-2xl">
+            For those who want pure ideas rather than scan for them in flattery
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
