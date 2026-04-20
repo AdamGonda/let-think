@@ -27,9 +27,6 @@ export function LandingPage() {
       <main className="mx-auto max-w-5xl px-4 pb-20 pt-14 sm:px-6 sm:pt-20">
         <div className="mx-auto max-w-3xl">
           <div className="text-center">
-            <p className="mb-5 inline-flex items-center rounded-full border border-border/70 bg-muted/40 px-3 py-1 text-[11px] font-semibold tracking-[0.18em] text-muted-foreground uppercase sm:mb-6">
-              zen mode by default
-            </p>
             <h1 className="text-balance text-4xl leading-[1.05] font-semibold tracking-tight sm:text-5xl md:text-6xl">
               where you let yourself
               <br />
