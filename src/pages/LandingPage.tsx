@@ -33,7 +33,7 @@ export function LandingPage() {
               think effortlessly
             </h1>
             <p className="mx-auto mt-4 max-w-lg text-pretty text-base leading-relaxed text-muted-foreground sm:mt-5 sm:text-lg">
-              For those who want pure ideas from AI, not sycophantic flattery.
+              For those who want pure ideas from AI, <br></br> not sycophantic flattery.
             </p>
           </div>
 

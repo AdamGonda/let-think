@@ -6,11 +6,8 @@ export function SiteFooter() {
   return (
     <footer className="shrink-0 border-t border-border/60 py-8 text-center text-xs text-muted-foreground">
       <div className="mx-auto max-w-5xl px-4 sm:px-6">
-        <p className="text-[0.8125rem] leading-relaxed">
-          Think — structure your sessions, projects, and ideas in one flow.
-        </p>
         <nav
-          className="mt-4 flex flex-wrap items-center justify-center gap-x-2 gap-y-1"
+          className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1"
           aria-label="Legal and policies"
         >
           <Link
