@@ -56,15 +56,15 @@ export function LandingPage() {
       <main className="mx-auto max-w-5xl px-4 pb-20 pt-16 sm:px-6 sm:pt-24">
         <div className="mx-auto max-w-2xl text-center">
           <h1 className="text-balance text-5xl leading-[1.02] font-semibold tracking-tight sm:text-6xl md:text-7xl">
-            we let you think
+            where you let yourself
             <br />
-            with ideas efortlessly
+            think effortlessly
           </h1>
           <h2 className="mt-8 text-pretty text-2xl leading-tight font-medium text-foreground sm:text-3xl">
-            The clutter free AI helper
+            zen mode by default
           </h2>
           <p className="mt-5 text-pretty text-lg leading-relaxed text-muted-foreground sm:text-2xl">
-            For those who want pure ideas rather than scan for them in sycophantic flattery conversations
+            For those who want pure ideas, not sycophantic flattery.
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
