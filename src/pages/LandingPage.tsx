@@ -27,15 +27,15 @@ export function LandingPage() {
       <main className="mx-auto max-w-5xl px-4 pb-20 pt-14 sm:px-6 sm:pt-20">
         <div className="mx-auto max-w-3xl">
           <div className="text-center">
+            <p className="mb-5 inline-flex items-center rounded-full border border-border/70 bg-muted/40 px-3 py-1 text-[11px] font-semibold tracking-[0.18em] text-muted-foreground uppercase sm:mb-6">
+              zen mode by default
+            </p>
             <h1 className="text-balance text-4xl leading-[1.05] font-semibold tracking-tight sm:text-5xl md:text-6xl">
               where you let yourself
               <br />
               think effortlessly
             </h1>
-            <h2 className="mx-auto mt-3 max-w-md text-pretty text-lg font-medium leading-snug text-foreground sm:mt-4 sm:text-xl">
-              zen mode by default
-            </h2>
-            <p className="mx-auto mt-2 max-w-lg text-pretty text-base leading-relaxed text-muted-foreground sm:mt-3 sm:text-lg">
+            <p className="mx-auto mt-4 max-w-lg text-pretty text-base leading-relaxed text-muted-foreground sm:mt-5 sm:text-lg">
               For those who want pure ideas from AI, not sycophantic flattery.
             </p>
           </div>
