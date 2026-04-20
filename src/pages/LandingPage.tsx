@@ -32,15 +32,15 @@ export function LandingPage() {
               <br />
               think effortlessly
             </h1>
-            <h2 className="mx-auto mt-5 max-w-md text-pretty text-lg font-medium leading-snug text-foreground sm:mt-6 sm:text-xl">
+            <h2 className="mx-auto mt-3 max-w-md text-pretty text-lg font-medium leading-snug text-foreground sm:mt-4 sm:text-xl">
               zen mode by default
             </h2>
-            <p className="mx-auto mt-4 max-w-lg text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
+            <p className="mx-auto mt-2 max-w-lg text-pretty text-base leading-relaxed text-muted-foreground sm:mt-3 sm:text-lg">
               For those who want pure ideas, not sycophantic flattery.
             </p>
           </div>
 
-          <section className="mt-10 sm:mt-12" aria-label="Product demo video">
+          <section className="mt-6 sm:mt-7" aria-label="Product demo video">
             {/*
               Self-hosted file: set VITE_PRODUCT_DEMO_VIDEO_URL (e.g. /demo.mp4 in public/)
               and optionally VITE_PRODUCT_DEMO_VIDEO_POSTER_URL for a still frame.
