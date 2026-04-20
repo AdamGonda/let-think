@@ -36,7 +36,7 @@ export function LandingPage() {
               zen mode by default
             </h2>
             <p className="mx-auto mt-2 max-w-lg text-pretty text-base leading-relaxed text-muted-foreground sm:mt-3 sm:text-lg">
-              For those who want pure ideas, not sycophantic flattery.
+              For those who want pure ideas from AI, not sycophantic flattery.
             </p>
           </div>
 
