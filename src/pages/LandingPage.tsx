@@ -64,7 +64,7 @@ export function LandingPage() {
             The clutter free AI helper
           </h2>
           <p className="mt-5 text-pretty text-lg leading-relaxed text-muted-foreground sm:text-2xl">
-            For those who want pure ideas rather than scan for them in a sycophantic flattery fake conversation
+            For those who want pure ideas rather than scan for them in sycophantic flattery conversations
           </p>
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
