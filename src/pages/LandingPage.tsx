@@ -1,40 +1,11 @@
 import { Link } from "@tanstack/react-router";
-import {
-  FolderKanban,
-  MessageSquare,
-  Network,
-  FileText,
-} from "lucide-react";
 import { SiteFooter } from "@/components/SiteFooter";
 import { buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-const features = [
-  {
-    title: "Projects & sessions",
-    description:
-      "Group work into projects and spin up focused sessions so context stays where you need it—not scattered across tabs.",
-    icon: FolderKanban,
-  },
-  {
-    title: "AI that follows the thread",
-    description:
-      "Chat alongside your notes with history you can revisit. Pick up exactly where you left off on hard problems.",
-    icon: MessageSquare,
-  },
-  {
-    title: "Notes that stay readable",
-    description:
-      "Capture ideas in markdown with an editor built for long-form thinking, not disposable snippets.",
-    icon: FileText,
-  },
-  {
-    title: "Concept graph",
-    description:
-      "See how ideas connect instead of losing them in a flat list—built for synthesis, not just storage.",
-    icon: Network,
-  },
-] as const;
+const demoVideoSrc = import.meta.env.VITE_PRODUCT_DEMO_VIDEO_URL?.trim() ?? "";
+const demoPosterSrc =
+  import.meta.env.VITE_PRODUCT_DEMO_VIDEO_POSTER_URL?.trim() ?? "";
 
 export function LandingPage() {
   return (
@@ -53,57 +24,57 @@ export function LandingPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 pb-20 pt-16 sm:px-6 sm:pt-24">
-        <div className="mx-auto max-w-2xl text-center">
-          <h1 className="text-balance text-5xl leading-[1.02] font-semibold tracking-tight sm:text-6xl md:text-7xl">
-            where you let yourself
-            <br />
-            think effortlessly
-          </h1>
-          <h2 className="mt-8 text-pretty text-2xl leading-tight font-medium text-foreground sm:text-3xl">
-            zen mode by default
-          </h2>
-          <p className="mt-5 text-pretty text-lg leading-relaxed text-muted-foreground sm:text-2xl">
-            For those who want pure ideas, not sycophantic flattery.
-          </p>
-          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link
-              to="/login"
-              className={cn(
-                buttonVariants({ size: "lg" }),
-                "w-full min-w-[200px] justify-center sm:w-auto"
-              )}
-            >
-              Get started
-            </Link>
-            <Link
-              to="/login"
-              className={cn(
-                buttonVariants({ variant: "outline", size: "lg" }),
-                "w-full min-w-[200px] justify-center border-border/80 sm:w-auto"
-              )}
-            >
-              Sign in with Google
-            </Link>
+      <main className="mx-auto max-w-5xl px-4 pb-20 pt-14 sm:px-6 sm:pt-20">
+        <div className="mx-auto max-w-3xl">
+          <div className="text-center">
+            <h1 className="text-balance text-4xl leading-[1.05] font-semibold tracking-tight sm:text-5xl md:text-6xl">
+              where you let yourself
+              <br />
+              think effortlessly
+            </h1>
+            <h2 className="mx-auto mt-5 max-w-md text-pretty text-lg font-medium leading-snug text-foreground sm:mt-6 sm:text-xl">
+              zen mode by default
+            </h2>
+            <p className="mx-auto mt-4 max-w-lg text-pretty text-base leading-relaxed text-muted-foreground sm:text-lg">
+              For those who want pure ideas, not sycophantic flattery.
+            </p>
           </div>
-        </div>
 
-        <ul className="mx-auto mt-20 grid max-w-4xl gap-6 sm:grid-cols-2">
-          {features.map(({ title, description, icon: Icon }) => (
-            <li
-              key={title}
-              className="rounded-xl border border-border/60 bg-card/60 p-6 shadow-sm"
-            >
-              <div className="mb-4 flex size-10 items-center justify-center rounded-lg bg-muted/80">
-                <Icon className="size-5 text-foreground" aria-hidden />
-              </div>
-              <h2 className="text-lg font-semibold">{title}</h2>
-              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                {description}
-              </p>
-            </li>
-          ))}
-        </ul>
+          <section className="mt-10 sm:mt-12" aria-label="Product demo video">
+            {/*
+              Self-hosted file: set VITE_PRODUCT_DEMO_VIDEO_URL (e.g. /demo.mp4 in public/)
+              and optionally VITE_PRODUCT_DEMO_VIDEO_POSTER_URL for a still frame.
+
+              Why these attributes: preload="none" avoids fetching until play (LCP).
+              poster shows a static image without decoding video. playsInline keeps
+              playback inline on iOS. Fixed aspect-video prevents CLS.
+
+              For YouTube/Vimeo: do not embed the iframe in initial HTML; use a
+              thumbnail + play button and inject the iframe on first click so third-party
+              scripts and streams do not run until the user asks.
+            */}
+            <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border/60 bg-muted/40 shadow-sm">
+              {demoVideoSrc ? (
+                <video
+                  className="absolute inset-0 size-full object-cover"
+                  controls
+                  playsInline
+                  preload="none"
+                  poster={demoPosterSrc || undefined}
+                >
+                  <source src={demoVideoSrc} type="video/mp4" />
+                  Your browser does not support the video tag.
+                </video>
+              ) : (
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <p className="text-sm text-muted-foreground/70">
+                    Product demo video
+                  </p>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
       </main>
 
       <SiteFooter />
