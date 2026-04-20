@@ -21,6 +21,8 @@ type WakeUpOverlayProps = {
         projectId: Id<"projects"> | null;
       }
     | undefined;
+  /** True only when the session was opened from the Project notes grid (not the sidebar tree). */
+  showFileNoteBreadcrumbFromProjectNotes: boolean;
   notes: string;
   notesSelectionRange: { start: number; end: number } | null;
   onNotesChange: (value: string) => void;
@@ -39,6 +41,7 @@ export function WakeUpOverlay({
   editorRevealReady,
   activeSessionId,
   activeSessionInWorkspace,
+  showFileNoteBreadcrumbFromProjectNotes,
   notes,
   notesSelectionRange,
   onNotesChange,
@@ -81,7 +84,9 @@ export function WakeUpOverlay({
                 editorRevealReady ? "opacity-100" : "opacity-0"
               }`}
             >
-              {editorOpen && activeSessionInWorkspace ? (
+              {editorOpen &&
+              activeSessionInWorkspace &&
+              showFileNoteBreadcrumbFromProjectNotes ? (
                 <NoteBreadcrumb
                   projectName={activeSessionInWorkspace.projectName}
                   sessionName={activeSessionInWorkspace.session.title}
