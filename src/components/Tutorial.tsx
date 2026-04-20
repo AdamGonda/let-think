@@ -44,7 +44,7 @@ function getSteps(): DriveStep[] {
     {
       element: "[data-tour='notes-toggle']",
       popover: {
-        title: "Project notes view",
+        title: "Projects view",
         description:
           "Toggle between graph mode and a list view for project sessions and notes. Useful for scanning and jumping quickly.",
         side: "right",
