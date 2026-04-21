@@ -11,16 +11,10 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-background sign-in-bg text-foreground">
       <header className="border-b border-border/60 bg-background/80 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+        <div className="mx-auto flex max-w-5xl items-center justify-center px-4 py-4 sm:px-6">
           <span className="text-sm font-semibold tracking-[0.2em] uppercase text-muted-foreground">
             LET THINK
           </span>
-          <Link
-            to="/login"
-            className={cn(buttonVariants({ size: "sm" }))}
-          >
-            Sign in
-          </Link>
         </div>
       </header>
 
@@ -69,6 +63,17 @@ export function LandingPage() {
                   </p>
                 </div>
               )}
+            </div>
+            <div className="mt-5 text-center sm:mt-6">
+              <p className="mx-auto max-w-xl text-sm text-muted-foreground sm:text-base">
+                Only 20 beta spots. Early access closes as soon as they are claimed.
+              </p>
+              <Link
+                to="/login"
+                className={cn(buttonVariants({ size: "lg" }), "mt-3 sm:mt-4")}
+              >
+                Apply for beta access
+              </Link>
             </div>
           </section>
         </div>
