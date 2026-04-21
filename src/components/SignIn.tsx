@@ -3,8 +3,7 @@ import { Link } from "@tanstack/react-router";
 import { LogIn, Sparkles } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { SiteFooter } from "@/components/SiteFooter";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 function GoogleGlyph({ className }: { className?: string }) {
   return (
@@ -35,18 +34,12 @@ export function SignIn() {
   return (
     <div className="flex min-h-screen flex-col bg-background sign-in-bg text-foreground">
       <header className="shrink-0 border-b border-border/60 bg-background/80 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+        <div className="mx-auto flex max-w-5xl items-center justify-center gap-4 px-4 py-4 sm:px-6">
           <Link
             to="/"
             className="text-sm font-semibold tracking-[0.2em] uppercase text-muted-foreground transition-colors hover:text-foreground"
           >
-            Think
-          </Link>
-          <Link
-            to="/"
-            className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-          >
-            ← Home
+            LET THINK
           </Link>
         </div>
       </header>
@@ -71,7 +64,7 @@ export function SignIn() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                  Continue to Think
+                  Continue to the app
                 </h1>
                 <CardDescription className="mt-3 text-base leading-relaxed">
                   Use your Google account to open your projects, sessions, and
@@ -103,7 +96,7 @@ export function SignIn() {
                 >
                   Data policy
                 </Link>
-                , and to access your Think data tied to that account.
+                , and to access your LET THINK data tied to that account.
               </p>
             </CardContent>
           </Card>

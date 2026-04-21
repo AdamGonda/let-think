@@ -5,12 +5,12 @@ export function TermsOfUsePage() {
   return (
     <LegalDocLayout title="Terms of use" lastUpdated="April 19, 2026">
       <p>
-        These terms govern your use of Think. Replace this placeholder with
+        These terms govern your use of LET THINK. Replace this placeholder with
         terms reviewed by your counsel before production use.
       </p>
       <h2>Using the service</h2>
       <p>
-        You agree to use Think only in compliance with applicable law and not to
+        You agree to use LET THINK only in compliance with applicable law and not to
         misuse the product (for example by attempting to disrupt, scrape, or gain
         unauthorized access).
       </p>

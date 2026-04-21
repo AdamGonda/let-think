@@ -30,6 +30,10 @@ function IndexRoute() {
   if (isAuthenticated) {
     return <AuthenticatedApp />;
   }
+  return <Navigate to="/login" />;
+}
+
+function BetaAccessRoute() {
   return <LandingPage />;
 }
 
@@ -52,6 +56,12 @@ const indexRoute = createRoute({
   component: IndexRoute,
 });
 
+const betaAccessRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/beta-access",
+  component: BetaAccessRoute,
+});
+
 const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/login",
@@ -72,6 +82,7 @@ const termsRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
+  betaAccessRoute,
   loginRoute,
   privacyRoute,
   termsRoute,

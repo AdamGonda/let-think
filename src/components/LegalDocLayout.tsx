@@ -23,7 +23,7 @@ export function LegalDocLayout({
             to="/"
             className="text-sm font-semibold tracking-[0.2em] uppercase text-muted-foreground transition-colors hover:text-foreground"
           >
-            Think
+            LET THINK
           </Link>
           <Link
             to="/login"
