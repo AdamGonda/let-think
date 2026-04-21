@@ -68,12 +68,14 @@ export function LandingPage() {
               <p className="mx-auto max-w-xl text-sm text-muted-foreground sm:text-base">
                 Only 20 beta spots. Early access closes as soon as they are claimed.
               </p>
-              <Link
-                to="/login"
+              <a
+                href="https://tally.so/r/D4v9jE"
+                target="_blank"
+                rel="noreferrer"
                 className={cn(buttonVariants({ size: "lg" }), "mt-3 sm:mt-4")}
               >
                 Apply for beta access
-              </Link>
+              </a>
             </div>
           </section>
         </div>
