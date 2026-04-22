@@ -6,12 +6,6 @@
 [build.environment]
   NPM_FLAGS = "--include=dev"
 
-# Redirect legacy beta links to the root landing page.
-[[redirects]]
-  from = "/beta-access"
-  to = "/"
-  status = 301
-
 # Client-side routing (TanStack Router): serve index.html for deep links and refresh.
 [[redirects]]
   from = "/*"
