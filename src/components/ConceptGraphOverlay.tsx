@@ -262,13 +262,14 @@ export function ConceptGraphOverlay({
             >
               {showLoadingCards
                 ? loadingSlots.map((slotIndex) => {
+                    const slotKey = `concept-slot-${slotIndex}`;
                     const item = loadingBatchNodes[slotIndex];
                     if (!item) {
                       return (
                         <Card
-                          key={`loading-skeleton-${slotIndex}`}
+                          key={slotKey}
                           size="sm"
-                          cornerRipple
+                          cornerRipple={{ persistenceKey: slotKey }}
                           className="relative flex h-full min-h-[200px] flex-col"
                         >
                           <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
@@ -286,9 +287,9 @@ export function ConceptGraphOverlay({
                     const isReferenced = referencedConceptIds?.has(node.id);
                     return (
                       <Card
-                        key={node.id}
+                        key={slotKey}
                         size="sm"
-                        cornerRipple
+                        cornerRipple={{ persistenceKey: slotKey }}
                         className={clsx(
                           "relative flex h-full min-h-[200px] flex-col transition-colors duration-200",
                           isReferenced && "session-accent-ref-glow-pulse",
@@ -321,7 +322,8 @@ export function ConceptGraphOverlay({
                       </Card>
                     );
                   })
-                : currentBatchNodes.map(({ node, number }) => {
+                : currentBatchNodes.map(({ node, number }, slotIndex) => {
+                const slotKey = `concept-slot-${slotIndex}`;
                 const isHovered = hoveredNode?.id === node.id;
                 const showDescription = isHovered && node.description;
                 const isReferenced = referencedConceptIds?.has(node.id);
@@ -331,9 +333,9 @@ export function ConceptGraphOverlay({
                 const isCopyJustDone = copiedNodeId === node.id;
                 return (
                   <Card
-                    key={node.id}
+                    key={slotKey}
                     size="sm"
-                    cornerRipple
+                    cornerRipple={{ persistenceKey: slotKey }}
                     className={clsx(
                       "relative flex h-full min-h-[200px] flex-col transition-colors duration-200",
                       isReferenced && isLoading && "session-accent-ref-glow-pulse",

@@ -6,6 +6,10 @@ export type CornerRippleCorner = "tl" | "tr" | "bl" | "br"
 
 export type CornerRippleBackdropProps = {
   /**
+   * Stable ID used to persist ripple animation phase/corner across React remounts.
+   */
+  persistenceKey?: string
+  /**
    * Pool to choose from; **each loop** picks a new corner (random, not the same
    * as the previous when the pool has more than one corner).
    */
@@ -47,7 +51,15 @@ function pickDifferentCorner(
   return others[Math.floor(Math.random() * others.length)]!
 }
 
+type PersistedRippleState = {
+  activeCorner: CornerRippleCorner
+  cycleStartMs: number
+}
+
+const rippleStateByKey = new Map<string, PersistedRippleState>()
+
 export function CornerRippleBackdrop({
+  persistenceKey,
   corners,
   ringCount = 1,
   durationSec = 15,
@@ -62,13 +74,51 @@ export function CornerRippleBackdrop({
     return ["tl", "tr", "bl", "br"]
   }, [corners])
 
-  const [activeCorner, setActiveCorner] = React.useState(() =>
-    pickRandomCorner(pool),
+  const durationMs = durationSec * 1000;
+
+  const getInitialRippleState = React.useCallback(() => {
+    if (persistenceKey) {
+      const persisted = rippleStateByKey.get(persistenceKey)
+      if (persisted && pool.includes(persisted.activeCorner)) {
+        return persisted
+      }
+    }
+    const nextState: PersistedRippleState = {
+      activeCorner: pickRandomCorner(pool),
+      cycleStartMs: Date.now() - Math.random() * durationMs,
+    }
+    if (persistenceKey) {
+      rippleStateByKey.set(persistenceKey, nextState)
+    }
+    return nextState
+  }, [persistenceKey, pool, durationMs])
+
+  const [{ activeCorner, cycleStartMs }, setRippleState] = React.useState<PersistedRippleState>(
+    getInitialRippleState,
   )
 
   const onRippleLoop = React.useCallback(() => {
-    setActiveCorner((prev) => pickDifferentCorner(pool, prev))
-  }, [pool])
+    setRippleState((prev) => {
+      const nextState: PersistedRippleState = {
+        activeCorner: pickDifferentCorner(pool, prev.activeCorner),
+        cycleStartMs: Date.now(),
+      }
+      if (persistenceKey) {
+        rippleStateByKey.set(persistenceKey, nextState)
+      }
+      return nextState
+    })
+  }, [pool, persistenceKey])
+
+  React.useEffect(() => {
+    const nextState = getInitialRippleState()
+    setRippleState((prev) =>
+      prev.activeCorner === nextState.activeCorner &&
+      prev.cycleStartMs === nextState.cycleStartMs
+        ? prev
+        : nextState,
+    )
+  }, [getInitialRippleState])
 
   const containerRef = React.useRef<HTMLDivElement>(null)
   const [size, setSize] = React.useState({ w: 0, h: 0 })
@@ -91,9 +141,9 @@ export function CornerRippleBackdrop({
   const { w, h } = size
   /* Past opposite corner + margin so the arc reads slightly larger before the fade. */
   const maxScale = w > 0 && h > 0 ? Math.hypot(w, h) * 1.318 : 1
-  const durationMs = durationSec * 1000;
   const nRings = Math.max(1, ringCount)
   const staggerMs = durationMs / nRings
+  const phaseWithinCycleMs = ((Date.now() - cycleStartMs) % durationMs + durationMs) % durationMs
 
   return (
     <div
@@ -140,7 +190,7 @@ export function CornerRippleBackdrop({
                 className="pointer-events-none animate-corner-ripple"
                 style={{
                   transformOrigin: "0px 0px",
-                  animationDelay: `${(i * staggerMs) / 1000}s`,
+                  animationDelay: `${((i * staggerMs - phaseWithinCycleMs) / 1000).toFixed(3)}s`,
                 }}
                 onAnimationIteration={
                   i === 0 && nRings === 1 ? onRippleLoop : undefined
