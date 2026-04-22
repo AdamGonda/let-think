@@ -8,9 +8,10 @@
 
 # Redirect apex domain traffic to /beta-access.
 [[redirects]]
-  from = "https://letthink.co/*"
-  to = "https://letthink.co/beta-access"
+  from = "/"
+  to = "/beta-access"
   status = 301
+  conditions = { Host = ["letthink.co"] }
 
 # Client-side routing (TanStack Router): serve index.html for deep links and refresh.
 [[redirects]]
