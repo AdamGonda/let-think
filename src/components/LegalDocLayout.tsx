@@ -26,7 +26,7 @@ export function LegalDocLayout({
             LET THINK
           </Link>
           <Link
-            to="/login"
+            to="/app"
             className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
           >
             Sign in

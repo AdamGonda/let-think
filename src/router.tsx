@@ -12,6 +12,9 @@ import { LandingPage } from "./pages/LandingPage";
 import { DataPolicyPage } from "./pages/DataPolicyPage";
 import { TermsOfUsePage } from "./pages/TermsOfUsePage";
 import { SignIn } from "./components/SignIn";
+import { AdminAllowlistPage } from "./pages/AdminAllowlistPage";
+
+const ADMIN_ROUTE_HASH = "a9f3d2c7be4e8f11";
 
 function RootLayout() {
   const { isLoading } = useConvexAuth();
@@ -26,6 +29,10 @@ function RootLayout() {
 }
 
 function IndexRoute() {
+  const { isAuthenticated } = useConvexAuth();
+  if (isAuthenticated) {
+    return <Navigate to="/app" />;
+  }
   return <LandingPage />;
 }
 
@@ -48,9 +55,9 @@ const indexRoute = createRoute({
   component: IndexRoute,
 });
 
-const loginRoute = createRoute({
+const appRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/login",
+  path: "/app",
   component: LoginRoute,
 });
 
@@ -66,11 +73,18 @@ const termsRoute = createRoute({
   component: TermsOfUsePage,
 });
 
+const adminRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: `/admin/${ADMIN_ROUTE_HASH}`,
+  component: AdminAllowlistPage,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
-  loginRoute,
+  appRoute,
   privacyRoute,
   termsRoute,
+  adminRoute,
 ]);
 
 const router = createRouter({ routeTree });

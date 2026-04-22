@@ -34,6 +34,12 @@ const conceptGraphValue = v.object({
  */
 export default defineSchema({
   ...authTables,
+  betaAllowlist: defineTable({
+    email: v.string(),
+    addedAt: v.number(),
+    addedBy: v.optional(v.id("users")),
+  }).index("by_email", ["email"]),
+
   projects: defineTable({
     userId: v.optional(v.id("users")),
     name: v.string(),

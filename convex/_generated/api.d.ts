@@ -8,11 +8,13 @@
  * @module
  */
 
+import type * as admin from "../admin.js";
 import type * as auth from "../auth.js";
 import type * as chat from "../chat.js";
 import type * as chatPipeline from "../chatPipeline.js";
 import type * as constants from "../constants.js";
 import type * as http from "../http.js";
+import type * as lib_access from "../lib/access.js";
 import type * as modelConfig from "../modelConfig.js";
 import type * as projects from "../projects.js";
 import type * as sessions from "../sessions.js";
@@ -25,11 +27,13 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  admin: typeof admin;
   auth: typeof auth;
   chat: typeof chat;
   chatPipeline: typeof chatPipeline;
   constants: typeof constants;
   http: typeof http;
+  "lib/access": typeof lib_access;
   modelConfig: typeof modelConfig;
   projects: typeof projects;
   sessions: typeof sessions;
