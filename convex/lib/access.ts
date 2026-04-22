@@ -7,14 +7,39 @@ export function normalizeEmail(value: string): string {
   return value.trim().toLowerCase();
 }
 
-function parseEmailList(value: string | undefined): Set<string> {
-  if (!value) return new Set();
-  return new Set(
+function canonicalizeEmailForMatching(email: string): string {
+  const normalized = normalizeEmail(email);
+  const atIndex = normalized.indexOf("@");
+  if (atIndex <= 0) return normalized;
+
+  const local = normalized.slice(0, atIndex);
+  const domain = normalized.slice(atIndex + 1);
+  if (!domain) return normalized;
+
+  if (domain === "gmail.com" || domain === "googlemail.com") {
+    const plusIndex = local.indexOf("+");
+    const localWithoutAlias = plusIndex >= 0 ? local.slice(0, plusIndex) : local;
+    const dotlessLocal = localWithoutAlias.replace(/\./g, "");
+    return `${dotlessLocal}@gmail.com`;
+  }
+
+  return normalized;
+}
+
+function emailsMatch(left: string, right: string): boolean {
+  return canonicalizeEmailForMatching(left) === canonicalizeEmailForMatching(right);
+}
+
+function parseEmailList(value: string | undefined): string[] {
+  if (!value) return [];
+  return [
+    ...new Set(
     value
-      .split(",")
-      .map((email) => normalizeEmail(email))
-      .filter(Boolean)
-  );
+        .split(",")
+        .map((email) => normalizeEmail(email))
+        .filter(Boolean)
+    ),
+  ];
 }
 
 export async function isEmailAllowed(ctx: Context, email: string): Promise<boolean> {
@@ -22,13 +47,20 @@ export async function isEmailAllowed(ctx: Context, email: string): Promise<boole
   if (!normalized) return false;
 
   const adminEmails = parseEmailList(process.env.CONVEX_ADMIN_EMAILS);
-  if (adminEmails.has(normalized)) return true;
+  if (adminEmails.some((adminEmail) => emailsMatch(adminEmail, normalized))) {
+    return true;
+  }
 
-  const allowlisted = await ctx.db
+  const allowlistedExact = await ctx.db
     .query("betaAllowlist")
     .withIndex("by_email", (q) => q.eq("email", normalized))
     .unique();
-  return Boolean(allowlisted);
+  if (allowlistedExact) {
+    return true;
+  }
+
+  const allowlistedEntries = await ctx.db.query("betaAllowlist").collect();
+  return allowlistedEntries.some((entry) => emailsMatch(entry.email, normalized));
 }
 
 export async function requireAdminUserId(ctx: Context) {
@@ -44,7 +76,7 @@ export async function requireAdminUserId(ctx: Context) {
   }
 
   const adminEmails = parseEmailList(process.env.CONVEX_ADMIN_EMAILS);
-  if (!adminEmails.has(email)) {
+  if (!adminEmails.some((adminEmail) => emailsMatch(adminEmail, email))) {
     throw new Error("Unauthorized");
   }
 

@@ -1,6 +1,6 @@
 import Google from "@auth/core/providers/google";
 import { convexAuth } from "@convex-dev/auth/server";
-import { normalizeEmail } from "./lib/access";
+import { isEmailAllowed, normalizeEmail } from "./lib/access";
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
   providers: [Google],
@@ -9,6 +9,10 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       const email = normalizeEmail(args.profile.email ?? "");
       if (!email) {
         throw new Error("Email is required for sign-in");
+      }
+      const isAllowed = await isEmailAllowed(ctx, email);
+      if (!isAllowed) {
+        throw new Error("This account is not in the beta allowlist");
       }
 
       const {
@@ -35,6 +39,10 @@ export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
       const email = normalizeEmail(user?.email ?? "");
       if (!email) {
         throw new Error("Email is required for sign-in");
+      }
+      const isAllowed = await isEmailAllowed(ctx, email);
+      if (!isAllowed) {
+        throw new Error("This account is not in the beta allowlist");
       }
     },
   },
