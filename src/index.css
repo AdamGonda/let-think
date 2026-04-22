@@ -289,26 +289,6 @@
   animation: session-accent-outline-pulse 6s ease-in-out infinite;
 }
 
-/* Loading concept cards — subtle shine on center icon. */
-@keyframes loading-icon-shine {
-  0%,
-  100% {
-    opacity: 0.45;
-    filter: drop-shadow(0 0 0 color-mix(in srgb, var(--session-accent) 65%, #22c55e));
-    transform: scale(0.95);
-  }
-  50% {
-    opacity: 1;
-    filter: drop-shadow(0 0 8px color-mix(in srgb, var(--session-accent) 80%, #22c55e));
-    transform: scale(1.06);
-  }
-}
-
-.loading-icon-shine {
-  animation: loading-icon-shine 2.8s ease-in-out infinite;
-  will-change: opacity, transform, filter;
-}
-
 @media (prefers-reduced-motion: reduce) {
   .session-loading-inset-ring-pulse,
   .session-loading-chat-chrome-pulse,
@@ -333,13 +313,6 @@
 
   .session-accent-ref-outline-pulse {
     outline-color: var(--session-accent);
-  }
-
-  .loading-icon-shine {
-    animation: none;
-    opacity: 0.85;
-    filter: none;
-    transform: none;
   }
 
 }
