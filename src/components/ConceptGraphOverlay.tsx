@@ -268,7 +268,6 @@ export function ConceptGraphOverlay({
                         <Card
                           key={`loading-skeleton-${slotIndex}`}
                           size="sm"
-                          cornerRipple
                           className="relative flex h-full min-h-[200px] flex-col"
                         >
                           <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
@@ -288,7 +287,6 @@ export function ConceptGraphOverlay({
                       <Card
                         key={node.id}
                         size="sm"
-                        cornerRipple
                         className={clsx(
                           "relative flex h-full min-h-[200px] flex-col transition-colors duration-200",
                           isReferenced && "session-accent-ref-glow-pulse",
