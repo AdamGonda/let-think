@@ -64,11 +64,20 @@ export function SignIn() {
               </div>
               <div>
                 <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                  Continue to the app
+                  Beta access sign-in
                 </h1>
                 <CardDescription className="mt-3 text-base leading-relaxed">
-                  Use your Google account to open your projects, sessions, and
-                  notes—everything stays in sync in one workspace.
+                  Only Google accounts approved for the beta can continue. If your
+                  account is not approved yet,{" "}
+                  <a
+                    href="https://tally.so/r/D4v9jE"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-medium text-foreground underline underline-offset-2 hover:no-underline"
+                  >
+                    apply for beta access
+                  </a>{" "}
+                  and come back after confirmation.
                 </CardDescription>
               </div>
             </CardHeader>
