@@ -26,21 +26,13 @@ function RootLayout() {
 }
 
 function IndexRoute() {
-  const { isAuthenticated } = useConvexAuth();
-  if (isAuthenticated) {
-    return <AuthenticatedApp />;
-  }
-  return <Navigate to="/login" />;
-}
-
-function BetaAccessRoute() {
   return <LandingPage />;
 }
 
 function LoginRoute() {
   const { isAuthenticated } = useConvexAuth();
   if (isAuthenticated) {
-    return <Navigate to="/" />;
+    return <AuthenticatedApp />;
   }
   return <SignIn />;
 }
@@ -54,12 +46,6 @@ const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/",
   component: IndexRoute,
-});
-
-const betaAccessRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/beta-access",
-  component: BetaAccessRoute,
 });
 
 const loginRoute = createRoute({
@@ -82,7 +68,6 @@ const termsRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
-  betaAccessRoute,
   loginRoute,
   privacyRoute,
   termsRoute,

@@ -6,12 +6,11 @@
 [build.environment]
   NPM_FLAGS = "--include=dev"
 
-# Redirect apex domain traffic to /beta-access.
+# Redirect legacy beta links to the root landing page.
 [[redirects]]
-  from = "/"
-  to = "/beta-access"
+  from = "/beta-access"
+  to = "/"
   status = 301
-  conditions = { Host = ["letthink.co"] }
 
 # Client-side routing (TanStack Router): serve index.html for deep links and refresh.
 [[redirects]]
