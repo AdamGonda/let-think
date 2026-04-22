@@ -314,6 +314,7 @@
   .session-accent-ref-outline-pulse {
     outline-color: var(--session-accent);
   }
+
 }
 
 /* Wake up overlay – dissolve in / out */

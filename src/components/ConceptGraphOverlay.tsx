@@ -8,7 +8,7 @@ import {
   type MouseEvent,
 } from "react";
 import { clsx } from "clsx";
-import { Check, Copy } from "lucide-react";
+import { Brain, Check, Copy } from "lucide-react";
 import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { layout, timings } from "@/config";
 
@@ -267,7 +267,16 @@ export function ConceptGraphOverlay({
                           size="sm"
                           cornerRipple
                           className="relative flex h-full min-h-[200px] flex-col"
-                        />
+                        >
+                          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                            <Brain
+                              size={18}
+                              className="text-muted-foreground/70"
+                              strokeWidth={2}
+                              aria-hidden="true"
+                            />
+                          </div>
+                        </Card>
                       );
                     }
                     const { node, number } = item;
@@ -301,7 +310,7 @@ export function ConceptGraphOverlay({
                         >
                           {number}
                         </div>
-                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center px-6 py-4">
+                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center px-6 py-4 transition-opacity duration-200 opacity-100">
                           <CardTitle className="text-xl sm:text-2xl font-semibold text-center">
                             {node.name}
                           </CardTitle>
