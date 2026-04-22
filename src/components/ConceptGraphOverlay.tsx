@@ -268,7 +268,7 @@ export function ConceptGraphOverlay({
                         <Card
                           key={`loading-skeleton-${slotIndex}`}
                           size="sm"
-                          className="relative flex h-full min-h-[200px] flex-col"
+                          className="relative flex h-full min-h-[200px] flex-col bg-transparent shadow-none"
                         >
                           <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                             <Brain
