@@ -165,20 +165,20 @@ export function HistoricalBatchPrompt({
                   {/* Same pill row as collapsed (px-3, gap-3); close uses same chevron as collapsed, rotated 180°. */}
                   <div
                     className={clsx(
-                      "flex w-full min-h-[48px] shrink-0 items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/60 px-3",
+                      "flex w-full min-h-[48px] shrink-0 items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/60 pl-4 pr-3",
                     )}
                   >
                     <button
                       type="button"
                       onClick={requestClose}
                       className={clsx(
-                        "min-w-0 flex-1 cursor-pointer rounded-md px-0 py-1 text-left text-sm font-medium text-foreground/90 transition-colors",
-                        "hover:text-foreground",
+                        "min-w-0 flex-1 cursor-pointer rounded-md px-0 py-1 text-left text-[0.95rem] leading-[1.5] font-normal text-muted-foreground transition-colors",
+                        "hover:text-foreground/90",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                       )}
-                      aria-label="Close user input"
+                      aria-label="Close History prompt"
                     >
-                      see user input
+                      History prompt
                     </button>
                     <button
                       type="button"
@@ -206,7 +206,7 @@ export function HistoricalBatchPrompt({
                   >
                     <div className="min-h-0 overflow-hidden">
                       <div className="max-h-[min(55vh,24rem)] overflow-y-auto pr-0.5">
-                        <p className="whitespace-pre-wrap break-words m-0 text-[0.95rem] leading-relaxed text-foreground">
+                        <p className="m-0 whitespace-pre-wrap break-words py-3 pl-4 pr-4 text-[0.95rem] leading-relaxed text-muted-foreground">
                           {renderContentWithMentions(trimmed, mentions)}
                         </p>
                       </div>
@@ -225,21 +225,21 @@ export function HistoricalBatchPrompt({
               type="button"
               onClick={openPanel}
               className={clsx(
-                "w-full flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/60 px-3",
+                "w-full flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/60 pl-4 pr-3",
                 "min-h-[48px] cursor-pointer transition-colors",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
               )}
               aria-expanded={false}
             >
-              <span className="text-sm font-medium text-foreground/90">
-                see user input
+              <span className="text-[0.95rem] leading-[1.5] font-normal text-muted-foreground">
+                History prompt
               </span>
               <ChevronUp
                 className="size-5 shrink-0 text-muted-foreground"
                 strokeWidth={2}
                 aria-hidden
               />
-              <span className="sr-only">see user input</span>
+              <span className="sr-only">History prompt</span>
             </button>
           </div>
         )}
