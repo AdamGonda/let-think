@@ -273,7 +273,7 @@ export function ConceptGraphOverlay({
                           <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
                             <Brain
                               size={18}
-                              className="text-muted-foreground/70"
+                              className="loading-icon-shine text-muted-foreground/70"
                               strokeWidth={2}
                               aria-hidden="true"
                             />
