@@ -288,7 +288,7 @@ export function ConceptGraphOverlay({
                         key={node.id}
                         size="sm"
                         className={clsx(
-                          "relative flex h-full min-h-[200px] flex-col transition-colors duration-200",
+                          "relative flex h-full min-h-[200px] flex-col transition-colors duration-200 animate-in fade-in-0",
                           isReferenced && "session-accent-ref-glow-pulse",
                         )}
                         style={{
