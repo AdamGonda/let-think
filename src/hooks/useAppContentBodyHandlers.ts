@@ -51,14 +51,19 @@ export function useAppContentBodyHandlers({
 
   const handleCardReferenceClick = useCallback(
     (conceptNumber: number) => {
+      const nextDraft = toggleAtReferenceInDraft(draftInput, conceptNumber);
       setDraftInput(
         actor,
-        toggleAtReferenceInDraft(draftInput, conceptNumber),
+        nextDraft,
       );
       setTimeout(() => {
-        document
-          .querySelector<HTMLTextAreaElement>("[data-session-input-textarea]")
-          ?.focus();
+        const textarea = document.querySelector<HTMLTextAreaElement>(
+          "[data-session-input-textarea]",
+        );
+        if (!textarea) return;
+        textarea.focus();
+        const end = nextDraft.length;
+        textarea.setSelectionRange(end, end);
       }, 0);
     },
     [actor, draftInput],
