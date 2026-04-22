@@ -60,6 +60,7 @@ export function ConceptGraphOverlay({
   onCardReferenceClick,
   onConceptCopy,
 }: ConceptGraphOverlayProps) {
+  const LOADING_CARD_SLOTS = 6;
   const containerRef = useRef<HTMLDivElement>(null);
   const graphViewportRef = useRef<HTMLDivElement>(null);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
@@ -220,8 +221,10 @@ export function ConceptGraphOverlay({
 
   const showLoadingCards = isLoading;
   const useLatestBatchViewportPadding = isLatestBatch || showLoadingCards;
-  const showLoadingIndicatorOnly =
-    showLoadingCards && loadingBatchNodes.length === 0;
+  const loadingSlots = useMemo(
+    () => Array.from({ length: Math.max(LOADING_CARD_SLOTS, loadingBatchNodes.length) }, (_, i) => i),
+    [loadingBatchNodes.length]
+  );
 
   return (
     <div
@@ -249,7 +252,7 @@ export function ConceptGraphOverlay({
             <div
               key={selectedBatchIndex}
               className={clsx(
-                "relative grid min-h-full w-full grid-cols-1 gap-6 p-4 auto-rows-[minmax(200px,calc((100%-7.5rem)/6))] sm:grid-cols-2 sm:auto-rows-[minmax(200px,calc((100%-3rem)/3))] lg:grid-cols-3 lg:auto-rows-[minmax(200px,calc((100%-1.5rem)/2))]",
+                "grid min-h-full w-full grid-cols-1 gap-6 p-4 auto-rows-[minmax(200px,calc((100%-7.5rem)/6))] sm:grid-cols-2 sm:auto-rows-[minmax(200px,calc((100%-3rem)/3))] lg:grid-cols-3 lg:auto-rows-[minmax(200px,calc((100%-1.5rem)/2))]",
                 showSwipeAnimation &&
                   (swipeDirection === "right"
                     ? "animate-batch-swipe-right"
@@ -257,24 +260,35 @@ export function ConceptGraphOverlay({
               )}
               onAnimationEnd={handleBatchAnimationEnd}
             >
-              {showLoadingIndicatorOnly ? (
-                <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                  <Brain
-                    size={34}
-                    className="text-muted-foreground/80 animate-pulse"
-                    strokeWidth={2}
-                    aria-label="Loading concepts"
-                  />
-                </div>
-              ) : showLoadingCards
-                ? loadingBatchNodes.map(({ node, number }) => {
+              {showLoadingCards
+                ? loadingSlots.map((slotIndex) => {
+                    const item = loadingBatchNodes[slotIndex];
+                    if (!item) {
+                      return (
+                        <Card
+                          key={`loading-skeleton-${slotIndex}`}
+                          size="sm"
+                          className="relative flex h-full min-h-[200px] flex-col"
+                        >
+                          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
+                            <Brain
+                              size={18}
+                              className="text-muted-foreground/70"
+                              strokeWidth={2}
+                              aria-hidden="true"
+                            />
+                          </div>
+                        </Card>
+                      );
+                    }
+                    const { node, number } = item;
                     const isReferenced = referencedConceptIds?.has(node.id);
                     return (
                       <Card
                         key={node.id}
                         size="sm"
                         className={clsx(
-                          "relative flex h-full min-h-[200px] flex-col transition-colors duration-200 animate-in fade-in-0",
+                          "relative flex h-full min-h-[200px] flex-col transition-colors duration-200",
                           isReferenced && "session-accent-ref-glow-pulse",
                         )}
                         style={{
