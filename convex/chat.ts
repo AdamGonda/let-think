@@ -4,14 +4,18 @@ import { action, internalAction } from "./_generated/server";
 import { api, internal } from "./_generated/api";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { generateText } from "ai";
+import { generateText, streamText } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import {
   preProcess,
   postProcess,
   extractConceptGraph,
   buildConceptGraphPromptWindow,
+  createConceptStreamParseState,
+  flushConceptStreamParseState,
+  parseConceptStreamChunk,
   type ConceptGraph,
+  type ConceptStreamEvent,
 } from "./chatPipeline";
 type ConceptNode = ConceptGraph["nodes"][number];
 import type { ModelMessage } from "ai";
@@ -48,6 +52,105 @@ function normalizeIncomingNodes(
       id: uniqueId,
     };
   });
+}
+
+type BatchMeta = {
+  id: string;
+  promptSummary?: string;
+  description?: string;
+};
+
+function mergeConceptGraphIncrement(
+  currentGraph: ConceptGraph | null,
+  incomingNodes: ConceptNode[],
+  incomingEdges: ConceptGraph["edges"],
+  batchMeta: BatchMeta,
+  globalIdRemap: Map<string, string>
+): { graph: ConceptGraph; changed: boolean } {
+  const existingNodes: ConceptNode[] = currentGraph?.nodes ?? [];
+  const localIdRemap = new Map<string, string>();
+  const existingNodeIds = new Set(existingNodes.map((n) => n.id));
+  const nodesToNormalize: ConceptNode[] = [];
+
+  for (const node of incomingNodes) {
+    const mapped = globalIdRemap.get(node.id);
+    if (mapped && existingNodeIds.has(mapped)) {
+      localIdRemap.set(node.id, mapped);
+      continue;
+    }
+    if (existingNodeIds.has(node.id)) {
+      // Repeated node from stream/fallback reconciliation: map it to existing id.
+      localIdRemap.set(node.id, node.id);
+      globalIdRemap.set(node.id, node.id);
+      continue;
+    }
+    nodesToNormalize.push(node);
+  }
+
+  const normalizedIncomingNodes = normalizeIncomingNodes(nodesToNormalize, existingNodes);
+  for (let i = 0; i < nodesToNormalize.length; i += 1) {
+    const original = nodesToNormalize[i]?.id;
+    const normalized = normalizedIncomingNodes[i]?.id;
+    if (!original || !normalized) continue;
+    localIdRemap.set(original, normalized);
+    globalIdRemap.set(original, normalized);
+  }
+
+  const newNodes = normalizedIncomingNodes.filter((n) => !existingNodeIds.has(n.id));
+  const newNodeIds = newNodes.map((n) => n.id);
+
+  const remappedIncomingEdges = incomingEdges.map((edge) => ({
+    source: localIdRemap.get(edge.source) ?? globalIdRemap.get(edge.source) ?? edge.source,
+    target: localIdRemap.get(edge.target) ?? globalIdRemap.get(edge.target) ?? edge.target,
+  }));
+  const existingEdgeKeys = new Set(
+    (currentGraph?.edges ?? []).map((e) => `${e.source}→${e.target}`)
+  );
+  const newEdges = remappedIncomingEdges.filter(
+    (edge) => !existingEdgeKeys.has(`${edge.source}→${edge.target}`)
+  );
+
+  const existingBatches = currentGraph?.batches ?? [];
+  let batches = existingBatches;
+  if (newNodeIds.length > 0) {
+    const existingBatchIndex = existingBatches.findIndex((b) => b.id === batchMeta.id);
+    if (existingBatchIndex >= 0) {
+      const existingBatch = existingBatches[existingBatchIndex];
+      const mergedNodeIds = Array.from(
+        new Set([...(existingBatch?.nodeIds ?? []), ...newNodeIds])
+      );
+      batches = existingBatches.map((batch, index) =>
+        index === existingBatchIndex
+          ? {
+              ...batch,
+              nodeIds: mergedNodeIds,
+              ...(batchMeta.promptSummary ? { promptSummary: batchMeta.promptSummary } : {}),
+              ...(batchMeta.description ? { description: batchMeta.description } : {}),
+            }
+          : batch
+      );
+    } else {
+      batches = [
+        ...existingBatches,
+        {
+          id: batchMeta.id,
+          nodeIds: newNodeIds,
+          ...(batchMeta.promptSummary ? { promptSummary: batchMeta.promptSummary } : {}),
+          ...(batchMeta.description ? { description: batchMeta.description } : {}),
+        },
+      ];
+    }
+  }
+
+  const changed = newNodes.length > 0 || newEdges.length > 0;
+  return {
+    graph: {
+      nodes: [...existingNodes, ...newNodes],
+      edges: [...(currentGraph?.edges ?? []), ...newEdges],
+      ...(batches.length > 0 ? { batches } : {}),
+    },
+    changed,
+  };
 }
 
 /** Generate a short topic/summary from user prompt via AI – fits in max 2 lines above history bubbles. */
@@ -182,18 +285,98 @@ export const send = action({
       meta: {},
     });
 
-    // 2. Call LLM (main response); topic is generated separately when message is inserted
-    const result = await generateText({
+    // 2. Call LLM using streaming so concept events can be merged progressively
+    const streamResult = streamText({
       model: google(modelConfig.mainContextGraphModel),
       system: "You are a helpful assistant.",
       messages: modelMessages,
     });
 
-    // 3. Extract concept graph from raw response (before stripping)
-    const extractedGraph = extractConceptGraph(result.text);
+    const batchMeta: BatchMeta = {
+      id: `batch-${Date.now()}`,
+      promptSummary:
+        userContent.slice(0, BATCH_PROMPT_SUMMARY_MAX_CHARS).trim() +
+          (userContent.length > BATCH_PROMPT_SUMMARY_MAX_CHARS ? "…" : "") ||
+        undefined,
+      description: userContent.trim() || undefined,
+    };
+    const streamParseState = createConceptStreamParseState();
+    const globalIdRemap = new Map<string, string>();
+    let bufferedEvents: ConceptStreamEvent[] = [];
+    let finalGraph: ConceptGraph | null = existingGraph;
+    let rawModelText = "";
+    let displayText = "";
+    let lastFlushAt = Date.now();
+    const STREAM_FLUSH_EVENT_COUNT = 2;
+    const STREAM_FLUSH_MS = 250;
 
-    // 4. Post-process the response (strips graph block for display)
-    const processedContent = await postProcess(result.text, {
+    const flushBufferedEvents = async () => {
+      if (bufferedEvents.length === 0) return;
+      const nodeEvents = bufferedEvents.filter(
+        (event): event is Extract<ConceptStreamEvent, { type: "node" }> =>
+          event.type === "node"
+      );
+      const edgeEvents = bufferedEvents.filter(
+        (event): event is Extract<ConceptStreamEvent, { type: "edge" }> =>
+          event.type === "edge"
+      );
+      const incomingNodes = nodeEvents.map((event) => event.node);
+      const incomingEdges = edgeEvents.map((event) => event.edge);
+      bufferedEvents = [];
+      const merged = mergeConceptGraphIncrement(
+        finalGraph,
+        incomingNodes,
+        incomingEdges,
+        batchMeta,
+        globalIdRemap
+      );
+      finalGraph = merged.graph;
+      if (merged.changed) {
+        await ctx.runMutation(api.sessions.updateConceptGraph, {
+          sessionId,
+          conceptGraph: finalGraph,
+        });
+      }
+      lastFlushAt = Date.now();
+    };
+
+    for await (const textPart of streamResult.textStream) {
+      rawModelText += textPart;
+      const parsed = parseConceptStreamChunk(streamParseState, textPart);
+      bufferedEvents.push(...parsed.events);
+      displayText += parsed.displayChunk;
+      const now = Date.now();
+      const shouldFlush =
+        bufferedEvents.length >= STREAM_FLUSH_EVENT_COUNT ||
+        (bufferedEvents.length > 0 && now - lastFlushAt >= STREAM_FLUSH_MS);
+      if (shouldFlush) {
+        await flushBufferedEvents();
+      }
+    }
+    await flushBufferedEvents();
+    displayText += flushConceptStreamParseState(streamParseState);
+
+    // 3. Final fallback extraction from full text for malformed stream events
+    const extractedGraph = extractConceptGraph(rawModelText);
+    if (extractedGraph) {
+      const merged = mergeConceptGraphIncrement(
+        finalGraph,
+        extractedGraph.nodes,
+        extractedGraph.edges,
+        batchMeta,
+        globalIdRemap
+      );
+      finalGraph = merged.graph;
+      if (merged.changed) {
+        await ctx.runMutation(api.sessions.updateConceptGraph, {
+          sessionId,
+          conceptGraph: finalGraph,
+        });
+      }
+    }
+
+    // 4. Post-process visible assistant text
+    const processedContent = await postProcess(displayText || rawModelText, {
       sessionId,
       meta: {},
     });
@@ -205,65 +388,6 @@ export const send = action({
       assistantContent: processedContent,
       mentions,
     });
-
-    // Merge/persist always uses the full graph from the DB; the LLM only saw a recent window.
-    let finalGraph: ConceptGraph | null = existingGraph;
-    if (extractedGraph && extractedGraph.nodes.length > 0) {
-      const existingNodes: ConceptNode[] = existingGraph?.nodes ?? [];
-      const normalizedIncomingNodes = normalizeIncomingNodes(
-        extractedGraph.nodes,
-        existingNodes
-      );
-      const existingNodeIds: Set<string> = new Set(existingNodes.map((n: ConceptNode) => n.id));
-      const newNodeIds: string[] = normalizedIncomingNodes
-        .filter((n: ConceptNode) => !existingNodeIds.has(n.id))
-        .map((n: ConceptNode) => n.id);
-      const existingBatches = existingGraph?.batches ?? [];
-      const batches: Array<{
-        id: string;
-        nodeIds: string[];
-        promptSummary?: string;
-        description?: string;
-      }> =
-        newNodeIds.length > 0
-          ? [
-              ...existingBatches,
-              {
-                id: `batch-${Date.now()}`,
-                nodeIds: newNodeIds,
-                promptSummary:
-                  userContent.slice(0, BATCH_PROMPT_SUMMARY_MAX_CHARS).trim() +
-                    (userContent.length > BATCH_PROMPT_SUMMARY_MAX_CHARS
-                      ? "…"
-                      : "") || undefined,
-                description: userContent.trim() || undefined,
-              },
-            ]
-          : existingBatches;
-      // Merge: keep existing nodes + add new ones (don't replace with extractedGraph!)
-      const mergedNodes: ConceptNode[] = [
-        ...existingNodes,
-        ...normalizedIncomingNodes.filter((n: ConceptNode) => !existingNodeIds.has(n.id)),
-      ];
-      const existingEdgeKeys = new Set(
-        (existingGraph?.edges ?? []).map((e) => `${e.source}→${e.target}`)
-      );
-      const mergedEdges = [
-        ...(existingGraph?.edges ?? []),
-        ...extractedGraph.edges.filter(
-          (e) => !existingEdgeKeys.has(`${e.source}→${e.target}`)
-        ),
-      ];
-      finalGraph = {
-        nodes: mergedNodes,
-        edges: mergedEdges,
-        batches: batches.length > 0 ? batches : undefined,
-      };
-      await ctx.runMutation(api.sessions.updateConceptGraph, {
-        sessionId,
-        conceptGraph: finalGraph,
-      });
-    }
 
     return { content: processedContent, conceptGraph: finalGraph };
   },

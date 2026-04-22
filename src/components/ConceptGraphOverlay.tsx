@@ -60,6 +60,7 @@ export function ConceptGraphOverlay({
   onCardReferenceClick,
   onConceptCopy,
 }: ConceptGraphOverlayProps) {
+  const LOADING_CARD_SLOTS = 6;
   const containerRef = useRef<HTMLDivElement>(null);
   const graphViewportRef = useRef<HTMLDivElement>(null);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
@@ -106,6 +107,12 @@ export function ConceptGraphOverlay({
   const isFirstSwipeLayoutRef = useRef(true);
 
   useLayoutEffect(() => {
+    if (isLoading) {
+      // During progressive loading we keep the surface stable (no batch flip animation).
+      prevBatchIndexForSwipeRef.current = selectedBatchIndex;
+      setIsAnimating(false);
+      return;
+    }
     if (isFirstSwipeLayoutRef.current) {
       isFirstSwipeLayoutRef.current = false;
       prevBatchIndexForSwipeRef.current = selectedBatchIndex;
@@ -118,7 +125,7 @@ export function ConceptGraphOverlay({
     setSwipeDirection(selectedBatchIndex > prev ? "right" : "left");
     setIsAnimating(true);
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [selectedBatchIndex]);
+  }, [selectedBatchIndex, isLoading]);
 
   const handleBatchAnimationEnd = () => {
     setIsAnimating(false);
@@ -189,6 +196,34 @@ export function ConceptGraphOverlay({
     batches.length > 0 && selectedBatchIndex === batches.length - 1;
 
   const showSwipeAnimation = isAnimating && currentBatchNodes.length > 0;
+  const loadingStartBatchesLengthRef = useRef(0);
+  const previousLoadingRef = useRef(false);
+  const wasLoading = previousLoadingRef.current;
+  if (isLoading && !wasLoading) {
+    // Capture cutoff before paint to prevent old-card flash on first loading frame.
+    loadingStartBatchesLengthRef.current = batches.length;
+  } else if (!isLoading && wasLoading) {
+    loadingStartBatchesLengthRef.current = 0;
+  }
+  previousLoadingRef.current = isLoading;
+
+  const loadingBatchNodes = useMemo(() => {
+    if (!isLoading) return [];
+    const startLength = loadingStartBatchesLengthRef.current;
+    if (batches.length <= startLength) return [];
+    const latestBatch = batches[batches.length - 1];
+    if (!latestBatch?.nodeIds?.length) return [];
+    return latestBatch.nodeIds
+      .map((id) => nodeMap.get(id))
+      .filter((n): n is GraphNode => n != null)
+      .map((node, i) => ({ node, number: i + 1 }));
+  }, [isLoading, batches, nodeMap]);
+
+  const showLoadingCards = isLoading;
+  const loadingSlots = useMemo(
+    () => Array.from({ length: Math.max(LOADING_CARD_SLOTS, loadingBatchNodes.length) }, (_, i) => i),
+    [loadingBatchNodes.length]
+  );
 
   return (
     <div
@@ -198,7 +233,7 @@ export function ConceptGraphOverlay({
       aria-busy={isLoading}
       onMouseLeave={() => setHoveredNode(null)}
     >
-      {isEmpty ? (
+      {isEmpty && !showLoadingCards ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-3 py-6 px-6">
           <span className="font-brand text-2xl text-muted-foreground tracking-[0.05em]">LET THINK</span>
         </div>
@@ -222,7 +257,59 @@ export function ConceptGraphOverlay({
               )}
               onAnimationEnd={handleBatchAnimationEnd}
             >
-              {currentBatchNodes.map(({ node, number }) => {
+              {showLoadingCards
+                ? loadingSlots.map((slotIndex) => {
+                    const item = loadingBatchNodes[slotIndex];
+                    if (!item) {
+                      return (
+                        <Card
+                          key={`loading-skeleton-${slotIndex}`}
+                          size="sm"
+                          cornerRipple
+                          className="relative flex h-full min-h-[200px] flex-col"
+                        />
+                      );
+                    }
+                    const { node, number } = item;
+                    const isReferenced = referencedConceptIds?.has(node.id);
+                    return (
+                      <Card
+                        key={node.id}
+                        size="sm"
+                        cornerRipple
+                        className={clsx(
+                          "relative flex h-full min-h-[200px] flex-col transition-colors duration-200",
+                          isReferenced && "session-accent-ref-glow-pulse",
+                        )}
+                        style={{
+                          boxShadow: isReferenced
+                            ? "0 0 0 2px var(--session-accent)"
+                            : undefined,
+                        }}
+                      >
+                        <div
+                          className={clsx(
+                            "absolute top-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-20 pointer-events-none",
+                            isReferenced && "session-accent-ref-outline-pulse",
+                          )}
+                          style={{
+                            outline: isReferenced
+                              ? "2px solid var(--session-accent)"
+                              : undefined,
+                            outlineOffset: 2,
+                          }}
+                        >
+                          {number}
+                        </div>
+                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center px-6 py-4">
+                          <CardTitle className="text-xl sm:text-2xl font-semibold text-center">
+                            {node.name}
+                          </CardTitle>
+                        </div>
+                      </Card>
+                    );
+                  })
+                : currentBatchNodes.map(({ node, number }) => {
                 const isHovered = hoveredNode?.id === node.id;
                 const showDescription = isHovered && node.description;
                 const isReferenced = referencedConceptIds?.has(node.id);

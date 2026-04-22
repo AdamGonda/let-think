@@ -125,10 +125,28 @@ export function AppContentBody({
   );
 
   const referenceSourceText = isLatestBatch ? draftInput : batchUserPrompt;
-
-  const referencedConceptIds = useMemo(
+  const liveReferencedConceptIds = useMemo(
     () => referencedConceptIdsFromDraft(referenceSourceText, numberedConcepts),
     [referenceSourceText, numberedConcepts],
+  );
+  const frozenReferencedConceptIdsRef = useRef<Set<string>>(new Set());
+  const previousChatLoadingRef = useRef(false);
+
+  useEffect(() => {
+    const wasLoading = previousChatLoadingRef.current;
+    if (chatLoading && !wasLoading) {
+      // Freeze refs at request start so @n highlights stay pinned while new cards stream in.
+      frozenReferencedConceptIdsRef.current = new Set(liveReferencedConceptIds);
+    }
+    if (!chatLoading && wasLoading) {
+      frozenReferencedConceptIdsRef.current = new Set();
+    }
+    previousChatLoadingRef.current = chatLoading;
+  }, [chatLoading, liveReferencedConceptIds]);
+
+  const referencedConceptIds = useMemo(
+    () => (chatLoading ? frozenReferencedConceptIdsRef.current : liveReferencedConceptIds),
+    [chatLoading, liveReferencedConceptIds],
   );
 
   const handleEditorOpen = useCallback(() => {

@@ -12,6 +12,136 @@ export type ConceptGraph = {
   } >;
 };
 
+export type ConceptStreamEvent =
+  | { type: "node"; node: { id: string; name: string; description?: string } }
+  | { type: "edge"; edge: { source: string; target: string } };
+
+export type ConceptStreamParseState = {
+  carry: string;
+  seenNodeIds: Set<string>;
+  seenEdgeKeys: Set<string>;
+};
+
+const STREAM_EVENT_BLOCK_REGEX =
+  /<concept_event>\s*({[\s\S]*?})\s*<\/concept_event>/g;
+
+export function createConceptStreamParseState(): ConceptStreamParseState {
+  return {
+    carry: "",
+    seenNodeIds: new Set<string>(),
+    seenEdgeKeys: new Set<string>(),
+  };
+}
+
+function parseStreamEventJson(raw: string): ConceptStreamEvent | null {
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== "object") return null;
+    const eventType = (parsed as { type?: unknown }).type;
+    if (eventType === "node") {
+      const node = (parsed as { node?: unknown }).node as
+        | { id?: unknown; name?: unknown; description?: unknown }
+        | undefined;
+      if (
+        node &&
+        typeof node.id === "string" &&
+        typeof node.name === "string" &&
+        (node.description === undefined || typeof node.description === "string")
+      ) {
+        return {
+          type: "node",
+          node: {
+            id: node.id,
+            name: node.name,
+            ...(node.description != null
+              ? { description: node.description }
+              : {}),
+          },
+        };
+      }
+      return null;
+    }
+    if (eventType === "edge") {
+      const edge = (parsed as { edge?: unknown }).edge as
+        | { source?: unknown; target?: unknown }
+        | undefined;
+      if (
+        edge &&
+        typeof edge.source === "string" &&
+        typeof edge.target === "string"
+      ) {
+        return {
+          type: "edge",
+          edge: {
+            source: edge.source,
+            target: edge.target,
+          },
+        };
+      }
+      return null;
+    }
+  } catch {
+    // ignore parse errors for malformed partial events
+  }
+  return null;
+}
+
+export function parseConceptStreamChunk(
+  state: ConceptStreamParseState,
+  chunkText: string
+): {
+  events: ConceptStreamEvent[];
+  displayChunk: string;
+} {
+  const combined = state.carry + chunkText;
+  const events: ConceptStreamEvent[] = [];
+  const consumedRanges: Array<{ start: number; end: number }> = [];
+
+  for (const match of combined.matchAll(STREAM_EVENT_BLOCK_REGEX)) {
+    if (!match[0] || !match[1] || match.index == null) continue;
+    const event = parseStreamEventJson(match[1]);
+    if (!event) continue;
+    if (event.type === "node") {
+      if (state.seenNodeIds.has(event.node.id)) continue;
+      state.seenNodeIds.add(event.node.id);
+    } else {
+      const key = `${event.edge.source}→${event.edge.target}`;
+      if (state.seenEdgeKeys.has(key)) continue;
+      state.seenEdgeKeys.add(key);
+    }
+    events.push(event);
+    consumedRanges.push({ start: match.index, end: match.index + match[0].length });
+  }
+
+  let displayCombined = combined;
+  for (let i = consumedRanges.length - 1; i >= 0; i -= 1) {
+    const r = consumedRanges[i];
+    displayCombined = displayCombined.slice(0, r.start) + displayCombined.slice(r.end);
+  }
+
+  const tailMarker = "<concept_event>";
+  const lastStart = displayCombined.lastIndexOf(tailMarker);
+  if (lastStart >= 0 && !displayCombined.includes("</concept_event>", lastStart)) {
+    state.carry = displayCombined.slice(lastStart);
+    displayCombined = displayCombined.slice(0, lastStart);
+  } else {
+    state.carry = "";
+  }
+
+  return {
+    events,
+    displayChunk: displayCombined,
+  };
+}
+
+export function flushConceptStreamParseState(
+  state: ConceptStreamParseState
+): string {
+  const remaining = state.carry;
+  state.carry = "";
+  return remaining;
+}
+
 /** Matches branching rule in `preProcess` (nodes per assistant turn). */
 const FALLBACK_NODES_PER_BATCH_ESTIMATE = 6;
 
@@ -106,6 +236,10 @@ export function stripConceptGraphBlock(text: string): string {
   return text.replace(/\n*```json\s*[\s\S]*?```\s*$/i, "").trim();
 }
 
+export function stripConceptEventBlocks(text: string): string {
+  return text.replace(/\n*<concept_event>\s*{[\s\S]*?}\s*<\/concept_event>\s*/g, "\n");
+}
+
 /**
  * Chat pipeline with pre and post processing hooks.
  * Modify these to customize behavior around LLM calls.
@@ -154,7 +288,10 @@ Rules:
 - The user has set BRANCHING to ${fixedConceptNodeCount}. Generate exactly ${fixedConceptNodeCount} concepts (nodes) based on ideas in your response.
 - Each node must have: id (unique string, never reuse an existing graph id), name (short label, 1–3 words), and description (a clear 1–2 sentence explanation of the concept—not just a single word).
 - Connect nodes with edges so the graph stays connected.
-- You MUST end your response with the CONCEPT GRAPH as valid JSON in a code block. No exceptions.
+- Emit concept events DURING generation, one event per line, in this exact format:
+  <concept_event>{"type":"node","node":{"id":"id","name":"Name","description":"Description"}}</concept_event>
+  <concept_event>{"type":"edge","edge":{"source":"idA","target":"idB"}}</concept_event>
+- You MUST still end your response with the CONCEPT GRAPH as valid JSON in a code block. No exceptions.
 - Example: if your answer discusses "graph" and "Convex", create nodes with descriptive explanations and link them.
 
 Put this EXACTLY at the very end of your reply (after all other text):
@@ -184,5 +321,5 @@ export async function postProcess(
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   _ctx?: PipelineContext
 ): Promise<string> {
-  return stripConceptGraphBlock(text);
+  return stripConceptGraphBlock(stripConceptEventBlocks(text));
 }
