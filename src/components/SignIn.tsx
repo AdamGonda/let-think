@@ -75,7 +75,7 @@ export function SignIn() {
             <CardContent className="flex flex-col gap-6 px-6 pb-8 pt-2 sm:px-8">
               <Button
                 className="h-11 w-full gap-3 text-[0.95rem] shadow-sm"
-                onClick={() => void signIn("google")}
+                onClick={() => void signIn("google", { redirectTo: "/app" })}
               >
                 <GoogleGlyph className="size-5" />
                 Sign in with Google
