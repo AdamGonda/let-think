@@ -51,4 +51,26 @@ describe("userMessageChronoIndexForBatch", () => {
     ];
     expect(userMessageChronoIndexForBatch(batches, messages, 1)).toBe(1);
   });
+
+  it("maps duplicate descriptions to distinct chronological messages", () => {
+    const batches = [
+      { description: "same prompt", nodeIds: ["a"] },
+      { description: "same prompt", nodeIds: ["b"] },
+      { description: "same prompt", nodeIds: ["c"] },
+    ];
+    const messages: SessionMessage[] = [
+      { role: "user", content: "same prompt" },
+      { role: "assistant", content: "r1" },
+      { role: "user", content: "same prompt" },
+      { role: "assistant", content: "r2" },
+      { role: "user", content: "same prompt" },
+      { role: "assistant", content: "r3" },
+    ];
+
+    expect(userMessageChronoIndexForBatch(batches, messages, 0)).toBe(0);
+    expect(userMessageChronoIndexForBatch(batches, messages, 1)).toBe(1);
+    expect(userMessageChronoIndexForBatch(batches, messages, 2)).toBe(2);
+    expect(userMessageForBatch(batches, messages, 1)).toBe(messages[2]);
+    expect(userInputForBatch(batches, messages, 2)).toBe("same prompt");
+  });
 });

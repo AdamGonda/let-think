@@ -9,20 +9,12 @@ function normalizeForMatch(s: string): string {
   return s.trim().replace(/\s+/g, " ");
 }
 
-/**
- * Resolves the user prompt for a graph batch: prefers persisted `description`,
- * then matches a user message the same way as the history panel, then falls back
- * to chronological user message order.
- */
-export function userInputForBatch(
+function resolveUserMessageIndexForBatch(
   batches: BatchWithDescription[],
   messages: SessionMessage[] | undefined,
   batchIndex: number,
-): string {
-  if (batchIndex < 0 || batchIndex >= batches.length) return "";
-  const direct = batches[batchIndex]?.description?.trim();
-  if (direct) return direct;
-
+): number | null {
+  if (batchIndex < 0 || batchIndex >= batches.length) return null;
   const userMessages = (messages ?? []).filter((m) => m.role === "user");
   const used = new Set<number>();
 
@@ -35,12 +27,29 @@ export function userInputForBatch(
       (m, i) => !used.has(i) && normalizeForMatch(m.content) === norm,
     );
     if (idx >= 0) {
-      if (b === batchIndex) return userMessages[idx]!.content;
+      if (b === batchIndex) return idx;
       used.add(idx);
     }
   }
 
-  return userMessages[batchIndex]?.content ?? "";
+  return batchIndex < userMessages.length ? batchIndex : null;
+}
+
+/**
+ * Resolves the user prompt for a graph batch: prefers persisted `description`,
+ * then matches a user message the same way as the history panel, then falls back
+ * to chronological user message order.
+ */
+export function userInputForBatch(
+  batches: BatchWithDescription[],
+  messages: SessionMessage[] | undefined,
+  batchIndex: number,
+): string {
+  const direct = batches[batchIndex]?.description?.trim();
+  const idx = resolveUserMessageIndexForBatch(batches, messages, batchIndex);
+  if (idx == null) return direct ?? "";
+  const userMessages = (messages ?? []).filter((m) => m.role === "user");
+  return userMessages[idx]?.content ?? direct ?? "";
 }
 
 /**
@@ -55,11 +64,7 @@ export function userMessageChronoIndexForBatch(
   messages: SessionMessage[] | undefined,
   batchIndex: number,
 ): number | null {
-  const userMessages = (messages ?? []).filter((m) => m.role === "user");
-  const msg = userMessageForBatch(batches, messages, batchIndex);
-  if (!msg) return null;
-  const idx = userMessages.indexOf(msg);
-  return idx >= 0 ? idx : null;
+  return resolveUserMessageIndexForBatch(batches, messages, batchIndex);
 }
 
 export function userMessageForBatch(
@@ -68,15 +73,6 @@ export function userMessageForBatch(
   batchIndex: number,
 ): SessionMessage | null {
   const userMessages = (messages ?? []).filter((m) => m.role === "user");
-  const batchDesc = batches[batchIndex]?.description?.trim();
-  if (batchDesc) {
-    const norm = normalizeForMatch(batchDesc);
-    if (norm) {
-      const found = userMessages.find(
-        (m) => normalizeForMatch(m.content) === norm,
-      );
-      if (found) return found;
-    }
-  }
-  return userMessages[batchIndex] ?? null;
+  const idx = resolveUserMessageIndexForBatch(batches, messages, batchIndex);
+  return idx == null ? null : userMessages[idx] ?? null;
 }
