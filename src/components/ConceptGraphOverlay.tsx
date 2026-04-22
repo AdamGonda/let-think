@@ -220,6 +220,7 @@ export function ConceptGraphOverlay({
   }, [isLoading, batches, nodeMap]);
 
   const showLoadingCards = isLoading;
+  const useLatestBatchViewportPadding = isLatestBatch || showLoadingCards;
   const loadingSlots = useMemo(
     () => Array.from({ length: Math.max(LOADING_CARD_SLOTS, loadingBatchNodes.length) }, (_, i) => i),
     [loadingBatchNodes.length]
@@ -243,7 +244,9 @@ export function ConceptGraphOverlay({
             ref={graphViewportRef}
             className={clsx(
               "flex flex-1 p-1 min-h-0 min-w-0 overflow-auto relative items-start pt-4",
-              isLatestBatch ? "pb-4" : layout.graphViewportBottomPadNonLatestClass,
+              useLatestBatchViewportPadding
+                ? "pb-4"
+                : layout.graphViewportBottomPadNonLatestClass,
             )}
           >
             <div
