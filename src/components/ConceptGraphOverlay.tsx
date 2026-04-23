@@ -1,33 +1,15 @@
-import {
-  useRef,
-  useEffect,
-  useLayoutEffect,
-  useState,
-  useMemo,
-  useCallback,
-  type MouseEvent,
-} from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { clsx } from "clsx";
-import { Brain, Check, Copy } from "lucide-react";
-import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { layout, timings } from "@/config";
+import { ConceptGraphBatchGrid } from "./concept-graph-overlay/ConceptGraphBatchGrid";
+import { ConceptGraphEmptyState } from "./concept-graph-overlay/ConceptGraphEmptyState";
+import {
+  type ConceptGraphData,
+  type GraphNode,
+  useConceptGraphOverlayModel,
+} from "./concept-graph-overlay/useConceptGraphOverlayModel";
 
-type GraphNode = {
-  id: string;
-  name: string;
-  description?: string;
-};
-
-export type ConceptGraphData = {
-  nodes: Array<{ id: string; name: string; description?: string }>;
-  edges: Array<{ source: string; target: string }>;
-  batches?: Array<{
-    id: string;
-    nodeIds: string[];
-    promptSummary?: string;
-    description?: string;
-  }>;
-};
+export type { ConceptGraphData };
 
 interface ConceptGraphOverlayProps {
   graph: ConceptGraphData | null;
@@ -75,82 +57,26 @@ export function ConceptGraphOverlay({
   const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
     null,
   );
-  const [internalBatchIndex, setInternalBatchIndex] = useState<number>(0);
-
-  const isControlled = controlledBatchIndex !== undefined && onSelectedBatchIndexChange != null;
-  const selectedBatchIndex = isControlled ? controlledBatchIndex : internalBatchIndex;
-  const setSelectedBatchIndex = isControlled
-    ? onSelectedBatchIndexChange
-    : setInternalBatchIndex;
-
-  // Build batches: use graph.batches, or fallback to single batch with all nodes
-  const batches = useMemo(() => {
-    const b = graph?.batches ?? [];
-    if (b.length > 0) return b;
-    if (graph?.nodes?.length) {
-      return [
-        {
-          id: "batch-0",
-          nodeIds: graph.nodes.map((n) => n.id),
-        },
-      ];
-    }
-    return [];
-  }, [graph]);
-
-  const nodeMap = useMemo(() => {
-    const m = new Map<string, GraphNode>();
-    graph?.nodes?.forEach((n) => m.set(n.id, n));
-    return m;
-  }, [graph]);
-
-  // When a new batch arrives, jump to it to show the most up-to-date batch (uncontrolled only)
-  const prevBatchesLengthRef = useRef(0);
-
-  // Swipe on batch transition – direction matches nav (next = from right, prev = from left).
-  const [isAnimating, setIsAnimating] = useState(false);
-  const [swipeDirection, setSwipeDirection] = useState<"left" | "right">("right");
-  const prevBatchIndexForSwipeRef = useRef<number | undefined>(undefined);
-  const isFirstSwipeLayoutRef = useRef(true);
-
-  useLayoutEffect(() => {
-    if (showLoadingCards) {
-      // During progressive loading we keep the surface stable (no batch flip animation),
-      // even when already-loaded cards are interactive.
-      prevBatchIndexForSwipeRef.current = selectedBatchIndex;
-      setIsAnimating(false);
-      return;
-    }
-    if (isFirstSwipeLayoutRef.current) {
-      isFirstSwipeLayoutRef.current = false;
-      prevBatchIndexForSwipeRef.current = selectedBatchIndex;
-      return;
-    }
-    const prev = prevBatchIndexForSwipeRef.current;
-    prevBatchIndexForSwipeRef.current = selectedBatchIndex;
-    if (prev === undefined || selectedBatchIndex === prev) return;
-    /* eslint-disable react-hooks/set-state-in-effect -- swipe UI must follow prop-driven batch index before paint */
-    setSwipeDirection(selectedBatchIndex > prev ? "right" : "left");
-    setIsAnimating(true);
-    /* eslint-enable react-hooks/set-state-in-effect */
-  }, [selectedBatchIndex, showLoadingCards]);
-
-  const handleBatchAnimationEnd = () => {
-    setIsAnimating(false);
-  };
-
-  useEffect(() => {
-    if (batches.length === 0 || isControlled) return;
-    const prevLen = prevBatchesLengthRef.current;
-    prevBatchesLengthRef.current = batches.length;
-    if (batches.length > prevLen) {
-      setSelectedBatchIndex(batches.length - 1);
-    } else {
-      setSelectedBatchIndex(Math.min(selectedBatchIndex, batches.length - 1));
-    }
-  }, [batches.length, isControlled, selectedBatchIndex, setSelectedBatchIndex]);
-
-  const isEmpty = !graph?.nodes?.length;
+  const {
+    selectedBatchIndex,
+    currentBatchNodes,
+    loadingBatchNodes,
+    isEmpty,
+    isLatestBatch,
+    skeletonSlotIndices,
+    swipeDirection,
+    showSwipeAnimation,
+    useLatestBatchViewportPadding,
+    handleBatchAnimationEnd,
+  } = useConceptGraphOverlayModel({
+    graph,
+    isLoading,
+    showLoadingCards,
+    loadingStartBatchLength,
+    controlledBatchIndex,
+    onSelectedBatchIndexChange,
+    loadingCardSlots: LOADING_CARD_SLOTS,
+  });
 
   useEffect(() => {
     return () => {
@@ -161,8 +87,7 @@ export function ConceptGraphOverlay({
   }, []);
 
   const handleConceptCopyClick = useCallback(
-    async (e: MouseEvent<HTMLButtonElement>, node: GraphNode) => {
-      e.stopPropagation();
+    async (node: GraphNode) => {
       if (!onConceptCopy) return;
       try {
         await Promise.resolve(
@@ -186,191 +111,6 @@ export function ConceptGraphOverlay({
     [onConceptCopy],
   );
 
-  // Current batch nodes only – single-batch view
-  const currentBatchNodes = useMemo(() => {
-    const safeIndex = Math.min(
-      Math.max(0, selectedBatchIndex),
-      Math.max(0, batches.length - 1)
-    );
-    const batch = batches[safeIndex];
-    if (!batch?.nodeIds?.length) return [];
-    return batch.nodeIds
-      .map((id) => nodeMap.get(id))
-      .filter((n): n is GraphNode => n != null)
-      .map((node, i) => ({ node, number: i + 1 }));
-  }, [batches, selectedBatchIndex, nodeMap]);
-
-  const isLatestBatch =
-    batches.length > 0 && selectedBatchIndex === batches.length - 1;
-
-  const showSwipeAnimation = isAnimating && currentBatchNodes.length > 0;
-  const loadingBatchNodes = useMemo(() => {
-    if (!isLoading) return [];
-    const startLength = loadingStartBatchLength;
-    if (batches.length <= startLength) return [];
-    const latestBatch = batches[batches.length - 1];
-    if (!latestBatch?.nodeIds?.length) return [];
-    return latestBatch.nodeIds
-      .map((id) => nodeMap.get(id))
-      .filter((n): n is GraphNode => n != null)
-      .map((node, i) => ({ node, number: i + 1 }));
-  }, [isLoading, batches, nodeMap, loadingStartBatchLength]);
-
-  const useLatestBatchViewportPadding = isLatestBatch || showLoadingCards;
-  const loadingSlots = useMemo(
-    () => Array.from({ length: Math.max(LOADING_CARD_SLOTS, loadingBatchNodes.length) }, (_, i) => i),
-    [loadingBatchNodes.length]
-  );
-  const skeletonSlotIndices = useMemo(
-    () =>
-      showLoadingCards
-        ? loadingSlots.filter((slotIndex) => loadingBatchNodes[slotIndex] == null)
-        : [],
-    [showLoadingCards, loadingSlots, loadingBatchNodes],
-  );
-
-  const renderInteractiveNodeCard = ({
-    node,
-    number,
-    key,
-    animateIn = false,
-  }: {
-    node: GraphNode;
-    number: number;
-    key: string;
-    animateIn?: boolean;
-  }) => {
-    const isHovered = hoveredNode?.id === node.id;
-    const showDescription = isHovered && node.description;
-    const isReferenced = referencedConceptIds?.has(node.id);
-    const showNumberBadge = isLatestBatch;
-    const copyFeedbackVisible = isHovered || copiedNodeId === node.id;
-    const isCopyJustDone = copiedNodeId === node.id;
-    return (
-      <Card
-        key={key}
-        size="sm"
-        cornerRipple
-        className={clsx(
-          "relative flex h-full min-h-[200px] flex-col transition-colors duration-200",
-          animateIn && "animate-in fade-in-0",
-          isReferenced &&
-            isInteractionBlocked &&
-            "session-accent-ref-glow-pulse",
-        )}
-        onMouseEnter={() => setHoveredNode(node)}
-        onMouseLeave={() => setHoveredNode(null)}
-        style={{
-          boxShadow:
-            isReferenced && !isInteractionBlocked
-              ? "0 0 0 2px var(--session-accent)"
-              : undefined,
-        }}
-      >
-        {showNumberBadge &&
-          (onCardReferenceClick ? (
-            <button
-              type="button"
-              className={clsx(
-                "absolute top-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-20 pointer-events-auto cursor-pointer transition-colors hover:bg-muted/80",
-                isReferenced &&
-                  isInteractionBlocked &&
-                  "session-accent-ref-outline-pulse",
-              )}
-              aria-label={`Add or remove @${number} in message`}
-              onClick={() => onCardReferenceClick(number)}
-              style={{
-                outline: isReferenced
-                  ? "2px solid var(--session-accent)"
-                  : undefined,
-                outlineOffset: 2,
-              }}
-            >
-              {number}
-            </button>
-          ) : (
-            <div
-              className={clsx(
-                "absolute top-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-20 pointer-events-auto",
-                isReferenced &&
-                  isInteractionBlocked &&
-                  "session-accent-ref-outline-pulse",
-              )}
-              style={{
-                outline: isReferenced
-                  ? "2px solid var(--session-accent)"
-                  : undefined,
-                outlineOffset: 2,
-              }}
-            >
-              {number}
-            </div>
-          ))}
-        <div
-          className={clsx(
-            "absolute inset-0 pointer-events-none flex items-center justify-center px-6 py-4 transition-opacity duration-200",
-            showDescription
-              ? "opacity-0 pointer-events-none"
-              : "opacity-100",
-          )}
-        >
-          <CardTitle className="text-xl sm:text-2xl font-semibold text-center">
-            {node.name}
-          </CardTitle>
-        </div>
-        {node.description && (
-          <div
-            className={clsx(
-              "absolute inset-0 pointer-events-none flex flex-col p-6 overflow-hidden transition-all duration-200 ease-out",
-              showDescription
-                ? "opacity-100 translate-y-0"
-                : "opacity-0 pointer-events-none translate-y-2",
-            )}
-          >
-            <CardTitle className="text-lg sm:text-xl lg:text-xl xl:text-2xl font-semibold shrink-0 text-left pr-10">
-              {node.name}
-            </CardTitle>
-            <CardContent
-              className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden text-muted-foreground text-sm sm:text-base lg:text-lg xl:text-xl sm:leading-relaxed lg:leading-normal pt-4 text-left px-0"
-              style={{
-                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-              }}
-            >
-              {node.description}
-            </CardContent>
-          </div>
-        )}
-        {showNumberBadge && onConceptCopy && (
-          <button
-            type="button"
-            className={clsx(
-              "absolute bottom-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-20 cursor-pointer",
-              "transition-opacity duration-200 ease-out",
-              "hover:bg-muted/80 hover:text-foreground",
-              copyFeedbackVisible
-                ? "opacity-100 pointer-events-auto"
-                : "opacity-0 pointer-events-none",
-            )}
-            aria-label={
-              isCopyJustDone
-                ? `Copied ${node.name}`
-                : `Copy ${node.name} to clipboard`
-            }
-            onClick={(e) => handleConceptCopyClick(e, node)}
-          >
-            {isCopyJustDone ? (
-              <span className="animate-concept-copy-tick">
-                <Check className="size-3.5 text-green-600" aria-hidden="true" />
-              </span>
-            ) : (
-              <Copy className="size-3.5" aria-hidden="true" />
-            )}
-          </button>
-        )}
-      </Card>
-    );
-  };
-
   return (
     <div
       ref={containerRef}
@@ -380,9 +120,7 @@ export function ConceptGraphOverlay({
       onMouseLeave={() => setHoveredNode(null)}
     >
       {isEmpty && !showLoadingCards ? (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 py-6 px-6">
-          <span className="font-brand text-2xl text-muted-foreground tracking-[0.05em]">LET THINK</span>
-        </div>
+        <ConceptGraphEmptyState />
       ) : (
         <>
           <div
@@ -394,54 +132,25 @@ export function ConceptGraphOverlay({
                 : layout.graphViewportBottomPadNonLatestClass,
             )}
           >
-            <div
-              key={selectedBatchIndex}
-              className={clsx(
-                "grid min-h-full w-full grid-cols-1 gap-6 p-4 auto-rows-[minmax(200px,calc((100%-7.5rem)/6))] sm:grid-cols-2 sm:auto-rows-[minmax(200px,calc((100%-3rem)/3))] lg:grid-cols-3 lg:auto-rows-[minmax(200px,calc((100%-1.5rem)/2))]",
-                showSwipeAnimation &&
-                  (swipeDirection === "right"
-                    ? "animate-batch-swipe-right"
-                    : "animate-batch-swipe-left"),
-              )}
+            <ConceptGraphBatchGrid
+              selectedBatchIndex={selectedBatchIndex}
+              showSwipeAnimation={showSwipeAnimation}
+              swipeDirection={swipeDirection}
+              showLoadingCards={showLoadingCards}
+              currentBatchNodes={currentBatchNodes}
+              loadingBatchNodes={loadingBatchNodes}
+              skeletonSlotIndices={skeletonSlotIndices}
+              isLatestBatch={isLatestBatch}
+              interactionBlocked={isInteractionBlocked}
+              referencedConceptIds={referencedConceptIds}
+              hoveredNodeId={hoveredNode?.id ?? null}
+              copiedNodeId={copiedNodeId}
+              onHoverStart={setHoveredNode}
+              onHoverEnd={() => setHoveredNode(null)}
+              onReferenceClick={onCardReferenceClick}
+              onCopyClick={onConceptCopy ? handleConceptCopyClick : undefined}
               onAnimationEnd={handleBatchAnimationEnd}
-            >
-              {showLoadingCards
-                ? (
-                    <>
-                      {loadingBatchNodes.map(({ node, number }) =>
-                        renderInteractiveNodeCard({
-                          node,
-                          number,
-                          key: node.id,
-                          animateIn: true,
-                        }),
-                      )}
-                      {skeletonSlotIndices.map((slotIndex) => (
-                        <Card
-                          key={`loading-skeleton-${slotIndex}`}
-                          size="sm"
-                          className="relative flex h-full min-h-[200px] flex-col bg-transparent shadow-none"
-                        >
-                          <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-                            <Brain
-                              size={18}
-                              className="text-muted-foreground/70"
-                              strokeWidth={2}
-                              aria-hidden="true"
-                            />
-                          </div>
-                        </Card>
-                      ))}
-                    </>
-                  )
-                : currentBatchNodes.map(({ node, number }) =>
-                    renderInteractiveNodeCard({
-                      node,
-                      number,
-                      key: node.id,
-                    }),
-                  )}
-            </div>
+            />
           </div>
         </>
       )}
