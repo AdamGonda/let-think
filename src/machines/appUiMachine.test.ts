@@ -6,6 +6,9 @@ import type { AppUiContext } from "./appUiTypes";
 import {
   appUiMachine,
   focusLayerDemand,
+  selectGraphInteractionBlocked,
+  selectGraphLoadingStartBatchLength,
+  selectGraphShowLoadingCards,
   selectShowOverlaySigma,
   selectShowWakeUpOverlay,
   selectSigmaEditorFromSession,
@@ -25,6 +28,11 @@ function baseInput(over: Partial<AppUiContext> = {}): Partial<AppUiContext> {
     draftInput: "",
     notes: "",
     chatLoading: false,
+    graphLoadingStartBatchLength: 0,
+    graphLoadingCardSlots: 6,
+    graphShowLoadingCards: false,
+    graphInteractionBlocked: false,
+    graphLatestBatchNodeCount: 0,
     editorOpen: false,
     overlayDismissed: false,
     historyPanelOpen: false,
@@ -226,6 +234,46 @@ describe("intent orchestration", () => {
     actor.send({ type: "INTENT_SELECT_SESSION_FROM_SIDEBAR", sessionId: other });
     expect(actor.getSnapshot().context.activeSessionId).toBe(other);
     expect(selectSurface(actor.getSnapshot())).toBe("graph");
+    actor.stop();
+  });
+
+  it("captures graph loading baseline and blocks interaction on loading start", () => {
+    const actor = createActor(appUiMachine, {
+      input: baseInput({ prevBatchesLength: 3 }),
+    });
+    actor.start();
+    actor.send({ type: "CHAT_LOADING_START" });
+    expect(selectGraphLoadingStartBatchLength(actor.getSnapshot())).toBe(3);
+    expect(selectGraphShowLoadingCards(actor.getSnapshot())).toBe(true);
+    expect(selectGraphInteractionBlocked(actor.getSnapshot())).toBe(true);
+    actor.stop();
+  });
+
+  it("unblocks graph interaction exactly at card slot threshold", () => {
+    const actor = createActor(appUiMachine, { input: baseInput() });
+    actor.start();
+    actor.send({ type: "CHAT_LOADING_START" });
+    actor.send({ type: "GRAPH_LOADING_PROGRESS", latestBatchNodeCount: 5 });
+    expect(selectGraphInteractionBlocked(actor.getSnapshot())).toBe(true);
+    actor.send({ type: "GRAPH_LOADING_PROGRESS", latestBatchNodeCount: 6 });
+    expect(selectGraphShowLoadingCards(actor.getSnapshot())).toBe(false);
+    expect(selectGraphInteractionBlocked(actor.getSnapshot())).toBe(false);
+    actor.stop();
+  });
+
+  it("cleans graph loading state on loading end and inactive session", () => {
+    const actor = createActor(appUiMachine, { input: baseInput() });
+    actor.start();
+    actor.send({ type: "CHAT_LOADING_START" });
+    actor.send({ type: "GRAPH_LOADING_PROGRESS", latestBatchNodeCount: 4 });
+    actor.send({ type: "CHAT_LOADING_END" });
+    expect(selectGraphShowLoadingCards(actor.getSnapshot())).toBe(false);
+    expect(selectGraphInteractionBlocked(actor.getSnapshot())).toBe(false);
+    expect(selectGraphLoadingStartBatchLength(actor.getSnapshot())).toBe(0);
+    actor.send({ type: "CHAT_LOADING_START" });
+    actor.send({ type: "ACTIVE_SESSION_SET", sessionId: null });
+    expect(selectGraphShowLoadingCards(actor.getSnapshot())).toBe(false);
+    expect(selectGraphInteractionBlocked(actor.getSnapshot())).toBe(false);
     actor.stop();
   });
 });

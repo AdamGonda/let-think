@@ -40,6 +40,7 @@ import {
   openHistoryPanel,
   setChatLoading,
   setDraftInput,
+  setGraphLoadingProgress,
   setNotesListDrill,
   setSelectedBatchIndex,
   setWakeNotes,
@@ -67,6 +68,9 @@ export function AppContentBody({
     draftInput,
     notes,
     chatLoading,
+    graphShowLoadingCards,
+    graphInteractionBlocked,
+    graphLoadingStartBatchLength,
     editorOpen,
     historyPanelOpen,
     viewMode,
@@ -130,23 +134,44 @@ export function AppContentBody({
     [referenceSourceText, numberedConcepts],
   );
   const frozenReferencedConceptIdsRef = useRef<Set<string>>(new Set());
-  const previousChatLoadingRef = useRef(false);
+  const previousGraphInteractionBlockedRef = useRef(false);
 
   useEffect(() => {
-    const wasLoading = previousChatLoadingRef.current;
-    if (chatLoading && !wasLoading) {
+    const wasBlocked = previousGraphInteractionBlockedRef.current;
+    if (graphInteractionBlocked && !wasBlocked) {
       // Freeze refs at request start so @n highlights stay pinned while new cards stream in.
       frozenReferencedConceptIdsRef.current = new Set(liveReferencedConceptIds);
     }
-    if (!chatLoading && wasLoading) {
+    if (!graphInteractionBlocked && wasBlocked) {
       frozenReferencedConceptIdsRef.current = new Set();
     }
-    previousChatLoadingRef.current = chatLoading;
-  }, [chatLoading, liveReferencedConceptIds]);
+    previousGraphInteractionBlockedRef.current = graphInteractionBlocked;
+  }, [graphInteractionBlocked, liveReferencedConceptIds]);
+
+  useEffect(() => {
+    if (!chatLoading) {
+      setGraphLoadingProgress(actor, 0);
+      return;
+    }
+    const graphNodes = conceptGraph?.nodes ?? [];
+    const graphNodeIdSet = new Set(graphNodes.map((n) => n.id));
+    const canTrackProgress = batches.length > graphLoadingStartBatchLength;
+    if (!canTrackProgress) {
+      setGraphLoadingProgress(actor, 0);
+      return;
+    }
+    const latestBatch = batches[batches.length - 1];
+    const latestBatchNodeCount =
+      latestBatch?.nodeIds?.filter((id) => graphNodeIdSet.has(id)).length ?? 0;
+    setGraphLoadingProgress(actor, latestBatchNodeCount);
+  }, [actor, batches, chatLoading, conceptGraph, graphLoadingStartBatchLength]);
 
   const referencedConceptIds = useMemo(
-    () => (chatLoading ? frozenReferencedConceptIdsRef.current : liveReferencedConceptIds),
-    [chatLoading, liveReferencedConceptIds],
+    () =>
+      graphInteractionBlocked
+        ? frozenReferencedConceptIdsRef.current
+        : liveReferencedConceptIds,
+    [graphInteractionBlocked, liveReferencedConceptIds],
   );
 
   const handleEditorOpen = useCallback(() => {
@@ -256,6 +281,9 @@ export function AppContentBody({
                 selectedBatchIndex={selectedBatchIndex}
                 hasChatHistory={hasChatHistory}
                 chatLoading={chatLoading}
+                graphShowLoadingCards={graphShowLoadingCards}
+                graphInteractionBlocked={graphInteractionBlocked}
+                graphLoadingStartBatchLength={graphLoadingStartBatchLength}
                 conceptGraph={conceptGraph}
                 chatVisible={chatComposerVisible}
                 referencedConceptIds={referencedConceptIds}

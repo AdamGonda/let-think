@@ -13,6 +13,16 @@ export type AppUiContext = {
   draftInput: string;
   notes: string;
   chatLoading: boolean;
+  /** Batches length snapshot captured when loading starts (machine-owned loading baseline). */
+  graphLoadingStartBatchLength: number;
+  /** Number of cards that must exist before graph interaction unlocks. */
+  graphLoadingCardSlots: number;
+  /** True while graph cards are in loading mode (skeleton/locked interaction). */
+  graphShowLoadingCards: boolean;
+  /** Interaction gate for concept cards while graph is still loading. */
+  graphInteractionBlocked: boolean;
+  /** Count of latest batch nodes currently available while chat is loading. */
+  graphLatestBatchNodeCount: number;
   editorOpen: boolean;
   /** User dismissed the focus layer while demand could still be true. */
   overlayDismissed: boolean;
@@ -42,6 +52,7 @@ export type AppUiEvent =
   | { type: "VIEW_SET"; mode: SurfaceMode }
   | { type: "CHAT_LOADING_START" }
   | { type: "CHAT_LOADING_END" }
+  | { type: "GRAPH_LOADING_PROGRESS"; latestBatchNodeCount: number }
   | { type: "CHAT_HISTORY_META"; hasChatHistory: boolean; messagesLoading: boolean }
   | { type: "BATCHES_LENGTH_CHANGED"; length: number }
   | {

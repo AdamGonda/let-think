@@ -13,6 +13,9 @@ type AppContentGraphSurfaceProps = {
   selectedBatchIndex: number;
   hasChatHistory: boolean;
   chatLoading: boolean;
+  graphShowLoadingCards: boolean;
+  graphInteractionBlocked: boolean;
+  graphLoadingStartBatchLength: number;
   conceptGraph: ConceptGraphData | null | undefined;
   chatVisible: boolean;
   referencedConceptIds: Set<string>;
@@ -34,6 +37,9 @@ export function AppContentGraphSurface({
   selectedBatchIndex,
   hasChatHistory,
   chatLoading,
+  graphShowLoadingCards,
+  graphInteractionBlocked,
+  graphLoadingStartBatchLength,
   conceptGraph,
   chatVisible,
   referencedConceptIds,
@@ -67,6 +73,9 @@ export function AppContentGraphSurface({
           key={activeSessionId ?? "empty"}
           graph={conceptGraph ?? null}
           isLoading={chatLoading}
+          showLoadingCards={graphShowLoadingCards}
+          interactionBlocked={graphInteractionBlocked}
+          loadingStartBatchLength={graphLoadingStartBatchLength}
           selectedBatchIndex={selectedBatchIndex}
           onSelectedBatchIndexChange={onSelectBatch}
           referencedConceptIds={referencedConceptIds}

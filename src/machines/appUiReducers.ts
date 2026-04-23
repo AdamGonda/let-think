@@ -43,3 +43,25 @@ export function reduceBatchesLengthChanged(
     event.length === 0 ? context.prevBatchesLength : event.length;
   return { selectedBatchIndex, prevBatchesLength };
 }
+
+/** Pure graph-loading state progression based on machine-owned loading fields. */
+export function reduceGraphLoadingProgress(
+  context: AppUiContext,
+  event: AppUiEvent,
+): Partial<AppUiContext> {
+  if (event.type !== "GRAPH_LOADING_PROGRESS") return {};
+  const latestBatchNodeCount = Math.max(0, event.latestBatchNodeCount);
+  if (!context.chatLoading) {
+    return {
+      graphLatestBatchNodeCount: latestBatchNodeCount,
+      graphShowLoadingCards: false,
+      graphInteractionBlocked: false,
+    };
+  }
+  const hasEnoughCards = latestBatchNodeCount >= context.graphLoadingCardSlots;
+  return {
+    graphLatestBatchNodeCount: latestBatchNodeCount,
+    graphShowLoadingCards: !hasEnoughCards,
+    graphInteractionBlocked: !hasEnoughCards,
+  };
+}

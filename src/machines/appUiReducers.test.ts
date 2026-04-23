@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { Id } from "../../convex/_generated/dataModel";
 import type { AppUiContext } from "./appUiTypes";
-import { reduceBatchesLengthChanged, reduceChatHistoryMeta } from "./appUiReducers";
+import {
+  reduceBatchesLengthChanged,
+  reduceChatHistoryMeta,
+  reduceGraphLoadingProgress,
+} from "./appUiReducers";
 
 function ctx(partial: Partial<AppUiContext>): AppUiContext {
   return {
@@ -13,6 +17,11 @@ function ctx(partial: Partial<AppUiContext>): AppUiContext {
     draftInput: "",
     notes: "",
     chatLoading: false,
+    graphLoadingStartBatchLength: 0,
+    graphLoadingCardSlots: 6,
+    graphShowLoadingCards: false,
+    graphInteractionBlocked: false,
+    graphLatestBatchNodeCount: 0,
     editorOpen: false,
     overlayDismissed: false,
     historyPanelOpen: false,
@@ -89,5 +98,47 @@ describe("reduceBatchesLengthChanged", () => {
     );
     expect(out.selectedBatchIndex).toBe(2);
     expect(out.prevBatchesLength).toBe(2);
+  });
+});
+
+describe("reduceGraphLoadingProgress", () => {
+  it("returns empty for wrong event type", () => {
+    expect(
+      reduceGraphLoadingProgress(ctx({}), { type: "VIEW_SET", mode: "graph" }),
+    ).toEqual({});
+  });
+
+  it("blocks interactions while loading before slot threshold", () => {
+    const out = reduceGraphLoadingProgress(
+      ctx({
+        chatLoading: true,
+        graphLoadingCardSlots: 6,
+        graphShowLoadingCards: true,
+        graphInteractionBlocked: true,
+      }),
+      { type: "GRAPH_LOADING_PROGRESS", latestBatchNodeCount: 4 },
+    );
+    expect(out).toEqual({
+      graphLatestBatchNodeCount: 4,
+      graphShowLoadingCards: true,
+      graphInteractionBlocked: true,
+    });
+  });
+
+  it("unblocks interactions when slot threshold is reached", () => {
+    const out = reduceGraphLoadingProgress(
+      ctx({
+        chatLoading: true,
+        graphLoadingCardSlots: 6,
+        graphShowLoadingCards: true,
+        graphInteractionBlocked: true,
+      }),
+      { type: "GRAPH_LOADING_PROGRESS", latestBatchNodeCount: 6 },
+    );
+    expect(out).toEqual({
+      graphLatestBatchNodeCount: 6,
+      graphShowLoadingCards: false,
+      graphInteractionBlocked: false,
+    });
   });
 });

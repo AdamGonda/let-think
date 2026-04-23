@@ -153,6 +153,13 @@ export function setChatLoading(actor: AppUiActorRef, loading: boolean): void {
   );
 }
 
+export function setGraphLoadingProgress(
+  actor: AppUiActorRef,
+  latestBatchNodeCount: number,
+): void {
+  actor.send({ type: "GRAPH_LOADING_PROGRESS", latestBatchNodeCount });
+}
+
 export function setActiveSession(
   actor: AppUiActorRef,
   sessionId: Id<"sessions"> | null,

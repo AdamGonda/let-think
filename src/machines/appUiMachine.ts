@@ -4,6 +4,7 @@ import type { AppUiContext, AppUiEvent, SurfaceMode } from "./appUiTypes";
 import {
   reduceBatchesLengthChanged,
   reduceChatHistoryMeta,
+  reduceGraphLoadingProgress,
 } from "./appUiReducers";
 
 export type { AppUiContext, AppUiEvent, SurfaceMode } from "./appUiTypes";
@@ -60,11 +61,19 @@ export const appUiMachine = setup({
     completeUserExit: assign({
       overlayDismissed: true,
       chatLoading: false,
+      graphShowLoadingCards: false,
+      graphInteractionBlocked: false,
+      graphLatestBatchNodeCount: 0,
+      graphLoadingStartBatchLength: 0,
       editorOpen: false,
       showFileNoteBreadcrumbFromProjectNotes: false,
     }),
     sessionCleared: assign({
       chatLoading: false,
+      graphShowLoadingCards: false,
+      graphInteractionBlocked: false,
+      graphLatestBatchNodeCount: 0,
+      graphLoadingStartBatchLength: 0,
       editorOpen: false,
       overlayDismissed: false,
       historyPanelOpen: false,
@@ -96,6 +105,11 @@ export const appUiMachine = setup({
       activeSessionId: () => null,
       activeProjectId: () => null,
       prevBatchesLength: () => 0,
+      chatLoading: () => false,
+      graphLoadingStartBatchLength: () => 0,
+      graphShowLoadingCards: () => false,
+      graphInteractionBlocked: () => false,
+      graphLatestBatchNodeCount: () => 0,
       showFileNoteBreadcrumbFromProjectNotes: false,
     }),
     autoSelectFirstWorkspaceSession: assign({
@@ -109,6 +123,10 @@ export const appUiMachine = setup({
       },
       hasEverHadSessionSelection: () => true,
       prevBatchesLength: () => 0,
+      graphLoadingStartBatchLength: () => 0,
+      graphShowLoadingCards: () => false,
+      graphInteractionBlocked: () => false,
+      graphLatestBatchNodeCount: () => 0,
     }),
     setNotesListDrill: assign({
       notesListDrill: ({ event }) => {
@@ -135,12 +153,27 @@ export const appUiMachine = setup({
       },
     }),
     startChatLoading: assign({ chatLoading: true }),
-    endChatLoading: assign({ chatLoading: false }),
+    startGraphLoading: assign(({ context }) => ({
+      graphLoadingStartBatchLength: context.prevBatchesLength,
+      graphShowLoadingCards: true,
+      graphInteractionBlocked: true,
+      graphLatestBatchNodeCount: 0,
+    })),
+    endChatLoading: assign({
+      chatLoading: false,
+      graphShowLoadingCards: false,
+      graphInteractionBlocked: false,
+      graphLatestBatchNodeCount: 0,
+      graphLoadingStartBatchLength: 0,
+    }),
     syncChatHistoryMeta: assign(({ context, event }) =>
       reduceChatHistoryMeta(context, event as AppUiEvent),
     ),
     applyBatchesLengthChanged: assign(({ context, event }) =>
       reduceBatchesLengthChanged(context, event as AppUiEvent),
+    ),
+    applyGraphLoadingProgress: assign(({ context, event }) =>
+      reduceGraphLoadingProgress(context, event as AppUiEvent),
     ),
     assignEditorOpenTrue: assign({ editorOpen: true }),
     setFileNoteBreadcrumbSource: assign({
@@ -235,6 +268,11 @@ export const appUiMachine = setup({
       draftInput: inp?.draftInput ?? "",
       notes: inp?.notes ?? "",
       chatLoading: false,
+      graphLoadingStartBatchLength: 0,
+      graphLoadingCardSlots: inp?.graphLoadingCardSlots ?? 6,
+      graphShowLoadingCards: false,
+      graphInteractionBlocked: false,
+      graphLatestBatchNodeCount: 0,
       editorOpen: inp?.editorOpen ?? false,
       overlayDismissed: false,
       historyPanelOpen: false,
@@ -291,10 +329,13 @@ export const appUiMachine = setup({
       },
     ],
     CHAT_LOADING_START: {
-      actions: "startChatLoading",
+      actions: ["startChatLoading", "startGraphLoading"],
     },
     CHAT_LOADING_END: {
       actions: "endChatLoading",
+    },
+    GRAPH_LOADING_PROGRESS: {
+      actions: "applyGraphLoadingProgress",
     },
     CHAT_HISTORY_META: {
       actions: "syncChatHistoryMeta",
@@ -537,6 +578,20 @@ export function selectChatLoadingOnNotesList(
 export function selectCanExitWakeUp(snapshot: MachineSnapshot): boolean {
   const c = snapshot.context;
   return !c.chatLoading;
+}
+
+export function selectGraphShowLoadingCards(snapshot: MachineSnapshot): boolean {
+  return snapshot.context.graphShowLoadingCards;
+}
+
+export function selectGraphInteractionBlocked(snapshot: MachineSnapshot): boolean {
+  return snapshot.context.graphInteractionBlocked;
+}
+
+export function selectGraphLoadingStartBatchLength(
+  snapshot: MachineSnapshot,
+): number {
+  return snapshot.context.graphLoadingStartBatchLength;
 }
 
 export function selectSurface(snapshot: MachineSnapshot): SurfaceMode {

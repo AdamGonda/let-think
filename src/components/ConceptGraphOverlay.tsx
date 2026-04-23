@@ -33,6 +33,9 @@ interface ConceptGraphOverlayProps {
   graph: ConceptGraphData | null;
   className?: string;
   isLoading?: boolean;
+  showLoadingCards?: boolean;
+  interactionBlocked?: boolean;
+  loadingStartBatchLength?: number;
   /** Controlled batch index – when provided, navigation is controlled from parent */
   selectedBatchIndex?: number;
   onSelectedBatchIndexChange?: (index: number) => void;
@@ -54,6 +57,9 @@ export function ConceptGraphOverlay({
   graph,
   className,
   isLoading = false,
+  showLoadingCards = false,
+  interactionBlocked = false,
+  loadingStartBatchLength = 0,
   selectedBatchIndex: controlledBatchIndex,
   onSelectedBatchIndexChange,
   referencedConceptIds,
@@ -61,6 +67,7 @@ export function ConceptGraphOverlay({
   onConceptCopy,
 }: ConceptGraphOverlayProps) {
   const LOADING_CARD_SLOTS = 6;
+  const isInteractionBlocked = interactionBlocked;
   const containerRef = useRef<HTMLDivElement>(null);
   const graphViewportRef = useRef<HTMLDivElement>(null);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
@@ -107,7 +114,7 @@ export function ConceptGraphOverlay({
   const isFirstSwipeLayoutRef = useRef(true);
 
   useLayoutEffect(() => {
-    if (isLoading) {
+    if (isInteractionBlocked) {
       // During progressive loading we keep the surface stable (no batch flip animation).
       prevBatchIndexForSwipeRef.current = selectedBatchIndex;
       setIsAnimating(false);
@@ -125,7 +132,7 @@ export function ConceptGraphOverlay({
     setSwipeDirection(selectedBatchIndex > prev ? "right" : "left");
     setIsAnimating(true);
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [selectedBatchIndex, isLoading]);
+  }, [selectedBatchIndex, isInteractionBlocked]);
 
   const handleBatchAnimationEnd = () => {
     setIsAnimating(false);
@@ -196,20 +203,9 @@ export function ConceptGraphOverlay({
     batches.length > 0 && selectedBatchIndex === batches.length - 1;
 
   const showSwipeAnimation = isAnimating && currentBatchNodes.length > 0;
-  const loadingStartBatchesLengthRef = useRef(0);
-  const previousLoadingRef = useRef(false);
-  const wasLoading = previousLoadingRef.current;
-  if (isLoading && !wasLoading) {
-    // Capture cutoff before paint to prevent old-card flash on first loading frame.
-    loadingStartBatchesLengthRef.current = batches.length;
-  } else if (!isLoading && wasLoading) {
-    loadingStartBatchesLengthRef.current = 0;
-  }
-  previousLoadingRef.current = isLoading;
-
   const loadingBatchNodes = useMemo(() => {
     if (!isLoading) return [];
-    const startLength = loadingStartBatchesLengthRef.current;
+    const startLength = loadingStartBatchLength;
     if (batches.length <= startLength) return [];
     const latestBatch = batches[batches.length - 1];
     if (!latestBatch?.nodeIds?.length) return [];
@@ -217,9 +213,8 @@ export function ConceptGraphOverlay({
       .map((id) => nodeMap.get(id))
       .filter((n): n is GraphNode => n != null)
       .map((node, i) => ({ node, number: i + 1 }));
-  }, [isLoading, batches, nodeMap]);
+  }, [isLoading, batches, nodeMap, loadingStartBatchLength]);
 
-  const showLoadingCards = isLoading;
   const useLatestBatchViewportPadding = isLatestBatch || showLoadingCards;
   const loadingSlots = useMemo(
     () => Array.from({ length: Math.max(LOADING_CARD_SLOTS, loadingBatchNodes.length) }, (_, i) => i),
@@ -231,7 +226,7 @@ export function ConceptGraphOverlay({
       ref={containerRef}
       className={className ?? "flex flex-1 min-w-0 min-h-0 flex-col"}
       style={{ width: "100%", height: "100%" }}
-      aria-busy={isLoading}
+      aria-busy={isInteractionBlocked}
       onMouseLeave={() => setHoveredNode(null)}
     >
       {isEmpty && !showLoadingCards ? (
@@ -334,13 +329,15 @@ export function ConceptGraphOverlay({
                     cornerRipple
                     className={clsx(
                       "relative flex h-full min-h-[200px] flex-col transition-colors duration-200",
-                      isReferenced && isLoading && "session-accent-ref-glow-pulse",
+                      isReferenced &&
+                        isInteractionBlocked &&
+                        "session-accent-ref-glow-pulse",
                     )}
                     onMouseEnter={() => setHoveredNode(node)}
                     onMouseLeave={() => setHoveredNode(null)}
                     style={{
                       boxShadow:
-                        isReferenced && !isLoading
+                        isReferenced && !isInteractionBlocked
                           ? "0 0 0 2px var(--session-accent)"
                           : undefined,
                     }}
@@ -352,7 +349,7 @@ export function ConceptGraphOverlay({
                           className={clsx(
                             "absolute top-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-20 pointer-events-auto cursor-pointer transition-colors hover:bg-muted/80",
                             isReferenced &&
-                              isLoading &&
+                              isInteractionBlocked &&
                               "session-accent-ref-outline-pulse",
                           )}
                           aria-label={`Add or remove @${number} in message`}
@@ -371,7 +368,7 @@ export function ConceptGraphOverlay({
                           className={clsx(
                             "absolute top-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-20 pointer-events-auto",
                             isReferenced &&
-                              isLoading &&
+                              isInteractionBlocked &&
                               "session-accent-ref-outline-pulse",
                           )}
                           style={{

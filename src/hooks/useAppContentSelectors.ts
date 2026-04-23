@@ -12,6 +12,9 @@ import {
   selectUiCollapseSignal,
   selectChatLoadingOnNotesList,
   selectChatLoadingOnGraphFrame,
+  selectGraphInteractionBlocked,
+  selectGraphLoadingStartBatchLength,
+  selectGraphShowLoadingCards,
   selectSigmaEditorFromSession,
 } from "../machines/appUiMachine";
 
@@ -26,6 +29,9 @@ export type AppContentSelectors = {
   draftInput: AppSnapshot["context"]["draftInput"];
   notes: AppSnapshot["context"]["notes"];
   chatLoading: AppSnapshot["context"]["chatLoading"];
+  graphShowLoadingCards: ReturnType<typeof selectGraphShowLoadingCards>;
+  graphInteractionBlocked: ReturnType<typeof selectGraphInteractionBlocked>;
+  graphLoadingStartBatchLength: ReturnType<typeof selectGraphLoadingStartBatchLength>;
   editorOpen: AppSnapshot["context"]["editorOpen"];
   historyPanelOpen: AppSnapshot["context"]["historyPanelOpen"];
   viewMode: ReturnType<typeof selectSurface>;
@@ -55,6 +61,9 @@ function shallowEqualSelectors(
     a.draftInput === b.draftInput &&
     a.notes === b.notes &&
     a.chatLoading === b.chatLoading &&
+    a.graphShowLoadingCards === b.graphShowLoadingCards &&
+    a.graphInteractionBlocked === b.graphInteractionBlocked &&
+    a.graphLoadingStartBatchLength === b.graphLoadingStartBatchLength &&
     a.editorOpen === b.editorOpen &&
     a.historyPanelOpen === b.historyPanelOpen &&
     a.viewMode === b.viewMode &&
@@ -82,6 +91,9 @@ function selectAppContentSnapshot(s: AppSnapshot): AppContentSelectors {
     draftInput: s.context.draftInput,
     notes: s.context.notes,
     chatLoading: s.context.chatLoading,
+    graphShowLoadingCards: selectGraphShowLoadingCards(s),
+    graphInteractionBlocked: selectGraphInteractionBlocked(s),
+    graphLoadingStartBatchLength: selectGraphLoadingStartBatchLength(s),
     editorOpen: s.context.editorOpen,
     historyPanelOpen: s.context.historyPanelOpen,
     viewMode: selectSurface(s),
