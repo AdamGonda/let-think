@@ -58,10 +58,13 @@ export function reduceGraphLoadingProgress(
       graphInteractionBlocked: false,
     };
   }
+  const hasAnyCards = latestBatchNodeCount > 0;
   const hasEnoughCards = latestBatchNodeCount >= context.graphLoadingCardSlots;
   return {
     graphLatestBatchNodeCount: latestBatchNodeCount,
+    // Keep loading placeholders visible until all loading slots are filled.
     graphShowLoadingCards: !hasEnoughCards,
-    graphInteractionBlocked: !hasEnoughCards,
+    // Unlock interactions immediately when at least one card is available.
+    graphInteractionBlocked: !hasAnyCards,
   };
 }

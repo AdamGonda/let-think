@@ -114,8 +114,9 @@ export function ConceptGraphOverlay({
   const isFirstSwipeLayoutRef = useRef(true);
 
   useLayoutEffect(() => {
-    if (isInteractionBlocked) {
-      // During progressive loading we keep the surface stable (no batch flip animation).
+    if (showLoadingCards) {
+      // During progressive loading we keep the surface stable (no batch flip animation),
+      // even when already-loaded cards are interactive.
       prevBatchIndexForSwipeRef.current = selectedBatchIndex;
       setIsAnimating(false);
       return;
@@ -132,7 +133,7 @@ export function ConceptGraphOverlay({
     setSwipeDirection(selectedBatchIndex > prev ? "right" : "left");
     setIsAnimating(true);
     /* eslint-enable react-hooks/set-state-in-effect */
-  }, [selectedBatchIndex, isInteractionBlocked]);
+  }, [selectedBatchIndex, showLoadingCards]);
 
   const handleBatchAnimationEnd = () => {
     setIsAnimating(false);
@@ -220,6 +221,155 @@ export function ConceptGraphOverlay({
     () => Array.from({ length: Math.max(LOADING_CARD_SLOTS, loadingBatchNodes.length) }, (_, i) => i),
     [loadingBatchNodes.length]
   );
+  const skeletonSlotIndices = useMemo(
+    () =>
+      showLoadingCards
+        ? loadingSlots.filter((slotIndex) => loadingBatchNodes[slotIndex] == null)
+        : [],
+    [showLoadingCards, loadingSlots, loadingBatchNodes],
+  );
+
+  const renderInteractiveNodeCard = ({
+    node,
+    number,
+    key,
+    animateIn = false,
+  }: {
+    node: GraphNode;
+    number: number;
+    key: string;
+    animateIn?: boolean;
+  }) => {
+    const isHovered = hoveredNode?.id === node.id;
+    const showDescription = isHovered && node.description;
+    const isReferenced = referencedConceptIds?.has(node.id);
+    const showNumberBadge = isLatestBatch;
+    const copyFeedbackVisible = isHovered || copiedNodeId === node.id;
+    const isCopyJustDone = copiedNodeId === node.id;
+    return (
+      <Card
+        key={key}
+        size="sm"
+        cornerRipple
+        className={clsx(
+          "relative flex h-full min-h-[200px] flex-col transition-colors duration-200",
+          animateIn && "animate-in fade-in-0",
+          isReferenced &&
+            isInteractionBlocked &&
+            "session-accent-ref-glow-pulse",
+        )}
+        onMouseEnter={() => setHoveredNode(node)}
+        onMouseLeave={() => setHoveredNode(null)}
+        style={{
+          boxShadow:
+            isReferenced && !isInteractionBlocked
+              ? "0 0 0 2px var(--session-accent)"
+              : undefined,
+        }}
+      >
+        {showNumberBadge &&
+          (onCardReferenceClick ? (
+            <button
+              type="button"
+              className={clsx(
+                "absolute top-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-20 pointer-events-auto cursor-pointer transition-colors hover:bg-muted/80",
+                isReferenced &&
+                  isInteractionBlocked &&
+                  "session-accent-ref-outline-pulse",
+              )}
+              aria-label={`Add or remove @${number} in message`}
+              onClick={() => onCardReferenceClick(number)}
+              style={{
+                outline: isReferenced
+                  ? "2px solid var(--session-accent)"
+                  : undefined,
+                outlineOffset: 2,
+              }}
+            >
+              {number}
+            </button>
+          ) : (
+            <div
+              className={clsx(
+                "absolute top-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-20 pointer-events-auto",
+                isReferenced &&
+                  isInteractionBlocked &&
+                  "session-accent-ref-outline-pulse",
+              )}
+              style={{
+                outline: isReferenced
+                  ? "2px solid var(--session-accent)"
+                  : undefined,
+                outlineOffset: 2,
+              }}
+            >
+              {number}
+            </div>
+          ))}
+        <div
+          className={clsx(
+            "absolute inset-0 pointer-events-none flex items-center justify-center px-6 py-4 transition-opacity duration-200",
+            showDescription
+              ? "opacity-0 pointer-events-none"
+              : "opacity-100",
+          )}
+        >
+          <CardTitle className="text-xl sm:text-2xl font-semibold text-center">
+            {node.name}
+          </CardTitle>
+        </div>
+        {node.description && (
+          <div
+            className={clsx(
+              "absolute inset-0 pointer-events-none flex flex-col p-6 overflow-hidden transition-all duration-200 ease-out",
+              showDescription
+                ? "opacity-100 translate-y-0"
+                : "opacity-0 pointer-events-none translate-y-2",
+            )}
+          >
+            <CardTitle className="text-lg sm:text-xl lg:text-xl xl:text-2xl font-semibold shrink-0 text-left pr-10">
+              {node.name}
+            </CardTitle>
+            <CardContent
+              className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden text-muted-foreground text-sm sm:text-base lg:text-lg xl:text-xl sm:leading-relaxed lg:leading-normal pt-4 text-left px-0"
+              style={{
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+              }}
+            >
+              {node.description}
+            </CardContent>
+          </div>
+        )}
+        {showNumberBadge && onConceptCopy && (
+          <button
+            type="button"
+            className={clsx(
+              "absolute bottom-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-20 cursor-pointer",
+              "transition-opacity duration-200 ease-out",
+              "hover:bg-muted/80 hover:text-foreground",
+              copyFeedbackVisible
+                ? "opacity-100 pointer-events-auto"
+                : "opacity-0 pointer-events-none",
+            )}
+            aria-label={
+              isCopyJustDone
+                ? `Copied ${node.name}`
+                : `Copy ${node.name} to clipboard`
+            }
+            onClick={(e) => handleConceptCopyClick(e, node)}
+          >
+            {isCopyJustDone ? (
+              <span className="animate-concept-copy-tick">
+                <Check className="size-3.5 text-green-600" aria-hidden="true" />
+              </span>
+            ) : (
+              <Copy className="size-3.5" aria-hidden="true" />
+            )}
+          </button>
+        )}
+      </Card>
+    );
+  };
 
   return (
     <div
@@ -256,10 +406,17 @@ export function ConceptGraphOverlay({
               onAnimationEnd={handleBatchAnimationEnd}
             >
               {showLoadingCards
-                ? loadingSlots.map((slotIndex) => {
-                    const item = loadingBatchNodes[slotIndex];
-                    if (!item) {
-                      return (
+                ? (
+                    <>
+                      {loadingBatchNodes.map(({ node, number }) =>
+                        renderInteractiveNodeCard({
+                          node,
+                          number,
+                          key: node.id,
+                          animateIn: true,
+                        }),
+                      )}
+                      {skeletonSlotIndices.map((slotIndex) => (
                         <Card
                           key={`loading-skeleton-${slotIndex}`}
                           size="sm"
@@ -274,183 +431,16 @@ export function ConceptGraphOverlay({
                             />
                           </div>
                         </Card>
-                      );
-                    }
-                    const { node, number } = item;
-                    const isReferenced = referencedConceptIds?.has(node.id);
-                    return (
-                      <Card
-                        key={node.id}
-                        size="sm"
-                        className={clsx(
-                          "relative flex h-full min-h-[200px] flex-col transition-colors duration-200 animate-in fade-in-0",
-                          isReferenced && "session-accent-ref-glow-pulse",
-                        )}
-                        style={{
-                          boxShadow: isReferenced
-                            ? "0 0 0 2px var(--session-accent)"
-                            : undefined,
-                        }}
-                      >
-                        <div
-                          className={clsx(
-                            "absolute top-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-20 pointer-events-none",
-                            isReferenced && "session-accent-ref-outline-pulse",
-                          )}
-                          style={{
-                            outline: isReferenced
-                              ? "2px solid var(--session-accent)"
-                              : undefined,
-                            outlineOffset: 2,
-                          }}
-                        >
-                          {number}
-                        </div>
-                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center px-6 py-4 transition-opacity duration-200 opacity-100">
-                          <CardTitle className="text-xl sm:text-2xl font-semibold text-center">
-                            {node.name}
-                          </CardTitle>
-                        </div>
-                      </Card>
-                    );
-                  })
-                : currentBatchNodes.map(({ node, number }) => {
-                const isHovered = hoveredNode?.id === node.id;
-                const showDescription = isHovered && node.description;
-                const isReferenced = referencedConceptIds?.has(node.id);
-                const showNumberBadge = isLatestBatch;
-                const copyFeedbackVisible =
-                  isHovered || copiedNodeId === node.id;
-                const isCopyJustDone = copiedNodeId === node.id;
-                return (
-                  <Card
-                    key={node.id}
-                    size="sm"
-                    cornerRipple
-                    className={clsx(
-                      "relative flex h-full min-h-[200px] flex-col transition-colors duration-200",
-                      isReferenced &&
-                        isInteractionBlocked &&
-                        "session-accent-ref-glow-pulse",
-                    )}
-                    onMouseEnter={() => setHoveredNode(node)}
-                    onMouseLeave={() => setHoveredNode(null)}
-                    style={{
-                      boxShadow:
-                        isReferenced && !isInteractionBlocked
-                          ? "0 0 0 2px var(--session-accent)"
-                          : undefined,
-                    }}
-                  >
-                    {showNumberBadge && (
-                      onCardReferenceClick ? (
-                        <button
-                          type="button"
-                          className={clsx(
-                            "absolute top-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-20 pointer-events-auto cursor-pointer transition-colors hover:bg-muted/80",
-                            isReferenced &&
-                              isInteractionBlocked &&
-                              "session-accent-ref-outline-pulse",
-                          )}
-                          aria-label={`Add or remove @${number} in message`}
-                          onClick={() => onCardReferenceClick(number)}
-                          style={{
-                            outline: isReferenced
-                              ? "2px solid var(--session-accent)"
-                              : undefined,
-                            outlineOffset: 2,
-                          }}
-                        >
-                          {number}
-                        </button>
-                      ) : (
-                        <div
-                          className={clsx(
-                            "absolute top-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-20 pointer-events-auto",
-                            isReferenced &&
-                              isInteractionBlocked &&
-                              "session-accent-ref-outline-pulse",
-                          )}
-                          style={{
-                            outline: isReferenced
-                              ? "2px solid var(--session-accent)"
-                              : undefined,
-                            outlineOffset: 2,
-                          }}
-                        >
-                          {number}
-                        </div>
-                      )
-                    )}
-                    {/* Default: centered title only */}
-                    <div
-                      className={clsx(
-                        "absolute inset-0 pointer-events-none flex items-center justify-center px-6 py-4 transition-opacity duration-200",
-                        showDescription
-                          ? "opacity-0 pointer-events-none"
-                          : "opacity-100",
-                      )}
-                    >
-                      <CardTitle className="text-xl sm:text-2xl font-semibold text-center">
-                        {node.name}
-                      </CardTitle>
-                    </div>
-                    {/* Hover overlay: title at top, description below */}
-                    {node.description && (
-                      <div
-                        className={clsx(
-                          "absolute inset-0 pointer-events-none flex flex-col p-6 overflow-hidden transition-all duration-200 ease-out",
-                          showDescription
-                            ? "opacity-100 translate-y-0"
-                            : "opacity-0 pointer-events-none translate-y-2",
-                        )}
-                      >
-                        <CardTitle className="text-lg sm:text-xl lg:text-xl xl:text-2xl font-semibold shrink-0 text-left pr-10">
-                          {node.name}
-                        </CardTitle>
-                        <CardContent
-                          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden text-muted-foreground text-sm sm:text-base lg:text-lg xl:text-xl sm:leading-relaxed lg:leading-normal pt-4 text-left px-0"
-                          style={{
-                            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
-                          }}
-                        >
-                          {node.description}
-                        </CardContent>
-                      </div>
-                    )}
-                    {showNumberBadge && onConceptCopy && (
-                      <button
-                        type="button"
-                        className={clsx(
-                          "absolute bottom-3 right-3 flex items-center justify-center size-8 rounded-full bg-muted text-foreground text-sm font-semibold z-20 cursor-pointer",
-                          "transition-opacity duration-200 ease-out",
-                          "hover:bg-muted/80 hover:text-foreground",
-                          copyFeedbackVisible
-                            ? "opacity-100 pointer-events-auto"
-                            : "opacity-0 pointer-events-none",
-                        )}
-                        aria-label={
-                          isCopyJustDone
-                            ? `Copied ${node.name}`
-                            : `Copy ${node.name} to clipboard`
-                        }
-                        onClick={(e) => handleConceptCopyClick(e, node)}
-                      >
-                        {isCopyJustDone ? (
-                          <span className="animate-concept-copy-tick">
-                            <Check
-                              className="size-3.5 text-green-600"
-                              aria-hidden="true"
-                            />
-                          </span>
-                        ) : (
-                          <Copy className="size-3.5" aria-hidden="true" />
-                        )}
-                      </button>
-                    )}
-                  </Card>
-                );
-              })}
+                      ))}
+                    </>
+                  )
+                : currentBatchNodes.map(({ node, number }) =>
+                    renderInteractiveNodeCard({
+                      node,
+                      number,
+                      key: node.id,
+                    }),
+                  )}
             </div>
           </div>
         </>

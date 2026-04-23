@@ -249,14 +249,14 @@ describe("intent orchestration", () => {
     actor.stop();
   });
 
-  it("unblocks graph interaction exactly at card slot threshold", () => {
+  it("unblocks graph interaction as soon as first card appears", () => {
     const actor = createActor(appUiMachine, { input: baseInput() });
     actor.start();
     actor.send({ type: "CHAT_LOADING_START" });
-    actor.send({ type: "GRAPH_LOADING_PROGRESS", latestBatchNodeCount: 5 });
+    actor.send({ type: "GRAPH_LOADING_PROGRESS", latestBatchNodeCount: 0 });
     expect(selectGraphInteractionBlocked(actor.getSnapshot())).toBe(true);
-    actor.send({ type: "GRAPH_LOADING_PROGRESS", latestBatchNodeCount: 6 });
-    expect(selectGraphShowLoadingCards(actor.getSnapshot())).toBe(false);
+    actor.send({ type: "GRAPH_LOADING_PROGRESS", latestBatchNodeCount: 1 });
+    expect(selectGraphShowLoadingCards(actor.getSnapshot())).toBe(true);
     expect(selectGraphInteractionBlocked(actor.getSnapshot())).toBe(false);
     actor.stop();
   });

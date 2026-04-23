@@ -108,7 +108,7 @@ describe("reduceGraphLoadingProgress", () => {
     ).toEqual({});
   });
 
-  it("blocks interactions while loading before slot threshold", () => {
+  it("keeps loading mode and blocks interactions while no cards are loaded", () => {
     const out = reduceGraphLoadingProgress(
       ctx({
         chatLoading: true,
@@ -116,16 +116,16 @@ describe("reduceGraphLoadingProgress", () => {
         graphShowLoadingCards: true,
         graphInteractionBlocked: true,
       }),
-      { type: "GRAPH_LOADING_PROGRESS", latestBatchNodeCount: 4 },
+      { type: "GRAPH_LOADING_PROGRESS", latestBatchNodeCount: 0 },
     );
     expect(out).toEqual({
-      graphLatestBatchNodeCount: 4,
+      graphLatestBatchNodeCount: 0,
       graphShowLoadingCards: true,
       graphInteractionBlocked: true,
     });
   });
 
-  it("unblocks interactions when slot threshold is reached", () => {
+  it("unlocks interactions as soon as any card is loaded", () => {
     const out = reduceGraphLoadingProgress(
       ctx({
         chatLoading: true,
@@ -133,11 +133,11 @@ describe("reduceGraphLoadingProgress", () => {
         graphShowLoadingCards: true,
         graphInteractionBlocked: true,
       }),
-      { type: "GRAPH_LOADING_PROGRESS", latestBatchNodeCount: 6 },
+      { type: "GRAPH_LOADING_PROGRESS", latestBatchNodeCount: 1 },
     );
     expect(out).toEqual({
-      graphLatestBatchNodeCount: 6,
-      graphShowLoadingCards: false,
+      graphLatestBatchNodeCount: 1,
+      graphShowLoadingCards: true,
       graphInteractionBlocked: false,
     });
   });
