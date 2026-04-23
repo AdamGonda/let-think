@@ -307,8 +307,9 @@ export const send = action({
     let rawModelText = "";
     let displayText = "";
     let lastFlushAt = Date.now();
-    const STREAM_FLUSH_EVENT_COUNT = 2;
-    const STREAM_FLUSH_MS = 250;
+    // Flush each parsed concept event right away so tail cards don't lag.
+    const STREAM_FLUSH_EVENT_COUNT = 1;
+    const STREAM_FLUSH_MS = 100;
 
     const flushBufferedEvents = async () => {
       if (bufferedEvents.length === 0) return;
