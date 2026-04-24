@@ -53,7 +53,7 @@ If `VITE_CONVEX_URL` is missing at build time, the SPA will bundle an empty URL 
 
 ## App Tutorial (In-Product)
 
-The onboarding tutorial is implemented in `src/components/Tutorial.tsx` and launched automatically for first-time users.
+The onboarding tutorial is implemented in `src/components/onboarding/Tutorial.tsx` and launched automatically for first-time users.
 
 It currently covers:
 - Main workspace and graph-first flow
@@ -68,14 +68,19 @@ You can replay it from the sidebar ("Run tutorial"), which dispatches the `think
 
 ### Frontend
 
-- `src/App.tsx` gates the app by Convex auth state, then mounts providers and workspace content.
-- `AppUiProvider` + UI actor hooks coordinate view state (graph/list mode, overlays, selected batch, loading frames, history panel, editor state).
-- `SessionDataProvider` loads session-bound data (messages, graph, interaction caps, timers, pagination).
-- `AppContentBody` composes the shell:
-  - `SessionSidebar` for projects/sessions/navigation actions
-  - Graph/list surface (`AppContentGraphSurface` or `NotesListPanel`)
-  - `Chat` composer (or `HistoricalBatchPrompt` when browsing earlier graph batches)
-  - overlays (`WakeUpOverlay`, rest walkthrough, tutorial)
+- `src/main.tsx` wraps the app in `ConvexAuthProvider` and mounts TanStack Router (`src/router.tsx`).
+- **Auth and public routes** live in `router.tsx`: root layout waits on Convex auth loading; `/` is landing vs redirect to `/app`; `/app` renders `src/components/auth/SignIn.tsx` or the authenticated workspace.
+- **`src/App.tsx`** exports `AuthenticatedApp` only: the workspace shell (not the public/auth gate). It composes `AppUiProvider`, `SessionDataProvider`, `AppUiSessionBridge`, and `AppContentBody`.
+- `AppUiProvider` runs an **XState** machine (`src/machines/appUiMachine.ts`); `useAppUi` / selectors coordinate view state (graph/list mode, overlays, selected batch, loading frames, history panel, editor state).
+- `SessionDataProvider` (exported from `src/contexts/SessionDataContext.tsx`) loads session-bound data (messages, graph, interaction caps, timers, pagination).
+- `src/bridge/AppUiSessionBridge.tsx` (with `sessionBridgeHooks.ts`) connects workspace/session data to the UI actor where needed.
+- `src/components/app-shell/AppContentBody.tsx` composes the shell:
+  - `src/components/session-sidebar/SessionSidebar.tsx` for projects/sessions/navigation actions
+  - Graph/list surface (`AppContentGraphSurface` or `NotesListPanel` under `components/notes-list/`)
+  - `components/chat/Chat.tsx` (or `HistoricalBatchPrompt` when browsing earlier graph batches)
+  - Overlays (`onboarding/WakeUpOverlay`, walkthrough, `onboarding/Tutorial`)
+
+Shared UI and feature code also live under grouped folders (for example `concept-graph-overlay/`, `user/`, `editor/`, `navigation/`, `marketing/`, `docs/`). Constants for layout, chat, and timings sit in `src/config/`.
 
 ### Backend (Convex)
 
@@ -84,10 +89,14 @@ You can replay it from the sidebar ("Run tutorial"), which dispatches the `think
   - `sessionConceptGraphs` (graph stored separate from session row)
   - interaction tracking tables for think/work mode
 - `convex/sessions.ts` handles secure session/message CRUD, draft/notes persistence, paginated message history, and concept graph persistence.
+- `convex/projects.ts`, `convex/users.ts` — projects listing and user-facing helpers.
+- `convex/chat.ts` — chat actions (send, topic generation).
 - `convex/chatPipeline.ts` defines LLM pre/post processing:
   - injects system prompt and optional selected-concept context
   - extracts concept graph JSON from assistant output
   - strips graph block from user-visible assistant text
+- `convex/auth.ts`, `convex/auth.config.ts`, `convex/http.ts` — Convex Auth and HTTP routes.
+- `convex/admin.ts`, `convex/modelConfig.ts`, `convex/constants.ts`, `convex/lib/access.ts` — admin, model configuration, shared constants, and access helpers.
 
 ### Runtime Flow
 
@@ -96,23 +105,70 @@ You can replay it from the sidebar ("Run tutorial"), which dispatches the `think
 3. Extracted concept graph is merged/persisted per session.
 4. UI re-renders graph + batch navigation; users can reference concept nodes via `@N` in the next prompt.
 
+### Workspace composition (authenticated)
+
+After `/app` resolves to the signed-in workspace, providers nest as below. The UI machine drives navigation and layout mode; `SessionDataProvider` loads Convex data for the active session; the bridge keeps the actor and session layer aligned.
+
+```mermaid
+flowchart TD
+  routerApp["router /app"]
+  authApp[AuthenticatedApp]
+  appUi[AppUiProvider XState]
+  sessionData[SessionDataProvider]
+  bridge[AppUiSessionBridge]
+  shell[AppContentBody]
+  convexClient[Convex queries]
+
+  routerApp --> authApp
+  authApp --> appUi
+  appUi --> sessionData
+  sessionData --> bridge
+  bridge --> shell
+  sessionData --> convexClient
+  authApp --> convexClient
+```
+
 ## High-Level Structure
 
 ```
 ├── convex/
 │   ├── schema.ts              # Data model + indexes
 │   ├── sessions.ts            # Session/message queries and mutations
-│   ├── chat.ts                # Chat actions (send, topic generation)
-│   └── chatPipeline.ts        # LLM pre/post processing and graph extraction
+│   ├── projects.ts          # Projects and session grouping
+│   ├── users.ts             # User helpers
+│   ├── chat.ts              # Chat actions (send, topic generation)
+│   ├── chatPipeline.ts      # LLM pre/post processing and graph extraction
+│   ├── auth.ts              # Convex Auth functions
+│   ├── auth.config.ts       # Auth configuration
+│   ├── http.ts              # HTTP router (auth callbacks, etc.)
+│   ├── admin.ts             # Admin / allowlist
+│   ├── modelConfig.ts       # Model configuration
+│   ├── constants.ts         # Shared backend constants
+│   └── lib/access.ts        # Access control helpers
 ├── src/
-│   ├── App.tsx                # Auth gating + provider composition
+│   ├── main.tsx               # ConvexAuthProvider + AppRouter
+│   ├── router.tsx             # TanStack Router: public vs /app workspace
+│   ├── App.tsx                # AuthenticatedApp (workspace providers only)
+│   ├── bridge/                # AppUiSessionBridge, session bridge hooks
+│   ├── machines/              # appUiMachine (XState) + types/reducers
+│   ├── config/                # layout, chat, timings
+│   ├── pages/                 # Landing, legal, admin pages
 │   ├── components/
-│   │   ├── AppContentBody.tsx # Main shell layout and panel orchestration
-│   │   ├── SessionSidebar.tsx # Session/project navigation UI
-│   │   ├── Tutorial.tsx       # Driver.js onboarding tour
-│   │   └── chat/Chat.tsx      # Composer + send flow
-│   ├── contexts/              # App UI + session data providers
+│   │   ├── app-shell/         # AppShell, AppContentBody, AppContentGraphSurface
+│   │   ├── session-sidebar/   # SessionSidebar and sidebar pieces
+│   │   ├── concept-graph-overlay/
+│   │   ├── notes-list/
+│   │   ├── chat/              # Chat, composer, history, historical prompt
+│   │   ├── onboarding/        # Tutorial, WakeUpOverlay
+│   │   ├── auth/              # SignIn
+│   │   ├── user/              # User menu, cards, avatar
+│   │   ├── editor/            # MarkdownEditor
+│   │   ├── navigation/        # Breadcrumb, step navigator, pagination dots
+│   │   ├── marketing/         # SiteFooter
+│   │   ├── docs/              # LegalDocLayout
+│   │   └── ui/                # Shared primitives (button, dialog, …)
+│   ├── contexts/              # AppUiProvider, SessionDataContext, app UI actor
 │   ├── hooks/                 # UI selectors, handlers, sync hooks
-│   └── lib/                   # Storage, mentions, graph helpers, auth utilities
+│   └── lib/                   # Storage, mentions, graph helpers, utilities
 └── package.json               # Scripts and dependencies
 ```

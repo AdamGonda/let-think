@@ -13,7 +13,7 @@ Think is a focused thinking workspace that combines chat, notes, and an evolving
 - Legal routes are available from the public shell.
 - Root route gates authenticated users into the workspace and everyone else to landing.
 
-Primary evidence: `src/pages/LandingPage.tsx`, `src/router.tsx`, `src/components/SignIn.tsx`, `src/pages/TermsOfUsePage.tsx`, `src/pages/DataPolicyPage.tsx`.
+Primary evidence: `src/pages/LandingPage.tsx`, `src/router.tsx`, `src/components/auth/SignIn.tsx`, `src/pages/TermsOfUsePage.tsx`, `src/pages/DataPolicyPage.tsx`.
 
 ### 2) Authenticate and manage account
 
@@ -22,7 +22,7 @@ Primary evidence: `src/pages/LandingPage.tsx`, `src/router.tsx`, `src/components
 - Account panel supports sign-out and tutorial replay.
 - User identity is surfaced in the UI (name/email/avatar), with a visible free-plan label.
 
-Primary evidence: `convex/auth.ts`, `convex/auth.config.ts`, `convex/http.ts`, `src/router.tsx`, `src/components/UserMenuPanel.tsx`, `src/components/UserCardExpanded.tsx`.
+Primary evidence: `convex/auth.ts`, `convex/auth.config.ts`, `convex/http.ts`, `src/router.tsx`, `src/components/user/UserMenuPanel.tsx`, `src/components/user/UserCardExpanded.tsx`.
 
 ### 3) Organize work (projects and sessions)
 
@@ -32,7 +32,7 @@ Primary evidence: `convex/auth.ts`, `convex/auth.config.ts`, `convex/http.ts`, `
 - Collapsible sidebar supports dense workspace navigation.
 - Optional project notes list mode can be toggled once project-backed content exists.
 
-Primary evidence: `src/components/SessionSidebar.tsx`, `src/components/session-sidebar/SessionSidebarToolbar.tsx`, `src/components/session-sidebar/SessionSidebarProjectsNav.tsx`, `convex/projects.ts`, `convex/sessions.ts`.
+Primary evidence: `src/components/session-sidebar/SessionSidebar.tsx`, `src/components/session-sidebar/SessionSidebarToolbar.tsx`, `src/components/session-sidebar/SessionSidebarProjectsNav.tsx`, `convex/projects.ts`, `convex/sessions.ts`.
 
 ### 4) Think in graph + chat flow
 
@@ -42,7 +42,7 @@ Primary evidence: `src/components/SessionSidebar.tsx`, `src/components/session-s
 - Latest graph step remains the active continuation point for new input.
 - Historical graph steps are protected with read-only prompt context to avoid accidental branch confusion.
 
-Primary evidence: `src/components/AppContentGraphSurface.tsx`, `src/components/chat/Chat.tsx`, `src/components/chat/ChatComposer.tsx`, `src/components/chat/HistoricalBatchPrompt.tsx`, `src/lib/conceptReferences.ts`, `convex/chat.ts`, `convex/chatPipeline.ts`.
+Primary evidence: `src/components/app-shell/AppContentGraphSurface.tsx`, `src/components/chat/Chat.tsx`, `src/components/chat/ChatComposer.tsx`, `src/components/chat/HistoricalBatchPrompt.tsx`, `src/lib/conceptReferences.ts`, `convex/chat.ts`, `convex/chatPipeline.ts`.
 
 ### 5) Review and recover context
 
@@ -60,7 +60,7 @@ Primary evidence: `src/components/chat/ChatHistoryPanel.tsx`, `src/contexts/Sess
 - Markdown editing supports long-form thinking without leaving the workspace.
 - Breadcrumbing helps users return from notes-list drilldowns to active context.
 
-Primary evidence: `src/components/WakeUpOverlay.tsx`, `src/components/MarkdownEditor.tsx`, `src/hooks/useSessionEditorSync.ts`, `src/components/NoteBreadcrumb.tsx`, `convex/sessions.ts`.
+Primary evidence: `src/components/onboarding/WakeUpOverlay.tsx`, `src/components/editor/MarkdownEditor.tsx`, `src/hooks/useSessionEditorSync.ts`, `src/components/navigation/NoteBreadcrumb.tsx`, `convex/sessions.ts`.
 
 ### 7) Onboard and re-learn features
 
@@ -68,7 +68,7 @@ Primary evidence: `src/components/WakeUpOverlay.tsx`, `src/components/MarkdownEd
 - Tutorial can be replayed from workspace controls.
 - Onboarding explicitly teaches session/project creation, graph batches, `@` references, notes, and history navigation.
 
-Primary evidence: `src/components/Tutorial.tsx`, `src/lib/tutorialStorage.ts`, `README.md`.
+Primary evidence: `src/components/onboarding/Tutorial.tsx`, `src/lib/tutorialStorage.ts`, `README.md`.
 
 ## Notable UX Behavior Patterns
 
