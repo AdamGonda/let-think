@@ -45,8 +45,9 @@ export function ConceptGraphBatchGrid({
 }: ConceptGraphBatchGridProps) {
   const renderNodeCard = (
     item: ConceptGraphNodeItem,
-    animateIn = false,
+    options: { animateIn?: boolean; cornerRipple?: boolean } = {},
   ) => {
+    const { animateIn = false, cornerRipple = true } = options;
     const { node, number } = item;
     const isReferenced = referencedConceptIds?.has(node.id) ?? false;
     const isHovered = hoveredNodeId === node.id;
@@ -64,6 +65,7 @@ export function ConceptGraphBatchGrid({
         copyFeedbackVisible={copyFeedbackVisible}
         isCopyJustDone={isCopyJustDone}
         animateIn={animateIn}
+        cornerRipple={cornerRipple}
         onHoverStart={() => onHoverStart(node)}
         onHoverEnd={onHoverEnd}
         onReferenceClick={onReferenceClick}
@@ -86,7 +88,9 @@ export function ConceptGraphBatchGrid({
     >
       {showLoadingCards ? (
         <>
-          {loadingBatchNodes.map((item) => renderNodeCard(item, true))}
+          {loadingBatchNodes.map((item) =>
+            renderNodeCard(item, { animateIn: true, cornerRipple: false }),
+          )}
           {skeletonSlotIndices.map((slotIndex) => (
             <ConceptGraphSkeletonCard key={`loading-skeleton-${slotIndex}`} slotIndex={slotIndex} />
           ))}

@@ -13,6 +13,8 @@ type ConceptGraphNodeCardProps = {
   copyFeedbackVisible: boolean;
   isCopyJustDone: boolean;
   animateIn?: boolean;
+  /** When false, omits the animated corner-ripple backdrop (e.g. partial grid while more concepts load). */
+  cornerRipple?: boolean;
   onHoverStart: () => void;
   onHoverEnd: () => void;
   onReferenceClick?: (conceptNumber: number) => void;
@@ -29,6 +31,7 @@ export function ConceptGraphNodeCard({
   copyFeedbackVisible,
   isCopyJustDone,
   animateIn = false,
+  cornerRipple: showCornerRipple = true,
   onHoverStart,
   onHoverEnd,
   onReferenceClick,
@@ -40,7 +43,7 @@ export function ConceptGraphNodeCard({
   return (
     <Card
       size="sm"
-      cornerRipple
+      cornerRipple={showCornerRipple}
       className={clsx(
         "relative flex h-full min-h-[200px] flex-col transition-colors duration-200",
         animateIn && "animate-in fade-in-0",
