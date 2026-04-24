@@ -12,7 +12,7 @@ export function LandingPage() {
       <header className="border-b border-border/60 bg-background/80 backdrop-blur-sm">
         <div className="mx-auto flex max-w-5xl items-center justify-center px-4 py-4 sm:px-6">
           <span className="text-sm font-semibold tracking-[0.2em] uppercase text-muted-foreground">
-            LET-THINK
+            LET THINK
           </span>
         </div>
       </header>

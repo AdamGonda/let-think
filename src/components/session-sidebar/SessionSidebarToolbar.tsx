@@ -55,7 +55,7 @@ export function SessionSidebarToolbar({
         {!isCollapsed && (
           <>
             <span className="font-brand text-[11px] font-semibold uppercase tracking-[0.05em] text-sidebar-foreground flex-1 text-center">
-              LET-THINK
+              LET THINK
             </span>
             <div className="w-9 shrink-0" aria-hidden />
           </>

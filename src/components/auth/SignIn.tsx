@@ -39,7 +39,7 @@ export function SignIn() {
             to="/"
             className="text-sm font-semibold tracking-[0.2em] uppercase text-muted-foreground transition-colors hover:text-foreground"
           >
-            LET-THINK
+            LET THINK
           </Link>
         </div>
       </header>
@@ -105,7 +105,7 @@ export function SignIn() {
                 >
                   Data policy
                 </Link>
-                , and to access your let-think data tied to that account.
+                , and to access your Let Think data tied to that account.
               </p>
             </CardContent>
           </Card>
