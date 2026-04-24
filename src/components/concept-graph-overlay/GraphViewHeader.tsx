@@ -54,8 +54,8 @@ export function GraphViewHeader({
             variant="outline"
             size="icon-sm"
             onClick={onHistoryOpen}
-            title="Conversation history"
-            aria-label="Conversation history"
+            title="Session history"
+            aria-label="Session history"
             data-tour="history-btn"
           >
             <History className="size-5" />

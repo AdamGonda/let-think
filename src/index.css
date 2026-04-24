@@ -289,11 +289,27 @@
   animation: session-accent-outline-pulse 6s ease-in-out infinite;
 }
 
+.session-past-inset-ring-pulse {
+  outline: 2px solid color-mix(in srgb, #f5f5f4 32%, transparent);
+  outline-offset: -2px;
+}
+
+.session-past-frame-overlay {
+  border: 2px solid color-mix(in srgb, #f5f5f4 32%, transparent);
+}
+
+.session-past-chat-chrome-static {
+  border-top-color: color-mix(in srgb, #f5f5f4 32%, transparent);
+  border-left-color: color-mix(in srgb, #f5f5f4 32%, transparent);
+  border-right-color: color-mix(in srgb, #f5f5f4 32%, transparent);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .session-loading-inset-ring-pulse,
   .session-loading-chat-chrome-pulse,
   .session-accent-ref-glow-pulse,
-  .session-accent-ref-outline-pulse {
+  .session-accent-ref-outline-pulse,
+  .session-past-inset-ring-pulse {
     animation: none;
   }
 
@@ -313,6 +329,21 @@
 
   .session-accent-ref-outline-pulse {
     outline-color: var(--session-accent);
+  }
+
+  .session-past-inset-ring-pulse {
+    outline: 2px solid color-mix(in srgb, #f5f5f4 32%, transparent);
+    outline-offset: -2px;
+  }
+
+  .session-past-frame-overlay {
+    border: 2px solid color-mix(in srgb, #f5f5f4 32%, transparent);
+  }
+
+  .session-past-chat-chrome-static {
+    border-top-color: color-mix(in srgb, #f5f5f4 32%, transparent);
+    border-left-color: color-mix(in srgb, #f5f5f4 32%, transparent);
+    border-right-color: color-mix(in srgb, #f5f5f4 32%, transparent);
   }
 
 }

@@ -188,7 +188,7 @@ export function ChatHistoryPanel({
       >
         <SheetHeader className="flex flex-row items-center gap-2 shrink-0 py-4 px-4 border-b border-border">
           <SheetTitle className="text-lg font-semibold">
-            Conversation history
+            Session history
           </SheetTitle>
           <Button
             variant="ghost"

@@ -36,6 +36,7 @@ type ChatComposerProps = {
   isDisabled: boolean;
   isLoading: boolean;
   sessionLoadingFrame: boolean;
+  sessionPastFrame?: boolean;
   onSubmit: (e: React.FormEvent) => void;
 };
 
@@ -47,6 +48,7 @@ export function ChatComposer({
   isDisabled,
   isLoading,
   sessionLoadingFrame,
+  sessionPastFrame = false,
   onSubmit,
 }: ChatComposerProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -158,7 +160,9 @@ export function ChatComposer({
           layout.sessionInputChromeMinClass,
           sessionLoadingFrame
             ? "border-t-2 border-l-2 border-r-2 border-b-0 border-(--session-accent) session-loading-chat-chrome-pulse"
-            : "border border-b-0 border-border",
+            : sessionPastFrame
+              ? "border-t-2 border-l-2 border-r-2 border-b-0 session-past-chat-chrome-static"
+              : "border border-b-0 border-border",
         )}
         style={{ backgroundColor: "#2B2B28" }}
       >

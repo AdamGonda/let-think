@@ -15,6 +15,7 @@ type HistoricalBatchPromptProps = {
   content: string;
   mentions?: HistoryMention[];
   sessionLoadingFrame?: boolean;
+  sessionPastFrame?: boolean;
   autoCollapseSignal?: string;
 };
 
@@ -34,6 +35,7 @@ export function HistoricalBatchPrompt({
   content,
   mentions,
   sessionLoadingFrame = false,
+  sessionPastFrame = false,
   autoCollapseSignal = "",
 }: HistoricalBatchPromptProps) {
   const [expanded, setExpanded] = useState(false);
@@ -105,7 +107,9 @@ export function HistoricalBatchPrompt({
 
   const chromeBorderClass = sessionLoadingFrame
     ? "border-t-2 border-l-2 border-r-2 border-b-0 border-(--session-accent) session-loading-chat-chrome-pulse"
-    : "border border-b-0 border-border";
+    : sessionPastFrame
+      ? "border-t-2 border-l-2 border-r-2 border-b-0 session-past-chat-chrome-static"
+      : "border border-b-0 border-border";
 
   const chromeShellClass = clsx(
     `w-full flex flex-col gap-3 rounded-t-2xl shadow-lg px-4 py-3 pb-4`,

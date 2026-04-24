@@ -92,7 +92,7 @@ function getSteps(): DriveStep[] {
         document.querySelector("[data-tour='history-btn']") ??
         document.querySelector("[data-tour='main-content']")!,
       popover: {
-        title: "Conversation history",
+        title: "Session history",
         description:
           "Open the full thread, review older messages, and jump directly to a graph step when you want to revisit earlier reasoning.",
         side: "bottom",

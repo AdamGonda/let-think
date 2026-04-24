@@ -124,6 +124,7 @@ export function AppContentBody({
 
   const isLatestBatch =
     batches.length === 0 || selectedBatchIndex === batches.length - 1;
+  const isPastBatchSelected = viewMode === "graph" && batches.length > 0 && !isLatestBatch;
 
   const batchUserPrompt = useMemo(
     () => userInputForBatch(batches, messages, selectedBatchIndex),
@@ -282,12 +283,19 @@ export function AppContentBody({
             "relative flex flex-1 flex-col min-w-0",
             (chatLoadingOnGraphFrame || chatLoadingOnNotesList) &&
               "rounded-md session-loading-inset-ring-pulse",
+            !chatLoadingOnGraphFrame && !chatLoadingOnNotesList && isPastBatchSelected && "rounded-md",
           )}
           data-tour="main-content"
           aria-busy={
             chatLoadingOnGraphFrame || chatLoadingOnNotesList ? true : undefined
           }
         >
+          {!chatLoadingOnGraphFrame && !chatLoadingOnNotesList && isPastBatchSelected ? (
+            <div
+              className="pointer-events-none absolute inset-0 z-20 rounded-md session-past-frame-overlay"
+              aria-hidden
+            />
+          ) : null}
           <div
             ref={mainContentRef}
             className="relative flex flex-1 min-h-0 flex-col"
@@ -328,6 +336,7 @@ export function AppContentBody({
             <Chat
               sessionId={activeSessionId}
               sessionLoadingFrame={chatLoadingOnGraphFrame}
+              sessionPastFrame={isPastBatchSelected}
               autoCollapseSignal={uiCollapseSignal}
               isLoading={chatLoading}
               setIsLoading={(loading) => setChatLoading(actor, loading)}

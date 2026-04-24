@@ -26,6 +26,7 @@ interface ChatProps {
   draftInput?: string;
   setDraftInput?: (value: string) => void;
   sessionLoadingFrame?: boolean;
+  sessionPastFrame?: boolean;
   /**
    * When set (non-latest graph batch), shows collapsed read-only prompt with history-style
    * mention rendering instead of the composer.
@@ -45,6 +46,7 @@ export function Chat({
   draftInput,
   setDraftInput,
   sessionLoadingFrame = false,
+  sessionPastFrame = false,
   lockedHistorical = null,
   selectedBatchIndex,
 }: ChatProps) {
@@ -115,6 +117,7 @@ export function Chat({
         content={lockedHistorical.content}
         mentions={lockedHistorical.mentions}
         sessionLoadingFrame={sessionLoadingFrame}
+        sessionPastFrame={sessionPastFrame}
         autoCollapseSignal={autoCollapseSignal}
       />
     );
@@ -129,6 +132,7 @@ export function Chat({
       isDisabled={isDisabled}
       isLoading={isLoading}
       sessionLoadingFrame={sessionLoadingFrame}
+      sessionPastFrame={sessionPastFrame}
       onSubmit={handleSubmit}
     />
   );
