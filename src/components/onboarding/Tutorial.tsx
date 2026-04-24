@@ -14,9 +14,9 @@ function getSteps(): DriveStep[] {
     {
       element: "[data-tour='main-content']",
       popover: {
-        title: "Welcome to Think",
+        title: "Welcome to let-think",
         description:
-          "Think helps you work through ideas with an AI partner. Your thoughts become a visual concept graph, and you can reference concepts as you chat. Let's walk through the main features.",
+          "Let-think helps you work through ideas with an AI partner. Your thoughts become a visual concept graph, and you can reference concepts as you chat. Let's walk through the main features.",
         side: "bottom",
         align: "center",
       },
@@ -163,8 +163,8 @@ export function Tutorial({ autoStart = false, onComplete }: TutorialProps) {
       setTutorialCompleted(false);
       runTutorial();
     };
-    window.addEventListener("think:run-tutorial", handler);
-    return () => window.removeEventListener("think:run-tutorial", handler);
+    window.addEventListener("let-think:run-tutorial", handler);
+    return () => window.removeEventListener("let-think:run-tutorial", handler);
   }, [runTutorial]);
 
   return null;
@@ -172,5 +172,5 @@ export function Tutorial({ autoStart = false, onComplete }: TutorialProps) {
 
 /** Call from anywhere to start or replay the tutorial */
 export function runTutorial(): void {
-  window.dispatchEvent(new Event("think:run-tutorial"));
+  window.dispatchEvent(new Event("let-think:run-tutorial"));
 }

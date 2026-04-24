@@ -5,7 +5,7 @@
 /* Class-based dark mode for manual toggle; fallback to system preference when no class */
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* LET THINK design tokens - monochrome palette */
+/* let-think design tokens - monochrome palette */
 :root {
   --color-bg: #ffffff;
   --color-surface: #fafafa;

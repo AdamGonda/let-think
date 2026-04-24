@@ -1,4 +1,4 @@
-const STORAGE_KEY = "think-tutorial-completed";
+const STORAGE_KEY = "let-think-tutorial-completed";
 
 export function getTutorialCompleted(): boolean {
   try {

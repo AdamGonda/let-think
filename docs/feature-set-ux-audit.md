@@ -1,8 +1,8 @@
-# Think - UX Feature Set Audit
+# let-think - UX Feature Set Audit
 
 ## Product Snapshot
 
-Think is a focused thinking workspace that combines chat, notes, and an evolving concept graph so users can develop ideas over time instead of losing context in linear threads. The experience is designed around session continuity, project organization, and fast context recovery.
+let-think is a focused thinking workspace that combines chat, notes, and an evolving concept graph so users can develop ideas over time instead of losing context in linear threads. The experience is designed around session continuity, project organization, and fast context recovery.
 
 ## Feature Inventory by User Journey
 
@@ -34,7 +34,7 @@ Primary evidence: `convex/auth.ts`, `convex/auth.config.ts`, `convex/http.ts`, `
 
 Primary evidence: `src/components/session-sidebar/SessionSidebar.tsx`, `src/components/session-sidebar/SessionSidebarToolbar.tsx`, `src/components/session-sidebar/SessionSidebarProjectsNav.tsx`, `convex/projects.ts`, `convex/sessions.ts`.
 
-### 4) Think in graph + chat flow
+### 4) Graph + chat flow
 
 - Main interaction loop pairs chat with an evolving concept graph.
 - Each assistant turn contributes a graph batch; users can step through prior batches.

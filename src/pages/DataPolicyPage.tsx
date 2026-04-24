@@ -5,7 +5,7 @@ export function DataPolicyPage() {
   return (
     <LegalDocLayout title="Data policy" lastUpdated="April 19, 2026">
       <p>
-        This page describes how LET THINK (“we”, “us”) handles information when you
+        This page describes how let-think (“we”, “us”) handles information when you
         use the service. Replace this placeholder with language reviewed by your
         counsel before production use.
       </p>
@@ -16,13 +16,13 @@ export function DataPolicyPage() {
         profile image) as needed to create and secure your account.
       </p>
       <p>
-        Content you create in LET THINK—such as projects, sessions, notes, and
+        Content you create in let-think—such as projects, sessions, notes, and
         messages—may be stored to provide the product and to sync it across your
         devices.
       </p>
       <h2>How we use data</h2>
       <p>
-        We use account and usage information to operate LET THINK, improve
+        We use account and usage information to operate let-think, improve
         reliability and security, and communicate with you about the service.
       </p>
       <h2>Retention & deletion</h2>

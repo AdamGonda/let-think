@@ -27,7 +27,7 @@ export function SiteFooter() {
           </Link>
         </nav>
         <p className="mt-4 text-[0.75rem] text-muted-foreground/90">
-          © {year} LET THINK. All rights reserved.
+          © {year} let-think. All rights reserved.
         </p>
       </div>
     </footer>
