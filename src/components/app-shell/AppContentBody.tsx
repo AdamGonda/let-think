@@ -83,8 +83,8 @@ export function AppContentBody({
     editorRevealReady,
     hasChatHistory,
     uiCollapseSignal,
-    sigmaEditorFromSession,
-    showOverlaySigma,
+    overlayActionReturnsToGraph,
+    showOverlayAction,
   } = useAppContentSelectors();
   const actor = useAppUiActor();
   const prevCollapseSignalRef = useRef<string>("");
@@ -108,7 +108,7 @@ export function AppContentBody({
     handleBreadcrumbSessionClick,
     handleBreadcrumbFileClick,
     handleCardReferenceClick,
-    handleWakeUpSigmaClick,
+    handleWakeUpOverlayActionClick,
     onSelectSessionFromNotesList,
     onSelectSessionFromSidebar,
     onSelectProjectFromSidebar,
@@ -245,9 +245,9 @@ export function AppContentBody({
               chatLoading={chatLoading}
               isExitingOverlay={isExitingOverlay}
               editorOpen={editorOpen}
-              showOverlaySigma={showOverlaySigma}
-              sigmaEditorFromSession={sigmaEditorFromSession}
-              onSigmaClick={handleWakeUpSigmaClick}
+              showOverlayAction={showOverlayAction}
+              overlayActionReturnsToGraph={overlayActionReturnsToGraph}
+              onOverlayActionClick={handleWakeUpOverlayActionClick}
               editorRevealReady={editorRevealReady}
               activeSessionId={activeSessionId}
               activeSessionInWorkspace={activeSessionInWorkspace}

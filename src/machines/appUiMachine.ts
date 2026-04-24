@@ -48,7 +48,7 @@ export const appUiMachine = setup({
       event.firstSessionId != null &&
       context.activeSessionId == null &&
       !context.hasEverHadSessionSelection,
-    isSigmaEditorReturnPath: ({ context }) =>
+    isOverlayActionReturnToGraphPath: ({ context }) =>
       context.editorOpen && context.surfaceMode === "graph",
     loadingCardsCompletedOnProgress: ({ context, event }) =>
       event.type === "GRAPH_LOADING_PROGRESS" &&
@@ -382,9 +382,9 @@ export const appUiMachine = setup({
     EDITOR_CLOSE: {
       actions: "editorClose",
     },
-    INTENT_WAKE_SIGMA_CLICK: [
+    INTENT_OVERLAY_ACTION_CLICK: [
       {
-        guard: "isSigmaEditorReturnPath",
+        guard: "isOverlayActionReturnToGraphPath",
         actions: [
           "returnToGraphFromEditor",
           "incrementSidebarCollapseImmediateSeq",
@@ -604,7 +604,7 @@ export function selectChatLoadingOnGraphFrame(
   );
 }
 
-/** LLM loading while on Files — show Σ to return to graph (overlay Σ is absent here). */
+/** LLM loading while on Files — show overlay action to return to graph. */
 export function selectChatLoadingOnNotesList(
   snapshot: MachineSnapshot,
 ): boolean {
@@ -651,20 +651,20 @@ export function selectUiCollapseSignal(snapshot: MachineSnapshot): string {
   return `${sidebarCollapseRequestSeq}:${sidebarCollapseImmediateSeq}`;
 }
 
-/** Editor open on graph — Σ returns to graph from session editor overlay. */
-export function selectSigmaEditorFromSession(
+/** Editor open on graph — overlay action returns to graph from editor overlay. */
+export function selectOverlayActionReturnsToGraph(
   snapshot: MachineSnapshot,
 ): boolean {
   const c = snapshot.context;
   return c.editorOpen && surfaceState(snapshot) === "graph";
 }
 
-/** Whether wake overlay shows Σ (editor return or standard exit when allowed). */
-export function selectShowOverlaySigma(snapshot: MachineSnapshot): boolean {
+/** Whether wake overlay shows the top-right action button. */
+export function selectShowOverlayAction(snapshot: MachineSnapshot): boolean {
   const c = snapshot.context;
-  const sigma = selectSigmaEditorFromSession(snapshot);
+  const returnsToGraph = selectOverlayActionReturnsToGraph(snapshot);
   const canExit = selectCanExitWakeUp(snapshot);
-  const overlaySigmaStandardExit =
+  const overlayStandardExit =
     canExit && !(c.editorOpen && surfaceState(snapshot) === "notesList");
-  return sigma || overlaySigmaStandardExit;
+  return returnsToGraph || overlayStandardExit;
 }

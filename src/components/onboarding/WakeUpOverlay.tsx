@@ -1,5 +1,5 @@
 import { layout } from "@/config";
-import { Sigma } from "lucide-react";
+import { Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MarkdownEditor } from "@/components/editor/MarkdownEditor";
 import { NoteBreadcrumb } from "@/components/navigation/NoteBreadcrumb";
@@ -9,9 +9,9 @@ type WakeUpOverlayProps = {
   chatLoading: boolean;
   isExitingOverlay: boolean;
   editorOpen: boolean;
-  showOverlaySigma: boolean;
-  sigmaEditorFromSession: boolean;
-  onSigmaClick: () => void;
+  showOverlayAction: boolean;
+  overlayActionReturnsToGraph: boolean;
+  onOverlayActionClick: () => void;
   editorRevealReady: boolean;
   activeSessionId: Id<"sessions"> | null;
   activeSessionInWorkspace:
@@ -35,9 +35,9 @@ export function WakeUpOverlay({
   chatLoading,
   isExitingOverlay,
   editorOpen,
-  showOverlaySigma,
-  sigmaEditorFromSession,
-  onSigmaClick,
+  showOverlayAction,
+  overlayActionReturnsToGraph,
+  onOverlayActionClick,
   editorRevealReady,
   activeSessionId,
   activeSessionInWorkspace,
@@ -62,19 +62,19 @@ export function WakeUpOverlay({
           isExitingOverlay ? "opacity-0" : "opacity-100"
         }`}
       >
-        {showOverlaySigma ? (
+        {showOverlayAction ? (
           <Button
             variant="outline"
             size="icon-sm"
             className="absolute top-3 right-4 z-10"
-            onClick={onSigmaClick}
+            onClick={onOverlayActionClick}
             aria-label={
-              sigmaEditorFromSession
+              overlayActionReturnsToGraph
                 ? "Return to concept graph"
                 : "Summarize and return to session"
             }
           >
-            <Sigma className="size-5" />
+            <Brain className="size-5" />
           </Button>
         ) : null}
         {activeSessionId && (

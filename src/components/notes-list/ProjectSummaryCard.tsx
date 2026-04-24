@@ -15,12 +15,12 @@ export function ProjectSummaryCard({ group, onDrill }: ProjectSummaryCardProps) 
   const title = groupDisplayName(group);
   const sessions = group.sessions;
   const count = sessions.length;
-  const sessionCountLabel =
+  const fileCountLabel =
     count === 0
-      ? "No sessions yet"
+      ? "No files yet"
       : count === 1
-        ? "1 session"
-        : `${count} sessions`;
+        ? "1 file"
+        : `${count} files`;
   const activity = groupActivityMs(sessions, group.project.createdAt);
 
   return (
@@ -37,7 +37,7 @@ export function ProjectSummaryCard({ group, onDrill }: ProjectSummaryCardProps) 
           </span>
         </div>
         <p className="text-sm text-muted-foreground line-clamp-2 flex-1">
-          {sessionCountLabel}
+          {fileCountLabel}
         </p>
         <p className="text-xs text-muted-foreground/90 pt-1">
           {count === 0 ? "—" : formatUpdatedLabel(activity)}

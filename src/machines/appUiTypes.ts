@@ -77,7 +77,7 @@ export type AppUiEvent =
   | { type: "HISTORY_CLOSE" }
   | { type: "FILE_NOTE_BREADCRUMB_SOURCE_SET"; fromProjectNotesExplorer: boolean }
   /** User intents — orchestration owned by the machine (see appUiCommands). */
-  | { type: "INTENT_WAKE_SIGMA_CLICK" }
+  | { type: "INTENT_OVERLAY_ACTION_CLICK" }
   | { type: "INTENT_BREADCRUMB_PROJECT_CLICK" }
   | { type: "INTENT_BREADCRUMB_SESSION_CLICK" }
   | { type: "INTENT_BREADCRUMB_FILE_CLICK" }

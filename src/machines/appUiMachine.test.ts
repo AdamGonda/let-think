@@ -10,9 +10,9 @@ import {
   selectGraphLoadingStartBatchLength,
   selectGraphReferenceFreezeActive,
   selectGraphShowLoadingCards,
-  selectShowOverlaySigma,
+  selectShowOverlayAction,
   selectShowWakeUpOverlay,
-  selectSigmaEditorFromSession,
+  selectOverlayActionReturnsToGraph,
   selectSurface,
   sessionSelected,
 } from "./appUiMachine";
@@ -116,7 +116,7 @@ describe("intent orchestration", () => {
     actor.stop();
   });
 
-  it("INTENT_WAKE_SIGMA_CLICK closes editor and bumps immediate collapse on graph", () => {
+  it("INTENT_OVERLAY_ACTION_CLICK closes editor and bumps immediate collapse on graph", () => {
     const actor = createActor(appUiMachine, {
       input: baseInput({
         editorOpen: true,
@@ -124,15 +124,15 @@ describe("intent orchestration", () => {
       }),
     });
     actor.start();
-    expect(selectSigmaEditorFromSession(actor.getSnapshot())).toBe(true);
+    expect(selectOverlayActionReturnsToGraph(actor.getSnapshot())).toBe(true);
     const imm = actor.getSnapshot().context.sidebarCollapseImmediateSeq;
-    actor.send({ type: "INTENT_WAKE_SIGMA_CLICK" });
+    actor.send({ type: "INTENT_OVERLAY_ACTION_CLICK" });
     expect(actor.getSnapshot().context.editorOpen).toBe(false);
     expect(actor.getSnapshot().context.sidebarCollapseImmediateSeq).toBe(imm + 1);
     actor.stop();
   });
 
-  it("selectShowOverlaySigma: editor on notesList hides sigma; on graph shows", () => {
+  it("selectShowOverlayAction: editor on notesList hides action; on graph shows", () => {
     const actor = createActor(appUiMachine, {
       input: baseInput({
         editorOpen: true,
@@ -141,9 +141,9 @@ describe("intent orchestration", () => {
     });
     actor.start();
     actor.send({ type: "VIEW_SET", mode: "notesList" });
-    expect(selectShowOverlaySigma(actor.getSnapshot())).toBe(false);
+    expect(selectShowOverlayAction(actor.getSnapshot())).toBe(false);
     actor.send({ type: "VIEW_SET", mode: "graph" });
-    expect(selectShowOverlaySigma(actor.getSnapshot())).toBe(true);
+    expect(selectShowOverlayAction(actor.getSnapshot())).toBe(true);
     actor.stop();
   });
 

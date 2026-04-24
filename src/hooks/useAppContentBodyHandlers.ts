@@ -7,7 +7,7 @@ import {
   intentBreadcrumbSessionClick,
   intentOpenNotesList,
   intentSelectSessionFromSidebar,
-  intentWakeSigmaClick,
+  intentOverlayActionClick,
   openSessionInFilesWithEditor,
   setActiveProject,
   setDraftInput,
@@ -69,8 +69,8 @@ export function useAppContentBodyHandlers({
     [actor, draftInput],
   );
 
-  const handleWakeUpSigmaClick = useCallback(() => {
-    intentWakeSigmaClick(actor);
+  const handleWakeUpOverlayActionClick = useCallback(() => {
+    intentOverlayActionClick(actor);
   }, [actor]);
 
   const onSelectSessionFromNotesList = useCallback(
@@ -100,7 +100,7 @@ export function useAppContentBodyHandlers({
     handleBreadcrumbSessionClick,
     handleBreadcrumbFileClick,
     handleCardReferenceClick,
-    handleWakeUpSigmaClick,
+    handleWakeUpOverlayActionClick,
     onSelectSessionFromNotesList,
     onSelectSessionFromSidebar,
     onSelectProjectFromSidebar,

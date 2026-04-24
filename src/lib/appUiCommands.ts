@@ -76,8 +76,8 @@ export function intentOpenNotesList(actor: AppUiActorRef): void {
   actor.send({ type: "INTENT_OPEN_NOTES_LIST" });
 }
 
-export function intentWakeSigmaClick(actor: AppUiActorRef): void {
-  actor.send({ type: "INTENT_WAKE_SIGMA_CLICK" });
+export function intentOverlayActionClick(actor: AppUiActorRef): void {
+  actor.send({ type: "INTENT_OVERLAY_ACTION_CLICK" });
 }
 
 export function intentBreadcrumbProjectClick(actor: AppUiActorRef): void {

@@ -7,7 +7,7 @@ import {
   selectDisplayWakeUpLayer,
   selectEditorRevealReady,
   selectIsExitingWakeUp,
-  selectShowOverlaySigma,
+  selectShowOverlayAction,
   selectSurface,
   selectUiCollapseSignal,
   selectChatLoadingOnNotesList,
@@ -16,7 +16,7 @@ import {
   selectGraphLoadingStartBatchLength,
   selectGraphReferenceFreezeActive,
   selectGraphShowLoadingCards,
-  selectSigmaEditorFromSession,
+  selectOverlayActionReturnsToGraph,
 } from "../machines/appUiMachine";
 
 type AppSnapshot = SnapshotFrom<typeof appUiMachine>;
@@ -45,8 +45,8 @@ export type AppContentSelectors = {
   editorRevealReady: ReturnType<typeof selectEditorRevealReady>;
   hasChatHistory: AppSnapshot["context"]["hasChatHistory"];
   uiCollapseSignal: ReturnType<typeof selectUiCollapseSignal>;
-  sigmaEditorFromSession: ReturnType<typeof selectSigmaEditorFromSession>;
-  showOverlaySigma: ReturnType<typeof selectShowOverlaySigma>;
+  overlayActionReturnsToGraph: ReturnType<typeof selectOverlayActionReturnsToGraph>;
+  showOverlayAction: ReturnType<typeof selectShowOverlayAction>;
 };
 
 function shallowEqualSelectors(
@@ -78,8 +78,8 @@ function shallowEqualSelectors(
     a.editorRevealReady === b.editorRevealReady &&
     a.hasChatHistory === b.hasChatHistory &&
     a.uiCollapseSignal === b.uiCollapseSignal &&
-    a.sigmaEditorFromSession === b.sigmaEditorFromSession &&
-    a.showOverlaySigma === b.showOverlaySigma
+    a.overlayActionReturnsToGraph === b.overlayActionReturnsToGraph &&
+    a.showOverlayAction === b.showOverlayAction
   );
 }
 
@@ -109,8 +109,8 @@ function selectAppContentSnapshot(s: AppSnapshot): AppContentSelectors {
     editorRevealReady: selectEditorRevealReady(s),
     hasChatHistory: s.context.hasChatHistory,
     uiCollapseSignal: selectUiCollapseSignal(s),
-    sigmaEditorFromSession: selectSigmaEditorFromSession(s),
-    showOverlaySigma: selectShowOverlaySigma(s),
+    overlayActionReturnsToGraph: selectOverlayActionReturnsToGraph(s),
+    showOverlayAction: selectShowOverlayAction(s),
   };
 }
 
