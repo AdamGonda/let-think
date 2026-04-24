@@ -8,6 +8,7 @@ import {
   focusLayerDemand,
   selectGraphInteractionBlocked,
   selectGraphLoadingStartBatchLength,
+  selectGraphReferenceFreezeActive,
   selectGraphShowLoadingCards,
   selectShowOverlaySigma,
   selectShowWakeUpOverlay,
@@ -33,6 +34,7 @@ function baseInput(over: Partial<AppUiContext> = {}): Partial<AppUiContext> {
     graphShowLoadingCards: false,
     graphInteractionBlocked: false,
     graphLatestBatchNodeCount: 0,
+    graphReferenceFreezeActive: false,
     editorOpen: false,
     overlayDismissed: false,
     historyPanelOpen: false,
@@ -275,5 +277,21 @@ describe("intent orchestration", () => {
     expect(selectGraphShowLoadingCards(actor.getSnapshot())).toBe(false);
     expect(selectGraphInteractionBlocked(actor.getSnapshot())).toBe(false);
     actor.stop();
+  });
+
+  it("keeps reference freeze active through stabilization window", async () => {
+    vi.useFakeTimers();
+    const actor = createActor(appUiMachine, { input: baseInput() });
+    actor.start();
+    actor.send({ type: "CHAT_LOADING_START" });
+    expect(selectGraphReferenceFreezeActive(actor.getSnapshot())).toBe(true);
+    actor.send({ type: "GRAPH_LOADING_PROGRESS", latestBatchNodeCount: 6 });
+    expect(selectGraphReferenceFreezeActive(actor.getSnapshot())).toBe(true);
+    await vi.advanceTimersByTimeAsync(timings.graphReferenceStabilizeMs - 1);
+    expect(selectGraphReferenceFreezeActive(actor.getSnapshot())).toBe(true);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(selectGraphReferenceFreezeActive(actor.getSnapshot())).toBe(false);
+    actor.stop();
+    vi.useRealTimers();
   });
 });

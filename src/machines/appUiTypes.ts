@@ -23,6 +23,8 @@ export type AppUiContext = {
   graphInteractionBlocked: boolean;
   /** Count of latest batch nodes currently available while chat is loading. */
   graphLatestBatchNodeCount: number;
+  /** Machine-owned freeze gate for @n reference highlights during load->settle transitions. */
+  graphReferenceFreezeActive: boolean;
   editorOpen: boolean;
   /** User dismissed the focus layer while demand could still be true. */
   overlayDismissed: boolean;

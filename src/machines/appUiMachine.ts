@@ -50,6 +50,10 @@ export const appUiMachine = setup({
       !context.hasEverHadSessionSelection,
     isSigmaEditorReturnPath: ({ context }) =>
       context.editorOpen && context.surfaceMode === "graph",
+    loadingCardsCompletedOnProgress: ({ context, event }) =>
+      event.type === "GRAPH_LOADING_PROGRESS" &&
+      context.graphShowLoadingCards &&
+      event.latestBatchNodeCount >= context.graphLoadingCardSlots,
   },
   actions: {
     clearOnDemandEnd: assign({
@@ -65,6 +69,7 @@ export const appUiMachine = setup({
       graphInteractionBlocked: false,
       graphLatestBatchNodeCount: 0,
       graphLoadingStartBatchLength: 0,
+      graphReferenceFreezeActive: false,
       editorOpen: false,
       showFileNoteBreadcrumbFromProjectNotes: false,
     }),
@@ -74,6 +79,7 @@ export const appUiMachine = setup({
       graphInteractionBlocked: false,
       graphLatestBatchNodeCount: 0,
       graphLoadingStartBatchLength: 0,
+      graphReferenceFreezeActive: false,
       editorOpen: false,
       overlayDismissed: false,
       historyPanelOpen: false,
@@ -110,6 +116,7 @@ export const appUiMachine = setup({
       graphShowLoadingCards: () => false,
       graphInteractionBlocked: () => false,
       graphLatestBatchNodeCount: () => 0,
+      graphReferenceFreezeActive: () => false,
       showFileNoteBreadcrumbFromProjectNotes: false,
     }),
     autoSelectFirstWorkspaceSession: assign({
@@ -127,6 +134,7 @@ export const appUiMachine = setup({
       graphShowLoadingCards: () => false,
       graphInteractionBlocked: () => false,
       graphLatestBatchNodeCount: () => 0,
+      graphReferenceFreezeActive: () => false,
     }),
     setNotesListDrill: assign({
       notesListDrill: ({ event }) => {
@@ -165,6 +173,10 @@ export const appUiMachine = setup({
       graphInteractionBlocked: false,
       graphLatestBatchNodeCount: 0,
       graphLoadingStartBatchLength: 0,
+    }),
+    setGraphReferenceFreezeActiveTrue: assign({ graphReferenceFreezeActive: true }),
+    setGraphReferenceFreezeActiveFalse: assign({
+      graphReferenceFreezeActive: false,
     }),
     syncChatHistoryMeta: assign(({ context, event }) =>
       reduceChatHistoryMeta(context, event as AppUiEvent),
@@ -273,6 +285,7 @@ export const appUiMachine = setup({
       graphShowLoadingCards: false,
       graphInteractionBlocked: false,
       graphLatestBatchNodeCount: 0,
+      graphReferenceFreezeActive: false,
       editorOpen: inp?.editorOpen ?? false,
       overlayDismissed: false,
       historyPanelOpen: false,
@@ -329,14 +342,27 @@ export const appUiMachine = setup({
       },
     ],
     CHAT_LOADING_START: {
-      actions: ["startChatLoading", "startGraphLoading"],
+      actions: [
+        "startChatLoading",
+        "startGraphLoading",
+        "setGraphReferenceFreezeActiveTrue",
+      ],
+      target: ".graphReferenceFreeze.loading",
     },
     CHAT_LOADING_END: {
-      actions: "endChatLoading",
+      actions: ["endChatLoading", "setGraphReferenceFreezeActiveTrue"],
+      target: ".graphReferenceFreeze.stabilizing",
     },
-    GRAPH_LOADING_PROGRESS: {
-      actions: "applyGraphLoadingProgress",
-    },
+    GRAPH_LOADING_PROGRESS: [
+      {
+        guard: "loadingCardsCompletedOnProgress",
+        actions: ["applyGraphLoadingProgress", "setGraphReferenceFreezeActiveTrue"],
+        target: ".graphReferenceFreeze.stabilizing",
+      },
+      {
+        actions: "applyGraphLoadingProgress",
+      },
+    ],
     CHAT_HISTORY_META: {
       actions: "syncChatHistoryMeta",
     },
@@ -429,6 +455,21 @@ export const appUiMachine = setup({
           on: {
             EDITOR_CLOSE: {
               target: "idle",
+            },
+          },
+        },
+      },
+    },
+    graphReferenceFreeze: {
+      initial: "idle",
+      states: {
+        idle: {},
+        loading: {},
+        stabilizing: {
+          after: {
+            [timings.graphReferenceStabilizeMs]: {
+              target: "idle",
+              actions: "setGraphReferenceFreezeActiveFalse",
             },
           },
         },
@@ -592,6 +633,12 @@ export function selectGraphLoadingStartBatchLength(
   snapshot: MachineSnapshot,
 ): number {
   return snapshot.context.graphLoadingStartBatchLength;
+}
+
+export function selectGraphReferenceFreezeActive(
+  snapshot: MachineSnapshot,
+): boolean {
+  return snapshot.context.graphReferenceFreezeActive;
 }
 
 export function selectSurface(snapshot: MachineSnapshot): SurfaceMode {

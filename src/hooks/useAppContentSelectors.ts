@@ -14,6 +14,7 @@ import {
   selectChatLoadingOnGraphFrame,
   selectGraphInteractionBlocked,
   selectGraphLoadingStartBatchLength,
+  selectGraphReferenceFreezeActive,
   selectGraphShowLoadingCards,
   selectSigmaEditorFromSession,
 } from "../machines/appUiMachine";
@@ -32,6 +33,7 @@ export type AppContentSelectors = {
   graphShowLoadingCards: ReturnType<typeof selectGraphShowLoadingCards>;
   graphInteractionBlocked: ReturnType<typeof selectGraphInteractionBlocked>;
   graphLoadingStartBatchLength: ReturnType<typeof selectGraphLoadingStartBatchLength>;
+  graphReferenceFreezeActive: ReturnType<typeof selectGraphReferenceFreezeActive>;
   editorOpen: AppSnapshot["context"]["editorOpen"];
   historyPanelOpen: AppSnapshot["context"]["historyPanelOpen"];
   viewMode: ReturnType<typeof selectSurface>;
@@ -64,6 +66,7 @@ function shallowEqualSelectors(
     a.graphShowLoadingCards === b.graphShowLoadingCards &&
     a.graphInteractionBlocked === b.graphInteractionBlocked &&
     a.graphLoadingStartBatchLength === b.graphLoadingStartBatchLength &&
+    a.graphReferenceFreezeActive === b.graphReferenceFreezeActive &&
     a.editorOpen === b.editorOpen &&
     a.historyPanelOpen === b.historyPanelOpen &&
     a.viewMode === b.viewMode &&
@@ -94,6 +97,7 @@ function selectAppContentSnapshot(s: AppSnapshot): AppContentSelectors {
     graphShowLoadingCards: selectGraphShowLoadingCards(s),
     graphInteractionBlocked: selectGraphInteractionBlocked(s),
     graphLoadingStartBatchLength: selectGraphLoadingStartBatchLength(s),
+    graphReferenceFreezeActive: selectGraphReferenceFreezeActive(s),
     editorOpen: s.context.editorOpen,
     historyPanelOpen: s.context.historyPanelOpen,
     viewMode: selectSurface(s),

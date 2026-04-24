@@ -71,6 +71,7 @@ export function AppContentBody({
     graphShowLoadingCards,
     graphInteractionBlocked,
     graphLoadingStartBatchLength,
+    graphReferenceFreezeActive,
     editorOpen,
     historyPanelOpen,
     viewMode,
@@ -134,19 +135,19 @@ export function AppContentBody({
     [referenceSourceText, numberedConcepts],
   );
   const frozenReferencedConceptIdsRef = useRef<Set<string>>(new Set());
-  const previousGraphInteractionBlockedRef = useRef(false);
+  const previousGraphReferenceFreezeActiveRef = useRef(false);
 
   useEffect(() => {
-    const wasBlocked = previousGraphInteractionBlockedRef.current;
-    if (graphInteractionBlocked && !wasBlocked) {
+    const wasFreezeActive = previousGraphReferenceFreezeActiveRef.current;
+    if (graphReferenceFreezeActive && !wasFreezeActive) {
       // Freeze refs at request start so @n highlights stay pinned while new cards stream in.
       frozenReferencedConceptIdsRef.current = new Set(liveReferencedConceptIds);
     }
-    if (!graphInteractionBlocked && wasBlocked) {
+    if (!graphReferenceFreezeActive && wasFreezeActive) {
       frozenReferencedConceptIdsRef.current = new Set();
     }
-    previousGraphInteractionBlockedRef.current = graphInteractionBlocked;
-  }, [graphInteractionBlocked, liveReferencedConceptIds]);
+    previousGraphReferenceFreezeActiveRef.current = graphReferenceFreezeActive;
+  }, [graphReferenceFreezeActive, liveReferencedConceptIds]);
 
   useEffect(() => {
     if (!chatLoading) {
@@ -168,10 +169,10 @@ export function AppContentBody({
 
   const referencedConceptIds = useMemo(
     () =>
-      graphInteractionBlocked
+      graphReferenceFreezeActive
         ? frozenReferencedConceptIdsRef.current
         : liveReferencedConceptIds,
-    [graphInteractionBlocked, liveReferencedConceptIds],
+    [graphReferenceFreezeActive, liveReferencedConceptIds],
   );
 
   const handleEditorOpen = useCallback(() => {

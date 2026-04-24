@@ -22,6 +22,7 @@ function ctx(partial: Partial<AppUiContext>): AppUiContext {
     graphShowLoadingCards: false,
     graphInteractionBlocked: false,
     graphLatestBatchNodeCount: 0,
+    graphReferenceFreezeActive: false,
     editorOpen: false,
     overlayDismissed: false,
     historyPanelOpen: false,
