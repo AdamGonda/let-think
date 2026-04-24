@@ -2,6 +2,7 @@ import {
   useMemo,
   useCallback,
   useEffect,
+  useState,
   useRef,
   type RefObject,
 } from "react";
@@ -134,20 +135,35 @@ export function AppContentBody({
     () => referencedConceptIdsFromDraft(referenceSourceText, numberedConcepts),
     [referenceSourceText, numberedConcepts],
   );
-  const frozenReferencedConceptIdsRef = useRef<Set<string>>(new Set());
+  const [frozenReferencedConceptIds, setFrozenReferencedConceptIds] = useState<
+    Set<string>
+  >(new Set());
+  const [loadingLockedReferencedConceptIds, setLoadingLockedReferencedConceptIds] =
+    useState<Set<string> | null>(null);
   const previousGraphReferenceFreezeActiveRef = useRef(false);
 
   useEffect(() => {
     const wasFreezeActive = previousGraphReferenceFreezeActiveRef.current;
     if (graphReferenceFreezeActive && !wasFreezeActive) {
       // Freeze refs at request start so @n highlights stay pinned while new cards stream in.
-      frozenReferencedConceptIdsRef.current = new Set(liveReferencedConceptIds);
+      setFrozenReferencedConceptIds(new Set(liveReferencedConceptIds));
     }
     if (!graphReferenceFreezeActive && wasFreezeActive) {
-      frozenReferencedConceptIdsRef.current = new Set();
+      setFrozenReferencedConceptIds(new Set());
     }
     previousGraphReferenceFreezeActiveRef.current = graphReferenceFreezeActive;
   }, [graphReferenceFreezeActive, liveReferencedConceptIds]);
+
+  useEffect(() => {
+    if (!chatLoading) {
+      setLoadingLockedReferencedConceptIds(null);
+      return;
+    }
+    setLoadingLockedReferencedConceptIds((current) => {
+      if (current != null) return current;
+      return new Set(liveReferencedConceptIds);
+    });
+  }, [chatLoading, liveReferencedConceptIds]);
 
   useEffect(() => {
     if (!chatLoading) {
@@ -168,11 +184,21 @@ export function AppContentBody({
   }, [actor, batches, chatLoading, conceptGraph, graphLoadingStartBatchLength]);
 
   const referencedConceptIds = useMemo(
-    () =>
-      graphReferenceFreezeActive
-        ? frozenReferencedConceptIdsRef.current
-        : liveReferencedConceptIds,
-    [graphReferenceFreezeActive, liveReferencedConceptIds],
+    () => {
+      if (loadingLockedReferencedConceptIds != null) {
+        return loadingLockedReferencedConceptIds;
+      }
+      if (graphReferenceFreezeActive) {
+        return frozenReferencedConceptIds;
+      }
+      return liveReferencedConceptIds;
+    },
+    [
+      loadingLockedReferencedConceptIds,
+      graphReferenceFreezeActive,
+      frozenReferencedConceptIds,
+      liveReferencedConceptIds,
+    ],
   );
 
   const handleEditorOpen = useCallback(() => {
