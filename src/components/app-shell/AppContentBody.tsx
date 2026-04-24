@@ -7,32 +7,32 @@ import {
 } from "react";
 import { clsx } from "clsx";
 import { toast } from "sonner";
-import type { Id } from "../../convex/_generated/dataModel";
-import { useSessionData } from "../contexts/SessionDataContext";
-import { useAppUiActor } from "../hooks/useAppUi";
-import { useAppContentSelectors } from "../hooks/useAppContentSelectors";
-import { useAppContentBodyHandlers } from "../hooks/useAppContentBodyHandlers";
+import type { Id } from "../../../convex/_generated/dataModel";
+import { useSessionData } from "../../contexts/SessionDataContext";
+import { useAppUiActor } from "../../hooks/useAppUi";
+import { useAppContentSelectors } from "../../hooks/useAppContentSelectors";
+import { useAppContentBodyHandlers } from "../../hooks/useAppContentBodyHandlers";
 import {
   SessionSidebar,
   type ProjectWithSessions,
   type SessionSidebarHandle,
-} from "./SessionSidebar";
-import { NotesListPanel } from "./NotesListPanel";
-import { Chat } from "./chat/Chat";
-import { Tutorial, runTutorial } from "./Tutorial";
+} from "../session-sidebar/SessionSidebar";
+import { NotesListPanel } from "../notes-list/NotesListPanel";
+import { Chat } from "../chat/Chat";
+import { Tutorial, runTutorial } from "../onboarding/Tutorial";
 import { getTutorialCompleted } from "@/lib/tutorialStorage";
-import { ChatHistoryPanel } from "./chat/ChatHistoryPanel";
+import { ChatHistoryPanel } from "../chat/ChatHistoryPanel";
 import { AppContentGraphSurface } from "./AppContentGraphSurface";
-import { Toaster } from "./ui/sonner";
+import { Toaster } from "../ui/sonner";
 import {
   buildNumberedConceptsFromGraph,
   formatConceptPlainForClipboard,
   referencedConceptIdsFromDraft,
-} from "../lib/conceptReferences";
-import { userInputForBatch, userMessageForBatch } from "../lib/batchUserInput";
-import { findSessionInWorkspace } from "../lib/workspaceQueries";
+} from "../../lib/conceptReferences";
+import { userInputForBatch, userMessageForBatch } from "../../lib/batchUserInput";
+import { findSessionInWorkspace } from "../../lib/workspaceQueries";
 import { CHAT_MESSAGES_PAGE_SIZE } from "@/config";
-import { WakeUpOverlay } from "./WakeUpOverlay";
+import { WakeUpOverlay } from "../onboarding/WakeUpOverlay";
 import { AppShell } from "./AppShell";
 import {
   closeHistoryPanel,

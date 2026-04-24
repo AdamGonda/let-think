@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { clsx } from "clsx";
 import { layout, timings } from "@/config";
-import { ConceptGraphBatchGrid } from "./concept-graph-overlay/ConceptGraphBatchGrid";
-import { ConceptGraphEmptyState } from "./concept-graph-overlay/ConceptGraphEmptyState";
+import { ConceptGraphBatchGrid } from "./ConceptGraphBatchGrid";
+import { ConceptGraphEmptyState } from "./ConceptGraphEmptyState";
 import {
   type ConceptGraphData,
   type GraphNode,
   useConceptGraphOverlayModel,
-} from "./concept-graph-overlay/useConceptGraphOverlayModel";
+} from "./useConceptGraphOverlayModel";
 
 export type { ConceptGraphData };
 

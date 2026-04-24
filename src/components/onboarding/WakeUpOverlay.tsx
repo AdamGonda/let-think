@@ -1,9 +1,9 @@
 import { layout } from "@/config";
 import { Sigma } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { MarkdownEditor } from "@/components/MarkdownEditor";
-import { NoteBreadcrumb } from "@/components/NoteBreadcrumb";
-import type { Id } from "../../convex/_generated/dataModel";
+import { MarkdownEditor } from "@/components/editor/MarkdownEditor";
+import { NoteBreadcrumb } from "@/components/navigation/NoteBreadcrumb";
+import type { Id } from "../../../convex/_generated/dataModel";
 
 type WakeUpOverlayProps = {
   chatLoading: boolean;

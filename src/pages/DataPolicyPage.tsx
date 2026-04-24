@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { LegalDocLayout } from "@/components/LegalDocLayout";
+import { LegalDocLayout } from "@/components/docs/LegalDocLayout";
 
 export function DataPolicyPage() {
   return (

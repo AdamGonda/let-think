@@ -1,11 +1,11 @@
-import type { Doc } from "../../convex/_generated/dataModel";
-import type { ProjectWithSessions } from "./session-sidebar/workspaceTypes";
+import type { Doc } from "../../../convex/_generated/dataModel";
+import type { ProjectWithSessions } from "../session-sidebar/workspaceTypes";
 import { groupDisplayName, type NotesListDrill } from "@/lib/notesListUtils";
-import { NotesListToolbar } from "./notes-list/NotesListToolbar";
-import { ProjectSummaryCard } from "./notes-list/ProjectSummaryCard";
-import { NotesListLoading } from "./notes-list/NotesListLoading";
-import { NotesListEmptyState } from "./notes-list/NotesListEmptyState";
-import { NotesListSessionCard } from "./notes-list/NotesListSessionCard";
+import { NotesListToolbar } from "./NotesListToolbar";
+import { ProjectSummaryCard } from "./ProjectSummaryCard";
+import { NotesListLoading } from "./NotesListLoading";
+import { NotesListEmptyState } from "./NotesListEmptyState";
+import { NotesListSessionCard } from "./NotesListSessionCard";
 import { useNotesListModel } from "@/hooks/useNotesListModel";
 
 export type { NotesListDrill };

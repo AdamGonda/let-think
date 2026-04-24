@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { useDismissOnOutsideAndEscape } from "../hooks/useDismissOnOutsideAndEscape";
+import { useDismissOnOutsideAndEscape } from "../../hooks/useDismissOnOutsideAndEscape";
 import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
+import { api } from "../../../convex/_generated/api";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { UserCardCompact } from "./UserCardCompact";
 import { UserCardExpanded } from "./UserCardExpanded";

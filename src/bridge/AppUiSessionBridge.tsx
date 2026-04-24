@@ -1,7 +1,7 @@
 import { type ReactNode } from "react";
 import { useAppUiActor } from "../hooks/useAppUi";
 import { useSessionData } from "../contexts/SessionDataContext";
-import type { ProjectWithSessions } from "../components/SessionSidebar";
+import type { ProjectWithSessions } from "../components/session-sidebar/SessionSidebar";
 import type { Id } from "../../convex/_generated/dataModel";
 import {
   useSyncBatchesLength,

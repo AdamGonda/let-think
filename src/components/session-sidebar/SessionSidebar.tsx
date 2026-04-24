@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useMemo } from "react";
-import type { Id } from "../../convex/_generated/dataModel";
-import { UserCard } from "./UserCard";
+import type { Id } from "../../../convex/_generated/dataModel";
+import { UserCard } from "../user/UserCard";
 import {
   SIDEBAR_WIDTH,
   SIDEBAR_COLLAPSED_WIDTH,
@@ -8,10 +8,10 @@ import {
 import type {
   ProjectWithSessions,
   SessionSidebarHandle,
-} from "./session-sidebar/workspaceTypes";
-import { useSessionSidebarWorkspace } from "./session-sidebar/useSessionSidebarWorkspace";
-import { SessionSidebarToolbar } from "./session-sidebar/SessionSidebarToolbar";
-import { SessionSidebarProjectsNav } from "./session-sidebar/SessionSidebarProjectsNav";
+} from "./workspaceTypes";
+import { useSessionSidebarWorkspace } from "./useSessionSidebarWorkspace";
+import { SessionSidebarToolbar } from "./SessionSidebarToolbar";
+import { SessionSidebarProjectsNav } from "./SessionSidebarProjectsNav";
 
 export type { ProjectWithSessions, SessionSidebarHandle };
 

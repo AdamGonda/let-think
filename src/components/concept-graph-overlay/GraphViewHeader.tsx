@@ -1,6 +1,6 @@
 import { FileText, History } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { StepNavigator } from "@/components/StepNavigator";
+import { StepNavigator } from "@/components/navigation/StepNavigator";
 
 type GraphViewHeaderProps = {
   sessionTitle: string | undefined;

@@ -1,9 +1,9 @@
 import type { RefObject } from "react";
-import type { Id } from "../../convex/_generated/dataModel";
-import { GraphViewHeader } from "./GraphViewHeader";
-import { ConceptGraphOverlay } from "./ConceptGraphOverlay";
+import type { Id } from "../../../convex/_generated/dataModel";
+import { GraphViewHeader } from "../concept-graph-overlay/GraphViewHeader";
+import { ConceptGraphOverlay } from "../concept-graph-overlay/ConceptGraphOverlay";
 import type { ConceptGraphData } from "@/contexts/SessionDataContext";
-import type { SessionSidebarHandle } from "./session-sidebar/workspaceTypes";
+import type { SessionSidebarHandle } from "../session-sidebar/workspaceTypes";
 
 type AppContentGraphSurfaceProps = {
   sessionSidebarRef: RefObject<SessionSidebarHandle | null>;

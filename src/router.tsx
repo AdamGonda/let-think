@@ -11,7 +11,7 @@ import { AuthenticatedApp } from "./App";
 import { LandingPage } from "./pages/LandingPage";
 import { DataPolicyPage } from "./pages/DataPolicyPage";
 import { TermsOfUsePage } from "./pages/TermsOfUsePage";
-import { SignIn } from "./components/SignIn";
+import { SignIn } from "./components/auth/SignIn";
 import { AdminAllowlistPage } from "./pages/AdminAllowlistPage";
 
 const ADMIN_ROUTE_HASH = "a9f3d2c7be4e8f11";
