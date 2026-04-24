@@ -10,6 +10,8 @@ import {
   type NumberedConcept,
 } from "@/lib/conceptReferences";
 
+const FOCUS_COMPOSER_EVENT = "let-think:focus-composer";
+
 /** When false, skip {@link ensureSpaceAfterValidAtReferences} so backspace/delete does not re-add the space. */
 function shouldApplyAutoSpaceAfterRefs(
   e: React.ChangeEvent<HTMLTextAreaElement>,
@@ -67,6 +69,17 @@ export function ChatComposer({
     }
     pendingSelectionRef.current = null;
   }, [input]);
+
+  useEffect(() => {
+    const handleFocusComposer = () => {
+      requestAnimationFrame(() => {
+        textareaRef.current?.focus();
+      });
+    };
+    window.addEventListener(FOCUS_COMPOSER_EVENT, handleFocusComposer);
+    return () =>
+      window.removeEventListener(FOCUS_COMPOSER_EVENT, handleFocusComposer);
+  }, []);
 
   const handleScroll = () => {
     const ta = textareaRef.current;

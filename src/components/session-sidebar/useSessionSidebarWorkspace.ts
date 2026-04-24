@@ -23,6 +23,8 @@ import type {
   SessionSidebarHandle,
 } from "./workspaceTypes";
 
+const FOCUS_COMPOSER_EVENT = "let-think:focus-composer";
+
 export type UseSessionSidebarWorkspaceArgs = {
   workspace: ProjectWithSessions[] | undefined;
   activeSessionId: Id<"sessions"> | null;
@@ -114,6 +116,7 @@ export function useSessionSidebarWorkspace({
       } else {
         onSelectProject(null);
       }
+      window.dispatchEvent(new Event(FOCUS_COMPOSER_EVENT));
     },
     [createSession, onSelectSession, onSelectProject],
   );
