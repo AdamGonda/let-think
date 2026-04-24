@@ -112,7 +112,8 @@ export function HistoricalBatchPrompt({
       : "border border-b-0 border-border";
 
   const chromeShellClass = clsx(
-    `w-full flex flex-col gap-3 rounded-t-2xl shadow-lg px-4 py-3 pb-4`,
+    `w-full flex flex-col gap-3 rounded-t-2xl px-4 py-3 pb-4`,
+    sessionPastFrame ? "shadow-none" : "shadow-lg",
     layout.sessionInputChromeMinClass,
     chromeBorderClass,
   );
@@ -158,7 +159,8 @@ export function HistoricalBatchPrompt({
               >
                 <div
                   className={clsx(
-                    `flex w-full flex-col gap-3 rounded-t-2xl shadow-lg px-4 py-3 pb-4`,
+                    `flex w-full flex-col gap-3 rounded-t-2xl px-4 py-3 pb-4`,
+                    sessionPastFrame ? "shadow-none" : "shadow-lg",
                     chromeBorderClass,
                   )}
                   style={{ backgroundColor: "#2B2B28" }}

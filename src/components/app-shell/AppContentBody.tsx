@@ -296,6 +296,12 @@ export function AppContentBody({
               aria-hidden
             />
           ) : null}
+          {!chatLoadingOnGraphFrame && !chatLoadingOnNotesList && isPastBatchSelected ? (
+            <div
+              className="pointer-events-none absolute bottom-0 left-1/2 z-30 h-[2px] w-[min(calc(100%-2rem),720px)] -translate-x-1/2 bg-background"
+              aria-hidden
+            />
+          ) : null}
           <div
             ref={mainContentRef}
             className="relative flex flex-1 min-h-0 flex-col"
