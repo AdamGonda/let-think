@@ -12,10 +12,12 @@ export function PaginationDots({
   currentIndex,
   totalItems,
   onSelect,
+  isDisabled = false,
 }: {
   currentIndex: number;
   totalItems: number;
   onSelect?: (index: number) => void;
+  isDisabled?: boolean;
 }) {
   const [offset, setOffset] = useState(0);
 
@@ -48,11 +50,17 @@ export function PaginationDots({
       <button
         key={index}
         type="button"
-        onClick={() => onSelect?.(index)}
+        onClick={() => {
+          if (isDisabled) return;
+          onSelect?.(index);
+        }}
+        disabled={isDisabled}
         aria-label={`Go to step ${index + 1}`}
         aria-selected={isActive}
         title={`Step ${index + 1}`}
-        className={`shrink-0 rounded-full transition-colors duration-300 cursor-pointer focus:outline-none ${
+        className={`shrink-0 rounded-full transition-colors duration-300 focus:outline-none ${
+          isDisabled ? "cursor-not-allowed opacity-45" : "cursor-pointer"
+        } ${
           isActive
             ? "bg-[var(--session-accent)]"
             : "bg-zinc-300 dark:bg-white/80 hover:opacity-80"

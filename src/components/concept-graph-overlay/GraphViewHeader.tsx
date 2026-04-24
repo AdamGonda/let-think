@@ -7,6 +7,7 @@ type GraphViewHeaderProps = {
   batchCount: number;
   selectedBatchIndex: number;
   onSelectBatch: (index: number) => void;
+  isBatchNavigationDisabled?: boolean;
   hasChatHistory: boolean;
   onHistoryOpen: () => void;
   onEditorOpen: () => void;
@@ -18,6 +19,7 @@ export function GraphViewHeader({
   batchCount,
   selectedBatchIndex,
   onSelectBatch,
+  isBatchNavigationDisabled = false,
   hasChatHistory,
   onHistoryOpen,
   onEditorOpen,
@@ -46,6 +48,7 @@ export function GraphViewHeader({
           totalSteps={batchCount}
           selectedIndex={selectedBatchIndex}
           onSelect={onSelectBatch}
+          isDisabled={isBatchNavigationDisabled}
         />
       </div>
       <div className="flex items-center justify-end gap-2">

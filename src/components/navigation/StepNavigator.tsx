@@ -11,6 +11,7 @@ interface StepNavigatorProps {
   totalSteps: number;
   selectedIndex: number;
   onSelect: (index: number) => void;
+  isDisabled?: boolean;
 }
 
 const navButtonClass =
@@ -20,6 +21,7 @@ export function StepNavigator({
   totalSteps,
   selectedIndex,
   onSelect,
+  isDisabled = false,
 }: StepNavigatorProps) {
 
   if (totalSteps <= 1) {
@@ -34,7 +36,7 @@ export function StepNavigator({
           size="icon-sm"
           className={navButtonClass}
           onClick={() => onSelect(0)}
-          disabled={selectedIndex <= 0}
+          disabled={isDisabled || selectedIndex <= 0}
           title="First step"
           aria-label="First step"
         >
@@ -45,7 +47,7 @@ export function StepNavigator({
           size="icon-sm"
           className={navButtonClass}
           onClick={() => onSelect(Math.max(0, selectedIndex - 1))}
-          disabled={selectedIndex <= 0}
+          disabled={isDisabled || selectedIndex <= 0}
           title="Previous step"
           aria-label="Previous step"
         >
@@ -57,6 +59,7 @@ export function StepNavigator({
           currentIndex={selectedIndex}
           totalItems={totalSteps}
           onSelect={onSelect}
+          isDisabled={isDisabled}
         />
       </div>
       <div className="flex items-center justify-start">
@@ -65,7 +68,7 @@ export function StepNavigator({
           size="icon-sm"
           className={navButtonClass}
           onClick={() => onSelect(Math.min(totalSteps - 1, selectedIndex + 1))}
-          disabled={selectedIndex >= totalSteps - 1}
+          disabled={isDisabled || selectedIndex >= totalSteps - 1}
           title="Next step"
           aria-label="Next step"
         >
@@ -76,7 +79,7 @@ export function StepNavigator({
           size="icon-sm"
           className={navButtonClass}
           onClick={() => onSelect(totalSteps - 1)}
-          disabled={selectedIndex >= totalSteps - 1}
+          disabled={isDisabled || selectedIndex >= totalSteps - 1}
           title="Last step"
           aria-label="Last step"
         >
