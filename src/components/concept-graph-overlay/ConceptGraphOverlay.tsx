@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { clsx } from "clsx";
-import { layout, timings } from "@/config";
+import { timings } from "@/config";
 import { ConceptGraphBatchGrid } from "./ConceptGraphBatchGrid";
 import { ConceptGraphEmptyState } from "./ConceptGraphEmptyState";
 import {
@@ -66,7 +65,6 @@ export function ConceptGraphOverlay({
     skeletonSlotIndices,
     swipeDirection,
     showSwipeAnimation,
-    useLatestBatchViewportPadding,
     handleBatchAnimationEnd,
   } = useConceptGraphOverlayModel({
     graph,
@@ -125,12 +123,7 @@ export function ConceptGraphOverlay({
         <>
           <div
             ref={graphViewportRef}
-            className={clsx(
-              "flex flex-1 p-1 min-h-0 min-w-0 overflow-auto relative items-start pt-4",
-              useLatestBatchViewportPadding
-                ? "pb-4"
-                : layout.graphViewportBottomPadNonLatestClass,
-            )}
+            className="flex flex-1 p-1 min-h-0 min-w-0 overflow-auto relative items-start pt-4 pb-4"
           >
             <ConceptGraphBatchGrid
               selectedBatchIndex={selectedBatchIndex}
