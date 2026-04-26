@@ -6,8 +6,11 @@ import {
   type TransitionEvent,
 } from "react";
 import { clsx } from "clsx";
-import { ChevronUp } from "lucide-react";
+import { Check, ChevronUp, Copy } from "lucide-react";
+import { toast } from "sonner";
 import { layout } from "@/config";
+import { timings } from "@/config";
+import { Button } from "@/components/ui/button";
 import { renderContentWithMentions } from "@/lib/chatHistoryRender";
 import type { HistoryMention } from "@/lib/chatHistoryMentionSegments";
 
@@ -39,11 +42,15 @@ export function HistoricalBatchPrompt({
   autoCollapseSignal = "",
 }: HistoricalBatchPromptProps) {
   const [expanded, setExpanded] = useState(false);
+  const [copied, setCopied] = useState(false);
   /** Body region: grid 1fr (open) vs 0fr (collapsed height animation). */
   const [bodyExpanded, setBodyExpanded] = useState(false);
   /** True while height is animating closed; blocks input until unmount. */
   const [isCollapsing, setIsCollapsing] = useState(false);
   const openRafRef = useRef<number | null>(null);
+  const copyFeedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
   /** Set when close starts; transitionend reads this so we don’t unmount on expand-end. */
   const collapseClosePendingRef = useRef(false);
   const trimmed = content.trim();
@@ -72,6 +79,14 @@ export function HistoricalBatchPrompt({
   }, [expanded]);
 
   useEffect(() => {
+    return () => {
+      if (copyFeedbackTimeoutRef.current != null) {
+        clearTimeout(copyFeedbackTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
     collapseClosePendingRef.current = false;
     setIsCollapsing(false);
     setBodyExpanded(false);
@@ -94,6 +109,24 @@ export function HistoricalBatchPrompt({
     collapseClosePendingRef.current = true;
     setIsCollapsing(true);
     setBodyExpanded(false);
+  };
+
+  const handleCopy = async () => {
+    if (!trimmed) return;
+    try {
+      await navigator.clipboard.writeText(trimmed);
+      toast.success("Copied to clipboard");
+      if (copyFeedbackTimeoutRef.current != null) {
+        clearTimeout(copyFeedbackTimeoutRef.current);
+      }
+      setCopied(true);
+      copyFeedbackTimeoutRef.current = setTimeout(() => {
+        setCopied(false);
+        copyFeedbackTimeoutRef.current = null;
+      }, timings.copiedFeedbackMs);
+    } catch {
+      /* clipboard denied */
+    }
   };
 
   const handleBodyTransitionEnd = (e: TransitionEvent<HTMLDivElement>) => {
@@ -186,22 +219,43 @@ export function HistoricalBatchPrompt({
                     >
                       History prompt
                     </button>
-                    <button
-                      type="button"
-                      onClick={requestClose}
-                      className={clsx(
-                        "flex shrink-0 cursor-pointer items-center justify-center rounded-md p-0 text-muted-foreground transition-colors",
-                        "hover:text-foreground",
-                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                      )}
-                      aria-label="Close"
-                    >
-                      <ChevronUp
-                        className="size-5 shrink-0 rotate-180 text-muted-foreground"
-                        strokeWidth={2}
-                        aria-hidden
-                      />
-                    </button>
+                    <div className="flex shrink-0 items-center gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon-sm"
+                        className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                        onClick={handleCopy}
+                        aria-label={copied ? "Copied history prompt" : "Copy history prompt"}
+                        title={copied ? "Copied" : "Copy history prompt"}
+                      >
+                        {copied ? (
+                          <span className="animate-concept-copy-tick">
+                            <Check
+                              className="size-3.5 text-green-600"
+                              aria-hidden="true"
+                            />
+                          </span>
+                        ) : (
+                          <Copy className="size-3.5" aria-hidden="true" />
+                        )}
+                      </Button>
+                      <button
+                        type="button"
+                        onClick={requestClose}
+                        className={clsx(
+                          "flex shrink-0 cursor-pointer items-center justify-center rounded-md p-0 text-muted-foreground transition-colors",
+                          "hover:text-foreground",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                        )}
+                        aria-label="Close"
+                      >
+                        <ChevronUp
+                          className="size-5 shrink-0 rotate-180 text-muted-foreground"
+                          strokeWidth={2}
+                          aria-hidden
+                        />
+                      </button>
+                    </div>
                   </div>
                   <div
                     className={clsx(
