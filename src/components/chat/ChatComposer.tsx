@@ -181,7 +181,7 @@ export function ChatComposer({
         >
           <div
             className={clsx(
-              "flex flex-col gap-3 rounded-t-2xl px-4 py-3 pb-4",
+              "flex flex-col gap-3 rounded-t-2xl px-4 py-3 pb-4 pt-4",
               sessionPastFrame ? "shadow-none" : "shadow-lg",
               layout.sessionInputChromeMinClass,
               sessionLoadingFrame
