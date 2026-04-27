@@ -1,8 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
 import { SiteFooter } from "@/components/marketing/SiteFooter";
-import { buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 
 type LegalDocLayoutProps = {
   title: string;
@@ -18,18 +16,12 @@ export function LegalDocLayout({
   return (
     <div className="flex min-h-screen flex-col bg-background sign-in-bg text-foreground">
       <header className="shrink-0 border-b border-border/60 bg-background/80 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+        <div className="mx-auto flex max-w-3xl items-center justify-center px-4 py-4 sm:px-6">
           <Link
             to="/"
             className="text-sm font-semibold tracking-[0.2em] uppercase text-muted-foreground transition-colors hover:text-foreground"
           >
             LET THINK
-          </Link>
-          <Link
-            to="/app"
-            className={cn(buttonVariants({ variant: "ghost", size: "sm" }))}
-          >
-            Sign in
           </Link>
         </div>
       </header>
