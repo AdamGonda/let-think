@@ -28,9 +28,6 @@ export function LandingPage() {
             <h1 className="text-balance text-4xl leading-[1.05] font-semibold tracking-tight sm:text-5xl md:text-6xl">
               Pure ideas from AI <br /> no syco flattery
             </h1>
-            <p className="mx-auto mt-4 max-w-lg text-pretty text-base leading-relaxed text-muted-foreground sm:mt-5 sm:text-lg">
-              AI built to keep you thinking
-            </p>
           </div>
 
           <section className="mt-6 sm:mt-7" aria-label="Product demo video">
