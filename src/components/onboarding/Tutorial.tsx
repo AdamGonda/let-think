@@ -24,8 +24,7 @@ function getSteps(): DriveStep[] {
         document.querySelector("[data-tour='main-content']")!,
       popover: {
         title: "Try a prompt",
-        description:
-          "We'll prefill a test prompt for you: <strong>let's give me a good idea to think about</strong>.",
+        description: "We'll prefill a test prompt for you.",
         side: "top",
         align: "center",
       },
@@ -35,9 +34,9 @@ function getSteps(): DriveStep[] {
         document.querySelector("[data-tour='graph-area']") ??
         document.querySelector("[data-tour='main-content']")!,
       popover: {
-        title: "Concept graph view",
+        title: "Ideas view",
         description:
-          "This is your concept graph. As responses come in, ideas are added here so you can explore and connect them visually.",
+          "These are the ideas the AI can communicate to you. As responses come in, ideas are added here so you can explore them visually.",
         side: "bottom",
         align: "center",
       },
@@ -48,9 +47,9 @@ function getSteps(): DriveStep[] {
         document.querySelector("[data-tour='graph-area']") ??
         document.querySelector("[data-tour='main-content']")!,
       popover: {
-        title: "Your idea cards",
+        title: "Idea cards",
         description:
-          "These are your ideas. Each card has a title, and when you hover it you can see the description.",
+          "Each card has a title, and when you hover it you can see the description.",
         side: "top",
         align: "center",
       },
