@@ -1,7 +1,7 @@
 {
   "name": "let-think",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.0.1",
   "type": "module",
   "scripts": {
     "dev": "concurrently -n vite,convex -c blue,green \"vite --host\" \"npx convex dev\"",

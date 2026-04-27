@@ -59,7 +59,9 @@ export function UserCardExpanded({
               {displayName}
             </p>
           </div>
-          <p className="truncate text-xs text-muted-foreground">Free plan</p>
+          <p className="truncate text-xs text-muted-foreground">
+            Beate {__APP_VERSION__}
+          </p>
         </div>
         <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground">
           <MoreHorizontal className="size-4" />
