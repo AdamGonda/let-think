@@ -11,7 +11,10 @@ export { getTutorialCompleted, setTutorialCompleted } from "@/lib/tutorialStorag
 
 const FIRST_CONCEPT_CARD_SELECTOR = "[data-tour='concept-card-1']";
 const FIRST_CONCEPT_REF_BUTTON_SELECTOR = "button[data-tour='concept-ref-btn-1']";
+const NEW_SESSION_BUTTON_SELECTOR = "button[data-tour='new-session']";
+const COLLAPSE_SIDEBAR_BUTTON_SELECTOR = "button[aria-label='Collapse sidebar']";
 const GRAPH_STEP_INDEX = 1;
+const TUTORIAL_PROMPT = "let's give me a good idea to think about";
 
 function getSteps(): DriveStep[] {
   return [
@@ -80,7 +83,19 @@ export function Tutorial({ autoStart = false, onComplete }: TutorialProps) {
   const driverRef = useRef<Driver | null>(null);
   const autoActionStepIndexesRef = useRef<Set<number>>(new Set());
   const pendingAutoActionTimersRef = useRef<Set<number>>(new Set());
+  const firstStepSessionStartedRef = useRef(false);
   const gateLoopRunningRef = useRef(false);
+
+  const getSessionInput = useCallback((): HTMLTextAreaElement | null => {
+    return (
+      document.querySelector<HTMLTextAreaElement>(
+        "textarea[data-session-input-textarea]",
+      ) ??
+      document.querySelector<HTMLTextAreaElement>(
+        "[data-tour='session-input'] textarea",
+      )
+    );
+  }, []);
 
   const clearAutoActionTimers = useCallback(() => {
     for (const timerId of pendingAutoActionTimersRef.current) {
@@ -140,27 +155,41 @@ export function Tutorial({ autoStart = false, onComplete }: TutorialProps) {
     if (autoActionStepIndexesRef.current.has(stepIndex)) return true;
     switch (stepIndex) {
       case 0: {
-        const input = document.querySelector<HTMLTextAreaElement>(
-          "[data-session-input-textarea]",
-        );
-        if (!input) return false;
+        if (!firstStepSessionStartedRef.current) {
+          const collapseSidebarButton = document.querySelector<HTMLButtonElement>(
+            COLLAPSE_SIDEBAR_BUTTON_SELECTOR,
+          );
+          collapseSidebarButton?.click();
 
-        const tutorialPrompt = "let's give me a good idea to think about";
+          const newSessionButton = document.querySelector<HTMLButtonElement>(
+            NEW_SESSION_BUTTON_SELECTOR,
+          );
+          newSessionButton?.click();
+          firstStepSessionStartedRef.current = true;
+          // Let the new session mount its composer before attempting to type.
+          return false;
+        }
+
+        const input = getSessionInput();
+        if (!input) return false;
+        if (input.disabled) return false;
+
         const setter = Object.getOwnPropertyDescriptor(
           HTMLTextAreaElement.prototype,
           "value",
         )?.set;
-        setter?.call(input, tutorialPrompt);
+        setter?.call(input, TUTORIAL_PROMPT);
         input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.dispatchEvent(new Event("change", { bubbles: true }));
         input.focus();
+        if (input.value !== TUTORIAL_PROMPT) return false;
         autoActionStepIndexesRef.current.add(stepIndex);
         return true;
       }
       case 1: {
-        const input = document.querySelector<HTMLTextAreaElement>(
-          "[data-session-input-textarea]",
-        );
+        const input = getSessionInput();
         if (!input) return false;
+        if (input.value.trim() !== TUTORIAL_PROMPT) return false;
         const form = input.form;
         if (!form) return false;
         form.requestSubmit();
@@ -191,11 +220,12 @@ export function Tutorial({ autoStart = false, onComplete }: TutorialProps) {
       default:
         return true;
     }
-  }, []);
+  }, [getSessionInput]);
 
   const runTutorial = useCallback(() => {
     if (driverRef.current?.isActive()) return;
     autoActionStepIndexesRef.current.clear();
+    firstStepSessionStartedRef.current = false;
     clearAutoActionTimers();
 
     const steps = getSteps();
@@ -215,7 +245,8 @@ export function Tutorial({ autoStart = false, onComplete }: TutorialProps) {
         if (activeIndex == null || activeIndex < 0) return;
         gateStepTwoNextUntilCardsLoad(activeIndex);
         // Delay slightly so target elements finish layout changes before click/focus.
-        const maxAttempts = activeIndex >= 2 ? 12 : 1;
+        // Steps may depend on async UI updates (e.g. new session remount), so retry briefly.
+        const maxAttempts = 12;
         const runAttempt = (attempt: number) => {
           const success = runStepAutoAction(activeIndex);
           if (success || attempt >= maxAttempts) return;
@@ -233,6 +264,7 @@ export function Tutorial({ autoStart = false, onComplete }: TutorialProps) {
       },
       onDestroyed: () => {
         gateLoopRunningRef.current = false;
+        firstStepSessionStartedRef.current = false;
         setDriverNextDisabled(false);
         clearAutoActionTimers();
         autoActionStepIndexesRef.current.clear();
