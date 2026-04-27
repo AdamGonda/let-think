@@ -5,6 +5,11 @@ import { cn } from "@/lib/utils";
 const demoVideoSrc = import.meta.env.VITE_PRODUCT_DEMO_VIDEO_URL?.trim() ?? "";
 const demoPosterSrc =
   import.meta.env.VITE_PRODUCT_DEMO_VIDEO_POSTER_URL?.trim() ?? "";
+const demoYoutubeId =
+  import.meta.env.VITE_PRODUCT_DEMO_YOUTUBE_ID?.trim() ?? "";
+const demoYoutubeEmbedUrl = demoYoutubeId
+  ? `https://www.youtube.com/embed/${encodeURIComponent(demoYoutubeId)}?rel=0&modestbranding=1`
+  : "";
 
 export function LandingPage() {
   return (
@@ -42,7 +47,17 @@ export function LandingPage() {
               scripts and streams do not run until the user asks.
             */}
             <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border/60 bg-muted/40 shadow-sm">
-              {demoVideoSrc ? (
+              {demoYoutubeEmbedUrl ? (
+                <iframe
+                  className="absolute inset-0 h-full w-full"
+                  src={demoYoutubeEmbedUrl}
+                  title="Product demo video"
+                  loading="lazy"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allowFullScreen
+                />
+              ) : demoVideoSrc ? (
                 <video
                   className="absolute inset-0 size-full object-cover"
                   controls

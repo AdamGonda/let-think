@@ -3,6 +3,8 @@
 interface ImportMetaEnv {
   readonly VITE_CONVEX_URL: string;
   readonly VITE_SENTRY_DSN?: string;
+  /** Optional YouTube demo video id (e.g. `dQw4w9WgXcQ`). */
+  readonly VITE_PRODUCT_DEMO_YOUTUBE_ID?: string;
   /** Optional self-hosted product demo (e.g. `/demo.mp4` in public/). */
   readonly VITE_PRODUCT_DEMO_VIDEO_URL?: string;
   /** Optional poster frame; keeps first paint light without decoding video. */
