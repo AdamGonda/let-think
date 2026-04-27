@@ -1,6 +1,5 @@
 import type { RefObject } from "react";
 import { MoreHorizontal } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { UserAvatar } from "./UserAvatar";
 import { UserCardMenuShell } from "./UserCardMenuShell";
 
@@ -38,7 +37,15 @@ export function UserCardExpanded({
       onRunTutorial={onRunTutorial}
       variant="expanded"
     >
-      <>
+      <button
+        type="button"
+        className="m-0 flex h-full w-full cursor-pointer appearance-none items-center gap-3 rounded-md border-0 bg-transparent px-2 text-left transition-colors hover:bg-muted/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+        aria-label="Open account menu"
+        aria-expanded={menuOpen}
+        aria-haspopup="menu"
+        aria-controls="user-card-menu"
+        onClick={() => setMenuOpen((o) => !o)}
+      >
         <UserAvatar
           imageUrl={user.image}
           name={user.name}
@@ -46,7 +53,7 @@ export function UserCardExpanded({
           size="default"
           className="after:hidden"
         />
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1 text-left">
           <div className="flex min-w-0 items-center gap-2">
             <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
               {displayName}
@@ -54,20 +61,10 @@ export function UserCardExpanded({
           </div>
           <p className="truncate text-xs text-muted-foreground">Free plan</p>
         </div>
-        <div className="shrink-0">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Open account menu"
-            aria-expanded={menuOpen}
-            aria-haspopup="menu"
-            aria-controls="user-card-menu"
-            onClick={() => setMenuOpen((o) => !o)}
-          >
-            <MoreHorizontal className="size-4" />
-          </Button>
-        </div>
-      </>
+        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground">
+          <MoreHorizontal className="size-4" />
+        </span>
+      </button>
     </UserCardMenuShell>
   );
 }
