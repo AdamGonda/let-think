@@ -9,45 +9,25 @@ import {
 
 export { getTutorialCompleted, setTutorialCompleted } from "@/lib/tutorialStorage";
 
+const FIRST_CONCEPT_CARD_SELECTOR = "[data-tour='concept-card-1']";
+const FIRST_CONCEPT_REF_BUTTON_SELECTOR = "button[data-tour='concept-ref-btn-1']";
+const FIRST_CONCEPT_COPY_BUTTON_SELECTOR = "button[data-tour='concept-copy-btn-1']";
+const SESSION_TITLE_SELECTOR = "button[data-tour='session-title']";
+const HISTORY_BUTTON_SELECTOR = "button[data-tour='history-btn']";
+const SESSION_HISTORY_PANEL_SELECTOR = "[data-tour='session-history-panel-body']";
+const GRAPH_STEP_INDEX = 1;
+
 function getSteps(): DriveStep[] {
   return [
     {
-      element: "[data-tour='main-content']",
+      element: () =>
+        document.querySelector("[data-tour='session-input']") ??
+        document.querySelector("[data-tour='main-content']")!,
       popover: {
-        title: "Welcome to let-think",
+        title: "Try a prompt",
         description:
-          "Let-think helps you work through ideas with an AI partner. Your thoughts become a visual concept graph, and you can reference concepts as you chat. Let's walk through the main features.",
-        side: "bottom",
-        align: "center",
-      },
-    },
-    {
-      element: "[data-tour='new-session']",
-      popover: {
-        title: "New session",
-        description:
-          "Start a fresh thinking thread. Each session keeps its own messages, concept graph, and notes context.",
-        side: "right",
-        align: "center",
-      },
-    },
-    {
-      element: "[data-tour='new-project']",
-      popover: {
-        title: "Projects",
-        description:
-          "Group related sessions into projects. Drag sessions between projects and rename items inline as your workspace grows.",
-        side: "right",
-        align: "center",
-      },
-    },
-    {
-      element: "[data-tour='notes-toggle']",
-      popover: {
-        title: "Projects view",
-        description:
-          "Toggle between graph mode and a list view for project sessions and notes. Useful for scanning and jumping quickly.",
-        side: "right",
+          "We'll prefill a test prompt for you: <strong>let's give me a good idea to think about</strong>.",
+        side: "top",
         align: "center",
       },
     },
@@ -56,57 +36,88 @@ function getSteps(): DriveStep[] {
         document.querySelector("[data-tour='graph-area']") ??
         document.querySelector("[data-tour='main-content']")!,
       popover: {
-        title: "Concept graph",
+        title: "Concept graph view",
         description:
-          "Every response adds a graph batch. Move across steps to inspect how ideas evolved, then continue from the latest step.",
+          "This is your concept graph. As responses come in, ideas are added here so you can explore and connect them visually.",
         side: "bottom",
         align: "center",
       },
     },
     {
       element: () =>
-        document.querySelector("[data-tour='session-input']") ??
+        document.querySelector("[data-tour='concept-card-1']") ??
+        document.querySelector("[data-tour='graph-area']") ??
         document.querySelector("[data-tour='main-content']")!,
       popover: {
-        title: "Session input",
+        title: "Your idea cards",
         description:
-          "Type and press Enter to send. Use <strong>@1</strong>, <strong>@2</strong>, etc. to reference numbered concepts from the current graph context.",
+          "These are your ideas. Each card has a title, and when you hover it you can see the description.",
         side: "top",
         align: "center",
       },
     },
     {
       element: () =>
-        document.querySelector("[data-tour='notes-btn']") ??
+        document.querySelector(FIRST_CONCEPT_REF_BUTTON_SELECTOR) ??
+        document.querySelector("[data-tour='concept-card-1']") ??
+        document.querySelector("[data-tour='graph-area']") ??
         document.querySelector("[data-tour='main-content']")!,
       popover: {
-        title: "Wake-up notes",
+        title: "Reference button",
         description:
-          "Use this to capture private notes alongside your session. It keeps momentum without interrupting your flow.",
-        side: "bottom",
+          "Use this number button to reference the idea in your prompt as <strong>@1</strong>. We'll click it now.",
+        side: "left",
+        align: "start",
+      },
+    },
+    {
+      element: () =>
+        document.querySelector(FIRST_CONCEPT_COPY_BUTTON_SELECTOR) ??
+        document.querySelector("[data-tour='concept-card-1']") ??
+        document.querySelector("[data-tour='graph-area']") ??
+        document.querySelector("[data-tour='main-content']")!,
+      popover: {
+        title: "Copy button",
+        description:
+          "Use this to copy the idea card to your clipboard so you can reuse it quickly.",
+        side: "left",
         align: "end",
       },
     },
     {
       element: () =>
-        document.querySelector("[data-tour='history-btn']") ??
+        document.querySelector(SESSION_TITLE_SELECTOR) ??
+        document.querySelector("[data-tour='main-content']")!,
+      popover: {
+        title: "Session title",
+        description:
+          "This is the session title. Click it anytime to focus and reveal this session in the sidebar.",
+        side: "bottom",
+        align: "start",
+      },
+    },
+    {
+      element: () =>
+        document.querySelector(HISTORY_BUTTON_SELECTOR) ??
         document.querySelector("[data-tour='main-content']")!,
       popover: {
         title: "Session history",
         description:
-          "Open the full thread, review older messages, and jump directly to a graph step when you want to revisit earlier reasoning.",
-        side: "bottom",
-        align: "end",
+          "Use this button to open the session history panel and jump across earlier messages and steps.",
+        side: "left",
+        align: "start",
       },
     },
     {
-      element: "[data-tour='main-content']",
+      element: () =>
+        document.querySelector(SESSION_HISTORY_PANEL_SELECTOR) ??
+        document.querySelector("[data-tour='main-content']")!,
       popover: {
-        title: "You're ready!",
+        title: "History panel",
         description:
-          "Create a session, type something, and watch your ideas take shape. You can always replay this tutorial from the sidebar.",
-        side: "bottom",
-        align: "center",
+          "This is the session history panel. You can review previous prompts and jump to earlier graph steps from here.",
+        side: "left",
+        align: "start",
       },
     },
   ];
@@ -121,9 +132,154 @@ interface TutorialProps {
 
 export function Tutorial({ autoStart = false, onComplete }: TutorialProps) {
   const driverRef = useRef<Driver | null>(null);
+  const autoActionStepIndexesRef = useRef<Set<number>>(new Set());
+  const pendingAutoActionTimersRef = useRef<Set<number>>(new Set());
+  const gateLoopRunningRef = useRef(false);
+
+  const clearAutoActionTimers = useCallback(() => {
+    for (const timerId of pendingAutoActionTimersRef.current) {
+      window.clearTimeout(timerId);
+    }
+    pendingAutoActionTimersRef.current.clear();
+  }, []);
+
+  const setDriverNextDisabled = useCallback((disabled: boolean): boolean => {
+    const nextButton = document.querySelector<HTMLButtonElement>(
+      ".driver-popover-next-btn",
+    );
+    if (!nextButton) return false;
+    nextButton.disabled = disabled;
+    nextButton.setAttribute("aria-disabled", String(disabled));
+    nextButton.style.opacity = disabled ? "0.5" : "";
+    nextButton.style.pointerEvents = disabled ? "none" : "";
+    return true;
+  }, []);
+
+  const gateStepTwoNextUntilCardsLoad = useCallback((activeIndex: number) => {
+    if (activeIndex !== GRAPH_STEP_INDEX) {
+      gateLoopRunningRef.current = false;
+      setDriverNextDisabled(false);
+      return;
+    }
+    if (gateLoopRunningRef.current) return;
+    gateLoopRunningRef.current = true;
+
+    const enforceGate = () => {
+      if (!gateLoopRunningRef.current) return;
+      const hasFirstCard = !!document.querySelector(FIRST_CONCEPT_CARD_SELECTOR);
+      const shouldDisableNext = !hasFirstCard;
+      setDriverNextDisabled(shouldDisableNext);
+      if (!shouldDisableNext) {
+        gateLoopRunningRef.current = false;
+        return;
+      }
+      const timerId = window.setTimeout(() => {
+        pendingAutoActionTimersRef.current.delete(timerId);
+        enforceGate();
+      }, 60);
+      pendingAutoActionTimersRef.current.add(timerId);
+    };
+
+    // Run immediately and again on next frame to catch popover mount timing.
+    enforceGate();
+    const rafId = window.requestAnimationFrame(enforceGate);
+    const timerId = window.setTimeout(() => {
+      window.cancelAnimationFrame(rafId);
+      pendingAutoActionTimersRef.current.delete(timerId);
+    }, 80);
+    pendingAutoActionTimersRef.current.add(timerId);
+  }, [setDriverNextDisabled]);
+
+  const runStepAutoAction = useCallback((stepIndex: number): boolean => {
+    if (autoActionStepIndexesRef.current.has(stepIndex)) return true;
+    switch (stepIndex) {
+      case 0: {
+        const input = document.querySelector<HTMLTextAreaElement>(
+          "[data-session-input-textarea]",
+        );
+        if (!input) return false;
+
+        const tutorialPrompt = "let's give me a good idea to think about";
+        const setter = Object.getOwnPropertyDescriptor(
+          HTMLTextAreaElement.prototype,
+          "value",
+        )?.set;
+        setter?.call(input, tutorialPrompt);
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.focus();
+        autoActionStepIndexesRef.current.add(stepIndex);
+        return true;
+      }
+      case 1: {
+        const input = document.querySelector<HTMLTextAreaElement>(
+          "[data-session-input-textarea]",
+        );
+        if (!input) return false;
+        const form = input.form;
+        if (!form) return false;
+        form.requestSubmit();
+        autoActionStepIndexesRef.current.add(stepIndex);
+        return true;
+      }
+      case 2: {
+        const card = document.querySelector<HTMLElement>(
+          FIRST_CONCEPT_CARD_SELECTOR,
+        );
+        if (!card) return false;
+        // React's onMouseEnter is synthesized from over/out; fire both pointer + mouse variants.
+        card.dispatchEvent(new PointerEvent("pointerover", { bubbles: true }));
+        card.dispatchEvent(new MouseEvent("mouseover", { bubbles: true }));
+        card.dispatchEvent(new MouseEvent("mousemove", { bubbles: true }));
+        autoActionStepIndexesRef.current.add(stepIndex);
+        return true;
+      }
+      case 3: {
+        const refButton = document.querySelector<HTMLButtonElement>(
+          FIRST_CONCEPT_REF_BUTTON_SELECTOR,
+        );
+        if (!refButton) return false;
+        refButton.click();
+        autoActionStepIndexesRef.current.add(stepIndex);
+        return true;
+      }
+      case 4: {
+        const copyButton = document.querySelector<HTMLButtonElement>(
+          FIRST_CONCEPT_COPY_BUTTON_SELECTOR,
+        );
+        if (!copyButton) return false;
+        copyButton.click();
+        autoActionStepIndexesRef.current.add(stepIndex);
+        return true;
+      }
+      case 5: {
+        autoActionStepIndexesRef.current.add(stepIndex);
+        return true;
+      }
+      case 6: {
+        autoActionStepIndexesRef.current.add(stepIndex);
+        return true;
+      }
+      case 7: {
+        const historyButton = document.querySelector<HTMLButtonElement>(
+          HISTORY_BUTTON_SELECTOR,
+        );
+        if (!historyButton) return false;
+        historyButton.click();
+        const panel = document.querySelector(SESSION_HISTORY_PANEL_SELECTOR);
+        if (!panel) return false;
+        driverRef.current?.refresh();
+        autoActionStepIndexesRef.current.add(stepIndex);
+        return true;
+      }
+      default:
+        return true;
+    }
+  }, []);
 
   const runTutorial = useCallback(() => {
     if (driverRef.current?.isActive()) return;
+    autoActionStepIndexesRef.current.clear();
+    clearAutoActionTimers();
 
     const steps = getSteps();
     const driverObj = driver({
@@ -137,7 +293,32 @@ export function Tutorial({ autoStart = false, onComplete }: TutorialProps) {
       smoothScroll: true,
       animate: true,
       steps,
+      onHighlightStarted: (_element, _step, { state }) => {
+        const activeIndex = state.activeIndex;
+        if (activeIndex == null || activeIndex < 0) return;
+        gateStepTwoNextUntilCardsLoad(activeIndex);
+        // Delay slightly so target elements finish layout changes before click/focus.
+        const maxAttempts = activeIndex >= 2 ? 12 : 1;
+        const runAttempt = (attempt: number) => {
+          const success = runStepAutoAction(activeIndex);
+          if (success || attempt >= maxAttempts) return;
+          const retryTimerId = window.setTimeout(() => {
+            pendingAutoActionTimersRef.current.delete(retryTimerId);
+            runAttempt(attempt + 1);
+          }, 250);
+          pendingAutoActionTimersRef.current.add(retryTimerId);
+        };
+        const timerId = window.setTimeout(() => {
+          pendingAutoActionTimersRef.current.delete(timerId);
+          runAttempt(1);
+        }, 140);
+        pendingAutoActionTimersRef.current.add(timerId);
+      },
       onDestroyed: () => {
+        gateLoopRunningRef.current = false;
+        setDriverNextDisabled(false);
+        clearAutoActionTimers();
+        autoActionStepIndexesRef.current.clear();
         setTutorialCompleted(true);
         driverRef.current = null;
         onComplete?.();
@@ -146,7 +327,13 @@ export function Tutorial({ autoStart = false, onComplete }: TutorialProps) {
 
     driverRef.current = driverObj;
     driverObj.drive();
-  }, [onComplete]);
+  }, [
+    clearAutoActionTimers,
+    gateStepTwoNextUntilCardsLoad,
+    onComplete,
+    runStepAutoAction,
+    setDriverNextDisabled,
+  ]);
 
   useEffect(() => {
     if (autoStart && !getTutorialCompleted()) {
@@ -164,8 +351,11 @@ export function Tutorial({ autoStart = false, onComplete }: TutorialProps) {
       runTutorial();
     };
     window.addEventListener("let-think:run-tutorial", handler);
-    return () => window.removeEventListener("let-think:run-tutorial", handler);
-  }, [runTutorial]);
+    return () => {
+      window.removeEventListener("let-think:run-tutorial", handler);
+      clearAutoActionTimers();
+    };
+  }, [clearAutoActionTimers, runTutorial]);
 
   return null;
 }

@@ -183,6 +183,7 @@ export function ChatHistoryPanel({
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <SheetContent
         side="right"
+        data-tour="session-history-panel"
         className="w-full max-w-sm sm:max-w-sm flex flex-col p-0"
         showCloseButton={false}
       >
@@ -202,6 +203,7 @@ export function ChatHistoryPanel({
         </SheetHeader>
         <div
           ref={historyScrollRef}
+          data-tour="session-history-panel-body"
           className="flex-1 overflow-y-auto py-6 px-4"
         >
           {canLoadOlderMessages && onLoadOlderMessages && (

@@ -44,6 +44,7 @@ export function ConceptGraphNodeCard({
     <Card
       size="sm"
       cornerRipple={showCornerRipple}
+      data-tour={number === 1 ? "concept-card-1" : undefined}
       className={clsx(
         "relative flex h-full min-h-[200px] flex-col transition-colors duration-200",
         animateIn && "animate-in fade-in-0",
@@ -69,6 +70,7 @@ export function ConceptGraphNodeCard({
                 "session-accent-ref-outline-pulse",
             )}
             aria-label={`Add or remove @${number} in message`}
+            data-tour={number === 1 ? "concept-ref-btn-1" : undefined}
             onClick={() => onReferenceClick(number)}
             style={{
               outline: isReferenced ? "2px solid var(--session-accent)" : undefined,
@@ -85,6 +87,7 @@ export function ConceptGraphNodeCard({
                 interactionBlocked &&
                 "session-accent-ref-outline-pulse",
             )}
+            data-tour={number === 1 ? "concept-ref-btn-1" : undefined}
             style={{
               outline: isReferenced ? "2px solid var(--session-accent)" : undefined,
               outlineOffset: 2,
@@ -139,6 +142,7 @@ export function ConceptGraphNodeCard({
           aria-label={
             isCopyJustDone ? `Copied ${node.name}` : `Copy ${node.name} to clipboard`
           }
+          data-tour={number === 1 ? "concept-copy-btn-1" : undefined}
           onClick={(e) => {
             e.stopPropagation();
             onCopyClick(node);
