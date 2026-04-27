@@ -11,10 +11,6 @@ export { getTutorialCompleted, setTutorialCompleted } from "@/lib/tutorialStorag
 
 const FIRST_CONCEPT_CARD_SELECTOR = "[data-tour='concept-card-1']";
 const FIRST_CONCEPT_REF_BUTTON_SELECTOR = "button[data-tour='concept-ref-btn-1']";
-const FIRST_CONCEPT_COPY_BUTTON_SELECTOR = "button[data-tour='concept-copy-btn-1']";
-const SESSION_TITLE_SELECTOR = "button[data-tour='session-title']";
-const HISTORY_BUTTON_SELECTOR = "button[data-tour='history-btn']";
-const SESSION_HISTORY_PANEL_SELECTOR = "[data-tour='session-history-panel-body']";
 const GRAPH_STEP_INDEX = 1;
 
 function getSteps(): DriveStep[] {
@@ -66,56 +62,6 @@ function getSteps(): DriveStep[] {
         title: "Reference button",
         description:
           "Use this number button to reference the idea in your prompt as <strong>@1</strong>. We'll click it now.",
-        side: "left",
-        align: "start",
-      },
-    },
-    {
-      element: () =>
-        document.querySelector(FIRST_CONCEPT_COPY_BUTTON_SELECTOR) ??
-        document.querySelector("[data-tour='concept-card-1']") ??
-        document.querySelector("[data-tour='graph-area']") ??
-        document.querySelector("[data-tour='main-content']")!,
-      popover: {
-        title: "Copy button",
-        description:
-          "Use this to copy the idea card to your clipboard so you can reuse it quickly.",
-        side: "left",
-        align: "end",
-      },
-    },
-    {
-      element: () =>
-        document.querySelector(SESSION_TITLE_SELECTOR) ??
-        document.querySelector("[data-tour='main-content']")!,
-      popover: {
-        title: "Session title",
-        description:
-          "This is the session title. Click it anytime to focus and reveal this session in the sidebar.",
-        side: "bottom",
-        align: "start",
-      },
-    },
-    {
-      element: () =>
-        document.querySelector(HISTORY_BUTTON_SELECTOR) ??
-        document.querySelector("[data-tour='main-content']")!,
-      popover: {
-        title: "Session history",
-        description:
-          "Use this button to open the session history panel and jump across earlier messages and steps.",
-        side: "left",
-        align: "start",
-      },
-    },
-    {
-      element: () =>
-        document.querySelector(SESSION_HISTORY_PANEL_SELECTOR) ??
-        document.querySelector("[data-tour='main-content']")!,
-      popover: {
-        title: "History panel",
-        description:
-          "This is the session history panel. You can review previous prompts and jump to earlier graph steps from here.",
         side: "left",
         align: "start",
       },
@@ -239,35 +185,6 @@ export function Tutorial({ autoStart = false, onComplete }: TutorialProps) {
         );
         if (!refButton) return false;
         refButton.click();
-        autoActionStepIndexesRef.current.add(stepIndex);
-        return true;
-      }
-      case 4: {
-        const copyButton = document.querySelector<HTMLButtonElement>(
-          FIRST_CONCEPT_COPY_BUTTON_SELECTOR,
-        );
-        if (!copyButton) return false;
-        copyButton.click();
-        autoActionStepIndexesRef.current.add(stepIndex);
-        return true;
-      }
-      case 5: {
-        autoActionStepIndexesRef.current.add(stepIndex);
-        return true;
-      }
-      case 6: {
-        autoActionStepIndexesRef.current.add(stepIndex);
-        return true;
-      }
-      case 7: {
-        const historyButton = document.querySelector<HTMLButtonElement>(
-          HISTORY_BUTTON_SELECTOR,
-        );
-        if (!historyButton) return false;
-        historyButton.click();
-        const panel = document.querySelector(SESSION_HISTORY_PANEL_SELECTOR);
-        if (!panel) return false;
-        driverRef.current?.refresh();
         autoActionStepIndexesRef.current.add(stepIndex);
         return true;
       }
