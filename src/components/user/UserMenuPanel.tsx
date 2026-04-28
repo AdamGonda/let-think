@@ -1,4 +1,5 @@
 import { HelpCircle, LogOut, X } from "lucide-react";
+import { usePostHog } from "posthog-js/react";
 import { Button } from "@/components/ui/button";
 
 export type UserMenuPanelProps = {
@@ -12,6 +13,7 @@ export function UserMenuPanel({
   signOut,
   onRunTutorial,
 }: UserMenuPanelProps) {
+  const posthog = usePostHog();
   const menuItemClass =
     "flex w-full cursor-pointer items-center gap-1.5 rounded-md px-1.5 py-1.5 text-sm outline-none hover:bg-muted/60 hover:text-foreground focus-visible:bg-muted/60 focus-visible:text-foreground [&_svg]:size-4 [&_svg]:shrink-0";
 
@@ -59,6 +61,8 @@ export function UserMenuPanel({
         role="menuitem"
         className={menuItemClass}
         onClick={() => {
+          posthog.capture("signed_out");
+          posthog.reset();
           void signOut();
           onClose();
         }}

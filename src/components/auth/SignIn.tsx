@@ -1,5 +1,6 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { Link } from "@tanstack/react-router";
+import { usePostHog } from "posthog-js/react";
 import { LogIn, Sparkles } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import { SiteFooter } from "@/components/marketing/SiteFooter";
@@ -30,6 +31,7 @@ function GoogleGlyph({ className }: { className?: string }) {
 
 export function SignIn() {
   const { signIn } = useAuthActions();
+  const posthog = usePostHog();
 
   return (
     <div className="flex min-h-screen flex-col bg-background sign-in-bg text-foreground">
@@ -84,7 +86,10 @@ export function SignIn() {
             <CardContent className="flex flex-col gap-6 px-6 pb-8 pt-2 sm:px-8">
               <Button
                 className="h-11 w-full gap-3 text-[0.95rem] shadow-sm"
-                onClick={() => void signIn("google", { redirectTo: "/app" })}
+                onClick={() => {
+                  posthog.capture("sign_in_clicked", { provider: "google" });
+                  void signIn("google", { redirectTo: "/app" });
+                }}
               >
                 <GoogleGlyph className="size-5" />
                 Sign in with Google

@@ -7,6 +7,7 @@ import {
   RouterProvider,
 } from "@tanstack/react-router";
 import { useConvexAuth } from "convex/react";
+import { PostHogProvider } from "posthog-js/react";
 import { AuthenticatedApp } from "./App";
 import { LandingPage } from "./pages/LandingPage";
 import { DataPolicyPage } from "./pages/DataPolicyPage";
@@ -16,16 +17,30 @@ import { AdminAllowlistPage } from "./pages/AdminAllowlistPage";
 
 const ADMIN_ROUTE_HASH = "a9f3d2c7be4e8f11";
 
+const posthogOptions = {
+  api_host: "/ingest",
+  ui_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST || "https://eu.posthog.com",
+  defaults: "2026-01-30" as const,
+  capture_exceptions: true,
+  debug: import.meta.env.DEV,
+};
+
 function RootLayout() {
   const { isLoading } = useConvexAuth();
-  if (isLoading) {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center bg-background">
-        <span className="text-muted-foreground">Loading…</span>
-      </div>
-    );
-  }
-  return <Outlet />;
+  return (
+    <PostHogProvider
+      apiKey={import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN!}
+      options={posthogOptions}
+    >
+      {isLoading ? (
+        <div className="flex h-screen w-screen items-center justify-center bg-background">
+          <span className="text-muted-foreground">Loading…</span>
+        </div>
+      ) : (
+        <Outlet />
+      )}
+    </PostHogProvider>
+  );
 }
 
 function IndexRoute() {

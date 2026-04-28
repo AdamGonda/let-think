@@ -3,6 +3,7 @@ import { useDismissOnOutsideAndEscape } from "../../hooks/useDismissOnOutsideAnd
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { useAuthActions } from "@convex-dev/auth/react";
+import { usePostHog } from "posthog-js/react";
 import { UserCardCompact } from "./UserCardCompact";
 import { UserCardExpanded } from "./UserCardExpanded";
 
@@ -23,8 +24,10 @@ export function UserCard({
 }: UserCardProps) {
   const user = useQuery(api.users.currentUser);
   const { signOut } = useAuthActions();
+  const posthog = usePostHog();
   const [menuOpen, setMenuOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const identifiedRef = useRef(false);
 
   useDismissOnOutsideAndEscape(containerRef, menuOpen, () =>
     setMenuOpen(false),
@@ -35,6 +38,16 @@ export function UserCard({
     // eslint-disable-next-line react-hooks/set-state-in-effect -- close menu when profile cannot open (e.g. collapsed sidebar)
     setMenuOpen(false);
   }, [menuDisabled]);
+
+  useEffect(() => {
+    if (user && !identifiedRef.current) {
+      identifiedRef.current = true;
+      posthog.identify(user._id, {
+        name: user.name ?? undefined,
+        email: user.email ?? undefined,
+      });
+    }
+  }, [user, posthog]);
 
   if (!user) return null;
 

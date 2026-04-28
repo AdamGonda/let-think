@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { readFileSync } from 'node:fs'
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
@@ -11,17 +11,40 @@ const packageJson = JSON.parse(
 const appVersion = packageJson.version ?? '0.0.0'
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [react(), tailwindcss()],
-  define: {
-    __APP_VERSION__: JSON.stringify(appVersion),
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, './src'),
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+
+  return {
+    plugins: [react(), tailwindcss()],
+    define: {
+      __APP_VERSION__: JSON.stringify(appVersion),
     },
-  },
-  // Env vars from .env, .env.local, .env.[mode] are auto-loaded.
-  // Only variables prefixed with VITE_ are exposed to the client.
-  envPrefix: 'VITE_',
+    resolve: {
+      alias: {
+        '@': path.resolve(__dirname, './src'),
+      },
+    },
+    // Env vars from .env, .env.local, .env.[mode] are auto-loaded.
+    // Only variables prefixed with VITE_ are exposed to the client.
+    envPrefix: 'VITE_',
+    server: {
+      proxy: {
+        '/ingest/static': {
+          target: 'https://eu-assets.i.posthog.com',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/ingest/, ''),
+        },
+        '/ingest/array': {
+          target: 'https://eu-assets.i.posthog.com',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/ingest/, ''),
+        },
+        '/ingest': {
+          target: env.VITE_PUBLIC_POSTHOG_HOST || 'https://eu.i.posthog.com',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/ingest/, ''),
+        },
+      },
+    },
+  }
 })

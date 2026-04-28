@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useAction } from "convex/react";
+import { usePostHog } from "posthog-js/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import {
@@ -57,6 +58,7 @@ export function Chat({
   const input = draft;
   const sendMessage = useAction(api.chat.send);
   const { canSend } = useSessionData();
+  const posthog = usePostHog();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -92,10 +94,17 @@ export function Chat({
             : undefined,
         mentions: mentions.length > 0 ? mentions : undefined,
       });
+      posthog.capture("message_sent", {
+        session_id: effectiveSessionId,
+        has_concept_references: referencedConcepts.length > 0,
+        concept_reference_count: referencedConcepts.length,
+        is_new_session: !!createdViaCallback,
+      });
       setInput("");
       setIsLoading(false);
     } catch (err) {
       console.error("Chat error:", err);
+      posthog.captureException(err);
       setIsLoading(false);
     }
   };

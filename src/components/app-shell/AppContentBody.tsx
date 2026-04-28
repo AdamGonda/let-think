@@ -8,6 +8,7 @@ import {
 } from "react";
 import { clsx } from "clsx";
 import { toast } from "sonner";
+import { usePostHog } from "posthog-js/react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { useSessionData } from "../../contexts/SessionDataContext";
 import { useAppUiActor } from "../../hooks/useAppUi";
@@ -87,6 +88,7 @@ export function AppContentBody({
     showOverlayAction,
   } = useAppContentSelectors();
   const actor = useAppUiActor();
+  const posthog = usePostHog();
   const prevCollapseSignalRef = useRef<string>("");
 
   const activeSessionInWorkspace = useMemo(
@@ -203,8 +205,9 @@ export function AppContentBody({
   );
 
   const handleEditorOpen = useCallback(() => {
+    posthog.capture("editor_opened");
     openEditor(actor);
-  }, [actor]);
+  }, [actor, posthog]);
 
   const handleConceptCopy = useCallback(
     async (concept: { name: string; description?: string }) => {
@@ -213,9 +216,10 @@ export function AppContentBody({
         throw new Error("NO_CLIPBOARD_TEXT");
       }
       await navigator.clipboard.writeText(text);
+      posthog.capture("concept_copied", { concept_name: concept.name });
       toast.success("Copied to clipboard");
     },
-    [],
+    [posthog],
   );
 
   /** Composer stays visible in graph mode even when the stepper is on an earlier batch. */
@@ -329,7 +333,10 @@ export function AppContentBody({
                 chatVisible={chatComposerVisible}
                 referencedConceptIds={referencedConceptIds}
                 onSelectBatch={(i) => setSelectedBatchIndex(actor, i)}
-                onHistoryOpen={() => openHistoryPanel(actor)}
+                onHistoryOpen={() => {
+                  posthog.capture("chat_history_opened");
+                  openHistoryPanel(actor);
+                }}
                 onEditorOpen={handleEditorOpen}
                 onCardReferenceClick={
                   isLatestBatch ? handleCardReferenceClick : undefined

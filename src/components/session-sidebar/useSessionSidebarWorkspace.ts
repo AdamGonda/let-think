@@ -8,6 +8,7 @@ import {
   type ForwardedRef,
 } from "react";
 import { useMutation } from "convex/react";
+import { usePostHog } from "posthog-js/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id, Doc } from "../../../convex/_generated/dataModel";
 import {
@@ -42,6 +43,7 @@ export function useSessionSidebarWorkspace({
   onSelectProject,
   imperativeRef,
 }: UseSessionSidebarWorkspaceArgs) {
+  const posthog = usePostHog();
   const data = workspace;
   const createSession = useMutation(api.sessions.create);
   const createProject = useMutation(api.projects.create);
@@ -109,6 +111,7 @@ export function useSessionSidebarWorkspace({
     async (projectId?: Id<"projects">) => {
       const targetProjectId = projectId;
       const id = await createSession({ projectId: targetProjectId ?? undefined });
+      posthog.capture("session_created", { has_project: !!targetProjectId });
       onSelectSession(id);
       if (targetProjectId) {
         onSelectProject(targetProjectId);
@@ -118,14 +121,15 @@ export function useSessionSidebarWorkspace({
       }
       window.dispatchEvent(new Event(FOCUS_COMPOSER_EVENT));
     },
-    [createSession, onSelectSession, onSelectProject],
+    [createSession, onSelectSession, onSelectProject, posthog],
   );
 
   const handleNewProject = useCallback(async () => {
     const id = await createProject();
+    posthog.capture("project_created");
     setProjectsSectionOpen(true);
     setExpandedProjectIds((prev) => new Set([...prev, id]));
-  }, [createProject]);
+  }, [createProject, posthog]);
 
   const toggleProjectExpanded = useCallback((projectId: string | null) => {
     if (!projectId) return;
@@ -141,10 +145,11 @@ export function useSessionSidebarWorkspace({
     async (id: Id<"sessions">, title: string) => {
       if (title?.trim()) {
         await updateTitle({ id, title: title.trim() });
+        posthog.capture("session_renamed");
       }
       setEditingSessionId(null);
     },
-    [updateTitle],
+    [updateTitle, posthog],
   );
 
   const handleRenameProject = useCallback(
@@ -180,6 +185,7 @@ export function useSessionSidebarWorkspace({
       );
       const projectId = deletedSession?.projectId ?? null;
       await removeSession({ id });
+      posthog.capture("session_deleted", { was_active: wasActive });
       if (wasActive) {
         const remaining = allSessions.filter(
           (s: Doc<"sessions">) => s._id !== id,
@@ -201,6 +207,7 @@ export function useSessionSidebarWorkspace({
       removeSession,
       onSelectSession,
       onSelectProject,
+      posthog,
     ],
   );
 
@@ -217,12 +224,15 @@ export function useSessionSidebarWorkspace({
         id: sessionId,
         projectId: targetProjectId ?? undefined,
       });
+      posthog.capture("session_moved_to_project", {
+        to_inbox: targetProjectId === null,
+      });
       if (activeSessionId === sessionId && targetProjectId) {
         onSelectProject(targetProjectId);
       }
       setDragOverProjectId(null);
     },
-    [allSessions, moveToProject, activeSessionId, onSelectProject],
+    [allSessions, moveToProject, activeSessionId, onSelectProject, posthog],
   );
 
   const handleDeleteProject = useCallback(
@@ -230,6 +240,7 @@ export function useSessionSidebarWorkspace({
       setConfirmDeleteProjectId(null);
       const wasActiveProject = activeProjectId === id;
       await removeProject({ id });
+      posthog.capture("project_deleted", { was_active: wasActiveProject });
       if (wasActiveProject) {
         onSelectProject(null);
         onSelectSession(null);
@@ -240,7 +251,7 @@ export function useSessionSidebarWorkspace({
         return next;
       });
     },
-    [activeProjectId, removeProject, onSelectProject, onSelectSession],
+    [activeProjectId, removeProject, onSelectProject, onSelectSession, posthog],
   );
 
   const expandIntoView = useCallback(() => {

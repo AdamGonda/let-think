@@ -1,4 +1,5 @@
 import { useCallback } from "react";
+import { usePostHog } from "posthog-js/react";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 import type { AppUiActorRef } from "@/contexts/appUiActorContext";
 import {
@@ -26,15 +27,18 @@ export function useAppContentBodyHandlers({
   actor,
   draftInput,
 }: UseAppContentBodyHandlersArgs) {
+  const posthog = usePostHog();
+
   const setViewMode = useCallback(
     (mode: "graph" | "notesList") => {
+      posthog.capture("view_mode_changed", { mode });
       if (mode === "notesList") {
         intentOpenNotesList(actor);
       } else {
         actor.send({ type: "VIEW_SET", mode: "graph" });
       }
     },
-    [actor],
+    [actor, posthog],
   );
 
   const handleBreadcrumbProjectClick = useCallback(() => {
