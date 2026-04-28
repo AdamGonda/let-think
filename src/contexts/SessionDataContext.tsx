@@ -36,7 +36,7 @@ export type SessionMessage = {
   }>;
 };
 
-export type SessionDataContextValue = {
+type SessionDataContextValue = {
   /** Concept graph for the active session (reactive, always subscribed when sessionId set) */
   conceptGraph: ConceptGraphData | null | undefined;
   /** Message history for the active session (paginated, chronological) */
@@ -139,8 +139,4 @@ export function useSessionData() {
     throw new Error("useSessionData must be used within SessionDataProvider");
   }
   return ctx;
-}
-
-export function useSessionDataOptional(): SessionDataContextValue | null {
-  return useContext(SessionDataContext);
 }

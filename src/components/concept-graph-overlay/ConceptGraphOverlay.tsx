@@ -8,8 +8,6 @@ import {
   useConceptGraphOverlayModel,
 } from "./useConceptGraphOverlayModel";
 
-export type { ConceptGraphData };
-
 interface ConceptGraphOverlayProps {
   graph: ConceptGraphData | null;
   className?: string;

@@ -9,13 +9,10 @@ import {
 } from "../../contexts/SessionDataContext";
 import {
   resolveAtReferences,
-  type Mention,
 } from "../../lib/chatMentions";
 import type { NumberedConcept } from "../../lib/conceptReferences";
 import { ChatComposer } from "./ChatComposer";
 import { HistoricalBatchPrompt } from "./HistoricalBatchPrompt";
-
-export type { Mention };
 
 interface ChatProps {
   sessionId: Id<"sessions"> | null;

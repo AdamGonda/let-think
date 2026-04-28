@@ -7,8 +7,6 @@ import {
   setTutorialCompleted,
 } from "@/lib/tutorialStorage";
 
-export { getTutorialCompleted, setTutorialCompleted } from "@/lib/tutorialStorage";
-
 const FIRST_CONCEPT_CARD_SELECTOR = "[data-tour='concept-card-1']";
 const FIRST_CONCEPT_REF_BUTTON_SELECTOR = "button[data-tour='concept-ref-btn-1']";
 const NEW_SESSION_BUTTON_SELECTOR = "button[data-tour='new-session']";

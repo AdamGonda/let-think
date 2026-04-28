@@ -2,7 +2,7 @@ import type { Doc, Id } from "../../convex/_generated/dataModel";
 import type { ProjectWithSessions } from "@/components/session-sidebar/workspaceTypes";
 
 /** Session plus display context for the group it belongs to (Inbox vs project). */
-export type SessionInWorkspaceContext = {
+type SessionInWorkspaceContext = {
   session: Doc<"sessions">;
   projectName: string;
   projectId: Id<"projects"> | null;
@@ -29,7 +29,7 @@ export function firstSessionByRecency(
   return sorted[0] ?? null;
 }
 
-export type WorkspaceSnapshotForMachine = {
+type WorkspaceSnapshotForMachine = {
   inboxEmpty: boolean;
   hasProjects: boolean;
   firstSessionId: Id<"sessions"> | null;

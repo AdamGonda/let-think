@@ -21,7 +21,7 @@ import {
 
 type AppSnapshot = SnapshotFrom<typeof appUiMachine>;
 
-export type AppContentSelectors = {
+type AppContentSelectors = {
   activeSessionId: AppSnapshot["context"]["activeSessionId"];
   activeProjectId: AppSnapshot["context"]["activeProjectId"];
   notesListDrill: AppSnapshot["context"]["notesListDrill"];

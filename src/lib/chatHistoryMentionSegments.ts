@@ -5,7 +5,7 @@ export type HistoryMention = {
   name: string;
 };
 
-export type MentionSegment = {
+type MentionSegment = {
   type: "text" | "mention";
   content: string;
   name: string;

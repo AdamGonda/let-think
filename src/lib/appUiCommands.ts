@@ -10,12 +10,11 @@
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 import type { AppUiActorRef } from "../contexts/appUiActorContext";
 import type { NotesListDrill } from "./notesListUtils";
-import type { SurfaceMode } from "../machines/appUiTypes";
 
 /**
  * Select session, project, and Files drill to match the session's project/inbox.
  */
-export function setNotesListDrillForSession(
+function setNotesListDrillForSession(
   actor: AppUiActorRef,
   session: Doc<"sessions">,
 ): void {
@@ -46,30 +45,7 @@ export function openSessionInFilesWithEditor(
   actor.send({ type: "EDITOR_OPEN" });
 }
 
-/**
- * Breadcrumb: session is already active; only sync project + drill to the session's context.
- */
-export function navigateDrillToSessionContext(
-  actor: AppUiActorRef,
-  projectId: Id<"projects"> | null,
-): void {
-  if (projectId) {
-    actor.send({ type: "ACTIVE_PROJECT_SET", projectId });
-    actor.send({
-      type: "NOTES_LIST_DRILL_SET",
-      drill: { type: "project", id: projectId },
-    });
-  } else {
-    actor.send({ type: "ACTIVE_PROJECT_SET", projectId: null });
-    actor.send({ type: "NOTES_LIST_DRILL_SET", drill: { type: "inbox" } });
-  }
-}
-
 // --- User intent commands (UI entry points) ---
-
-export function setViewMode(actor: AppUiActorRef, mode: SurfaceMode): void {
-  actor.send({ type: "VIEW_SET", mode });
-}
 
 /** Open project notes list with drill synced from active project (XState intent). */
 export function intentOpenNotesList(actor: AppUiActorRef): void {
@@ -92,10 +68,6 @@ export function intentBreadcrumbFileClick(actor: AppUiActorRef): void {
   actor.send({ type: "INTENT_BREADCRUMB_FILE_CLICK" });
 }
 
-export function intentReturnGraphFromEditor(actor: AppUiActorRef): void {
-  actor.send({ type: "INTENT_RETURN_GRAPH_FROM_EDITOR" });
-}
-
 export function intentSelectSessionFromSidebar(
   actor: AppUiActorRef,
   sessionId: Id<"sessions"> | null,
@@ -103,20 +75,8 @@ export function intentSelectSessionFromSidebar(
   actor.send({ type: "INTENT_SELECT_SESSION_FROM_SIDEBAR", sessionId });
 }
 
-export function clearNotesListDrill(actor: AppUiActorRef): void {
-  actor.send({ type: "NOTES_LIST_DRILL_SET", drill: null });
-}
-
 export function setNotesListDrill(actor: AppUiActorRef, drill: NotesListDrill): void {
   actor.send({ type: "NOTES_LIST_DRILL_SET", drill });
-}
-
-export function exitWakeUpOverlay(actor: AppUiActorRef): void {
-  actor.send({ type: "USER_EXIT_WAKE_UP" });
-}
-
-export function closeEditor(actor: AppUiActorRef): void {
-  actor.send({ type: "EDITOR_CLOSE" });
 }
 
 export function openEditor(actor: AppUiActorRef): void {

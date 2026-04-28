@@ -26,7 +26,7 @@ import type {
 
 const FOCUS_COMPOSER_EVENT = "let-think:focus-composer";
 
-export type UseSessionSidebarWorkspaceArgs = {
+type UseSessionSidebarWorkspaceArgs = {
   workspace: ProjectWithSessions[] | undefined;
   activeSessionId: Id<"sessions"> | null;
   activeProjectId: Id<"projects"> | null;

@@ -48,7 +48,7 @@ import {
   setWakeNotes,
 } from "@/lib/appUiCommands";
 
-export type AppContentBodyProps = {
+type AppContentBodyProps = {
   onCreateSessionForFirstMessage?: () => Promise<Id<"sessions">>;
   workspace: ProjectWithSessions[] | undefined;
   mainContentRef: RefObject<HTMLDivElement | null>;

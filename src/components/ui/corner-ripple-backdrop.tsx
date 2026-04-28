@@ -2,7 +2,7 @@ import * as React from "react"
 
 import { cn } from "@/lib/utils"
 
-export type CornerRippleCorner = "tl" | "tr" | "bl" | "br"
+type CornerRippleCorner = "tl" | "tr" | "bl" | "br"
 
 export type CornerRippleBackdropProps = {
   /**

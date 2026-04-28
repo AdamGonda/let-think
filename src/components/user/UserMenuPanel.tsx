@@ -2,7 +2,7 @@ import { HelpCircle, LogOut, X } from "lucide-react";
 import { usePostHog } from "posthog-js/react";
 import { Button } from "@/components/ui/button";
 
-export type UserMenuPanelProps = {
+type UserMenuPanelProps = {
   onClose: () => void;
   signOut: () => void | Promise<void>;
   onRunTutorial?: () => void;

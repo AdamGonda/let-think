@@ -4,7 +4,7 @@ import {
   AT_REFERENCE_PATTERN,
 } from "./conceptReferences";
 
-export type Mention = {
+type Mention = {
   start: number;
   end: number;
   conceptId: string;

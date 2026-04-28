@@ -8,8 +8,6 @@ import { NotesListEmptyState } from "./NotesListEmptyState";
 import { NotesListSessionCard } from "./NotesListSessionCard";
 import { useNotesListModel } from "@/hooks/useNotesListModel";
 
-export type { NotesListDrill };
-
 interface NotesListPanelProps {
   workspace: ProjectWithSessions[] | undefined;
   drill: NotesListDrill;

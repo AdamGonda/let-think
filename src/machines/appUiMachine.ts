@@ -7,8 +7,6 @@ import {
   reduceGraphLoadingProgress,
 } from "./appUiReducers";
 
-export type { AppUiContext, AppUiEvent, SurfaceMode } from "./appUiTypes";
-
 export function sessionSelected(c: AppUiContext): boolean {
   return c.activeSessionId != null;
 }
