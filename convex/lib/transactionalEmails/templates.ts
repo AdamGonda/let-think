@@ -34,6 +34,7 @@ export function buildAllowlistApprovedTemplate(
     "This is early, intentional access to a tool designed for one thing: pure ideas, no sycophantic flattery.",
     "",
     `Open LET THINK: ${signInUrl}`,
+    "Join our Discord: https://discord.gg/FkKQDdRf",
     "",
     "We'd love your honest feedback. Tell us what breaks, what surprises you, and what makes you think differently.",
   ].join("\n");
