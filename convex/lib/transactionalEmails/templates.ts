@@ -5,22 +5,12 @@ export type TransactionalEmailContent = {
 };
 
 type AllowlistApprovedTemplateInput = {
-  appUrl: string;
   firstName: string;
 };
-
-function normalizeAppUrl(appUrl: string): string {
-  const trimmed = appUrl.trim();
-  if (!trimmed) {
-    throw new Error("Missing app URL for transactional emails");
-  }
-  return trimmed.replace(/\/+$/, "");
-}
 
 export function buildAllowlistApprovedTemplate(
   input: AllowlistApprovedTemplateInput
 ): TransactionalEmailContent {
-  normalizeAppUrl(input.appUrl);
   const logoUrl = "https://letthink.co/lt-logo.png";
   const signInUrl = "https://letthink.co/app";
   const firstName = input.firstName.trim() || "there";

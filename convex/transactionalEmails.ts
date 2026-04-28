@@ -7,14 +7,6 @@ import { normalizeEmail } from "./lib/access";
 import { sendTransactionalEmail } from "./lib/transactionalEmails/resend";
 import { buildAllowlistApprovedTemplate } from "./lib/transactionalEmails/templates";
 
-function getAppUrl(): string {
-  const appUrl = process.env.CONVEX_SITE_URL?.trim();
-  if (!appUrl) {
-    throw new Error("Missing CONVEX_SITE_URL environment variable");
-  }
-  return appUrl;
-}
-
 export const sendAllowlistApprovedEmail = internalAction({
   args: { email: v.string(), firstName: v.string() },
   returns: v.null(),
@@ -28,10 +20,7 @@ export const sendAllowlistApprovedEmail = internalAction({
       throw new Error("First name is required");
     }
 
-    const content = buildAllowlistApprovedTemplate({
-      appUrl: getAppUrl(),
-      firstName,
-    });
+    const content = buildAllowlistApprovedTemplate({ firstName });
     await sendTransactionalEmail({
       to: email,
       content,
