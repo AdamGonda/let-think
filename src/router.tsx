@@ -17,12 +17,23 @@ import { AdminAllowlistPage } from "./pages/AdminAllowlistPage";
 
 const ADMIN_ROUTE_HASH = "a9f3d2c7be4e8f11";
 
+const isDev = import.meta.env.DEV;
+const enablePostHogInDev =
+  import.meta.env.VITE_PUBLIC_POSTHOG_ENABLE_IN_DEV === "true";
+const posthogCapturingEnabled = !isDev || enablePostHogInDev;
+
 const posthogOptions = {
   api_host: "/ingest",
   ui_host: import.meta.env.VITE_PUBLIC_POSTHOG_HOST || "https://eu.posthog.com",
   defaults: "2026-01-30" as const,
   capture_exceptions: true,
-  debug: import.meta.env.DEV,
+  debug: posthogCapturingEnabled && isDev,
+  opt_out_capturing_by_default: !posthogCapturingEnabled,
+  loaded: (posthog: { register: (props: Record<string, string>) => void }) => {
+    posthog.register({
+      environment: import.meta.env.MODE,
+    });
+  },
 };
 
 function RootLayout() {
