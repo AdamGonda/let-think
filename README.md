@@ -18,6 +18,8 @@ Instead of only generating chat text, it turns each exchange into an evolving co
   - `GOOGLE_GENERATIVE_AI_API_KEY` — Gemini for chat and concept graph generation
   - `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` — Google OAuth (from [Google Cloud Console](https://console.cloud.google.com/apis/credentials))
   - `CONVEX_SITE_URL` — your app origin (e.g. `http://localhost:5173` locally, production site URL in prod); must match what you use in the browser for auth callbacks
+  - `RESEND_API_KEY` and `RESEND_FROM_EMAIL` — required for transactional emails (allowlist approval)
+  - `RESEND_REPLY_TO` — optional reply-to address for transactional emails
 4. **Run the app**
   ```bash
    npm run dev
@@ -34,6 +36,9 @@ Instead of only generating chat text, it turns each exchange into an evolving co
 | `GOOGLE_GENERATIVE_AI_API_KEY` | Convex Dashboard                                         | Server-side Gemini API key for chat actions and topic summaries.                                                                                                    |
 | `AUTH_GOOGLE_ID`               | Convex Dashboard                                         | Google OAuth client ID.                                                                                                                                             |
 | `AUTH_GOOGLE_SECRET`           | Convex Dashboard                                         | Google OAuth client secret.                                                                                                                                         |
+| `RESEND_API_KEY`               | Convex Dashboard                                         | Resend API key used by backend transactional emails.                                                                                                                |
+| `RESEND_FROM_EMAIL`            | Convex Dashboard                                         | Verified sender for transactional emails (e.g. `Let Think <noreply@yourdomain.com>`).                                                                              |
+| `RESEND_REPLY_TO`              | Convex Dashboard (optional)                              | Optional reply-to for transactional emails.                                                                                                                         |
 
 
 Use the `VITE_` prefix only for client-safe values in `.env.local`. Secrets (`AUTH_*`, `GOOGLE_*`, `CONVEX_SITE_URL` for server) belong in Convex, not in the frontend env.
@@ -95,6 +100,7 @@ Shared UI and feature code also live under grouped folders (for example `concept
   - injects system prompt and optional selected-concept context
   - extracts concept graph JSON from assistant output
   - strips graph block from user-visible assistant text
+- `convex/transactionalEmails.ts`, `convex/lib/transactionalEmails/` — internal action + templates/sender helpers for transactional email delivery.
 - `convex/auth.ts`, `convex/auth.config.ts`, `convex/http.ts` — Convex Auth and HTTP routes.
 - `convex/admin.ts`, `convex/modelConfig.ts`, `convex/constants.ts`, `convex/lib/access.ts` — admin, model configuration, shared constants, and access helpers.
 

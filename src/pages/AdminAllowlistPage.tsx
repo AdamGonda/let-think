@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { useConvexAuth } from "convex/react";
 import { Navigate } from "@tanstack/react-router";
 import { api } from "../../convex/_generated/api";
@@ -14,9 +14,17 @@ export function AdminAllowlistPage() {
   const data = useQuery(api.admin.getWhitelist);
   const addAllowedEmail = useMutation(api.admin.addAllowedEmail);
   const removeAllowedEmail = useMutation(api.admin.removeAllowedEmail);
+  const sendAllowlistApprovedEmail = useAction(
+    api.transactionalEmails.sendAllowlistApprovedEmailFromAdmin
+  );
   const [emailInput, setEmailInput] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [allowlistError, setAllowlistError] = useState<string | null>(null);
+  const [isAdding, setIsAdding] = useState(false);
+  const [emailSendInput, setEmailSendInput] = useState("");
+  const [firstNameInput, setFirstNameInput] = useState("");
+  const [emailSendError, setEmailSendError] = useState<string | null>(null);
+  const [emailSendSuccess, setEmailSendSuccess] = useState<string | null>(null);
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
 
   const sortedEntries = useMemo(() => data?.entries ?? [], [data?.entries]);
 
@@ -24,31 +32,61 @@ export function AdminAllowlistPage() {
     event.preventDefault();
     const email = emailInput.trim().toLowerCase();
     if (!email) {
-      setError("Enter an email to add.");
+      setAllowlistError("Enter an email to add.");
       return;
     }
-    setIsSubmitting(true);
-    setError(null);
+    setIsAdding(true);
+    setAllowlistError(null);
     try {
       await addAllowedEmail({ email });
       setEmailInput("");
     } catch (submissionError) {
-      setError(
+      setAllowlistError(
         submissionError instanceof Error
           ? submissionError.message
           : "Failed to add email."
       );
     } finally {
-      setIsSubmitting(false);
+      setIsAdding(false);
     }
   }
 
   async function onRemove(entryId: Id<"betaAllowlist">) {
-    setError(null);
+    setAllowlistError(null);
     try {
       await removeAllowedEmail({ entryId });
     } catch (removeError) {
-      setError(removeError instanceof Error ? removeError.message : "Failed to remove email.");
+      setAllowlistError(
+        removeError instanceof Error ? removeError.message : "Failed to remove email."
+      );
+    }
+  }
+
+  async function onSendEmail(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const email = emailSendInput.trim().toLowerCase();
+    const firstName = firstNameInput.trim();
+    if (!email) {
+      setEmailSendError("Enter the recipient email.");
+      return;
+    }
+    if (!firstName) {
+      setEmailSendError("Enter the recipient first name.");
+      return;
+    }
+
+    setIsSendingEmail(true);
+    setEmailSendError(null);
+    setEmailSendSuccess(null);
+    try {
+      await sendAllowlistApprovedEmail({ email, firstName });
+      setEmailSendSuccess(`Sent allowlist email to ${email}.`);
+    } catch (sendError) {
+      setEmailSendError(
+        sendError instanceof Error ? sendError.message : "Failed to send email."
+      );
+    } finally {
+      setIsSendingEmail(false);
     }
   }
 
@@ -81,11 +119,11 @@ export function AdminAllowlistPage() {
               placeholder="name@example.com"
               type="email"
             />
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isAdding}>
               Add
             </Button>
           </form>
-          {error ? <p className="text-sm text-destructive">{error}</p> : null}
+          {allowlistError ? <p className="text-sm text-destructive">{allowlistError}</p> : null}
         </CardContent>
       </Card>
 
@@ -110,6 +148,39 @@ export function AdminAllowlistPage() {
               </div>
             ))
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <h2 className="text-lg font-semibold">Send Beta Email</h2>
+          <CardDescription>
+            Send the allowlist approval email manually with a recipient name.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <form className="space-y-2" onSubmit={onSendEmail}>
+            <Input
+              value={firstNameInput}
+              onChange={(event) => setFirstNameInput(event.target.value)}
+              placeholder="First name"
+            />
+            <div className="flex gap-2">
+              <Input
+                value={emailSendInput}
+                onChange={(event) => setEmailSendInput(event.target.value)}
+                placeholder="name@example.com"
+                type="email"
+              />
+              <Button type="submit" disabled={isSendingEmail}>
+                Send Email
+              </Button>
+            </div>
+          </form>
+          {emailSendError ? <p className="text-sm text-destructive">{emailSendError}</p> : null}
+          {emailSendSuccess ? (
+            <p className="text-sm text-emerald-500">{emailSendSuccess}</p>
+          ) : null}
         </CardContent>
       </Card>
     </div>

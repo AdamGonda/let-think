@@ -15,9 +15,12 @@ import type * as chatPipeline from "../chatPipeline.js";
 import type * as constants from "../constants.js";
 import type * as http from "../http.js";
 import type * as lib_access from "../lib/access.js";
+import type * as lib_transactionalEmails_resend from "../lib/transactionalEmails/resend.js";
+import type * as lib_transactionalEmails_templates from "../lib/transactionalEmails/templates.js";
 import type * as modelConfig from "../modelConfig.js";
 import type * as projects from "../projects.js";
 import type * as sessions from "../sessions.js";
+import type * as transactionalEmails from "../transactionalEmails.js";
 import type * as users from "../users.js";
 
 import type {
@@ -34,9 +37,12 @@ declare const fullApi: ApiFromModules<{
   constants: typeof constants;
   http: typeof http;
   "lib/access": typeof lib_access;
+  "lib/transactionalEmails/resend": typeof lib_transactionalEmails_resend;
+  "lib/transactionalEmails/templates": typeof lib_transactionalEmails_templates;
   modelConfig: typeof modelConfig;
   projects: typeof projects;
   sessions: typeof sessions;
+  transactionalEmails: typeof transactionalEmails;
   users: typeof users;
 }>;
 

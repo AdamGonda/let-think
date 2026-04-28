@@ -56,6 +56,15 @@ export const addAllowedEmail = mutation({
   },
 });
 
+export const assertAdmin = query({
+  args: {},
+  returns: v.null(),
+  handler: async (ctx) => {
+    await requireAdminUserId(ctx);
+    return null;
+  },
+});
+
 export const removeAllowedEmail = mutation({
   args: { entryId: v.id("betaAllowlist") },
   returns: v.null(),
