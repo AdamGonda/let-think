@@ -20,7 +20,8 @@ function normalizeAppUrl(appUrl: string): string {
 export function buildAllowlistApprovedTemplate(
   input: AllowlistApprovedTemplateInput
 ): TransactionalEmailContent {
-  normalizeAppUrl(input.appUrl);
+  const appUrl = normalizeAppUrl(input.appUrl);
+  const logoUrl = `${appUrl}/lt-logo.png`;
   const signInUrl = "https://letthink.co/app";
   const firstName = input.firstName.trim() || "there";
   const plainTextBody = [
@@ -42,6 +43,11 @@ export function buildAllowlistApprovedTemplate(
   return {
     subject: "You're in — LET THINK Beta",
     text: plainTextBody,
-    html: `<div style="font-family: Arial, Helvetica, sans-serif; white-space: pre-line; line-height: 1.6;">${plainTextBody}</div>`,
+    html: `<div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #111827;">
+  <div style="margin: 0 0 16px 0;">
+    <img src="${logoUrl}" alt="LET THINK" width="140" style="display: block; height: auto; border: 0;" />
+  </div>
+  <div style="white-space: pre-line;">${plainTextBody}</div>
+</div>`,
   };
 }
