@@ -20,8 +20,8 @@ function normalizeAppUrl(appUrl: string): string {
 export function buildAllowlistApprovedTemplate(
   input: AllowlistApprovedTemplateInput
 ): TransactionalEmailContent {
-  const appUrl = normalizeAppUrl(input.appUrl);
-  const logoUrl = `${appUrl}/lt-logo.png`;
+  normalizeAppUrl(input.appUrl);
+  const logoUrl = "https://letthink.co/lt-logo.png";
   const signInUrl = "https://letthink.co/app";
   const firstName = input.firstName.trim() || "there";
   const plainTextBody = [
@@ -31,13 +31,11 @@ export function buildAllowlistApprovedTemplate(
     "",
     "Out of everyone who applied, you're one of the 20 people we're inviting into the beta. We chose carefully — and we chose you.",
     "",
-    "This is early, intentional access to a tool designed for one thing: pure ideas, no sycophantic flattery. No noise. Just thinking.",
+    "This is early, intentional access to a tool designed for one thing: pure ideas, no sycophantic flattery.",
     "",
     `Open LET THINK: ${signInUrl}`,
     "",
     "We'd love your honest feedback. Tell us what breaks, what surprises you, and what makes you think differently.",
-    "",
-    "Only 20 beta spots. Early access closes as they are filled.",
   ].join("\n");
 
   return {
