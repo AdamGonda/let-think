@@ -1,7 +1,8 @@
 import { useRef, useEffect, useLayoutEffect } from "react";
 import { clsx } from "clsx";
 import { layout } from "@/config";
-import { CornerDownLeft, Loader2 } from "lucide-react";
+import { ArrowUp, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { parseInputTokens } from "@/lib/chatMentions";
 import {
   backspaceRemoveAtReferenceRange,
@@ -51,6 +52,7 @@ export function ChatComposer({
   sessionPastFrame = false,
   onSubmit,
 }: ChatComposerProps) {
+  const canSubmit = !isDisabled && input.trim().length > 0;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mirrorRef = useRef<HTMLDivElement>(null);
   const pendingSelectionRef = useRef<number | null>(null);
@@ -201,7 +203,7 @@ export function ChatComposer({
                 <div className="flex-1 flex relative min-h-[48px] max-h-[450px] rounded-xl border border-input bg-background overflow-hidden">
                   <div
                     ref={mirrorRef}
-                    className="absolute inset-0 z-0 py-3 px-4 pr-10 overflow-y-auto pointer-events-none whitespace-pre-wrap break-words text-[0.95rem] leading-[1.5] text-zinc-950 dark:text-zinc-100"
+                    className="absolute inset-0 z-0 py-3 px-4 pr-14 overflow-y-auto pointer-events-none whitespace-pre-wrap break-words text-[0.95rem] leading-[1.5] text-zinc-950 dark:text-zinc-100"
                     aria-hidden
                   >
                     {input ? (
@@ -226,7 +228,7 @@ export function ChatComposer({
                     ref={textareaRef}
                     data-session-input-textarea
                     rows={1}
-                    className="relative z-10 w-full min-h-[48px] max-h-[450px] py-3 px-4 pr-10 bg-transparent text-transparent caret-foreground font-inherit text-[0.95rem] leading-[1.5] placeholder:transparent focus:outline-none focus:ring-0 disabled:opacity-60 disabled:cursor-not-allowed resize-none overflow-y-auto"
+                    className="relative z-10 w-full min-h-[48px] max-h-[450px] py-3 px-4 pr-14 bg-transparent text-transparent caret-foreground font-inherit text-[0.95rem] leading-[1.5] placeholder:transparent focus:outline-none focus:ring-0 disabled:opacity-60 disabled:cursor-not-allowed resize-none overflow-y-auto"
                     style={{ color: "transparent" }}
                     value={input}
                     onChange={handleChange}
@@ -236,27 +238,30 @@ export function ChatComposer({
                     disabled={isDisabled}
                   />
                   <div
-                    className="absolute right-3 top-1/2 -translate-y-1/2 z-20 pointer-events-none flex items-center"
-                    title={isLoading ? "Generating response" : "Press Enter to send"}
-                    aria-hidden={!isLoading}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 z-20 flex items-center"
                   >
-                    {isLoading ? (
-                      <>
-                        <span className="sr-only">Generating response…</span>
+                    <Button
+                      type="submit"
+                      size="icon"
+                      variant="ghost"
+                      className="rounded-full text-muted-foreground hover:text-foreground"
+                      disabled={!canSubmit}
+                      aria-label={
+                        isLoading ? "Generating response" : "Generate response"
+                      }
+                      title={isLoading ? "Generating response" : "Generate response"}
+                    >
+                      {isLoading ? (
                         <Loader2
-                          size={18}
+                          size={16}
                           className="animate-spin text-(--session-accent)"
                           strokeWidth={2}
                           aria-hidden
                         />
-                      </>
-                    ) : (
-                      <CornerDownLeft
-                        size={18}
-                        className="text-muted-foreground"
-                        strokeWidth={2}
-                      />
-                    )}
+                      ) : (
+                        <ArrowUp size={16} strokeWidth={2} aria-hidden />
+                      )}
+                    </Button>
                   </div>
                 </div>
               </div>
