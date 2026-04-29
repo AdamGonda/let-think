@@ -61,7 +61,7 @@ function getSteps(): DriveStep[] {
       popover: {
         title: "Reference button",
         description:
-          "Use this number button to reference the idea in your prompt as <strong>@1</strong>. We'll click it now.",
+          "Use this number button to reference the idea in your prompt as <strong>@1</strong>.",
         side: "left",
         align: "start",
       },
