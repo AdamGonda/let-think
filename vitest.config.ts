@@ -1,10 +1,13 @@
-import { mergeConfig } from 'vite'
-import { defineConfig } from 'vitest/config'
+import { defineConfig, mergeConfig } from 'vitest/config'
 import viteConfig from './vite.config'
 
-export default mergeConfig(
-  viteConfig,
-  defineConfig({
+export default defineConfig(async () => {
+  const baseConfig =
+    typeof viteConfig === 'function'
+      ? await viteConfig({ command: 'build', mode: 'test' })
+      : viteConfig
+
+  return mergeConfig(baseConfig, {
     test: {
       globals: false,
       environment: 'happy-dom',
@@ -36,5 +39,5 @@ export default mergeConfig(
         },
       },
     },
-  }),
-)
+  })
+})
