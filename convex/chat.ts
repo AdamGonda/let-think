@@ -27,6 +27,88 @@ import {
 } from "./constants";
 import { modelConfig } from "./modelConfig";
 
+type GenerationUsageMetrics = {
+  inputTokens: number | null;
+  outputTokens: number | null;
+  totalTokens: number | null;
+};
+
+function coerceFiniteNumber(value: unknown): number | null {
+  return typeof value === "number" && Number.isFinite(value) ? value : null;
+}
+
+function formatGenerationUsageLog(
+  usage: GenerationUsageMetrics,
+  context: {
+    sessionId: string;
+    userId: string;
+    model: string;
+  }
+): Record<string, string | number | null> {
+  return {
+    event: "generation_completed",
+    sessionId: context.sessionId,
+    userId: context.userId,
+    model: context.model,
+    inputTokens: usage.inputTokens,
+    outputTokens: usage.outputTokens,
+    totalTokens: usage.totalTokens,
+  };
+}
+
+async function capturePosthogGenerationEvent(
+  usage: GenerationUsageMetrics,
+  context: {
+    sessionId: string;
+    userId: string;
+    model: string;
+    messageCount: number;
+    selectedNodeCount: number;
+  }
+): Promise<void> {
+  const apiKey =
+    process.env.POSTHOG_PROJECT_API_KEY ??
+    process.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN;
+  const host = process.env.POSTHOG_HOST ?? process.env.VITE_PUBLIC_POSTHOG_HOST;
+  if (!apiKey || !host) return;
+
+  const captureUrl = `${host.replace(/\/+$/, "")}/capture/`;
+  const nowIso = new Date().toISOString();
+  const payload = {
+    api_key: apiKey,
+    event: "generation_completed",
+    distinct_id: context.userId,
+    timestamp: nowIso,
+    properties: {
+      session_id: context.sessionId,
+      model: context.model,
+      input_tokens: usage.inputTokens,
+      output_tokens: usage.outputTokens,
+      total_tokens: usage.totalTokens,
+      message_count: context.messageCount,
+      selected_node_count: context.selectedNodeCount,
+      source: "convex_chat_send",
+    },
+  };
+
+  try {
+    const response = await fetch(captureUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      console.warn(
+        "[posthog] Failed to capture generation_completed",
+        response.status,
+        response.statusText
+      );
+    }
+  } catch (error) {
+    console.warn("[posthog] Failed to send generation_completed", error);
+  }
+}
+
 function makeUniqueNodeId(candidate: string, usedIds: Set<string>): string {
   const trimmed = candidate.trim() || "concept";
   if (!usedIds.has(trimmed)) return trimmed;
@@ -286,10 +368,22 @@ export const send = action({
     });
 
     // 2. Call LLM using streaming so concept events can be merged progressively
+    let generationUsage: GenerationUsageMetrics = {
+      inputTokens: null,
+      outputTokens: null,
+      totalTokens: null,
+    };
     const streamResult = streamText({
       model: google(modelConfig.mainContextGraphModel),
       system: "You are a helpful assistant.",
       messages: modelMessages,
+      onFinish: ({ usage }) => {
+        generationUsage = {
+          inputTokens: coerceFiniteNumber(usage?.inputTokens),
+          outputTokens: coerceFiniteNumber(usage?.outputTokens),
+          totalTokens: coerceFiniteNumber(usage?.totalTokens),
+        };
+      },
     });
 
     const batchMeta: BatchMeta = {
@@ -388,6 +482,22 @@ export const send = action({
       userContent,
       assistantContent: processedContent,
       mentions,
+    });
+
+    console.info(
+      "[generation]",
+      formatGenerationUsageLog(generationUsage, {
+        sessionId,
+        userId,
+        model: modelConfig.mainContextGraphModel,
+      })
+    );
+    await capturePosthogGenerationEvent(generationUsage, {
+      sessionId,
+      userId,
+      model: modelConfig.mainContextGraphModel,
+      messageCount: modelMessages.length,
+      selectedNodeCount: selectedNodeContext?.length ?? 0,
     });
 
     return { content: processedContent, conceptGraph: finalGraph };
