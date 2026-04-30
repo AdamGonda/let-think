@@ -9,6 +9,7 @@ type GraphViewHeaderProps = {
   onSelectBatch: (index: number) => void;
   isBatchNavigationDisabled?: boolean;
   isSessionTitleDisabled?: boolean;
+  isHistoryButtonDisabled?: boolean;
   hasChatHistory: boolean;
   onHistoryOpen: () => void;
   onEditorOpen: () => void;
@@ -22,6 +23,7 @@ export function GraphViewHeader({
   onSelectBatch,
   isBatchNavigationDisabled = false,
   isSessionTitleDisabled = false,
+  isHistoryButtonDisabled = false,
   hasChatHistory,
   onHistoryOpen,
   onEditorOpen,
@@ -61,16 +63,25 @@ export function GraphViewHeader({
       </div>
       <div className="flex items-center justify-end gap-2">
         {hasChatHistory ? (
-          <Button
-            variant="outline"
-            size="icon-sm"
-            onClick={onHistoryOpen}
-            title="Session history"
-            aria-label="Session history"
-            data-tour="history-btn"
-          >
-            <History className="size-5" />
-          </Button>
+          <div className="relative">
+            <Button
+              variant="outline"
+              size="icon-sm"
+              onClick={onHistoryOpen}
+              disabled={isHistoryButtonDisabled}
+              title="Session history"
+              aria-label="Session history"
+              data-tour="history-btn"
+            >
+              <History className="size-5" />
+            </Button>
+            {isHistoryButtonDisabled ? (
+              <div
+                className="absolute inset-0 z-10 cursor-not-allowed rounded-[min(var(--radius-md),12px)]"
+                aria-hidden
+              />
+            ) : null}
+          </div>
         ) : null}
         <Button
           variant="outline"

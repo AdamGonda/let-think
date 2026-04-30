@@ -59,6 +59,7 @@ export function AppContentGraphSurface({
           onSelectBatch={onSelectBatch}
           isBatchNavigationDisabled={chatLoading}
           isSessionTitleDisabled={chatLoading}
+          isHistoryButtonDisabled={chatLoading}
           hasChatHistory={hasChatHistory}
           onHistoryOpen={onHistoryOpen}
           onEditorOpen={onEditorOpen}
