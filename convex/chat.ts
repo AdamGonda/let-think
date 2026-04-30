@@ -33,6 +33,11 @@ type GenerationUsageMetrics = {
   totalTokens: number | null;
 };
 
+const TOKEN_WARN_THRESHOLD = 20_000;
+const TOKEN_CRITICAL_THRESHOLD = 50_000;
+
+type TokenAlertLevel = "normal" | "warn" | "critical";
+
 function coerceFiniteNumber(value: unknown): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -56,6 +61,13 @@ function formatGenerationUsageLog(
   };
 }
 
+function classifyTokenAlertLevel(totalTokens: number | null): TokenAlertLevel {
+  if (totalTokens == null) return "normal";
+  if (totalTokens > TOKEN_CRITICAL_THRESHOLD) return "critical";
+  if (totalTokens > TOKEN_WARN_THRESHOLD) return "warn";
+  return "normal";
+}
+
 async function capturePosthogGenerationEvent(
   usage: GenerationUsageMetrics,
   context: {
@@ -74,6 +86,7 @@ async function capturePosthogGenerationEvent(
 
   const captureUrl = `${host.replace(/\/+$/, "")}/capture/`;
   const nowIso = new Date().toISOString();
+  const tokenAlertLevel = classifyTokenAlertLevel(usage.totalTokens);
   const payload = {
     api_key: apiKey,
     event: "generation_completed",
@@ -85,6 +98,9 @@ async function capturePosthogGenerationEvent(
       input_tokens: usage.inputTokens,
       output_tokens: usage.outputTokens,
       total_tokens: usage.totalTokens,
+      token_alert_level: tokenAlertLevel,
+      token_warn_threshold: TOKEN_WARN_THRESHOLD,
+      token_critical_threshold: TOKEN_CRITICAL_THRESHOLD,
       message_count: context.messageCount,
       selected_node_count: context.selectedNodeCount,
       source: "convex_chat_send",
@@ -499,6 +515,22 @@ export const send = action({
       messageCount: modelMessages.length,
       selectedNodeCount: selectedNodeContext?.length ?? 0,
     });
+    const tokenAlertLevel = classifyTokenAlertLevel(generationUsage.totalTokens);
+    if (tokenAlertLevel === "critical") {
+      console.error("[generation] token usage exceeded CRITICAL threshold", {
+        sessionId,
+        userId,
+        totalTokens: generationUsage.totalTokens,
+        criticalThreshold: TOKEN_CRITICAL_THRESHOLD,
+      });
+    } else if (tokenAlertLevel === "warn") {
+      console.warn("[generation] token usage exceeded WARN threshold", {
+        sessionId,
+        userId,
+        totalTokens: generationUsage.totalTokens,
+        warnThreshold: TOKEN_WARN_THRESHOLD,
+      });
+    }
 
     return { content: processedContent, conceptGraph: finalGraph };
   },
