@@ -8,6 +8,7 @@ type GraphViewHeaderProps = {
   selectedBatchIndex: number;
   onSelectBatch: (index: number) => void;
   isBatchNavigationDisabled?: boolean;
+  isSessionTitleDisabled?: boolean;
   hasChatHistory: boolean;
   onHistoryOpen: () => void;
   onEditorOpen: () => void;
@@ -20,6 +21,7 @@ export function GraphViewHeader({
   selectedBatchIndex,
   onSelectBatch,
   isBatchNavigationDisabled = false,
+  isSessionTitleDisabled = false,
   hasChatHistory,
   onHistoryOpen,
   onEditorOpen,
@@ -36,8 +38,13 @@ export function GraphViewHeader({
         <button
           type="button"
           onClick={onSessionTitleClick}
+          disabled={isSessionTitleDisabled}
           data-tour="session-title"
-          className="inline-block max-w-[min(32rem,62vw)] cursor-pointer truncate text-left text-xl font-semibold tracking-tight text-foreground rounded-lg px-3.5 py-0 -mx-1 transition-colors hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+          className={`inline-block max-w-[min(32rem,62vw)] truncate text-left text-xl font-semibold tracking-tight text-foreground rounded-lg px-3.5 py-0 -mx-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+            isSessionTitleDisabled
+              ? "cursor-not-allowed opacity-70"
+              : "cursor-pointer hover:bg-muted/40"
+          }`}
           title="Show on sidebar"
           aria-label={`Session: ${sessionLabel}. Click to show in sidebar.`}
         >

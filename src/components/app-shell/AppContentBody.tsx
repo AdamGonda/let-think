@@ -90,6 +90,7 @@ export function AppContentBody({
   const actor = useAppUiActor();
   const posthog = usePostHog();
   const prevCollapseSignalRef = useRef<string>("");
+  const prevChatLoadingRef = useRef(false);
 
   const activeSessionInWorkspace = useMemo(
     () => findSessionInWorkspace(workspace, activeSessionId),
@@ -241,6 +242,14 @@ export function AppContentBody({
     sessionSidebarRef.current?.collapse();
   }, [uiCollapseSignal, sessionSidebarRef]);
 
+  useEffect(() => {
+    const wasLoading = prevChatLoadingRef.current;
+    if (chatLoading && !wasLoading) {
+      sessionSidebarRef.current?.collapse();
+    }
+    prevChatLoadingRef.current = chatLoading;
+  }, [chatLoading, sessionSidebarRef]);
+
   return (
     <AppShell
         wakeUpOverlay={
@@ -281,6 +290,7 @@ export function AppContentBody({
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           onRunTutorial={runTutorial}
+          isDisabled={chatLoading}
         />
         <main
           className={clsx(

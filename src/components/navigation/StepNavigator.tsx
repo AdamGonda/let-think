@@ -29,7 +29,10 @@ export function StepNavigator({
   }
   
   return (
-    <div className="grid grid-cols-[1fr_auto_1fr] items-center overflow-hidden rounded-lg border border-border bg-muted/30 dark:bg-input/20">
+    <div
+      className="relative grid grid-cols-[1fr_auto_1fr] items-center overflow-hidden rounded-lg border border-border bg-muted/30 dark:bg-input/20"
+      aria-disabled={isDisabled || undefined}
+    >
       <div className="flex items-center justify-end">
         <Button
           variant="ghost"
@@ -86,6 +89,12 @@ export function StepNavigator({
           <ChevronsRight size={18} strokeWidth={2} />
         </Button>
       </div>
+      {isDisabled ? (
+        <div
+          className="absolute inset-0 z-10 cursor-not-allowed"
+          aria-hidden
+        />
+      ) : null}
     </div>
   );
 }

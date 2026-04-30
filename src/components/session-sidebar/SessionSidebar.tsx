@@ -24,6 +24,7 @@ interface SessionSidebarProps {
   viewMode: "graph" | "notesList";
   onViewModeChange: (mode: "graph" | "notesList") => void;
   onRunTutorial?: () => void;
+  isDisabled?: boolean;
 }
 
 export const SessionSidebar = forwardRef<
@@ -39,6 +40,7 @@ export const SessionSidebar = forwardRef<
     viewMode,
     onViewModeChange,
     onRunTutorial,
+    isDisabled = false,
   },
   ref,
 ) {
@@ -69,10 +71,13 @@ export const SessionSidebar = forwardRef<
 
   return (
     <aside
-      className="shrink-0 flex flex-col h-screen overflow-hidden bg-muted/30 border-r border-border transition-[width] duration-200 ease-in-out"
+      className={`shrink-0 flex flex-col h-screen overflow-hidden bg-muted/30 border-r border-border transition-[width,opacity] duration-200 ease-in-out ${
+        isDisabled ? "relative opacity-70 select-none" : ""
+      }`}
       style={{
         width: w.isCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH,
       }}
+      aria-disabled={isDisabled || undefined}
     >
       <SessionSidebarToolbar
         isCollapsed={w.isCollapsed}
@@ -109,6 +114,12 @@ export const SessionSidebar = forwardRef<
           onRunTutorial={onRunTutorial}
         />
       </div>
+      {isDisabled ? (
+        <div
+          className="absolute inset-0 z-50 cursor-not-allowed"
+          aria-hidden
+        />
+      ) : null}
     </aside>
   );
 });
