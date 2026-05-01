@@ -70,6 +70,9 @@ export const appUiMachine = setup({
       graphReferenceFreezeActive: false,
       editorOpen: false,
       showFileNoteBreadcrumbFromProjectNotes: false,
+      publishConfirmDialog: null,
+      publicationRequest: null,
+      publicationRequestSeq: ({ context }) => context.publicationRequestSeq,
     }),
     sessionCleared: assign({
       chatLoading: false,
@@ -82,6 +85,9 @@ export const appUiMachine = setup({
       overlayDismissed: false,
       historyPanelOpen: false,
       showFileNoteBreadcrumbFromProjectNotes: false,
+      publishConfirmDialog: null,
+      publicationRequest: null,
+      publicationRequestSeq: ({ context }) => context.publicationRequestSeq,
     }),
     setActiveSessionId: assign({
       activeSessionId: ({ event }) => {
@@ -116,6 +122,9 @@ export const appUiMachine = setup({
       graphLatestBatchNodeCount: () => 0,
       graphReferenceFreezeActive: () => false,
       showFileNoteBreadcrumbFromProjectNotes: false,
+      publishConfirmDialog: null,
+      publicationRequest: null,
+      publicationRequestSeq: ({ context }) => context.publicationRequestSeq,
     }),
     autoSelectFirstWorkspaceSession: assign({
       activeSessionId: ({ event }) => {
@@ -260,6 +269,37 @@ export const appUiMachine = setup({
     editorClose: assign({
       editorOpen: false,
       showFileNoteBreadcrumbFromProjectNotes: false,
+      publishConfirmDialog: null,
+      publicationRequest: null,
+      publicationRequestSeq: ({ context }) => context.publicationRequestSeq,
+    }),
+    openPublishConfirmDialog: assign({
+      publishConfirmDialog: { mode: "publish" },
+    }),
+    openUnpublishConfirmDialog: assign({
+      publishConfirmDialog: { mode: "unpublish" },
+    }),
+    closePublishConfirmDialog: assign({
+      publishConfirmDialog: null,
+    }),
+    queuePublicationRequestPublish: assign(({ context }) => ({
+      publicationRequestSeq: context.publicationRequestSeq + 1,
+      publishConfirmDialog: null,
+      publicationRequest: {
+        mode: "publish" as const,
+        seq: context.publicationRequestSeq + 1,
+      },
+    })),
+    queuePublicationRequestUnpublish: assign(({ context }) => ({
+      publicationRequestSeq: context.publicationRequestSeq + 1,
+      publishConfirmDialog: null,
+      publicationRequest: {
+        mode: "unpublish" as const,
+        seq: context.publicationRequestSeq + 1,
+      },
+    })),
+    clearPublicationRequest: assign({
+      publicationRequest: null,
     }),
     historyOpen: assign({ historyPanelOpen: true }),
     historyClose: assign({ historyPanelOpen: false }),
@@ -295,6 +335,9 @@ export const appUiMachine = setup({
       sidebarCollapseImmediateSeq: inp?.sidebarCollapseImmediateSeq ?? 0,
       showFileNoteBreadcrumbFromProjectNotes:
         inp?.showFileNoteBreadcrumbFromProjectNotes ?? false,
+      publishConfirmDialog: inp?.publishConfirmDialog ?? null,
+      publicationRequest: inp?.publicationRequest ?? null,
+      publicationRequestSeq: inp?.publicationRequestSeq ?? 0,
     };
   },
   on: {
@@ -416,6 +459,24 @@ export const appUiMachine = setup({
     },
     INTENT_SELECT_SESSION_FROM_SIDEBAR: {
       actions: "intentSelectSessionFromSidebar",
+    },
+    INTENT_OPEN_PUBLISH_CONFIRM: {
+      actions: "openPublishConfirmDialog",
+    },
+    INTENT_OPEN_UNPUBLISH_CONFIRM: {
+      actions: "openUnpublishConfirmDialog",
+    },
+    INTENT_CLOSE_PUBLISH_DIALOG: {
+      actions: "closePublishConfirmDialog",
+    },
+    INTENT_CONFIRM_PUBLISH: {
+      actions: "queuePublicationRequestPublish",
+    },
+    INTENT_CONFIRM_UNPUBLISH: {
+      actions: "queuePublicationRequestUnpublish",
+    },
+    PUBLICATION_REQUEST_HANDLED: {
+      actions: "clearPublicationRequest",
     },
     HISTORY_OPEN: {
       actions: "historyOpen",
@@ -665,4 +726,12 @@ export function selectShowOverlayAction(snapshot: MachineSnapshot): boolean {
   const overlayStandardExit =
     canExit && !(c.editorOpen && surfaceState(snapshot) === "notesList");
   return returnsToGraph || overlayStandardExit;
+}
+
+export function selectPublishConfirmDialog(snapshot: MachineSnapshot) {
+  return snapshot.context.publishConfirmDialog;
+}
+
+export function selectPublicationRequest(snapshot: MachineSnapshot) {
+  return snapshot.context.publicationRequest;
 }

@@ -19,6 +19,7 @@ import type * as lib_transactionalEmails_resend from "../lib/transactionalEmails
 import type * as lib_transactionalEmails_templates from "../lib/transactionalEmails/templates.js";
 import type * as modelConfig from "../modelConfig.js";
 import type * as projects from "../projects.js";
+import type * as publicFiles from "../publicFiles.js";
 import type * as sessions from "../sessions.js";
 import type * as transactionalEmails from "../transactionalEmails.js";
 import type * as users from "../users.js";
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   "lib/transactionalEmails/templates": typeof lib_transactionalEmails_templates;
   modelConfig: typeof modelConfig;
   projects: typeof projects;
+  publicFiles: typeof publicFiles;
   sessions: typeof sessions;
   transactionalEmails: typeof transactionalEmails;
   users: typeof users;

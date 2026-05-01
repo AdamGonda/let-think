@@ -29,6 +29,13 @@ type WakeUpOverlayProps = {
   onBreadcrumbProjectClick: () => void;
   onBreadcrumbSessionClick: () => void;
   onBreadcrumbFileClick: () => void;
+  isPublished: boolean;
+  publishConfirmDialog: { mode: "publish" | "unpublish" } | null;
+  onOpenPublishConfirm: () => void;
+  onOpenUnpublishConfirm: () => void;
+  onClosePublishDialog: () => void;
+  onConfirmPublish: () => void;
+  onConfirmUnpublish: () => void;
 };
 
 export function WakeUpOverlay({
@@ -48,6 +55,13 @@ export function WakeUpOverlay({
   onBreadcrumbProjectClick,
   onBreadcrumbSessionClick,
   onBreadcrumbFileClick,
+  isPublished,
+  publishConfirmDialog,
+  onOpenPublishConfirm,
+  onOpenUnpublishConfirm,
+  onClosePublishDialog,
+  onConfirmPublish,
+  onConfirmUnpublish,
 }: WakeUpOverlayProps) {
   return (
     <div
@@ -93,7 +107,57 @@ export function WakeUpOverlay({
                   onProjectClick={onBreadcrumbProjectClick}
                   onSessionClick={onBreadcrumbSessionClick}
                   onFileClick={onBreadcrumbFileClick}
+                  isPublished={isPublished}
+                  onPublishClick={onOpenPublishConfirm}
+                  onUnpublishClick={onOpenUnpublishConfirm}
                 />
+              ) : null}
+              {editorOpen &&
+              activeSessionInWorkspace &&
+              showFileNoteBreadcrumbFromProjectNotes &&
+              publishConfirmDialog ? (
+                <div
+                  role="dialog"
+                  aria-modal="true"
+                  aria-label={
+                    publishConfirmDialog.mode === "publish"
+                      ? "Confirm publish"
+                      : "Confirm unpublish"
+                  }
+                  className="mb-3 rounded-lg border border-border/70 bg-card/95 p-3"
+                >
+                  <p className="text-sm text-foreground">
+                    {publishConfirmDialog.mode === "publish"
+                      ? "Publish these notes to /square so they are publicly visible?"
+                      : "Unpublish these notes from /square?"}
+                  </p>
+                  <div className="mt-2 flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={onClosePublishDialog}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      variant={
+                        publishConfirmDialog.mode === "publish"
+                          ? "default"
+                          : "destructive"
+                      }
+                      size="sm"
+                      onClick={
+                        publishConfirmDialog.mode === "publish"
+                          ? onConfirmPublish
+                          : onConfirmUnpublish
+                      }
+                    >
+                      {publishConfirmDialog.mode === "publish"
+                        ? "Confirm publish"
+                        : "Confirm unpublish"}
+                    </Button>
+                  </div>
+                </div>
               ) : null}
               <div
                 className={`mx-auto flex w-full min-h-0 flex-1 flex-col justify-start ${layout.mainColumnMaxWidthClass}`}

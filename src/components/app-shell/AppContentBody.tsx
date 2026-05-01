@@ -6,10 +6,12 @@ import {
   useRef,
   type RefObject,
 } from "react";
+import { useMutation, useQuery } from "convex/react";
 import { clsx } from "clsx";
 import { toast } from "sonner";
 import { usePostHog } from "posthog-js/react";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { api } from "../../../convex/_generated/api";
 import { useSessionData } from "../../contexts/SessionDataContext";
 import { useAppUiActor } from "../../hooks/useAppUi";
 import { useAppContentSelectors } from "../../hooks/useAppContentSelectors";
@@ -86,6 +88,8 @@ export function AppContentBody({
     uiCollapseSignal,
     overlayActionReturnsToGraph,
     showOverlayAction,
+    publishConfirmDialog,
+    publicationRequest,
   } = useAppContentSelectors();
   const actor = useAppUiActor();
   const posthog = usePostHog();
@@ -115,10 +119,23 @@ export function AppContentBody({
     onSelectSessionFromNotesList,
     onSelectSessionFromSidebar,
     onSelectProjectFromSidebar,
+    handleOpenPublishConfirm,
+    handleOpenUnpublishConfirm,
+    handleClosePublishDialog,
+    handleConfirmPublish,
+    handleConfirmUnpublish,
   } = useAppContentBodyHandlers({
     actor,
     draftInput,
   });
+  const publishRecord = useQuery(
+    api.publicFiles.getBySession,
+    activeSessionId ? { sessionId: activeSessionId } : "skip",
+  );
+  const publishMutation = useMutation(api.publicFiles.publish);
+  const unpublishMutation = useMutation(api.publicFiles.unpublish);
+  const publicationSeqRef = useRef(0);
+  const isPublished = publishRecord != null;
   const numberedConcepts = useMemo(
     () =>
       buildNumberedConceptsFromGraph(conceptGraph, batches, selectedBatchIndex),
@@ -250,6 +267,32 @@ export function AppContentBody({
     prevChatLoadingRef.current = chatLoading;
   }, [chatLoading, sessionSidebarRef]);
 
+  useEffect(() => {
+    if (!publicationRequest) return;
+    if (publicationRequest.seq === publicationSeqRef.current) return;
+    publicationSeqRef.current = publicationRequest.seq;
+    if (!activeSessionId) {
+      actor.send({ type: "PUBLICATION_REQUEST_HANDLED" });
+      return;
+    }
+    void (async () => {
+      try {
+        if (publicationRequest.mode === "publish") {
+          await publishMutation({ sessionId: activeSessionId });
+          toast.success("Published to /square");
+        } else {
+          await unpublishMutation({ sessionId: activeSessionId });
+          toast.success("Unpublished from /square");
+        }
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Action failed";
+        toast.error(message);
+      } finally {
+        actor.send({ type: "PUBLICATION_REQUEST_HANDLED" });
+      }
+    })();
+  }, [activeSessionId, actor, publicationRequest, publishMutation, unpublishMutation]);
+
   return (
     <AppShell
         wakeUpOverlay={
@@ -273,6 +316,13 @@ export function AppContentBody({
               onBreadcrumbProjectClick={handleBreadcrumbProjectClick}
               onBreadcrumbSessionClick={handleBreadcrumbSessionClick}
               onBreadcrumbFileClick={handleBreadcrumbFileClick}
+              isPublished={isPublished}
+              publishConfirmDialog={publishConfirmDialog}
+              onOpenPublishConfirm={handleOpenPublishConfirm}
+              onOpenUnpublishConfirm={handleOpenUnpublishConfirm}
+              onClosePublishDialog={handleClosePublishDialog}
+              onConfirmPublish={handleConfirmPublish}
+              onConfirmUnpublish={handleConfirmUnpublish}
             />
           ) : null
         }

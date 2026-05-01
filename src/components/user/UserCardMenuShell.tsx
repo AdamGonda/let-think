@@ -1,4 +1,4 @@
-import type { RefObject, ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { UserMenuPanel } from "./UserMenuPanel";
 import { cn } from "@/lib/utils";
 
@@ -18,16 +18,12 @@ type UserCardMenuShellProps = {
 
 const shellByVariant = {
   compact: {
-    container: "relative w-full min-w-0 max-w-full transition-[min-height] duration-200 ease-out",
-    openMinH: "min-h-[140px] overflow-hidden",
-    closedMinH: "min-h-14 overflow-hidden",
+    container: "relative w-full min-w-0 max-w-full overflow-hidden transition-[height] duration-200 ease-out",
     headerRow: "absolute inset-x-0 top-0 flex justify-center py-1",
     menuWrap: "absolute inset-x-0 top-0 py-0.5",
   },
   expanded: {
-    container: "relative w-full min-w-0 overflow-hidden transition-[min-height] duration-200 ease-out",
-    openMinH: "min-h-[144px]",
-    closedMinH: "min-h-14",
+    container: "relative w-full min-w-0 overflow-hidden transition-[height] duration-200 ease-out",
     headerRow: "absolute inset-x-0 top-0 h-14",
     menuWrap: "absolute inset-x-0 top-0 py-1",
   },
@@ -46,14 +42,30 @@ export function UserCardMenuShell({
   variant,
 }: UserCardMenuShellProps) {
   const s = shellByVariant[variant];
+  const menuWrapRef = useRef<HTMLDivElement>(null);
+  const [menuHeight, setMenuHeight] = useState(56);
+  const closedHeight = 56;
+
+  useEffect(() => {
+    const node = menuWrapRef.current;
+    if (!node) return;
+    const updateHeight = () => {
+      const nextHeight = Math.ceil(node.getBoundingClientRect().height);
+      if (nextHeight > 0) {
+        setMenuHeight(nextHeight);
+      }
+    };
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div
       ref={containerRef}
-      className={cn(
-        s.container,
-        menuOpen ? s.openMinH : s.closedMinH,
-      )}
+      className={s.container}
+      style={{ height: menuOpen ? Math.max(menuHeight, closedHeight) : closedHeight }}
     >
       <div
         className={cn(
@@ -65,6 +77,7 @@ export function UserCardMenuShell({
         {children}
       </div>
       <div
+        ref={menuWrapRef}
         className={cn(
           s.menuWrap,
           slideEase,

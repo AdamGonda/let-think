@@ -48,6 +48,18 @@ export type AppUiContext = {
    * (`openSessionInFilesWithEditor`), not from the sidebar project tree.
    */
   showFileNoteBreadcrumbFromProjectNotes: boolean;
+  publishConfirmDialog:
+    | {
+        mode: "publish" | "unpublish";
+      }
+    | null;
+  publicationRequest:
+    | {
+        mode: "publish" | "unpublish";
+        seq: number;
+      }
+    | null;
+  publicationRequestSeq: number;
 };
 
 export type AppUiEvent =
@@ -83,4 +95,10 @@ export type AppUiEvent =
   | { type: "INTENT_BREADCRUMB_FILE_CLICK" }
   | { type: "INTENT_OPEN_NOTES_LIST" }
   | { type: "INTENT_RETURN_GRAPH_FROM_EDITOR" }
-  | { type: "INTENT_SELECT_SESSION_FROM_SIDEBAR"; sessionId: Id<"sessions"> | null };
+  | { type: "INTENT_SELECT_SESSION_FROM_SIDEBAR"; sessionId: Id<"sessions"> | null }
+  | { type: "INTENT_OPEN_PUBLISH_CONFIRM" }
+  | { type: "INTENT_OPEN_UNPUBLISH_CONFIRM" }
+  | { type: "INTENT_CLOSE_PUBLISH_DIALOG" }
+  | { type: "INTENT_CONFIRM_PUBLISH" }
+  | { type: "INTENT_CONFIRM_UNPUBLISH" }
+  | { type: "PUBLICATION_REQUEST_HANDLED" };

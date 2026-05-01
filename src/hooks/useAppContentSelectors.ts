@@ -17,6 +17,8 @@ import {
   selectGraphReferenceFreezeActive,
   selectGraphShowLoadingCards,
   selectOverlayActionReturnsToGraph,
+  selectPublicationRequest,
+  selectPublishConfirmDialog,
 } from "../machines/appUiMachine";
 
 type AppSnapshot = SnapshotFrom<typeof appUiMachine>;
@@ -47,6 +49,8 @@ type AppContentSelectors = {
   uiCollapseSignal: ReturnType<typeof selectUiCollapseSignal>;
   overlayActionReturnsToGraph: ReturnType<typeof selectOverlayActionReturnsToGraph>;
   showOverlayAction: ReturnType<typeof selectShowOverlayAction>;
+  publishConfirmDialog: ReturnType<typeof selectPublishConfirmDialog>;
+  publicationRequest: ReturnType<typeof selectPublicationRequest>;
 };
 
 function shallowEqualSelectors(
@@ -79,7 +83,9 @@ function shallowEqualSelectors(
     a.hasChatHistory === b.hasChatHistory &&
     a.uiCollapseSignal === b.uiCollapseSignal &&
     a.overlayActionReturnsToGraph === b.overlayActionReturnsToGraph &&
-    a.showOverlayAction === b.showOverlayAction
+    a.showOverlayAction === b.showOverlayAction &&
+    a.publishConfirmDialog === b.publishConfirmDialog &&
+    a.publicationRequest === b.publicationRequest
   );
 }
 
@@ -111,6 +117,8 @@ function selectAppContentSnapshot(s: AppSnapshot): AppContentSelectors {
     uiCollapseSignal: selectUiCollapseSignal(s),
     overlayActionReturnsToGraph: selectOverlayActionReturnsToGraph(s),
     showOverlayAction: selectShowOverlayAction(s),
+    publishConfirmDialog: selectPublishConfirmDialog(s),
+    publicationRequest: selectPublicationRequest(s),
   };
 }
 

@@ -14,6 +14,7 @@ import { DataPolicyPage } from "./pages/DataPolicyPage";
 import { TermsOfUsePage } from "./pages/TermsOfUsePage";
 import { SignIn } from "./components/auth/SignIn";
 import { AdminAllowlistPage } from "./pages/AdminAllowlistPage";
+import { SquarePage } from "./pages/SquarePage";
 
 const ADMIN_ROUTE_HASH = "a9f3d2c7be4e8f11";
 
@@ -87,6 +88,12 @@ const appRoute = createRoute({
   component: LoginRoute,
 });
 
+const squareRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/square",
+  component: SquarePage,
+});
+
 const privacyRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/privacy",
@@ -108,6 +115,7 @@ const adminRoute = createRoute({
 const routeTree = rootRoute.addChildren([
   indexRoute,
   appRoute,
+  squareRoute,
   privacyRoute,
   termsRoute,
   adminRoute,

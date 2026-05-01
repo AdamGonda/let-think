@@ -45,6 +45,9 @@ function baseInput(over: Partial<AppUiContext> = {}): Partial<AppUiContext> {
     sidebarCollapseRequestSeq: 0,
     sidebarCollapseImmediateSeq: 0,
     showFileNoteBreadcrumbFromProjectNotes: false,
+    publishConfirmDialog: null,
+    publicationRequest: null,
+    publicationRequestSeq: 0,
     ...over,
   };
 }
@@ -236,6 +239,44 @@ describe("intent orchestration", () => {
     actor.send({ type: "INTENT_SELECT_SESSION_FROM_SIDEBAR", sessionId: other });
     expect(actor.getSnapshot().context.activeSessionId).toBe(other);
     expect(selectSurface(actor.getSnapshot())).toBe("graph");
+    actor.stop();
+  });
+
+  it("publish confirmation flow opens dialog and queues publish request", () => {
+    const actor = createActor(appUiMachine, { input: baseInput() });
+    actor.start();
+    actor.send({ type: "INTENT_OPEN_PUBLISH_CONFIRM" });
+    expect(actor.getSnapshot().context.publishConfirmDialog).toEqual({
+      mode: "publish",
+    });
+    actor.send({ type: "INTENT_CONFIRM_PUBLISH" });
+    expect(actor.getSnapshot().context.publishConfirmDialog).toBeNull();
+    expect(actor.getSnapshot().context.publicationRequest?.mode).toBe("publish");
+    actor.send({ type: "PUBLICATION_REQUEST_HANDLED" });
+    expect(actor.getSnapshot().context.publicationRequest).toBeNull();
+    actor.stop();
+  });
+
+  it("unpublish confirmation flow opens dialog and queues unpublish request", () => {
+    const actor = createActor(appUiMachine, { input: baseInput() });
+    actor.start();
+    actor.send({ type: "INTENT_OPEN_UNPUBLISH_CONFIRM" });
+    expect(actor.getSnapshot().context.publishConfirmDialog).toEqual({
+      mode: "unpublish",
+    });
+    actor.send({ type: "INTENT_CONFIRM_UNPUBLISH" });
+    expect(actor.getSnapshot().context.publicationRequest?.mode).toBe("unpublish");
+    actor.stop();
+  });
+
+  it("publication request sequence stays monotonic across handled requests", () => {
+    const actor = createActor(appUiMachine, { input: baseInput() });
+    actor.start();
+    actor.send({ type: "INTENT_CONFIRM_PUBLISH" });
+    expect(actor.getSnapshot().context.publicationRequest?.seq).toBe(1);
+    actor.send({ type: "PUBLICATION_REQUEST_HANDLED" });
+    actor.send({ type: "INTENT_CONFIRM_UNPUBLISH" });
+    expect(actor.getSnapshot().context.publicationRequest?.seq).toBe(2);
     actor.stop();
   });
 

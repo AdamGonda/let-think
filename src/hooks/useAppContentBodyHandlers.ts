@@ -3,10 +3,15 @@ import { usePostHog } from "posthog-js/react";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 import type { AppUiActorRef } from "@/contexts/appUiActorContext";
 import {
+  intentClosePublishDialog,
+  intentConfirmPublish,
+  intentConfirmUnpublish,
   intentBreadcrumbFileClick,
   intentBreadcrumbProjectClick,
   intentBreadcrumbSessionClick,
   intentOpenNotesList,
+  intentOpenPublishConfirm,
+  intentOpenUnpublishConfirm,
   intentSelectSessionFromSidebar,
   intentOverlayActionClick,
   openSessionInFilesWithEditor,
@@ -98,6 +103,26 @@ export function useAppContentBodyHandlers({
     [actor],
   );
 
+  const handleOpenPublishConfirm = useCallback(() => {
+    intentOpenPublishConfirm(actor);
+  }, [actor]);
+
+  const handleOpenUnpublishConfirm = useCallback(() => {
+    intentOpenUnpublishConfirm(actor);
+  }, [actor]);
+
+  const handleClosePublishDialog = useCallback(() => {
+    intentClosePublishDialog(actor);
+  }, [actor]);
+
+  const handleConfirmPublish = useCallback(() => {
+    intentConfirmPublish(actor);
+  }, [actor]);
+
+  const handleConfirmUnpublish = useCallback(() => {
+    intentConfirmUnpublish(actor);
+  }, [actor]);
+
   return {
     setViewMode,
     handleBreadcrumbProjectClick,
@@ -108,5 +133,10 @@ export function useAppContentBodyHandlers({
     onSelectSessionFromNotesList,
     onSelectSessionFromSidebar,
     onSelectProjectFromSidebar,
+    handleOpenPublishConfirm,
+    handleOpenUnpublishConfirm,
+    handleClosePublishDialog,
+    handleConfirmPublish,
+    handleConfirmUnpublish,
   };
 }

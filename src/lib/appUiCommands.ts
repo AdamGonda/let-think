@@ -75,6 +75,26 @@ export function intentSelectSessionFromSidebar(
   actor.send({ type: "INTENT_SELECT_SESSION_FROM_SIDEBAR", sessionId });
 }
 
+export function intentOpenPublishConfirm(actor: AppUiActorRef): void {
+  actor.send({ type: "INTENT_OPEN_PUBLISH_CONFIRM" });
+}
+
+export function intentOpenUnpublishConfirm(actor: AppUiActorRef): void {
+  actor.send({ type: "INTENT_OPEN_UNPUBLISH_CONFIRM" });
+}
+
+export function intentClosePublishDialog(actor: AppUiActorRef): void {
+  actor.send({ type: "INTENT_CLOSE_PUBLISH_DIALOG" });
+}
+
+export function intentConfirmPublish(actor: AppUiActorRef): void {
+  actor.send({ type: "INTENT_CONFIRM_PUBLISH" });
+}
+
+export function intentConfirmUnpublish(actor: AppUiActorRef): void {
+  actor.send({ type: "INTENT_CONFIRM_UNPUBLISH" });
+}
+
 export function setNotesListDrill(actor: AppUiActorRef, drill: NotesListDrill): void {
   actor.send({ type: "NOTES_LIST_DRILL_SET", drill });
 }

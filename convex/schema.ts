@@ -59,6 +59,18 @@ export default defineSchema({
     interactionRestriction: v.optional(v.string()),
   }).index("by_created", ["createdAt"]).index("by_project", ["projectId", "createdAt"]).index("by_user", ["userId", "createdAt"]),
 
+  public_files: defineTable({
+    sessionId: v.id("sessions"),
+    ownerUserId: v.id("users"),
+    publishedAt: v.number(),
+    titleSnapshot: v.optional(v.string()),
+    thinkingNotesSnapshot: v.optional(v.string()),
+    draftInputSnapshot: v.optional(v.string()),
+  }).index("by_session", ["sessionId"]).index("by_published", ["publishedAt"]).index(
+    "by_owner_session",
+    ["ownerUserId", "sessionId"],
+  ),
+
   /** Concept graph per session — kept separate so listing sessions stays bandwidth-light. */
   sessionConceptGraphs: defineTable({
     sessionId: v.id("sessions"),

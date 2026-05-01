@@ -13,6 +13,9 @@ interface NoteBreadcrumbProps {
   onSessionClick: () => void;
   onFileClick: () => void;
   fileLabel?: string;
+  isPublished: boolean;
+  onPublishClick: () => void;
+  onUnpublishClick: () => void;
 }
 
 export function NoteBreadcrumb({
@@ -22,6 +25,9 @@ export function NoteBreadcrumb({
   onSessionClick,
   onFileClick,
   fileLabel = GO_TO_SESSION_LEAF,
+  isPublished,
+  onPublishClick,
+  onUnpublishClick,
 }: NoteBreadcrumbProps) {
   return (
     <nav aria-label="Breadcrumb" className="mb-3 w-full shrink-0">
@@ -61,6 +67,16 @@ export function NoteBreadcrumb({
             onClick={onFileClick}
           >
             {fileLabel}
+          </button>
+        </li>
+        <li className="ml-auto">
+          <button
+            type="button"
+            className={cn("block w-full min-w-0 rounded px-2 py-0.5", crumbButtonClass)}
+            onClick={isPublished ? onUnpublishClick : onPublishClick}
+            aria-label={isPublished ? "Unpublish notes" : "Publish notes"}
+          >
+            {isPublished ? "Unpublish" : "Publish"}
           </button>
         </li>
       </ol>
