@@ -122,3 +122,23 @@ export const listPublic = query({
     return await ctx.db.query("public_files").withIndex("by_published").order("desc").collect();
   },
 });
+
+export const getPublicById = query({
+  args: { publicFileId: v.id("public_files") },
+  returns: v.union(
+    v.null(),
+    v.object({
+      _id: v.id("public_files"),
+      _creationTime: v.number(),
+      sessionId: v.id("sessions"),
+      ownerUserId: v.id("users"),
+      publishedAt: v.number(),
+      titleSnapshot: v.optional(v.string()),
+      thinkingNotesSnapshot: v.optional(v.string()),
+      draftInputSnapshot: v.optional(v.string()),
+    }),
+  ),
+  handler: async (ctx, { publicFileId }) => {
+    return await ctx.db.get(publicFileId);
+  },
+});

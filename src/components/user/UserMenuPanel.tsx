@@ -1,4 +1,4 @@
-import { HelpCircle, LogOut, X, Users } from "lucide-react";
+import { HelpCircle, LogOut, X, Square as SquareIcon } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { usePostHog } from "posthog-js/react";
 import { Button } from "@/components/ui/button";
@@ -66,7 +66,7 @@ export function UserMenuPanel({
           onClose();
         }}
       >
-        <Users className="size-4" />
+        <SquareIcon className="size-4" />
         Square
       </button>
 

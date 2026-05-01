@@ -39,5 +39,6 @@ describe("SquarePage", () => {
     render(<SquarePage />);
     expect(screen.getByText("Session A")).toBeTruthy();
     expect(screen.getByText("Public notes body")).toBeTruthy();
+    expect(screen.getByText("Read idea →")).toBeTruthy();
   });
 });

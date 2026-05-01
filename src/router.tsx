@@ -15,6 +15,7 @@ import { TermsOfUsePage } from "./pages/TermsOfUsePage";
 import { SignIn } from "./components/auth/SignIn";
 import { AdminAllowlistPage } from "./pages/AdminAllowlistPage";
 import { SquarePage } from "./pages/SquarePage";
+import { SquareIdeaPage } from "./pages/SquareIdeaPage";
 
 const ADMIN_ROUTE_HASH = "a9f3d2c7be4e8f11";
 
@@ -94,6 +95,12 @@ const squareRoute = createRoute({
   component: SquarePage,
 });
 
+const squareIdeaRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/square/$publicFileId",
+  component: SquareIdeaPage,
+});
+
 const privacyRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/privacy",
@@ -116,6 +123,7 @@ const routeTree = rootRoute.addChildren([
   indexRoute,
   appRoute,
   squareRoute,
+  squareIdeaRoute,
   privacyRoute,
   termsRoute,
   adminRoute,
