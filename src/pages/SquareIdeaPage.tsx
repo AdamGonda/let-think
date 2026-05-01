@@ -60,7 +60,8 @@ export function SquareIdeaPage() {
                 {entry.titleSnapshot?.trim() || "Untitled idea"}
               </h1>
               <p className="text-sm text-muted-foreground">
-                Published {formatPublishedAt(entry.publishedAt)}
+                By {entry.authorDisplayName?.trim() || "Unknown author"} · Published{" "}
+                {formatPublishedAt(entry.publishedAt)}
               </p>
             </>
           )}

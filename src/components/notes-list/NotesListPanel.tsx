@@ -44,6 +44,11 @@ export function NotesListPanel({
   const drillTitle = drillGroup ? groupDisplayName(drillGroup) : "";
   const drillHeading =
     drilled && drillGroup ? `${drillTitle}` : "Projects";
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const inboxGroup = workspace.find((g) => g.project == null);
+  const showInboxCard =
+    !!inboxGroup && (!normalizedQuery || "inbox".includes(normalizedQuery));
+  const rootCardCount = (showInboxCard ? 1 : 0) + filteredGroups.length;
 
   return (
     <div className="flex flex-1 flex-col min-h-0 bg-background">
@@ -65,7 +70,7 @@ export function NotesListPanel({
         <div className="min-h-0 flex-1 overflow-y-auto py-6">
           {!drilled && (
             <>
-              {filteredGroups.length === 0 ? (
+              {rootCardCount === 0 ? (
                 <p className="text-center text-sm text-muted-foreground py-12">
                   {searchQuery.trim() ? (
                     <>Nothing matches &quot;{searchQuery}&quot;</>
@@ -79,6 +84,14 @@ export function NotesListPanel({
                 </p>
               ) : (
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {showInboxCard && inboxGroup ? (
+                    <li key="inbox">
+                      <ProjectSummaryCard
+                        group={inboxGroup}
+                        onDrill={() => onDrillChange({ type: "inbox" })}
+                      />
+                    </li>
+                  ) : null}
                   {filteredGroups.map((group) => {
                     const projectId = group.project._id;
                     return (

@@ -62,6 +62,7 @@ export default defineSchema({
   public_files: defineTable({
     sessionId: v.id("sessions"),
     ownerUserId: v.id("users"),
+    authorDisplayName: v.optional(v.string()),
     publishedAt: v.number(),
     titleSnapshot: v.optional(v.string()),
     thinkingNotesSnapshot: v.optional(v.string()),

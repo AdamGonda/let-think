@@ -29,6 +29,11 @@ export const publish = mutation({
   handler: async (ctx, { sessionId }) => {
     const userId = await requireAuthenticatedUser(ctx);
     const session = await loadOwnedSession(ctx, sessionId, userId);
+    const user = await ctx.db.get(userId);
+    const authorDisplayName =
+      user?.name?.trim() ||
+      user?.email?.trim() ||
+      "Anonymous";
     const now = Date.now();
     const existing = await ctx.db
       .query("public_files")
@@ -40,6 +45,7 @@ export const publish = mutation({
     if (existing) {
       await ctx.db.patch(existing._id, {
         publishedAt: now,
+        authorDisplayName,
         titleSnapshot: session.title,
         thinkingNotesSnapshot: session.thinkingNotes,
         draftInputSnapshot: session.draftInput,
@@ -50,6 +56,7 @@ export const publish = mutation({
     return await ctx.db.insert("public_files", {
       sessionId,
       ownerUserId: userId,
+      authorDisplayName,
       publishedAt: now,
       titleSnapshot: session.title,
       thinkingNotesSnapshot: session.thinkingNotes,
@@ -86,6 +93,7 @@ export const getBySession = query({
       _creationTime: v.number(),
       sessionId: v.id("sessions"),
       ownerUserId: v.id("users"),
+      authorDisplayName: v.optional(v.string()),
       publishedAt: v.number(),
       titleSnapshot: v.optional(v.string()),
       thinkingNotesSnapshot: v.optional(v.string()),
@@ -112,6 +120,7 @@ export const listPublic = query({
       _creationTime: v.number(),
       sessionId: v.id("sessions"),
       ownerUserId: v.id("users"),
+      authorDisplayName: v.optional(v.string()),
       publishedAt: v.number(),
       titleSnapshot: v.optional(v.string()),
       thinkingNotesSnapshot: v.optional(v.string()),
@@ -132,6 +141,7 @@ export const getPublicById = query({
       _creationTime: v.number(),
       sessionId: v.id("sessions"),
       ownerUserId: v.id("users"),
+      authorDisplayName: v.optional(v.string()),
       publishedAt: v.number(),
       titleSnapshot: v.optional(v.string()),
       thinkingNotesSnapshot: v.optional(v.string()),

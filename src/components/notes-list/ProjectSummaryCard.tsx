@@ -1,4 +1,4 @@
-import type { ProjectRow } from "@/components/session-sidebar/workspaceTypes";
+import type { ProjectWithSessions } from "@/components/session-sidebar/workspaceTypes";
 import { CornerRippleBackdrop } from "@/components/ui/corner-ripple-backdrop";
 import {
   formatUpdatedLabel,
@@ -7,7 +7,7 @@ import {
 } from "@/lib/notesListUtils";
 
 type ProjectSummaryCardProps = {
-  group: ProjectRow;
+  group: ProjectWithSessions;
   onDrill: () => void;
 };
 
@@ -21,7 +21,8 @@ export function ProjectSummaryCard({ group, onDrill }: ProjectSummaryCardProps) 
       : count === 1
         ? "1 file"
         : `${count} files`;
-  const activity = groupActivityMs(sessions, group.project.createdAt);
+  const fallbackCreatedAt = sessions[0]?.createdAt ?? Date.now();
+  const activity = groupActivityMs(sessions, group.project?.createdAt ?? fallbackCreatedAt);
 
   return (
     <div className="relative overflow-hidden rounded-xl border-2 border-border/90">
