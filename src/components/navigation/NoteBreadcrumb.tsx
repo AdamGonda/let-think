@@ -75,7 +75,14 @@ export function NoteBreadcrumb({
           <ChevronRight className="size-3.5" />
         </li>
         <li className="min-w-0">
-          <span className={fileCrumbClass} title={fileName} aria-current="page">
+          <span
+            className={cn(
+              fileCrumbClass,
+              !interactive && "cursor-not-allowed no-underline text-muted-foreground/45 opacity-80",
+            )}
+            title={fileName}
+            aria-current="page"
+          >
             {fileName}
           </span>
         </li>

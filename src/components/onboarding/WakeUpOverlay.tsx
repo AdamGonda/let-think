@@ -81,7 +81,7 @@ export function WakeUpOverlay({
               <NoteBreadcrumb
                 projectName={activeSessionInWorkspace.projectName}
                 fileName={activeSessionInWorkspace.session.title}
-                interactive={editorRevealReady}
+                interactive={editorRevealReady && !chatLoading}
                 onProjectsRootClick={onBreadcrumbProjectsRootClick}
                 onProjectNameClick={onBreadcrumbProjectNameClick}
               />
