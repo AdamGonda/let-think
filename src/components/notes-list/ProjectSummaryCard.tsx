@@ -1,5 +1,5 @@
 import { clsx } from "clsx";
-import type { ProjectRow } from "@/components/session-sidebar/workspaceTypes";
+import type { ProjectWithSessions } from "@/components/session-sidebar/workspaceTypes";
 import { CornerRippleBackdrop } from "@/components/ui/corner-ripple-backdrop";
 import {
   formatUpdatedLabel,
@@ -8,8 +8,8 @@ import {
 } from "@/lib/notesListUtils";
 
 type ProjectSummaryCardProps = {
-  group: ProjectRow;
-  /** True when the globally active session belongs to this project. */
+  group: ProjectWithSessions;
+  /** True when the globally active session belongs to this project or Inbox. */
   isSelected: boolean;
   onDrill: () => void;
 };
@@ -28,7 +28,10 @@ export function ProjectSummaryCard({
       : count === 1
         ? "1 file"
         : `${count} files`;
-  const activity = groupActivityMs(sessions, group.project.createdAt);
+  const activity = groupActivityMs(
+    sessions,
+    group.project?.createdAt ?? 0,
+  );
 
   return (
     <div

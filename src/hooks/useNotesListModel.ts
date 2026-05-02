@@ -23,29 +23,34 @@ export function useNotesListModel(
   const totalSessions =
     workspace?.reduce((n, g) => n + g.sessions.length, 0) ?? 0;
 
+  /** Inbox + projects, sorted (matches Files grid: one card per folder). */
   const sortedGroups = useMemo(() => {
     if (!workspace) return [];
-    const copy = [...workspace];
+    const inboxGroup = workspace.find((g) => g.project == null);
+    const projectGroups = workspace.filter(
+      (g): g is ProjectRow => g.project != null,
+    );
+    const combined: ProjectWithSessions[] = [];
+    if (inboxGroup) combined.push(inboxGroup);
+    combined.push(...projectGroups);
+
     if (sortMode === "name") {
-      const projectGroups = copy.filter(
-        (g): g is ProjectRow => g.project != null,
-      );
-      projectGroups.sort((a, b) =>
+      combined.sort((a, b) =>
         groupDisplayName(a).localeCompare(groupDisplayName(b), undefined, {
           sensitivity: "base",
         }),
       );
-      return projectGroups;
+      return combined;
     }
-    const projectGroups = copy.filter(
-      (g): g is ProjectRow => g.project != null,
-    );
-    projectGroups.sort((a, b) => {
-      const ta = groupActivityMs(a.sessions, a.project.createdAt);
-      const tb = groupActivityMs(b.sessions, b.project.createdAt);
+
+    combined.sort((a, b) => {
+      const createdA = a.project?.createdAt ?? 0;
+      const createdB = b.project?.createdAt ?? 0;
+      const ta = groupActivityMs(a.sessions, createdA);
+      const tb = groupActivityMs(b.sessions, createdB);
       return tb - ta;
     });
-    return projectGroups;
+    return combined;
   }, [workspace, sortMode]);
 
   const filteredGroups = useMemo(() => {

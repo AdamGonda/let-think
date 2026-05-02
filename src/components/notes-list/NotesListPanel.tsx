@@ -73,29 +73,33 @@ export function NotesListPanel({
                     <>Nothing matches &quot;{searchQuery}&quot;</>
                   ) : (
                     <>
-                      No projects yet. Sessions without a project stay in{" "}
-                      <span className="font-medium text-foreground">Inbox</span>{" "}
-                      in the sidebar.
+                      No folders to show. Sessions without a project live in{" "}
+                      <span className="font-medium text-foreground">Inbox</span>.
                     </>
                   )}
                 </p>
               ) : (
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {filteredGroups.map((group) => {
-                    const projectId = group.project._id;
-                    const projectHasActiveSession =
+                    const isInbox = group.project == null;
+                    const cardKey = isInbox ? "inbox" : group.project._id;
+                    const folderHasActiveSession =
                       activeSessionId != null &&
                       group.sessions.some((s) => s._id === activeSessionId);
                     return (
-                      <li key={projectId}>
+                      <li key={cardKey}>
                         <ProjectSummaryCard
                           group={group}
-                          isSelected={projectHasActiveSession}
+                          isSelected={folderHasActiveSession}
                           onDrill={() =>
-                            onDrillChange({
-                              type: "project",
-                              id: projectId,
-                            })
+                            onDrillChange(
+                              isInbox
+                                ? { type: "inbox" }
+                                : {
+                                    type: "project",
+                                    id: group.project._id,
+                                  },
+                            )
                           }
                         />
                       </li>

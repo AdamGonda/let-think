@@ -44,12 +44,14 @@ describe("useNotesListModel", () => {
     act(() => {
       result.current.setSortMode("name");
     });
-    expect(result.current.sortedGroups[0]?.project?.name).toBe("Zebra");
+    expect(result.current.sortedGroups[0]?.project).toBeNull();
+    expect(result.current.sortedGroups[1]?.project?.name).toBe("Zebra");
   });
 
   it("filters groups by search query", () => {
     const p1 = "p1" as Id<"projects">;
     const workspace: ProjectWithSessions[] = [
+      { project: null, sessions: [] },
       {
         project: mkProject(p1, "Alpha", 1),
         sessions: [],
