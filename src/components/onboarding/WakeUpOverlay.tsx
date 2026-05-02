@@ -9,7 +9,6 @@ type WakeUpOverlayProps = {
   chatLoading: boolean;
   isExitingOverlay: boolean;
   editorOpen: boolean;
-  showOverlayAction: boolean;
   overlayActionReturnsToGraph: boolean;
   onOverlayActionClick: () => void;
   editorRevealReady: boolean;
@@ -32,7 +31,6 @@ export function WakeUpOverlay({
   chatLoading,
   isExitingOverlay,
   editorOpen,
-  showOverlayAction,
   overlayActionReturnsToGraph,
   onOverlayActionClick,
   editorRevealReady,
@@ -46,7 +44,8 @@ export function WakeUpOverlay({
 }: WakeUpOverlayProps) {
   const showFileNavBreadcrumb =
     editorOpen && !!activeSessionInWorkspace;
-  const showOverlayBrain = showOverlayAction;
+  /** Visible whenever the note overlay is active (breadcrumb loading state is separate). */
+  const showBrainButton = editorOpen && !!activeSessionId;
 
   return (
     <div
@@ -61,11 +60,11 @@ export function WakeUpOverlay({
           isExitingOverlay ? "opacity-0" : "opacity-100"
         }`}
       >
-        {showOverlayBrain ? (
+        {showBrainButton ? (
           <Button
             variant="outline"
             size="icon-sm"
-            className="absolute top-3 right-4 z-10"
+            className="absolute top-3 right-4 z-20"
             onClick={onOverlayActionClick}
             aria-label={
               overlayActionReturnsToGraph
@@ -77,20 +76,21 @@ export function WakeUpOverlay({
           </Button>
         ) : null}
         {activeSessionId && (
-          <div className="flex-1 min-h-0 flex flex-col items-stretch justify-start px-6 pb-8 pt-2 overflow-hidden">
+          <div className="flex-1 min-h-0 flex flex-col items-stretch justify-start overflow-hidden px-6 pb-8 pt-2">
+            {showFileNavBreadcrumb && activeSessionInWorkspace ? (
+              <NoteBreadcrumb
+                projectName={activeSessionInWorkspace.projectName}
+                fileName={activeSessionInWorkspace.session.title}
+                interactive={editorRevealReady}
+                onProjectsRootClick={onBreadcrumbProjectsRootClick}
+                onProjectNameClick={onBreadcrumbProjectNameClick}
+              />
+            ) : null}
             <div
-              className={`relative flex w-full flex-1 min-h-0 flex-col justify-start overflow-y-auto transition-opacity duration-150 ${
+              className={`relative flex min-h-0 w-full flex-1 flex-col justify-start overflow-y-auto transition-opacity duration-150 ${
                 editorRevealReady ? "opacity-100" : "opacity-0"
               }`}
             >
-              {showFileNavBreadcrumb && activeSessionInWorkspace ? (
-                <NoteBreadcrumb
-                  projectName={activeSessionInWorkspace.projectName}
-                  fileName={activeSessionInWorkspace.session.title}
-                  onProjectsRootClick={onBreadcrumbProjectsRootClick}
-                  onProjectNameClick={onBreadcrumbProjectNameClick}
-                />
-              ) : null}
               <div
                 className={`mx-auto flex w-full min-h-0 flex-1 flex-col justify-start ${layout.mainColumnMaxWidthClass}`}
               >

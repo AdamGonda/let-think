@@ -10,6 +10,8 @@ interface NoteBreadcrumbProps {
   projectName: string;
   /** Session note title shown as the current file (non-interactive). */
   fileName: string;
+  /** When false, crumbs are visible but not clickable (session still settling). */
+  interactive?: boolean;
   onProjectsRootClick: () => void;
   onProjectNameClick: () => void;
 }
@@ -17,21 +19,40 @@ interface NoteBreadcrumbProps {
 const fileCrumbClass =
   "max-w-full min-w-0 truncate px-1 py-0.5 font-medium text-foreground/90 underline decoration-foreground/35 underline-offset-2";
 
+const disabledCrumbWrap =
+  "cursor-not-allowed text-muted-foreground/45 opacity-80";
+
 export function NoteBreadcrumb({
   projectName,
   fileName,
+  interactive = true,
   onProjectsRootClick,
   onProjectNameClick,
 }: NoteBreadcrumbProps) {
+  const crumbInteractiveClass = interactive
+    ? crumbButtonClass
+    : cn(
+        "max-w-full truncate rounded px-1 py-0.5 text-left font-medium transition-colors",
+        disabledCrumbWrap,
+      );
+
   return (
-    <nav aria-label="Breadcrumb" className="mb-3 w-full shrink-0">
+    <nav
+      aria-label="Breadcrumb"
+      className="mb-3 w-full shrink-0"
+      aria-disabled={!interactive || undefined}
+    >
       <ol className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted-foreground">
         <li className="min-w-0">
           <button
             type="button"
-            className={cn("inline-block max-w-full min-w-0", crumbButtonClass)}
+            className={cn(
+              "inline-block max-w-full min-w-0",
+              crumbInteractiveClass,
+            )}
             title={PROJECTS_ROOT_LABEL}
-            onClick={onProjectsRootClick}
+            disabled={!interactive}
+            onClick={interactive ? onProjectsRootClick : undefined}
           >
             {PROJECTS_ROOT_LABEL}
           </button>
@@ -42,9 +63,10 @@ export function NoteBreadcrumb({
         <li className="min-w-0">
           <button
             type="button"
-            className={cn("block w-full min-w-0", crumbButtonClass)}
+            className={cn("block w-full min-w-0", crumbInteractiveClass)}
             title={projectName}
-            onClick={onProjectNameClick}
+            disabled={!interactive}
+            onClick={interactive ? onProjectNameClick : undefined}
           >
             {projectName}
           </button>

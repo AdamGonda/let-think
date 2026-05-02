@@ -84,7 +84,6 @@ export function AppContentBody({
     hasChatHistory,
     uiCollapseSignal,
     overlayActionReturnsToGraph,
-    showOverlayAction,
   } = useAppContentSelectors();
   const actor = useAppUiActor();
   const posthog = usePostHog();
@@ -256,7 +255,6 @@ export function AppContentBody({
               chatLoading={chatLoading}
               isExitingOverlay={isExitingOverlay}
               editorOpen={editorOpen}
-              showOverlayAction={showOverlayAction}
               overlayActionReturnsToGraph={overlayActionReturnsToGraph}
               onOverlayActionClick={handleWakeUpOverlayActionClick}
               editorRevealReady={editorRevealReady}

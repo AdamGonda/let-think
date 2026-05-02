@@ -7,7 +7,6 @@ import {
   selectDisplayWakeUpLayer,
   selectEditorRevealReady,
   selectIsExitingWakeUp,
-  selectShowOverlayAction,
   selectSurface,
   selectUiCollapseSignal,
   selectChatLoadingOnNotesList,
@@ -45,7 +44,6 @@ type AppContentSelectors = {
   hasChatHistory: AppSnapshot["context"]["hasChatHistory"];
   uiCollapseSignal: ReturnType<typeof selectUiCollapseSignal>;
   overlayActionReturnsToGraph: ReturnType<typeof selectOverlayActionReturnsToGraph>;
-  showOverlayAction: ReturnType<typeof selectShowOverlayAction>;
 };
 
 function shallowEqualSelectors(
@@ -75,8 +73,7 @@ function shallowEqualSelectors(
     a.editorRevealReady === b.editorRevealReady &&
     a.hasChatHistory === b.hasChatHistory &&
     a.uiCollapseSignal === b.uiCollapseSignal &&
-    a.overlayActionReturnsToGraph === b.overlayActionReturnsToGraph &&
-    a.showOverlayAction === b.showOverlayAction
+    a.overlayActionReturnsToGraph === b.overlayActionReturnsToGraph
   );
 }
 
@@ -105,7 +102,6 @@ function selectAppContentSnapshot(s: AppSnapshot): AppContentSelectors {
     hasChatHistory: s.context.hasChatHistory,
     uiCollapseSignal: selectUiCollapseSignal(s),
     overlayActionReturnsToGraph: selectOverlayActionReturnsToGraph(s),
-    showOverlayAction: selectShowOverlayAction(s),
   };
 }
 
