@@ -133,7 +133,7 @@ describe("intent orchestration", () => {
       type: "project",
       id: pid,
     });
-    await vi.advanceTimersByTimeAsync(timings.wakeUpExitMs);
+    await vi.advanceTimersByTimeAsync(timings.wakeUpExitMs + 1);
     expect(actor.getSnapshot().context.editorOpen).toBe(false);
     actor.stop();
     vi.useRealTimers();
@@ -241,6 +241,30 @@ describe("intent orchestration", () => {
     expect(selectGraphLoadingStartBatchLength(actor.getSnapshot())).toBe(3);
     expect(selectGraphShowLoadingCards(actor.getSnapshot())).toBe(true);
     expect(selectGraphInteractionBlocked(actor.getSnapshot())).toBe(true);
+    actor.stop();
+  });
+
+  it("preserves prevBatchesLength when ACTIVE_SESSION_SET repeats the same session", () => {
+    const actor = createActor(appUiMachine, {
+      input: baseInput({ prevBatchesLength: 5 }),
+    });
+    actor.start();
+    actor.send({ type: "ACTIVE_SESSION_SET", sessionId: sid });
+    expect(actor.getSnapshot().context.prevBatchesLength).toBe(5);
+    actor.send({ type: "CHAT_LOADING_START" });
+    expect(selectGraphLoadingStartBatchLength(actor.getSnapshot())).toBe(5);
+    actor.stop();
+  });
+
+  it("zeros prevBatchesLength when switching ACTIVE_SESSION_SET to another session", () => {
+    const other = "other_sess" as Id<"sessions">;
+    const actor = createActor(appUiMachine, {
+      input: baseInput({ prevBatchesLength: 7 }),
+    });
+    actor.start();
+    actor.send({ type: "ACTIVE_SESSION_SET", sessionId: other });
+    expect(actor.getSnapshot().context.activeSessionId).toBe(other);
+    expect(actor.getSnapshot().context.prevBatchesLength).toBe(0);
     actor.stop();
   });
 

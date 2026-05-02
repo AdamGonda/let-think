@@ -62,12 +62,6 @@ export const appUiMachine = setup({
     }),
     completeUserExit: assign({
       overlayDismissed: true,
-      chatLoading: false,
-      graphShowLoadingCards: false,
-      graphInteractionBlocked: false,
-      graphLatestBatchNodeCount: 0,
-      graphLoadingStartBatchLength: 0,
-      graphReferenceFreezeActive: false,
       editorOpen: false,
     }),
     sessionCleared: assign({
@@ -88,6 +82,12 @@ export const appUiMachine = setup({
       },
       prevBatchesLength: ({ event, context }) => {
         if (event.type !== "ACTIVE_SESSION_SET") return context.prevBatchesLength;
+        const sid = event.sessionId;
+        if (sid === null) return 0;
+        // Same-session re-announcements must not wipe the batches baseline —
+        // the bridge only re-sends BATCHES_LENGTH_CHANGED when length changes,
+        // so resetting here leaves graphLoadingStartBatchLength wrong and skips loading skeletons.
+        if (sid === context.activeSessionId) return context.prevBatchesLength;
         return 0;
       },
       hasEverHadSessionSelection: ({ event, context }) => {
