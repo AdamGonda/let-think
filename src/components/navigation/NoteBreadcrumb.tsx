@@ -12,6 +12,11 @@ interface NoteBreadcrumbProps {
   fileName: string;
   /** When false, crumbs are visible but not clickable (session still settling). */
   interactive?: boolean;
+  /**
+   * Wake-up overlay exit animation: non-interactive but avoid "disabled" cursor —
+   * `editorRevealReady` is false in that machine state while the editor is still "open".
+   */
+  isExiting?: boolean;
   onProjectsRootClick: () => void;
   onProjectNameClick: () => void;
 }
@@ -20,12 +25,16 @@ const fileCrumbClass =
   "max-w-full min-w-0 truncate px-1 py-0.5 font-medium text-foreground/90 underline decoration-foreground/35 underline-offset-2";
 
 const disabledCrumbWrap =
-  "cursor-not-allowed text-muted-foreground/45 opacity-80";
+  "cursor-not-allowed text-muted-foreground/45 opacity-80 disabled:cursor-not-allowed";
+
+const exitingCrumbWrap =
+  "cursor-default text-muted-foreground/50 opacity-70 disabled:cursor-default";
 
 export function NoteBreadcrumb({
   projectName,
   fileName,
   interactive = true,
+  isExiting = false,
   onProjectsRootClick,
   onProjectNameClick,
 }: NoteBreadcrumbProps) {
@@ -33,7 +42,7 @@ export function NoteBreadcrumb({
     ? crumbButtonClass
     : cn(
         "max-w-full truncate rounded px-1 py-0.5 text-left font-medium transition-colors",
-        disabledCrumbWrap,
+        isExiting ? exitingCrumbWrap : disabledCrumbWrap,
       );
 
   return (
@@ -78,7 +87,10 @@ export function NoteBreadcrumb({
           <span
             className={cn(
               fileCrumbClass,
-              !interactive && "cursor-not-allowed no-underline text-muted-foreground/45 opacity-80",
+              !interactive &&
+                (isExiting
+                  ? "cursor-default no-underline text-muted-foreground/50 opacity-70"
+                  : "cursor-not-allowed no-underline text-muted-foreground/45 opacity-80"),
             )}
             title={fileName}
             aria-current="page"
