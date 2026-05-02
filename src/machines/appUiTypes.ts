@@ -39,15 +39,10 @@ export type AppUiContext = {
   hasEverHadSessionSelection: boolean;
   /** Mirrors `surface` parallel state for guards that only receive `context`. */
   surfaceMode: SurfaceMode;
-  /** Monotonic token: UI collapses sidebar after delayed open-editor policy (machine timers). */
+  /** Monotonic token for sidebar collapse (legacy; no longer incremented on editor open). */
   sidebarCollapseRequestSeq: number;
-  /** Monotonic token: UI collapses sidebar immediately (return-to-graph, etc.). */
+  /** Monotonic token (legacy; brain / return-to-graph no longer bump it). */
   sidebarCollapseImmediateSeq: number;
-  /**
-   * File overlay breadcrumb only after opening a session from the Project notes grid
-   * (`openSessionInFilesWithEditor`), not from the sidebar project tree.
-   */
-  showFileNoteBreadcrumbFromProjectNotes: boolean;
 };
 
 export type AppUiEvent =
@@ -75,7 +70,6 @@ export type AppUiEvent =
   | { type: "NOTES_SET"; value: string }
   | { type: "HISTORY_OPEN" }
   | { type: "HISTORY_CLOSE" }
-  | { type: "FILE_NOTE_BREADCRUMB_SOURCE_SET"; fromProjectNotesExplorer: boolean }
   /** User intents — orchestration owned by the machine (see appUiCommands). */
   | { type: "INTENT_OVERLAY_ACTION_CLICK" }
   | { type: "INTENT_BREADCRUMB_PROJECTS_ROOT_CLICK" }

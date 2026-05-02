@@ -25,7 +25,6 @@ type AppContentSelectors = {
   activeSessionId: AppSnapshot["context"]["activeSessionId"];
   activeProjectId: AppSnapshot["context"]["activeProjectId"];
   notesListDrill: AppSnapshot["context"]["notesListDrill"];
-  showFileNoteBreadcrumbFromProjectNotes: AppSnapshot["context"]["showFileNoteBreadcrumbFromProjectNotes"];
   selectedBatchIndex: AppSnapshot["context"]["selectedBatchIndex"];
   draftInput: AppSnapshot["context"]["draftInput"];
   notes: AppSnapshot["context"]["notes"];
@@ -57,8 +56,6 @@ function shallowEqualSelectors(
     a.activeSessionId === b.activeSessionId &&
     a.activeProjectId === b.activeProjectId &&
     a.notesListDrill === b.notesListDrill &&
-    a.showFileNoteBreadcrumbFromProjectNotes ===
-      b.showFileNoteBreadcrumbFromProjectNotes &&
     a.selectedBatchIndex === b.selectedBatchIndex &&
     a.draftInput === b.draftInput &&
     a.notes === b.notes &&
@@ -88,8 +85,6 @@ function selectAppContentSnapshot(s: AppSnapshot): AppContentSelectors {
     activeSessionId: s.context.activeSessionId,
     activeProjectId: s.context.activeProjectId,
     notesListDrill: s.context.notesListDrill,
-    showFileNoteBreadcrumbFromProjectNotes:
-      s.context.showFileNoteBreadcrumbFromProjectNotes,
     selectedBatchIndex: s.context.selectedBatchIndex,
     draftInput: s.context.draftInput,
     notes: s.context.notes,

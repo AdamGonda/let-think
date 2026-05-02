@@ -29,7 +29,6 @@ function ctx(partial: Partial<AppUiContext>): AppUiContext {
     hasChatHistory: true,
     messagesLoading: false,
     hasEverHadSessionSelection: false,
-    showFileNoteBreadcrumbFromProjectNotes: false,
     surfaceMode: "graph" as const,
     sidebarCollapseRequestSeq: 0,
     sidebarCollapseImmediateSeq: 0,

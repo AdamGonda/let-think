@@ -46,8 +46,8 @@ export const appUiMachine = setup({
       event.firstSessionId != null &&
       context.activeSessionId == null &&
       !context.hasEverHadSessionSelection,
-    isOverlayActionReturnToGraphPath: ({ context }) =>
-      context.editorOpen && context.surfaceMode === "graph",
+    /** Close note overlay: from graph or from Files (notes list) surface. */
+    isOverlayActionReturnToGraphPath: ({ context }) => context.editorOpen,
     loadingCardsCompletedOnProgress: ({ context, event }) =>
       event.type === "GRAPH_LOADING_PROGRESS" &&
       context.graphShowLoadingCards &&
@@ -69,7 +69,6 @@ export const appUiMachine = setup({
       graphLoadingStartBatchLength: 0,
       graphReferenceFreezeActive: false,
       editorOpen: false,
-      showFileNoteBreadcrumbFromProjectNotes: false,
     }),
     sessionCleared: assign({
       chatLoading: false,
@@ -81,7 +80,6 @@ export const appUiMachine = setup({
       editorOpen: false,
       overlayDismissed: false,
       historyPanelOpen: false,
-      showFileNoteBreadcrumbFromProjectNotes: false,
     }),
     setActiveSessionId: assign({
       activeSessionId: ({ event }) => {
@@ -115,7 +113,6 @@ export const appUiMachine = setup({
       graphInteractionBlocked: () => false,
       graphLatestBatchNodeCount: () => 0,
       graphReferenceFreezeActive: () => false,
-      showFileNoteBreadcrumbFromProjectNotes: false,
     }),
     autoSelectFirstWorkspaceSession: assign({
       activeSessionId: ({ event }) => {
@@ -186,20 +183,6 @@ export const appUiMachine = setup({
       reduceGraphLoadingProgress(context, event as AppUiEvent),
     ),
     assignEditorOpenTrue: assign({ editorOpen: true }),
-    setFileNoteBreadcrumbSource: assign({
-      showFileNoteBreadcrumbFromProjectNotes: ({ event }) => {
-        if (event.type !== "FILE_NOTE_BREADCRUMB_SOURCE_SET") return false;
-        return event.fromProjectNotesExplorer;
-      },
-    }),
-    incrementSidebarCollapseRequestSeq: assign({
-      sidebarCollapseRequestSeq: ({ context }) =>
-        context.sidebarCollapseRequestSeq + 1,
-    }),
-    incrementSidebarCollapseImmediateSeq: assign({
-      sidebarCollapseImmediateSeq: ({ context }) =>
-        context.sidebarCollapseImmediateSeq + 1,
-    }),
     assignSurfaceModeNotesList: assign({ surfaceMode: "notesList" }),
     assignSurfaceModeGraph: assign({ surfaceMode: "graph" }),
     raiseExitWakeUp: raise({ type: "USER_EXIT_WAKE_UP" }),
@@ -214,12 +197,8 @@ export const appUiMachine = setup({
       }
       return { notesListDrill: null };
     }),
+    /** Leave note overlay for graph; clears Files drill so navigation stays predictable. */
     returnToGraphFromEditor: enqueueActions(({ enqueue }) => {
-      enqueue.raise({ type: "VIEW_SET", mode: "graph" });
-      enqueue.raise({ type: "EDITOR_CLOSE" });
-    }),
-    /** Breadcrumb "Go to session": graph + close editor + leave file-explorer drill. */
-    goToSessionFromExplorerBreadcrumb: enqueueActions(({ enqueue }) => {
       enqueue.raise({ type: "VIEW_SET", mode: "graph" });
       enqueue.raise({ type: "EDITOR_CLOSE" });
       enqueue.raise({ type: "NOTES_LIST_DRILL_SET", drill: null });
@@ -231,6 +210,7 @@ export const appUiMachine = setup({
       enqueue.raise({ type: "USER_EXIT_WAKE_UP" });
     }),
     intentBreadcrumbSession: enqueueActions(({ enqueue, context }) => {
+      enqueue.raise({ type: "VIEW_SET", mode: "notesList" });
       const pid = context.activeProjectId;
       if (pid != null) {
         enqueue.raise({ type: "ACTIVE_PROJECT_SET", projectId: pid });
@@ -249,10 +229,6 @@ export const appUiMachine = setup({
     }),
     intentSelectSessionFromSidebar: enqueueActions(({ enqueue, context, event }) => {
       if (event.type !== "INTENT_SELECT_SESSION_FROM_SIDEBAR") return;
-      enqueue.raise({
-        type: "FILE_NOTE_BREADCRUMB_SOURCE_SET",
-        fromProjectNotesExplorer: false,
-      });
       const wasNotesList = context.surfaceMode === "notesList";
       enqueue.raise({ type: "ACTIVE_SESSION_SET", sessionId: event.sessionId });
       if (wasNotesList) {
@@ -261,7 +237,6 @@ export const appUiMachine = setup({
     }),
     editorClose: assign({
       editorOpen: false,
-      showFileNoteBreadcrumbFromProjectNotes: false,
     }),
     historyOpen: assign({ historyPanelOpen: true }),
     historyClose: assign({ historyPanelOpen: false }),
@@ -295,14 +270,9 @@ export const appUiMachine = setup({
       surfaceMode: inp?.surfaceMode ?? "graph",
       sidebarCollapseRequestSeq: inp?.sidebarCollapseRequestSeq ?? 0,
       sidebarCollapseImmediateSeq: inp?.sidebarCollapseImmediateSeq ?? 0,
-      showFileNoteBreadcrumbFromProjectNotes:
-        inp?.showFileNoteBreadcrumbFromProjectNotes ?? false,
     };
   },
   on: {
-    FILE_NOTE_BREADCRUMB_SOURCE_SET: {
-      actions: "setFileNoteBreadcrumbSource",
-    },
     ACTIVE_SESSION_SET: [
       {
         guard: "sessionBecameInactive",
@@ -385,10 +355,7 @@ export const appUiMachine = setup({
     INTENT_OVERLAY_ACTION_CLICK: [
       {
         guard: "isOverlayActionReturnToGraphPath",
-        actions: [
-          "returnToGraphFromEditor",
-          "incrementSidebarCollapseImmediateSeq",
-        ],
+        actions: ["returnToGraphFromEditor"],
       },
       {
         guard: "canExitWakeUp",
@@ -404,17 +371,14 @@ export const appUiMachine = setup({
       actions: "intentBreadcrumbSession",
     },
     INTENT_BREADCRUMB_FILE_CLICK: {
-      actions: [
-        "goToSessionFromExplorerBreadcrumb",
-        "incrementSidebarCollapseImmediateSeq",
-      ],
+      actions: ["returnToGraphFromEditor"],
     },
     INTENT_OPEN_NOTES_LIST: {
       actions: ["assignNotesListDrillForOpenNotesIntent", "assignSurfaceModeNotesList"],
       target: ".surface.notesList",
     },
     INTENT_RETURN_GRAPH_FROM_EDITOR: {
-      actions: ["returnToGraphFromEditor", "incrementSidebarCollapseImmediateSeq"],
+      actions: ["returnToGraphFromEditor"],
     },
     INTENT_SELECT_SESSION_FROM_SIDEBAR: {
       actions: "intentSelectSessionFromSidebar",
@@ -436,25 +400,12 @@ export const appUiMachine = setup({
     },
     sidebarCollapsePolicy: {
       initial: "idle",
-      /** Handle here (not on machine root) so sibling `surface` is not reset to `graph`. */
-      on: {
-        EDITOR_OPEN: {
-          actions: "assignEditorOpenTrue",
-          target: ".pendingDelayed",
-        },
-      },
+      /** Parallel region: EDITOR_OPEN sets notes overlay without collapsing the sidebar. */
       states: {
-        idle: {},
-        pendingDelayed: {
-          after: {
-            [timings.sidebarCollapseAfterEditorOpenMs]: {
-              target: "idle",
-              actions: "incrementSidebarCollapseRequestSeq",
-            },
-          },
+        idle: {
           on: {
-            EDITOR_CLOSE: {
-              target: "idle",
+            EDITOR_OPEN: {
+              actions: "assignEditorOpenTrue",
             },
           },
         },
@@ -662,9 +613,11 @@ export function selectOverlayActionReturnsToGraph(
 /** Whether wake overlay shows the top-right action button. */
 export function selectShowOverlayAction(snapshot: MachineSnapshot): boolean {
   const c = snapshot.context;
-  const returnsToGraph = selectOverlayActionReturnsToGraph(snapshot);
+  const surface = surfaceState(snapshot);
   const canExit = selectCanExitWakeUp(snapshot);
-  const overlayStandardExit =
-    canExit && !(c.editorOpen && surfaceState(snapshot) === "notesList");
-  return returnsToGraph || overlayStandardExit;
+  if (!canExit) return false;
+  const returnsToGraph = c.editorOpen && surface === "graph";
+  const editorOnNotesList = c.editorOpen && surface === "notesList";
+  const overlayStandardExit = !c.editorOpen;
+  return returnsToGraph || editorOnNotesList || overlayStandardExit;
 }

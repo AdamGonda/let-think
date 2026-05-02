@@ -9,6 +9,5 @@ export const timings = {
   breakCountdownTickMs: 1000,
   wakeUpExitMs: 300,
   graphReferenceStabilizeMs: 250,
-  sidebarCollapseAfterEditorOpenMs: 420,
   paginationDotsSpringMs: 300,
 } as const;

@@ -21,14 +21,11 @@ type WakeUpOverlayProps = {
         projectId: Id<"projects"> | null;
       }
     | undefined;
-  /** True only when the session was opened from the Project notes grid (not the sidebar tree). */
-  showFileNoteBreadcrumbFromProjectNotes: boolean;
   notes: string;
   notesSelectionRange: { start: number; end: number } | null;
   onNotesChange: (value: string) => void;
   onBreadcrumbProjectsRootClick: () => void;
   onBreadcrumbProjectNameClick: () => void;
-  onBreadcrumbGoToSessionClick: () => void;
 };
 
 export function WakeUpOverlay({
@@ -41,20 +38,15 @@ export function WakeUpOverlay({
   editorRevealReady,
   activeSessionId,
   activeSessionInWorkspace,
-  showFileNoteBreadcrumbFromProjectNotes,
   notes,
   notesSelectionRange,
   onNotesChange,
   onBreadcrumbProjectsRootClick,
   onBreadcrumbProjectNameClick,
-  onBreadcrumbGoToSessionClick,
 }: WakeUpOverlayProps) {
   const showFileNavBreadcrumb =
-    editorOpen &&
-    !!activeSessionInWorkspace &&
-    showFileNoteBreadcrumbFromProjectNotes;
-  const showGoToSessionCorner = showFileNavBreadcrumb;
-  const showOverlayBrain = showOverlayAction && !showGoToSessionCorner;
+    editorOpen && !!activeSessionInWorkspace;
+  const showOverlayBrain = showOverlayAction;
 
   return (
     <div
@@ -80,18 +72,6 @@ export function WakeUpOverlay({
                 ? "Return to concept graph"
                 : "Summarize and return to session"
             }
-          >
-            <Brain className="size-5" />
-          </Button>
-        ) : null}
-        {showGoToSessionCorner ? (
-          <Button
-            variant="outline"
-            size="icon-sm"
-            className="absolute top-3 right-4 z-10"
-            title="Go to session"
-            aria-label="Go to session"
-            onClick={onBreadcrumbGoToSessionClick}
           >
             <Brain className="size-5" />
           </Button>

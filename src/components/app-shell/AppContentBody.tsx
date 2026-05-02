@@ -65,7 +65,6 @@ export function AppContentBody({
     activeSessionId,
     activeProjectId,
     notesListDrill,
-    showFileNoteBreadcrumbFromProjectNotes,
     selectedBatchIndex,
     draftInput,
     notes,
@@ -109,7 +108,6 @@ export function AppContentBody({
     setViewMode,
     handleBreadcrumbProjectsRootClick,
     handleBreadcrumbSessionClick,
-    handleBreadcrumbFileClick,
     handleCardReferenceClick,
     handleWakeUpOverlayActionClick,
     onSelectSessionFromNotesList,
@@ -264,15 +262,11 @@ export function AppContentBody({
               editorRevealReady={editorRevealReady}
               activeSessionId={activeSessionId}
               activeSessionInWorkspace={activeSessionInWorkspace}
-              showFileNoteBreadcrumbFromProjectNotes={
-                showFileNoteBreadcrumbFromProjectNotes
-              }
               notes={notes}
               notesSelectionRange={null}
               onNotesChange={(v) => setWakeNotes(actor, v)}
               onBreadcrumbProjectsRootClick={handleBreadcrumbProjectsRootClick}
               onBreadcrumbProjectNameClick={handleBreadcrumbSessionClick}
-              onBreadcrumbGoToSessionClick={handleBreadcrumbFileClick}
             />
           ) : null
         }

@@ -3,7 +3,6 @@ import { usePostHog } from "posthog-js/react";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 import type { AppUiActorRef } from "@/contexts/appUiActorContext";
 import {
-  intentBreadcrumbFileClick,
   intentBreadcrumbProjectsRootClick,
   intentBreadcrumbSessionClick,
   intentOpenNotesList,
@@ -47,10 +46,6 @@ export function useAppContentBodyHandlers({
 
   const handleBreadcrumbSessionClick = useCallback(() => {
     intentBreadcrumbSessionClick(actor);
-  }, [actor]);
-
-  const handleBreadcrumbFileClick = useCallback(() => {
-    intentBreadcrumbFileClick(actor);
   }, [actor]);
 
   const handleCardReferenceClick = useCallback(
@@ -102,7 +97,6 @@ export function useAppContentBodyHandlers({
     setViewMode,
     handleBreadcrumbProjectsRootClick,
     handleBreadcrumbSessionClick,
-    handleBreadcrumbFileClick,
     handleCardReferenceClick,
     handleWakeUpOverlayActionClick,
     onSelectSessionFromNotesList,

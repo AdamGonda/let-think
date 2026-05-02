@@ -37,10 +37,6 @@ export function openSessionInFilesWithEditor(
   actor: AppUiActorRef,
   session: Doc<"sessions">,
 ): void {
-  actor.send({
-    type: "FILE_NOTE_BREADCRUMB_SOURCE_SET",
-    fromProjectNotesExplorer: true,
-  });
   setNotesListDrillForSession(actor, session);
   actor.send({ type: "EDITOR_OPEN" });
 }
@@ -65,10 +61,6 @@ export function intentBreadcrumbSessionClick(actor: AppUiActorRef): void {
   actor.send({ type: "INTENT_BREADCRUMB_SESSION_CLICK" });
 }
 
-export function intentBreadcrumbFileClick(actor: AppUiActorRef): void {
-  actor.send({ type: "INTENT_BREADCRUMB_FILE_CLICK" });
-}
-
 export function intentSelectSessionFromSidebar(
   actor: AppUiActorRef,
   sessionId: Id<"sessions"> | null,
@@ -81,10 +73,6 @@ export function setNotesListDrill(actor: AppUiActorRef, drill: NotesListDrill): 
 }
 
 export function openEditor(actor: AppUiActorRef): void {
-  actor.send({
-    type: "FILE_NOTE_BREADCRUMB_SOURCE_SET",
-    fromProjectNotesExplorer: false,
-  });
   actor.send({ type: "EDITOR_OPEN" });
 }
 
@@ -125,10 +113,6 @@ export function setActiveSession(
   actor: AppUiActorRef,
   sessionId: Id<"sessions"> | null,
 ): void {
-  actor.send({
-    type: "FILE_NOTE_BREADCRUMB_SOURCE_SET",
-    fromProjectNotesExplorer: false,
-  });
   actor.send({ type: "ACTIVE_SESSION_SET", sessionId });
 }
 

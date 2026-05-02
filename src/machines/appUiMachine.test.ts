@@ -44,7 +44,6 @@ function baseInput(over: Partial<AppUiContext> = {}): Partial<AppUiContext> {
     surfaceMode: "graph",
     sidebarCollapseRequestSeq: 0,
     sidebarCollapseImmediateSeq: 0,
-    showFileNoteBreadcrumbFromProjectNotes: false,
     ...over,
   };
 }
@@ -116,7 +115,31 @@ describe("intent orchestration", () => {
     actor.stop();
   });
 
-  it("INTENT_OVERLAY_ACTION_CLICK closes editor and bumps immediate collapse on graph", () => {
+  it("INTENT_BREADCRUMB_SESSION_CLICK switches to Files surface when main view was graph", async () => {
+    vi.useFakeTimers();
+    const pid = "proj_xyz789" as Id<"projects">;
+    const actor = createActor(appUiMachine, {
+      input: baseInput({
+        surfaceMode: "graph",
+        editorOpen: true,
+        activeProjectId: pid,
+        chatLoading: false,
+      }),
+    });
+    actor.start();
+    actor.send({ type: "INTENT_BREADCRUMB_SESSION_CLICK" });
+    expect(selectSurface(actor.getSnapshot())).toBe("notesList");
+    expect(actor.getSnapshot().context.notesListDrill).toEqual({
+      type: "project",
+      id: pid,
+    });
+    await vi.advanceTimersByTimeAsync(timings.wakeUpExitMs);
+    expect(actor.getSnapshot().context.editorOpen).toBe(false);
+    actor.stop();
+    vi.useRealTimers();
+  });
+
+  it("INTENT_OVERLAY_ACTION_CLICK closes editor without collapsing sidebar", () => {
     const actor = createActor(appUiMachine, {
       input: baseInput({
         editorOpen: true,
@@ -128,11 +151,11 @@ describe("intent orchestration", () => {
     const imm = actor.getSnapshot().context.sidebarCollapseImmediateSeq;
     actor.send({ type: "INTENT_OVERLAY_ACTION_CLICK" });
     expect(actor.getSnapshot().context.editorOpen).toBe(false);
-    expect(actor.getSnapshot().context.sidebarCollapseImmediateSeq).toBe(imm + 1);
+    expect(actor.getSnapshot().context.sidebarCollapseImmediateSeq).toBe(imm);
     actor.stop();
   });
 
-  it("selectShowOverlayAction: editor on notesList hides action; on graph shows", () => {
+  it("selectShowOverlayAction: editor shows overlay control on Files surface and graph", () => {
     const actor = createActor(appUiMachine, {
       input: baseInput({
         editorOpen: true,
@@ -141,13 +164,13 @@ describe("intent orchestration", () => {
     });
     actor.start();
     actor.send({ type: "VIEW_SET", mode: "notesList" });
-    expect(selectShowOverlayAction(actor.getSnapshot())).toBe(false);
+    expect(selectShowOverlayAction(actor.getSnapshot())).toBe(true);
     actor.send({ type: "VIEW_SET", mode: "graph" });
     expect(selectShowOverlayAction(actor.getSnapshot())).toBe(true);
     actor.stop();
   });
 
-  it("INTENT_BREADCRUMB_FILE_CLICK closes editor, exits explorer drill, bumps immediate collapse seq", () => {
+  it("INTENT_BREADCRUMB_FILE_CLICK closes editor and exits explorer drill without sidebar collapse token", () => {
     const pid = "proj_xyz789" as Id<"projects">;
     const actor = createActor(appUiMachine, {
       input: baseInput({
@@ -160,7 +183,7 @@ describe("intent orchestration", () => {
     const imm = actor.getSnapshot().context.sidebarCollapseImmediateSeq;
     actor.send({ type: "INTENT_BREADCRUMB_FILE_CLICK" });
     expect(actor.getSnapshot().context.editorOpen).toBe(false);
-    expect(actor.getSnapshot().context.sidebarCollapseImmediateSeq).toBe(imm + 1);
+    expect(actor.getSnapshot().context.sidebarCollapseImmediateSeq).toBe(imm);
     expect(selectSurface(actor.getSnapshot())).toBe("graph");
     expect(actor.getSnapshot().context.notesListDrill).toBeNull();
     actor.stop();
@@ -186,46 +209,16 @@ describe("intent orchestration", () => {
     actor.stop();
   });
 
-  it("EDITOR_OPEN defers sidebar collapse request until after delay", async () => {
+  it("EDITOR_OPEN does not bump sidebar collapse request (sidebar stays open)", async () => {
     vi.useFakeTimers();
     const actor = createActor(appUiMachine, { input: baseInput() });
     actor.start();
     actor.send({ type: "EDITOR_OPEN" });
     expect(actor.getSnapshot().context.sidebarCollapseRequestSeq).toBe(0);
-    await vi.advanceTimersByTimeAsync(timings.sidebarCollapseAfterEditorOpenMs);
-    expect(actor.getSnapshot().context.sidebarCollapseRequestSeq).toBe(1);
-    actor.stop();
-    vi.useRealTimers();
-  });
-
-  it("EDITOR_CLOSE before delay cancels deferred sidebar collapse request", async () => {
-    vi.useFakeTimers();
-    const actor = createActor(appUiMachine, { input: baseInput() });
-    actor.start();
-    actor.send({ type: "EDITOR_OPEN" });
-    await vi.advanceTimersByTimeAsync(100);
-    actor.send({ type: "EDITOR_CLOSE" });
-    await vi.advanceTimersByTimeAsync(timings.sidebarCollapseAfterEditorOpenMs);
+    await vi.advanceTimersByTimeAsync(500);
     expect(actor.getSnapshot().context.sidebarCollapseRequestSeq).toBe(0);
     actor.stop();
     vi.useRealTimers();
-  });
-
-  it("file overlay breadcrumb flag clears when selecting session from sidebar", () => {
-    const actor = createActor(appUiMachine, {
-      input: baseInput({
-        showFileNoteBreadcrumbFromProjectNotes: true,
-      }),
-    });
-    actor.start();
-    actor.send({
-      type: "INTENT_SELECT_SESSION_FROM_SIDEBAR",
-      sessionId: "other_sess" as Id<"sessions">,
-    });
-    expect(actor.getSnapshot().context.showFileNoteBreadcrumbFromProjectNotes).toBe(
-      false,
-    );
-    actor.stop();
   });
 
   it("INTENT_SELECT_SESSION_FROM_SIDEBAR switches to graph when on notes list", () => {
