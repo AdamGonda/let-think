@@ -91,6 +91,7 @@ export function useConceptGraphOverlayModel({
   const prevBatchIndexForSwipeRef = useRef<number | undefined>(undefined);
   const isFirstSwipeLayoutRef = useRef(true);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- swipe animation bootstrap */
   useLayoutEffect(() => {
     if (showLoadingCards) {
       prevBatchIndexForSwipeRef.current = selectedBatchIndex;
@@ -108,6 +109,7 @@ export function useConceptGraphOverlayModel({
     setSwipeDirection(selectedBatchIndex > prev ? "right" : "left");
     setIsAnimating(true);
   }, [selectedBatchIndex, showLoadingCards]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleBatchAnimationEnd = () => {
     setIsAnimating(false);

@@ -1,5 +1,3 @@
-/* eslint-disable react-hooks/exhaustive-deps */
-
 import { animated, useSpring } from "@react-spring/web";
 import { useEffect, useState } from "react";
 import { timings } from "@/config";
@@ -21,6 +19,7 @@ export function PaginationDots({
 }) {
   const [offset, setOffset] = useState(0);
 
+  /* eslint-disable react-hooks/set-state-in-effect -- derived scroll window for dot strip */
   useEffect(() => {
     if (totalItems <= 5) {
       setOffset(0);
@@ -32,6 +31,7 @@ export function PaginationDots({
     );
     setOffset(startIndex * DOT_STEP);
   }, [currentIndex, totalItems]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const springProps = useSpring({
     to: { x: -offset },

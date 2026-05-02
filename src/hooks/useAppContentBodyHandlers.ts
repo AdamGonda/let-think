@@ -14,18 +14,10 @@ import {
 } from "@/lib/appUiCommands";
 import { toggleAtReferenceInDraft } from "@/lib/conceptReferences";
 
-type UseAppContentBodyHandlersArgs = {
-  actor: AppUiActorRef;
-  draftInput: string;
-};
-
 /**
- * App shell intents — dispatch to XState via appUiCommands (no local orchestration).
+ * Navigation / sidebar / overlay intents — no draft coupling (safe for layout-only parents).
  */
-export function useAppContentBodyHandlers({
-  actor,
-  draftInput,
-}: UseAppContentBodyHandlersArgs) {
+export function useAppShellIntentHandlers(actor: AppUiActorRef) {
   const posthog = usePostHog();
 
   const setViewMode = useCallback(
@@ -47,26 +39,6 @@ export function useAppContentBodyHandlers({
   const handleBreadcrumbSessionClick = useCallback(() => {
     intentBreadcrumbSessionClick(actor);
   }, [actor]);
-
-  const handleCardReferenceClick = useCallback(
-    (conceptNumber: number) => {
-      const nextDraft = toggleAtReferenceInDraft(draftInput, conceptNumber);
-      setDraftInput(
-        actor,
-        nextDraft,
-      );
-      setTimeout(() => {
-        const textarea = document.querySelector<HTMLTextAreaElement>(
-          "[data-session-input-textarea]",
-        );
-        if (!textarea) return;
-        textarea.focus();
-        const end = nextDraft.length;
-        textarea.setSelectionRange(end, end);
-      }, 0);
-    },
-    [actor, draftInput],
-  );
 
   const handleWakeUpOverlayActionClick = useCallback(() => {
     intentOverlayActionClick(actor);
@@ -97,10 +69,49 @@ export function useAppContentBodyHandlers({
     setViewMode,
     handleBreadcrumbProjectsRootClick,
     handleBreadcrumbSessionClick,
-    handleCardReferenceClick,
     handleWakeUpOverlayActionClick,
     onSelectSessionFromNotesList,
     onSelectSessionFromSidebar,
     onSelectProjectFromSidebar,
   };
+}
+
+type UseGraphCardReferenceHandlerArgs = {
+  actor: AppUiActorRef;
+  draftInput: string;
+};
+
+/** Graph @n reference toggles in chat draft — subscribe next to graph surface only. */
+export function useGraphCardReferenceHandler({
+  actor,
+  draftInput,
+}: UseGraphCardReferenceHandlerArgs) {
+  const handleCardReferenceClick = useCallback(
+    (conceptNumber: number) => {
+      const nextDraft = toggleAtReferenceInDraft(draftInput, conceptNumber);
+      setDraftInput(actor, nextDraft);
+      setTimeout(() => {
+        const textarea = document.querySelector<HTMLTextAreaElement>(
+          "[data-session-input-textarea]",
+        );
+        if (!textarea) return;
+        textarea.focus();
+        const end = nextDraft.length;
+        textarea.setSelectionRange(end, end);
+      }, 0);
+    },
+    [actor, draftInput],
+  );
+
+  return { handleCardReferenceClick };
+}
+
+/** @deprecated Prefer useAppShellIntentHandlers + useGraphCardReferenceHandler */
+export function useAppContentBodyHandlers({
+  actor,
+  draftInput,
+}: UseGraphCardReferenceHandlerArgs & { actor: AppUiActorRef }) {
+  const shell = useAppShellIntentHandlers(actor);
+  const graph = useGraphCardReferenceHandler({ actor, draftInput });
+  return { ...shell, ...graph };
 }

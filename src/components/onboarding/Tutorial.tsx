@@ -305,8 +305,3 @@ export function Tutorial({ autoStart = false, onComplete }: TutorialProps) {
 
   return null;
 }
-
-/** Call from anywhere to start or replay the tutorial */
-export function runTutorial(): void {
-  window.dispatchEvent(new Event("let-think:run-tutorial"));
-}
