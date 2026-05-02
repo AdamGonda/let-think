@@ -1,4 +1,4 @@
-import type { Doc } from "../../../convex/_generated/dataModel";
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import type { ProjectWithSessions } from "../session-sidebar/workspaceTypes";
 import { groupDisplayName, type NotesListDrill } from "@/lib/notesListUtils";
 import { NotesListToolbar } from "./NotesListToolbar";
@@ -10,6 +10,7 @@ import { useNotesListModel } from "@/hooks/useNotesListModel";
 
 interface NotesListPanelProps {
   workspace: ProjectWithSessions[] | undefined;
+  activeSessionId: Id<"sessions"> | null;
   drill: NotesListDrill;
   onDrillChange: (drill: NotesListDrill) => void;
   onSelectSession: (session: Doc<"sessions">) => void;
@@ -17,6 +18,7 @@ interface NotesListPanelProps {
 
 export function NotesListPanel({
   workspace,
+  activeSessionId,
   drill,
   onDrillChange,
   onSelectSession,
@@ -81,10 +83,14 @@ export function NotesListPanel({
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {filteredGroups.map((group) => {
                     const projectId = group.project._id;
+                    const projectHasActiveSession =
+                      activeSessionId != null &&
+                      group.sessions.some((s) => s._id === activeSessionId);
                     return (
                       <li key={projectId}>
                         <ProjectSummaryCard
                           group={group}
+                          isSelected={projectHasActiveSession}
                           onDrill={() =>
                             onDrillChange({
                               type: "project",
@@ -116,6 +122,7 @@ export function NotesListPanel({
                     <li key={session._id}>
                       <NotesListSessionCard
                         session={session}
+                        isSelected={activeSessionId === session._id}
                         onSelect={onSelectSession}
                       />
                     </li>

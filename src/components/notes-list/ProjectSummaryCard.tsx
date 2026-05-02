@@ -1,3 +1,4 @@
+import { clsx } from "clsx";
 import type { ProjectRow } from "@/components/session-sidebar/workspaceTypes";
 import { CornerRippleBackdrop } from "@/components/ui/corner-ripple-backdrop";
 import {
@@ -8,10 +9,16 @@ import {
 
 type ProjectSummaryCardProps = {
   group: ProjectRow;
+  /** True when the globally active session belongs to this project. */
+  isSelected: boolean;
   onDrill: () => void;
 };
 
-export function ProjectSummaryCard({ group, onDrill }: ProjectSummaryCardProps) {
+export function ProjectSummaryCard({
+  group,
+  isSelected,
+  onDrill,
+}: ProjectSummaryCardProps) {
   const title = groupDisplayName(group);
   const sessions = group.sessions;
   const count = sessions.length;
@@ -24,10 +31,16 @@ export function ProjectSummaryCard({ group, onDrill }: ProjectSummaryCardProps) 
   const activity = groupActivityMs(sessions, group.project.createdAt);
 
   return (
-    <div className="relative overflow-hidden rounded-xl border-2 border-border/90">
+    <div
+      className={clsx(
+        "relative overflow-hidden rounded-xl border-2",
+        isSelected ? "border-sidebar-primary" : "border-border/90",
+      )}
+    >
       <CornerRippleBackdrop />
       <button
         type="button"
+        aria-current={isSelected ? "true" : undefined}
         onClick={onDrill}
         className="relative z-10 flex min-h-30 w-full cursor-pointer flex-col gap-2 rounded-[inherit] bg-transparent p-5 text-left shadow-none transition-colors hover:bg-muted/10 active:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >

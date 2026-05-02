@@ -323,6 +323,7 @@ export function AppContentBody({
             {viewMode === "notesList" ? (
               <NotesListPanel
                 workspace={workspace}
+                activeSessionId={activeSessionId}
                 drill={notesListDrill}
                 onDrillChange={(drill) => setNotesListDrill(actor, drill)}
                 onSelectSession={onSelectSessionFromNotesList}
