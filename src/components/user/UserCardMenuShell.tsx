@@ -21,7 +21,8 @@ const shellByVariant = {
     container: "relative w-full min-w-0 max-w-full transition-[min-height] duration-200 ease-out",
     openMinH: "min-h-[140px] overflow-hidden",
     closedMinH: "min-h-14 overflow-hidden",
-    headerRow: "absolute inset-x-0 top-0 flex justify-center py-1",
+    headerRow:
+      "absolute inset-x-0 top-0 flex h-14 items-center justify-center",
     menuWrap: "absolute inset-x-0 top-0 py-0.5",
   },
   expanded: {
