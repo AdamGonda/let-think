@@ -69,6 +69,12 @@ export const SessionSidebar = forwardRef<
     }
   }, [hasSessionInProject, viewMode, onViewModeChange]);
 
+  useEffect(() => {
+    if (viewMode === "notesList") {
+      w.setIsCollapsed(true);
+    }
+  }, [viewMode, w.setIsCollapsed]);
+
   return (
     <aside
       className={`shrink-0 flex flex-col h-screen overflow-hidden bg-muted/30 border-r border-border transition-[width,opacity] duration-200 ease-in-out ${
