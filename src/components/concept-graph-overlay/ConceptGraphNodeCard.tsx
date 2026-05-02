@@ -73,6 +73,7 @@ export function ConceptGraphNodeCard({
             data-tour={number === 1 ? "concept-ref-btn-1" : undefined}
             onClick={() => onReferenceClick(number)}
             style={{
+              zIndex: 30,
               outline: isReferenced ? "2px solid var(--session-accent)" : undefined,
               outlineOffset: 2,
             }}
@@ -89,6 +90,7 @@ export function ConceptGraphNodeCard({
             )}
             data-tour={number === 1 ? "concept-ref-btn-1" : undefined}
             style={{
+              zIndex: 30,
               outline: isReferenced ? "2px solid var(--session-accent)" : undefined,
               outlineOffset: 2,
             }}
@@ -145,6 +147,7 @@ export function ConceptGraphNodeCard({
             isCopyJustDone ? `Copied ${node.name}` : `Copy ${node.name} to clipboard`
           }
           data-tour={number === 1 ? "concept-copy-btn-1" : undefined}
+          style={{ zIndex: 30 }}
           onClick={(e) => {
             e.stopPropagation();
             onCopyClick(node);
