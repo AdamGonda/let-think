@@ -1,112 +1,13 @@
-import { useSelector } from "@xstate/react";
-import type { SnapshotFrom } from "xstate";
-import { useAppUiActor } from "./useAppUi";
-import {
-  appUiMachine,
-  selectCanExitWakeUp,
-  selectDisplayWakeUpLayer,
-  selectEditorRevealReady,
-  selectIsExitingWakeUp,
-  selectSurface,
-  selectUiCollapseSignal,
-  selectChatLoadingOnNotesList,
-  selectChatLoadingOnGraphFrame,
-  selectGraphInteractionBlocked,
-  selectGraphLoadingStartBatchLength,
-  selectGraphReferenceFreezeActive,
-  selectGraphShowLoadingCards,
-  selectOverlayActionReturnsToGraph,
-} from "../machines/appUiMachine";
-
-type AppSnapshot = SnapshotFrom<typeof appUiMachine>;
-
-type AppContentSelectors = {
-  activeSessionId: AppSnapshot["context"]["activeSessionId"];
-  activeProjectId: AppSnapshot["context"]["activeProjectId"];
-  notesListDrill: AppSnapshot["context"]["notesListDrill"];
-  selectedBatchIndex: AppSnapshot["context"]["selectedBatchIndex"];
-  draftInput: AppSnapshot["context"]["draftInput"];
-  notes: AppSnapshot["context"]["notes"];
-  chatLoading: AppSnapshot["context"]["chatLoading"];
-  graphShowLoadingCards: ReturnType<typeof selectGraphShowLoadingCards>;
-  graphInteractionBlocked: ReturnType<typeof selectGraphInteractionBlocked>;
-  graphLoadingStartBatchLength: ReturnType<typeof selectGraphLoadingStartBatchLength>;
-  graphReferenceFreezeActive: ReturnType<typeof selectGraphReferenceFreezeActive>;
-  editorOpen: AppSnapshot["context"]["editorOpen"];
-  historyPanelOpen: AppSnapshot["context"]["historyPanelOpen"];
-  viewMode: ReturnType<typeof selectSurface>;
-  displayWakeUpLayer: ReturnType<typeof selectDisplayWakeUpLayer>;
-  isExitingOverlay: ReturnType<typeof selectIsExitingWakeUp>;
-  chatLoadingOnGraphFrame: ReturnType<typeof selectChatLoadingOnGraphFrame>;
-  chatLoadingOnNotesList: ReturnType<typeof selectChatLoadingOnNotesList>;
-  canExitOverlay: ReturnType<typeof selectCanExitWakeUp>;
-  editorRevealReady: ReturnType<typeof selectEditorRevealReady>;
-  hasChatHistory: AppSnapshot["context"]["hasChatHistory"];
-  uiCollapseSignal: ReturnType<typeof selectUiCollapseSignal>;
-  overlayActionReturnsToGraph: ReturnType<typeof selectOverlayActionReturnsToGraph>;
-};
-
-function shallowEqualSelectors(
-  a: AppContentSelectors,
-  b: AppContentSelectors,
-): boolean {
-  return (
-    a.activeSessionId === b.activeSessionId &&
-    a.activeProjectId === b.activeProjectId &&
-    a.notesListDrill === b.notesListDrill &&
-    a.selectedBatchIndex === b.selectedBatchIndex &&
-    a.draftInput === b.draftInput &&
-    a.notes === b.notes &&
-    a.chatLoading === b.chatLoading &&
-    a.graphShowLoadingCards === b.graphShowLoadingCards &&
-    a.graphInteractionBlocked === b.graphInteractionBlocked &&
-    a.graphLoadingStartBatchLength === b.graphLoadingStartBatchLength &&
-    a.graphReferenceFreezeActive === b.graphReferenceFreezeActive &&
-    a.editorOpen === b.editorOpen &&
-    a.historyPanelOpen === b.historyPanelOpen &&
-    a.viewMode === b.viewMode &&
-    a.displayWakeUpLayer === b.displayWakeUpLayer &&
-    a.isExitingOverlay === b.isExitingOverlay &&
-    a.chatLoadingOnGraphFrame === b.chatLoadingOnGraphFrame &&
-    a.chatLoadingOnNotesList === b.chatLoadingOnNotesList &&
-    a.canExitOverlay === b.canExitOverlay &&
-    a.editorRevealReady === b.editorRevealReady &&
-    a.hasChatHistory === b.hasChatHistory &&
-    a.uiCollapseSignal === b.uiCollapseSignal &&
-    a.overlayActionReturnsToGraph === b.overlayActionReturnsToGraph
-  );
-}
-
-function selectAppContentSnapshot(s: AppSnapshot): AppContentSelectors {
-  return {
-    activeSessionId: s.context.activeSessionId,
-    activeProjectId: s.context.activeProjectId,
-    notesListDrill: s.context.notesListDrill,
-    selectedBatchIndex: s.context.selectedBatchIndex,
-    draftInput: s.context.draftInput,
-    notes: s.context.notes,
-    chatLoading: s.context.chatLoading,
-    graphShowLoadingCards: selectGraphShowLoadingCards(s),
-    graphInteractionBlocked: selectGraphInteractionBlocked(s),
-    graphLoadingStartBatchLength: selectGraphLoadingStartBatchLength(s),
-    graphReferenceFreezeActive: selectGraphReferenceFreezeActive(s),
-    editorOpen: s.context.editorOpen,
-    historyPanelOpen: s.context.historyPanelOpen,
-    viewMode: selectSurface(s),
-    displayWakeUpLayer: selectDisplayWakeUpLayer(s),
-    isExitingOverlay: selectIsExitingWakeUp(s),
-    chatLoadingOnGraphFrame: selectChatLoadingOnGraphFrame(s),
-    chatLoadingOnNotesList: selectChatLoadingOnNotesList(s),
-    canExitOverlay: selectCanExitWakeUp(s),
-    editorRevealReady: selectEditorRevealReady(s),
-    hasChatHistory: s.context.hasChatHistory,
-    uiCollapseSignal: selectUiCollapseSignal(s),
-    overlayActionReturnsToGraph: selectOverlayActionReturnsToGraph(s),
-  };
-}
-
-/** Grouped subscriptions for the authenticated app shell (single selector + shallow compare). */
-export function useAppContentSelectors(): AppContentSelectors {
-  const actor = useAppUiActor();
-  return useSelector(actor, selectAppContentSnapshot, shallowEqualSelectors);
-}
+/**
+ * Focused app shell machine selectors — prefer these over aggregating all UI state in one hook.
+ */
+export {
+  useAppLayoutSelectors,
+  useWakeUpOverlaySelectors,
+  useGraphSurfaceMachineSelectors,
+  useChatDockMachineSelectors,
+  type AppLayoutSelectors,
+  type WakeUpOverlaySelectors,
+  type GraphSurfaceMachineSelectors,
+  type ChatDockMachineSelectors,
+} from "./useAppShellMachineSelectors";

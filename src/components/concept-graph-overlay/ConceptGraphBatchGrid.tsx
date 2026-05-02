@@ -5,7 +5,6 @@ import { ConceptGraphSkeletonCard } from "./ConceptGraphSkeletonCard";
 import type { GraphNode } from "./useConceptGraphOverlayModel";
 
 type ConceptGraphBatchGridProps = {
-  selectedBatchIndex: number;
   showSwipeAnimation: boolean;
   swipeDirection: "left" | "right";
   showLoadingCards: boolean;
@@ -25,7 +24,6 @@ type ConceptGraphBatchGridProps = {
 };
 
 export function ConceptGraphBatchGrid({
-  selectedBatchIndex,
   showSwipeAnimation,
   swipeDirection,
   showLoadingCards,
@@ -76,7 +74,6 @@ export function ConceptGraphBatchGrid({
 
   return (
     <div
-      key={selectedBatchIndex}
       className={clsx(
         "grid h-full min-h-full w-full grid-cols-1 grid-rows-6 gap-6 p-4 sm:grid-cols-2 sm:grid-rows-3 lg:grid-cols-3 lg:grid-rows-2",
         showSwipeAnimation &&

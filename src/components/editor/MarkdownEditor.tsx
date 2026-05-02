@@ -1,4 +1,4 @@
-import { useRef, useEffect } from "react";
+import { memo, useRef, useEffect } from "react";
 import MDEditor from "@uiw/react-md-editor";
 import "@uiw/react-md-editor/markdown-editor.css";
 
@@ -66,7 +66,16 @@ interface MarkdownEditorProps {
   autoFocusEnd?: boolean;
 }
 
-export function MarkdownEditor({
+function selectionRangeEqual(
+  a: { start: number; end: number } | null | undefined,
+  b: { start: number; end: number } | null | undefined,
+): boolean {
+  if (a == null && b == null) return true;
+  if (a == null || b == null) return false;
+  return a.start === b.start && a.end === b.end;
+}
+
+function MarkdownEditorComponent({
   value,
   onChange,
   selectionRange = null,
@@ -117,7 +126,7 @@ export function MarkdownEditor({
       });
     });
     return () => cancelAnimationFrame(id);
-  }, [isFocused, autoFocusEnd, value]);
+  }, [isFocused, autoFocusEnd, value, selectionRange]);
 
   useEffect(() => {
     if (!selectionRange) {
@@ -228,3 +237,18 @@ export function MarkdownEditor({
     </div>
   );
 }
+
+export const MarkdownEditor = memo(
+  MarkdownEditorComponent,
+  (prev, next) =>
+    prev.value === next.value &&
+    prev.onChange === next.onChange &&
+    selectionRangeEqual(prev.selectionRange, next.selectionRange) &&
+    prev.placeholder === next.placeholder &&
+    prev.className === next.className &&
+    prev.minHeight === next.minHeight &&
+    prev.dark === next.dark &&
+    prev.variant === next.variant &&
+    prev.autoFocus === next.autoFocus &&
+    prev.autoFocusEnd === next.autoFocusEnd,
+);

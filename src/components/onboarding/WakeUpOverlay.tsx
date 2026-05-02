@@ -1,3 +1,4 @@
+import { useCallback } from "react";
 import { layout } from "@/config";
 import { Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -46,6 +47,12 @@ export function WakeUpOverlay({
     editorOpen && !!activeSessionInWorkspace;
   /** Visible whenever the note overlay is active (breadcrumb loading state is separate). */
   const showBrainButton = editorOpen && !!activeSessionId;
+  const handleEditorChange = useCallback(
+    (value: string | undefined) => {
+      onNotesChange(value ?? "");
+    },
+    [onNotesChange],
+  );
 
   return (
     <div
@@ -96,7 +103,7 @@ export function WakeUpOverlay({
               >
                 <MarkdownEditor
                   value={notes}
-                  onChange={(v) => onNotesChange(v ?? "")}
+                  onChange={handleEditorChange}
                   selectionRange={notesSelectionRange}
                   placeholder="Let's build out your idea..."
                   variant="focused"
