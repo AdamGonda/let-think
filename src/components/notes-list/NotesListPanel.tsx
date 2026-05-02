@@ -81,8 +81,9 @@ export function NotesListPanel({
               ) : (
                 <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {filteredGroups.map((group) => {
-                    const isInbox = group.project == null;
-                    const cardKey = isInbox ? "inbox" : group.project._id;
+                    const project = group.project;
+                    const isInbox = project == null;
+                    const cardKey = isInbox ? "inbox" : project._id;
                     const folderHasActiveSession =
                       activeSessionId != null &&
                       group.sessions.some((s) => s._id === activeSessionId);
@@ -97,7 +98,7 @@ export function NotesListPanel({
                                 ? { type: "inbox" }
                                 : {
                                     type: "project",
-                                    id: group.project._id,
+                                    id: project._id,
                                   },
                             )
                           }
