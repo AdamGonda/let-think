@@ -118,7 +118,7 @@ export function WakeUpOverlay({
                   value={notes}
                   onChange={(v) => onNotesChange(v ?? "")}
                   selectionRange={notesSelectionRange}
-                  placeholder="Take notes…"
+                  placeholder="Let's build out your idea..."
                   variant="focused"
                   dark={true}
                   autoFocus
