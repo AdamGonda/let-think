@@ -16,7 +16,6 @@ import { SidebarSessionItem } from "./SidebarSessionItem";
 type SidebarProjectGroupProps = {
   group: ProjectWithSessions;
   isExpanded: boolean;
-  viewModeIsNotesList: boolean;
   activeProjectId: Id<"projects"> | null;
   activeSessionId: Id<"sessions"> | null;
   dragOverProjectId: string | "inbox" | null;
@@ -53,7 +52,6 @@ type SidebarProjectGroupProps = {
 export function SidebarProjectGroup({
   group,
   isExpanded,
-  viewModeIsNotesList,
   activeProjectId,
   activeSessionId,
   dragOverProjectId,
@@ -94,7 +92,7 @@ export function SidebarProjectGroup({
     <div className="flex flex-col gap-1">
       <div
         className={`flex items-center gap-1 group/project rounded-lg transition-colors px-3 pl-0 ${
-          !viewModeIsNotesList && activeProjectId === projectId
+          activeProjectId === projectId
             ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent/40"
             : "hover:bg-muted/10 active:bg-muted/20"
         } ${
@@ -212,10 +210,7 @@ export function SidebarProjectGroup({
             key={session._id}
             session={session}
             indent
-            isGraphActive={
-              !viewModeIsNotesList && activeSessionId === session._id
-            }
-            viewModeIsNotesList={viewModeIsNotesList}
+            isActive={activeSessionId === session._id}
             editingSessionId={editingSessionId}
             sessionInputRef={sessionInputRef}
             confirmDeleteSessionId={confirmDeleteSessionId}

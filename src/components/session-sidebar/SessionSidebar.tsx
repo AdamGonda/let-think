@@ -94,7 +94,6 @@ export const SessionSidebar = forwardRef<
       <SessionSidebarProjectsNav
         model={w}
         isCollapsed={w.isCollapsed}
-        viewModeIsNotesList={viewModeIsNotesList}
         activeSessionId={activeSessionId}
         activeProjectId={activeProjectId}
         onSelectSession={onSelectSession}

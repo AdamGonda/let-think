@@ -9,8 +9,7 @@ type SidebarSessionItemProps = {
   session: Doc<"sessions">;
   /** Nested sessions under a project are indented. */
   indent?: boolean;
-  isGraphActive: boolean;
-  viewModeIsNotesList: boolean;
+  isActive: boolean;
   editingSessionId: Id<"sessions"> | null;
   sessionInputRef: RefObject<HTMLInputElement | null>;
   confirmDeleteSessionId: Id<"sessions"> | null;
@@ -27,8 +26,7 @@ type SidebarSessionItemProps = {
 export function SidebarSessionItem({
   session,
   indent = false,
-  isGraphActive,
-  viewModeIsNotesList,
+  isActive,
   editingSessionId,
   sessionInputRef,
   confirmDeleteSessionId,
@@ -59,7 +57,7 @@ export function SidebarSessionItem({
       className={`group flex items-center gap-1 py-1.5 px-3 ${
         indent ? "ml-4" : ""
       } rounded-r-lg border-y border-r border-transparent transition-colors cursor-pointer select-none ${
-        !viewModeIsNotesList && isGraphActive
+        isActive
           ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent"
           : "border-l-2 border-l-transparent hover:border-border hover:bg-muted/10 active:bg-muted/20"
       }`}
@@ -86,9 +84,7 @@ export function SidebarSessionItem({
       ) : (
         <div
           className={`flex-1 min-w-0 text-left truncate pointer-events-none text-sm py-0.5 ${
-            !viewModeIsNotesList && isGraphActive
-              ? "text-foreground"
-              : "text-muted-foreground"
+            isActive ? "text-foreground" : "text-muted-foreground"
           }`}
         >
           {session.title}

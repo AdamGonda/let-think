@@ -8,7 +8,6 @@ import type { SessionSidebarWorkspaceModel } from "./useSessionSidebarWorkspace"
 type SessionSidebarProjectsNavProps = {
   model: SessionSidebarWorkspaceModel;
   isCollapsed: boolean;
-  viewModeIsNotesList: boolean;
   activeSessionId: Id<"sessions"> | null;
   activeProjectId: Id<"projects"> | null;
   onSelectSession: (id: Id<"sessions"> | null) => void;
@@ -18,7 +17,6 @@ type SessionSidebarProjectsNavProps = {
 export function SessionSidebarProjectsNav({
   model,
   isCollapsed,
-  viewModeIsNotesList,
   activeSessionId,
   activeProjectId,
   onSelectSession,
@@ -98,7 +96,6 @@ export function SessionSidebarProjectsNav({
                     key={projectId}
                     group={group}
                     isExpanded={isExpanded}
-                    viewModeIsNotesList={viewModeIsNotesList}
                     activeProjectId={activeProjectId}
                     activeSessionId={activeSessionId}
                     dragOverProjectId={dragOverProjectId}
@@ -198,10 +195,7 @@ export function SessionSidebarProjectsNav({
             <SidebarSessionItem
               key={session._id}
               session={session}
-              isGraphActive={
-                !viewModeIsNotesList && activeSessionId === session._id
-              }
-              viewModeIsNotesList={viewModeIsNotesList}
+              isActive={activeSessionId === session._id}
               editingSessionId={editingSessionId}
               sessionInputRef={sessionInputRef}
               confirmDeleteSessionId={confirmDeleteSessionId}
