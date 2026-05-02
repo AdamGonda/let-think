@@ -4,7 +4,7 @@ import type { Doc, Id } from "../../convex/_generated/dataModel";
 import type { AppUiActorRef } from "@/contexts/appUiActorContext";
 import {
   intentBreadcrumbFileClick,
-  intentBreadcrumbProjectClick,
+  intentBreadcrumbProjectsRootClick,
   intentBreadcrumbSessionClick,
   intentOpenNotesList,
   intentSelectSessionFromSidebar,
@@ -41,8 +41,8 @@ export function useAppContentBodyHandlers({
     [actor, posthog],
   );
 
-  const handleBreadcrumbProjectClick = useCallback(() => {
-    intentBreadcrumbProjectClick(actor);
+  const handleBreadcrumbProjectsRootClick = useCallback(() => {
+    intentBreadcrumbProjectsRootClick(actor);
   }, [actor]);
 
   const handleBreadcrumbSessionClick = useCallback(() => {
@@ -100,7 +100,7 @@ export function useAppContentBodyHandlers({
 
   return {
     setViewMode,
-    handleBreadcrumbProjectClick,
+    handleBreadcrumbProjectsRootClick,
     handleBreadcrumbSessionClick,
     handleBreadcrumbFileClick,
     handleCardReferenceClick,

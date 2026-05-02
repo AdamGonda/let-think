@@ -107,7 +107,7 @@ export function AppContentBody({
 
   const {
     setViewMode,
-    handleBreadcrumbProjectClick,
+    handleBreadcrumbProjectsRootClick,
     handleBreadcrumbSessionClick,
     handleBreadcrumbFileClick,
     handleCardReferenceClick,
@@ -270,9 +270,9 @@ export function AppContentBody({
               notes={notes}
               notesSelectionRange={null}
               onNotesChange={(v) => setWakeNotes(actor, v)}
-              onBreadcrumbProjectClick={handleBreadcrumbProjectClick}
-              onBreadcrumbSessionClick={handleBreadcrumbSessionClick}
-              onBreadcrumbFileClick={handleBreadcrumbFileClick}
+              onBreadcrumbProjectsRootClick={handleBreadcrumbProjectsRootClick}
+              onBreadcrumbProjectNameClick={handleBreadcrumbSessionClick}
+              onBreadcrumbGoToSessionClick={handleBreadcrumbFileClick}
             />
           ) : null
         }

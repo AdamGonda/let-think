@@ -26,9 +26,9 @@ type WakeUpOverlayProps = {
   notes: string;
   notesSelectionRange: { start: number; end: number } | null;
   onNotesChange: (value: string) => void;
-  onBreadcrumbProjectClick: () => void;
-  onBreadcrumbSessionClick: () => void;
-  onBreadcrumbFileClick: () => void;
+  onBreadcrumbProjectsRootClick: () => void;
+  onBreadcrumbProjectNameClick: () => void;
+  onBreadcrumbGoToSessionClick: () => void;
 };
 
 export function WakeUpOverlay({
@@ -45,10 +45,17 @@ export function WakeUpOverlay({
   notes,
   notesSelectionRange,
   onNotesChange,
-  onBreadcrumbProjectClick,
-  onBreadcrumbSessionClick,
-  onBreadcrumbFileClick,
+  onBreadcrumbProjectsRootClick,
+  onBreadcrumbProjectNameClick,
+  onBreadcrumbGoToSessionClick,
 }: WakeUpOverlayProps) {
+  const showFileNavBreadcrumb =
+    editorOpen &&
+    !!activeSessionInWorkspace &&
+    showFileNoteBreadcrumbFromProjectNotes;
+  const showGoToSessionCorner = showFileNavBreadcrumb;
+  const showOverlayBrain = showOverlayAction && !showGoToSessionCorner;
+
   return (
     <div
       className={`fixed inset-0 ${layout.wakeUpOverlayZIndexClass} flex h-screen w-screen flex-col bg-background ${
@@ -62,7 +69,7 @@ export function WakeUpOverlay({
           isExitingOverlay ? "opacity-0" : "opacity-100"
         }`}
       >
-        {showOverlayAction ? (
+        {showOverlayBrain ? (
           <Button
             variant="outline"
             size="icon-sm"
@@ -77,6 +84,18 @@ export function WakeUpOverlay({
             <Brain className="size-5" />
           </Button>
         ) : null}
+        {showGoToSessionCorner ? (
+          <Button
+            variant="outline"
+            size="icon-sm"
+            className="absolute top-3 right-4 z-10"
+            title="Go to session"
+            aria-label="Go to session"
+            onClick={onBreadcrumbGoToSessionClick}
+          >
+            <Brain className="size-5" />
+          </Button>
+        ) : null}
         {activeSessionId && (
           <div className="flex-1 min-h-0 flex flex-col items-stretch justify-start px-6 pb-8 pt-2 overflow-hidden">
             <div
@@ -84,15 +103,12 @@ export function WakeUpOverlay({
                 editorRevealReady ? "opacity-100" : "opacity-0"
               }`}
             >
-              {editorOpen &&
-              activeSessionInWorkspace &&
-              showFileNoteBreadcrumbFromProjectNotes ? (
+              {showFileNavBreadcrumb && activeSessionInWorkspace ? (
                 <NoteBreadcrumb
                   projectName={activeSessionInWorkspace.projectName}
-                  sessionName={activeSessionInWorkspace.session.title}
-                  onProjectClick={onBreadcrumbProjectClick}
-                  onSessionClick={onBreadcrumbSessionClick}
-                  onFileClick={onBreadcrumbFileClick}
+                  fileName={activeSessionInWorkspace.session.title}
+                  onProjectsRootClick={onBreadcrumbProjectsRootClick}
+                  onProjectNameClick={onBreadcrumbProjectNameClick}
                 />
               ) : null}
               <div

@@ -224,7 +224,9 @@ export const appUiMachine = setup({
       enqueue.raise({ type: "EDITOR_CLOSE" });
       enqueue.raise({ type: "NOTES_LIST_DRILL_SET", drill: null });
     }),
-    intentBreadcrumbProject: enqueueActions(({ enqueue }) => {
+    /** Breadcrumb "Projects": Files view at root + exit overlay. */
+    intentBreadcrumbProjectsRoot: enqueueActions(({ enqueue }) => {
+      enqueue.raise({ type: "VIEW_SET", mode: "notesList" });
       enqueue.raise({ type: "NOTES_LIST_DRILL_SET", drill: null });
       enqueue.raise({ type: "USER_EXIT_WAKE_UP" });
     }),
@@ -393,9 +395,9 @@ export const appUiMachine = setup({
         actions: "raiseExitWakeUp",
       },
     ],
-    INTENT_BREADCRUMB_PROJECT_CLICK: {
+    INTENT_BREADCRUMB_PROJECTS_ROOT_CLICK: {
       guard: "canExitWakeUp",
-      actions: "intentBreadcrumbProject",
+      actions: "intentBreadcrumbProjectsRoot",
     },
     INTENT_BREADCRUMB_SESSION_CLICK: {
       guard: "canExitWakeUp",
