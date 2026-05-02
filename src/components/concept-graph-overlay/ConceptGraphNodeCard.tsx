@@ -98,8 +98,10 @@ export function ConceptGraphNodeCard({
         ))}
       <div
         className={clsx(
-          "absolute inset-0 pointer-events-none flex items-center justify-center px-6 py-4 transition-opacity duration-200",
-          showDescription ? "opacity-0 pointer-events-none" : "opacity-100",
+          "absolute inset-0 flex items-center justify-center px-6 py-4 transition-opacity duration-200 select-text",
+          showDescription
+            ? "opacity-0 pointer-events-none"
+            : "opacity-100 pointer-events-auto",
         )}
       >
         <CardTitle className="text-xl sm:text-2xl font-semibold text-center">
@@ -109,9 +111,9 @@ export function ConceptGraphNodeCard({
       {node.description && (
         <div
           className={clsx(
-            "absolute inset-0 pointer-events-none flex flex-col p-6 overflow-hidden transition-all duration-200 ease-out",
+            "absolute inset-0 flex flex-col p-6 overflow-hidden transition-all duration-200 ease-out select-text",
             showDescription
-              ? "opacity-100 translate-y-0"
+              ? "opacity-100 translate-y-0 pointer-events-auto"
               : "opacity-0 pointer-events-none translate-y-2",
           )}
         >
