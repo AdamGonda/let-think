@@ -12,6 +12,8 @@ import {
 import { WakeUpOverlay } from "../onboarding/WakeUpOverlay";
 import type { ProjectWithSessions } from "../session-sidebar/SessionSidebar";
 
+const FOCUS_COMPOSER_EVENT = "let-think:focus-composer";
+
 type WakeUpOverlayContainerProps = {
   workspace: ProjectWithSessions[] | undefined;
 };
@@ -37,8 +39,14 @@ export function WakeUpOverlayContainer({ workspace }: WakeUpOverlayContainerProp
   );
 
   const handleOverlayActionClick = useCallback(() => {
+    const shouldFocusComposer = overlay.overlayActionReturnsToGraph;
     intentOverlayActionClick(actor);
-  }, [actor]);
+    if (shouldFocusComposer) {
+      requestAnimationFrame(() => {
+        window.dispatchEvent(new Event(FOCUS_COMPOSER_EVENT));
+      });
+    }
+  }, [actor, overlay.overlayActionReturnsToGraph]);
 
   const handleBreadcrumbProjectsRootClick = useCallback(() => {
     intentBreadcrumbProjectsRootClick(actor);

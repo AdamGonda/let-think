@@ -27,6 +27,14 @@ import type {
   SessionSidebarHandle,
 } from "../session-sidebar/SessionSidebar";
 
+const FOCUS_COMPOSER_EVENT = "let-think:focus-composer";
+
+function requestFocusComposer() {
+  requestAnimationFrame(() => {
+    window.dispatchEvent(new Event(FOCUS_COMPOSER_EVENT));
+  });
+}
+
 type WorkspaceMainColumnProps = {
   workspace: ProjectWithSessions[] | undefined;
   mainContentRef: RefObject<HTMLDivElement | null>;
@@ -171,7 +179,10 @@ export function WorkspaceMainColumn({
       {dock.viewMode === "graph" && (
         <ChatHistoryPanel
           isOpen={dock.historyPanelOpen}
-          onClose={() => closeHistoryPanel(actor)}
+          onClose={() => {
+            closeHistoryPanel(actor);
+            requestFocusComposer();
+          }}
           messages={messages ?? []}
           onLoadOlderMessages={
             canLoadOlderMessages
@@ -184,6 +195,7 @@ export function WorkspaceMainColumn({
           onNavigateToStep={(batchIndex: number) => {
             setSelectedBatchIndex(actor, batchIndex);
             closeHistoryPanel(actor);
+            requestFocusComposer();
           }}
         />
       )}
