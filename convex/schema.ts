@@ -65,6 +65,33 @@ export default defineSchema({
     graph: conceptGraphValue,
   }).index("by_session", ["sessionId"]),
 
+  /** Embedding/sync state for concept nodes sent to vector DB. */
+  conceptNodeEmbeddings: defineTable({
+    sessionId: v.id("sessions"),
+    userId: v.id("users"),
+    nodeId: v.string(),
+    nodeName: v.string(),
+    nodeDescription: v.optional(v.string()),
+    embeddingText: v.string(),
+    contentHash: v.string(),
+    embeddingModel: v.optional(v.string()),
+    embeddingDimension: v.optional(v.number()),
+    weaviateObjectId: v.optional(v.string()),
+    syncStatus: v.union(
+      v.literal("pending"),
+      v.literal("processing"),
+      v.literal("success"),
+      v.literal("failed")
+    ),
+    syncError: v.optional(v.string()),
+    lastSyncedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_session_node", ["sessionId", "nodeId"])
+    .index("by_session", ["sessionId"])
+    .index("by_sync_status", ["syncStatus", "updatedAt"]),
+
   messages: defineTable({
     sessionId: v.id("sessions"),
     role: v.union(v.literal("user"), v.literal("assistant")),

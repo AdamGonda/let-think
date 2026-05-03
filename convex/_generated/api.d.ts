@@ -12,6 +12,8 @@ import type * as admin from "../admin.js";
 import type * as auth from "../auth.js";
 import type * as chat from "../chat.js";
 import type * as chatPipeline from "../chatPipeline.js";
+import type * as conceptEmbeddings from "../conceptEmbeddings.js";
+import type * as conceptEmbeddingsActions from "../conceptEmbeddingsActions.js";
 import type * as constants from "../constants.js";
 import type * as http from "../http.js";
 import type * as lib_access from "../lib/access.js";
@@ -34,6 +36,8 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   chat: typeof chat;
   chatPipeline: typeof chatPipeline;
+  conceptEmbeddings: typeof conceptEmbeddings;
+  conceptEmbeddingsActions: typeof conceptEmbeddingsActions;
   constants: typeof constants;
   http: typeof http;
   "lib/access": typeof lib_access;

@@ -164,7 +164,7 @@ function mergeConceptGraphIncrement(
   incomingEdges: ConceptGraph["edges"],
   batchMeta: BatchMeta,
   globalIdRemap: Map<string, string>
-): { graph: ConceptGraph; changed: boolean } {
+): { graph: ConceptGraph; changed: boolean; addedNodes: ConceptNode[] } {
   const existingNodes: ConceptNode[] = currentGraph?.nodes ?? [];
   const localIdRemap = new Map<string, string>();
   const existingNodeIds = new Set(existingNodes.map((n) => n.id));
@@ -248,6 +248,7 @@ function mergeConceptGraphIncrement(
       ...(batches.length > 0 ? { batches } : {}),
     },
     changed,
+    addedNodes: newNodes,
   };
 }
 
@@ -412,6 +413,7 @@ export const send = action({
     };
     const streamParseState = createConceptStreamParseState();
     const globalIdRemap = new Map<string, string>();
+    const nodesAddedInThisTurn = new Map<string, ConceptNode>();
     let bufferedEvents: ConceptStreamEvent[] = [];
     let finalGraph: ConceptGraph | null = existingGraph;
     let rawModelText = "";
@@ -442,6 +444,9 @@ export const send = action({
         globalIdRemap
       );
       finalGraph = merged.graph;
+      for (const node of merged.addedNodes) {
+        nodesAddedInThisTurn.set(node.id, node);
+      }
       if (merged.changed) {
         await ctx.runMutation(api.sessions.updateConceptGraph, {
           sessionId,
@@ -478,12 +483,24 @@ export const send = action({
         globalIdRemap
       );
       finalGraph = merged.graph;
+      for (const node of merged.addedNodes) {
+        nodesAddedInThisTurn.set(node.id, node);
+      }
       if (merged.changed) {
         await ctx.runMutation(api.sessions.updateConceptGraph, {
           sessionId,
           conceptGraph: finalGraph,
         });
       }
+    }
+    const addedNodes = Array.from(nodesAddedInThisTurn.values());
+    if (addedNodes.length > 0) {
+      await ctx.runMutation(internal.conceptEmbeddings.enqueueConceptNodesForEmbedding, {
+        sessionId,
+        userId,
+        batchId: batchMeta.id,
+        nodes: addedNodes,
+      });
     }
 
     // 4. Post-process visible assistant text
