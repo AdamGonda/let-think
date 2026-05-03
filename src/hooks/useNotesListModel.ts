@@ -20,31 +20,34 @@ export function useNotesListModel(
   const totalSessions =
     workspace?.reduce((n, g) => n + g.sessions.length, 0) ?? 0;
 
-  /** Inbox + projects, sorted (matches Files grid: one card per folder). */
+  /** Inbox first, then project folders by recent activity (Files grid: one card per folder). */
   const sortedGroups = useMemo(() => {
     if (!workspace) return [];
     const inboxGroup = workspace.find((g) => g.project == null);
     const projectGroups = workspace.filter(
       (g): g is ProjectRow => g.project != null,
     );
-    const combined: ProjectWithSessions[] = [];
-    if (inboxGroup) combined.push(inboxGroup);
-    combined.push(...projectGroups);
-
-    combined.sort((a, b) => {
-      const createdA = a.project?.createdAt ?? 0;
-      const createdB = b.project?.createdAt ?? 0;
+    projectGroups.sort((a, b) => {
+      const createdA = a.project.createdAt;
+      const createdB = b.project.createdAt;
       const ta = groupActivityMs(a.sessions, createdA);
       const tb = groupActivityMs(b.sessions, createdB);
       return tb - ta;
     });
-    return combined;
+    const out: ProjectWithSessions[] = [];
+    if (inboxGroup) out.push(inboxGroup);
+    out.push(...projectGroups);
+    return out;
   }, [workspace]);
 
   const filteredGroups = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return sortedGroups;
-    return sortedGroups.filter((g) => projectGroupMatchesQuery(g, q));
+    const list = !q
+      ? sortedGroups
+      : sortedGroups.filter((g) => projectGroupMatchesQuery(g, q));
+    const inbox = list.find((g) => g.project == null);
+    const rest = list.filter((g) => g.project != null);
+    return inbox ? [inbox, ...rest] : rest;
   }, [sortedGroups, searchQuery]);
 
   const drillGroup = useMemo(
