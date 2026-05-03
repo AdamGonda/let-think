@@ -42,6 +42,7 @@ type WorkspaceMainColumnProps = {
   onCreateSessionForFirstMessage?: () => Promise<Id<"sessions">>;
   layout: AppLayoutSelectors;
   onSelectSessionFromNotesList: (session: Doc<"sessions">) => void;
+  onGoToSessionGraphFromNotesList: (session: Doc<"sessions">) => void;
 };
 
 /**
@@ -55,6 +56,7 @@ export function WorkspaceMainColumn({
   onCreateSessionForFirstMessage,
   layout,
   onSelectSessionFromNotesList,
+  onGoToSessionGraphFromNotesList,
 }: WorkspaceMainColumnProps) {
   const actor = useAppUiActor();
   const dock = useChatDockMachineSelectors();
@@ -150,7 +152,8 @@ export function WorkspaceMainColumn({
             activeSessionId={layout.activeSessionId}
             drill={layout.notesListDrill}
             onDrillChange={(drill) => setNotesListDrill(actor, drill)}
-            onSelectSession={onSelectSessionFromNotesList}
+            onOpenNotesEditor={onSelectSessionFromNotesList}
+            onOpenSessionGraph={onGoToSessionGraphFromNotesList}
           />
         ) : (
           <GraphSurfaceContainer

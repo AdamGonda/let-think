@@ -13,7 +13,8 @@ interface NotesListPanelProps {
   activeSessionId: Id<"sessions"> | null;
   drill: NotesListDrill;
   onDrillChange: (drill: NotesListDrill) => void;
-  onSelectSession: (session: Doc<"sessions">) => void;
+  onOpenNotesEditor: (session: Doc<"sessions">) => void;
+  onOpenSessionGraph: (session: Doc<"sessions">) => void;
 }
 
 export function NotesListPanel({
@@ -21,7 +22,8 @@ export function NotesListPanel({
   activeSessionId,
   drill,
   onDrillChange,
-  onSelectSession,
+  onOpenNotesEditor,
+  onOpenSessionGraph,
 }: NotesListPanelProps) {
   const {
     searchQuery,
@@ -128,7 +130,8 @@ export function NotesListPanel({
                       <NotesListSessionCard
                         session={session}
                         isSelected={activeSessionId === session._id}
-                        onSelect={onSelectSession}
+                        onOpenNotesEditor={onOpenNotesEditor}
+                        onOpenSessionGraph={onOpenSessionGraph}
                       />
                     </li>
                   ))}
