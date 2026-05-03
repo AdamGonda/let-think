@@ -1,5 +1,6 @@
 import { SiteFooter } from "@/components/marketing/SiteFooter";
 import { buttonVariants } from "@/components/ui/button";
+import { SESSION_ACCENT } from "@/constants/sessionAccent";
 import { cn } from "@/lib/utils";
 
 const demoVideoSrc = import.meta.env.VITE_PRODUCT_DEMO_VIDEO_URL?.trim() ?? "";
@@ -26,7 +27,13 @@ export function LandingPage() {
         <div className="mx-auto max-w-3xl">
           <div className="text-center">
             <h1 className="text-balance text-4xl leading-[1.05] font-semibold tracking-tight sm:text-5xl md:text-6xl">
-              Pure ideas from AI <br /> no syco flattery
+              <span
+                className="underline decoration-[6px] underline-offset-[0.09em]"
+                style={{ textDecorationColor: SESSION_ACCENT }}
+              >
+                Pure ideas
+              </span>{" "}
+              from AI <br /> no syco flattery
             </h1>
           </div>
 
