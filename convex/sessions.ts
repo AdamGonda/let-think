@@ -88,6 +88,17 @@ async function deleteConceptGraphRow(ctx: MutationCtx, sessionId: Id<"sessions">
   if (row) await ctx.db.delete(row._id);
 }
 
+async function deletePublishedSessionRow(
+  ctx: MutationCtx,
+  sessionId: Id<"sessions">,
+) {
+  const row = await ctx.db
+    .query("publishedSessions")
+    .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+    .first();
+  if (row) await ctx.db.delete(row._id);
+}
+
 export const updateTitle = mutation({
   args: {
     id: v.id("sessions"),
@@ -127,6 +138,7 @@ export const remove = mutation({
       await ctx.db.delete(msg._id);
     }
     await deleteConceptGraphRow(ctx, id);
+    await deletePublishedSessionRow(ctx, id);
     await ctx.db.delete(id);
   },
 });

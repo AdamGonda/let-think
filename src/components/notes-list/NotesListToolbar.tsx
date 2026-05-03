@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { Search, ChevronLeft, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import type { SortMode } from "@/lib/notesListUtils";
@@ -11,6 +12,8 @@ type NotesListToolbarProps = {
   sortMode: SortMode;
   onSortModeChange: (mode: SortMode) => void;
   onBackFromDrill: () => void;
+  /** Slot rendered to the right of the heading (e.g. Mine/Discover switcher). */
+  modeSwitcher?: ReactNode;
 };
 
 export function NotesListToolbar({
@@ -22,12 +25,13 @@ export function NotesListToolbar({
   sortMode,
   onSortModeChange,
   onBackFromDrill,
+  modeSwitcher,
 }: NotesListToolbarProps) {
   return (
     <div className="shrink-0 border-b border-border py-6">
       <div
         className={`mb-5 flex min-h-10 items-center ${
-          drilled && hasDrillGroup ? "gap-6" : ""
+          drilled && hasDrillGroup ? "gap-6" : "gap-4"
         }`}
       >
         {drilled && hasDrillGroup ? (
@@ -43,6 +47,7 @@ export function NotesListToolbar({
         <h1 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight text-foreground truncate">
           {drillHeading}
         </h1>
+        {modeSwitcher}
       </div>
       <div className="relative mb-3 w-full">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />

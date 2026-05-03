@@ -1,11 +1,14 @@
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import type { ProjectWithSessions } from "../session-sidebar/workspaceTypes";
 import { groupDisplayName, type NotesListDrill } from "@/lib/notesListUtils";
+import type { NotesListMode } from "@/machines/appUiTypes";
 import { NotesListToolbar } from "./NotesListToolbar";
+import { NotesListModeSwitcher } from "./NotesListModeSwitcher";
 import { ProjectSummaryCard } from "./ProjectSummaryCard";
 import { NotesListLoading } from "./NotesListLoading";
 import { NotesListEmptyState } from "./NotesListEmptyState";
 import { NotesListSessionCard } from "./NotesListSessionCard";
+import { DiscoverGrid } from "./DiscoverGrid";
 import { useNotesListModel } from "@/hooks/useNotesListModel";
 
 interface NotesListPanelProps {
@@ -13,6 +16,9 @@ interface NotesListPanelProps {
   activeSessionId: Id<"sessions"> | null;
   drill: NotesListDrill;
   onDrillChange: (drill: NotesListDrill) => void;
+  mode: NotesListMode;
+  onModeChange: (mode: NotesListMode) => void;
+  onOpenPublishedNoteViewer: (sessionId: Id<"sessions">) => void;
   onOpenNotesEditor: (session: Doc<"sessions">) => void;
   onOpenSessionGraph: (session: Doc<"sessions">) => void;
 }
@@ -22,6 +28,9 @@ export function NotesListPanel({
   activeSessionId,
   drill,
   onDrillChange,
+  mode,
+  onModeChange,
+  onOpenPublishedNoteViewer,
   onOpenNotesEditor,
   onOpenSessionGraph,
 }: NotesListPanelProps) {
@@ -36,12 +45,37 @@ export function NotesListPanel({
     filteredDrillSessions,
   } = useNotesListModel(workspace, drill, onDrillChange);
 
+  if (mode === "discover") {
+    return (
+      <div className="flex flex-1 flex-col min-h-0 bg-background">
+        <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-6">
+          <div className="shrink-0 flex items-center justify-between gap-4 border-b border-border py-6">
+            <h1 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight text-foreground truncate">
+              Discover
+            </h1>
+            <NotesListModeSwitcher mode={mode} onModeChange={onModeChange} />
+          </div>
+          <DiscoverGrid onOpenPublishedNote={onOpenPublishedNoteViewer} />
+        </div>
+      </div>
+    );
+  }
+
   if (!workspace) {
     return <NotesListLoading />;
   }
 
   if (totalSessions === 0) {
-    return <NotesListEmptyState />;
+    return (
+      <div className="flex flex-1 flex-col min-h-0 bg-background">
+        <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-6">
+          <div className="shrink-0 flex items-center justify-end gap-4 py-6">
+            <NotesListModeSwitcher mode={mode} onModeChange={onModeChange} />
+          </div>
+          <NotesListEmptyState />
+        </div>
+      </div>
+    );
   }
 
   const drilled = drill != null;
@@ -64,6 +98,11 @@ export function NotesListPanel({
             onDrillChange(null);
             setSearchQuery("");
           }}
+          modeSwitcher={
+            !drilled ? (
+              <NotesListModeSwitcher mode={mode} onModeChange={onModeChange} />
+            ) : null
+          }
         />
 
         <div className="min-h-0 flex-1 overflow-y-auto py-6">

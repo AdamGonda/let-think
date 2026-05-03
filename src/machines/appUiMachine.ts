@@ -137,6 +137,33 @@ export const appUiMachine = setup({
         return event.drill;
       },
     }),
+    setNotesListMode: assign({
+      notesListMode: ({ event, context }) => {
+        if (event.type !== "NOTES_LIST_MODE_SET") return context.notesListMode;
+        return event.mode;
+      },
+      notesListDrill: ({ event, context }) => {
+        if (event.type !== "NOTES_LIST_MODE_SET") return context.notesListDrill;
+        // Drill is only meaningful in "mine"; clear when switching either way
+        // so coming back to "mine" lands at the projects root.
+        return null;
+      },
+      publishedNoteViewerSessionId: ({ event, context }) => {
+        if (event.type !== "NOTES_LIST_MODE_SET") {
+          return context.publishedNoteViewerSessionId;
+        }
+        return null;
+      },
+    }),
+    openPublishedNoteViewer: assign({
+      publishedNoteViewerSessionId: ({ event }) => {
+        if (event.type !== "PUBLISHED_NOTE_VIEWER_OPEN") return null;
+        return event.sessionId;
+      },
+    }),
+    closePublishedNoteViewer: assign({
+      publishedNoteViewerSessionId: () => null,
+    }),
     setSelectedBatchIndex: assign({
       selectedBatchIndex: ({ event }) => {
         if (event.type !== "SELECTED_BATCH_INDEX_SET") return 0;
@@ -184,7 +211,10 @@ export const appUiMachine = setup({
     ),
     assignEditorOpenTrue: assign({ editorOpen: true }),
     assignSurfaceModeNotesList: assign({ surfaceMode: "notesList" }),
-    assignSurfaceModeGraph: assign({ surfaceMode: "graph" }),
+    assignSurfaceModeGraph: assign({
+      surfaceMode: "graph",
+      publishedNoteViewerSessionId: () => null,
+    }),
     raiseExitWakeUp: raise({ type: "USER_EXIT_WAKE_UP" }),
     assignNotesListDrillForOpenNotesIntent: assign(({ context }) => {
       if (context.activeProjectId != null) {
@@ -257,6 +287,8 @@ export const appUiMachine = setup({
       activeSessionId: inp?.activeSessionId ?? null,
       activeProjectId: inp?.activeProjectId ?? null,
       notesListDrill: inp?.notesListDrill ?? null,
+      notesListMode: inp?.notesListMode ?? "mine",
+      publishedNoteViewerSessionId: inp?.publishedNoteViewerSessionId ?? null,
       selectedBatchIndex: inp?.selectedBatchIndex ?? 0,
       prevBatchesLength: inp?.prevBatchesLength ?? 0,
       draftInput: inp?.draftInput ?? "",
@@ -296,6 +328,15 @@ export const appUiMachine = setup({
     },
     NOTES_LIST_DRILL_SET: {
       actions: "setNotesListDrill",
+    },
+    NOTES_LIST_MODE_SET: {
+      actions: "setNotesListMode",
+    },
+    PUBLISHED_NOTE_VIEWER_OPEN: {
+      actions: "openPublishedNoteViewer",
+    },
+    PUBLISHED_NOTE_VIEWER_CLOSE: {
+      actions: "closePublishedNoteViewer",
     },
     SELECTED_BATCH_INDEX_SET: {
       actions: "setSelectedBatchIndex",

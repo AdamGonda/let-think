@@ -24,6 +24,8 @@ function baseInput(over: Partial<AppUiContext> = {}): Partial<AppUiContext> {
     activeSessionId: sid,
     activeProjectId: null,
     notesListDrill: null,
+    notesListMode: "mine",
+    publishedNoteViewerSessionId: null,
     selectedBatchIndex: 0,
     prevBatchesLength: 0,
     draftInput: "",
@@ -85,6 +87,42 @@ describe("selectors from running actor", () => {
     actor.start();
     actor.send({ type: "EDITOR_OPEN" });
     expect(selectShowWakeUpOverlay(actor.getSnapshot())).toBe(true);
+    actor.stop();
+  });
+});
+
+describe("published note viewer (Discover)", () => {
+  it("opens and closes via machine events", () => {
+    const actor = createActor(appUiMachine, { input: baseInput() });
+    actor.start();
+    actor.send({ type: "PUBLISHED_NOTE_VIEWER_OPEN", sessionId: sid });
+    expect(actor.getSnapshot().context.publishedNoteViewerSessionId).toBe(sid);
+    actor.send({ type: "PUBLISHED_NOTE_VIEWER_CLOSE" });
+    expect(actor.getSnapshot().context.publishedNoteViewerSessionId).toBe(null);
+    actor.stop();
+  });
+
+  it("clears when switching notes list mode", () => {
+    const actor = createActor(appUiMachine, {
+      input: baseInput({
+        publishedNoteViewerSessionId: sid,
+        notesListMode: "discover",
+      }),
+    });
+    actor.start();
+    actor.send({ type: "NOTES_LIST_MODE_SET", mode: "mine" });
+    expect(actor.getSnapshot().context.publishedNoteViewerSessionId).toBe(null);
+    expect(actor.getSnapshot().context.notesListMode).toBe("mine");
+    actor.stop();
+  });
+
+  it("clears when switching to graph surface", () => {
+    const actor = createActor(appUiMachine, { input: baseInput() });
+    actor.start();
+    actor.send({ type: "PUBLISHED_NOTE_VIEWER_OPEN", sessionId: sid });
+    expect(actor.getSnapshot().context.publishedNoteViewerSessionId).toBe(sid);
+    actor.send({ type: "VIEW_SET", mode: "graph" });
+    expect(actor.getSnapshot().context.publishedNoteViewerSessionId).toBe(null);
     actor.stop();
   });
 });

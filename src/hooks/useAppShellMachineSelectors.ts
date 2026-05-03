@@ -23,6 +23,8 @@ export type AppLayoutSelectors = {
   activeSessionId: AppSnapshot["context"]["activeSessionId"];
   activeProjectId: AppSnapshot["context"]["activeProjectId"];
   notesListDrill: AppSnapshot["context"]["notesListDrill"];
+  notesListMode: AppSnapshot["context"]["notesListMode"];
+  publishedNoteViewerSessionId: AppSnapshot["context"]["publishedNoteViewerSessionId"];
   viewMode: ReturnType<typeof selectSurface>;
   chatLoading: AppSnapshot["context"]["chatLoading"];
 };
@@ -32,6 +34,8 @@ function shallowEqualLayout(a: AppLayoutSelectors, b: AppLayoutSelectors): boole
     a.activeSessionId === b.activeSessionId &&
     a.activeProjectId === b.activeProjectId &&
     a.notesListDrill === b.notesListDrill &&
+    a.notesListMode === b.notesListMode &&
+    a.publishedNoteViewerSessionId === b.publishedNoteViewerSessionId &&
     a.viewMode === b.viewMode &&
     a.chatLoading === b.chatLoading
   );
@@ -42,6 +46,8 @@ function selectLayoutSnapshot(s: AppSnapshot): AppLayoutSelectors {
     activeSessionId: s.context.activeSessionId,
     activeProjectId: s.context.activeProjectId,
     notesListDrill: s.context.notesListDrill,
+    notesListMode: s.context.notesListMode,
+    publishedNoteViewerSessionId: s.context.publishedNoteViewerSessionId,
     viewMode: selectSurface(s),
     chatLoading: s.context.chatLoading,
   };

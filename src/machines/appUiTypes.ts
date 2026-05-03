@@ -3,10 +3,23 @@ import type { NotesListDrill } from "../lib/notesListUtils";
 
 export type SurfaceMode = "graph" | "notesList";
 
+/**
+ * Top-level mode for the Files / Explore view.
+ * "mine" = user's own projects + sessions (with drill behavior).
+ * "discover" = global feed of published notes from all users.
+ */
+export type NotesListMode = "mine" | "discover";
+
 export type AppUiContext = {
   activeSessionId: Id<"sessions"> | null;
   activeProjectId: Id<"projects"> | null;
   notesListDrill: NotesListDrill;
+  notesListMode: NotesListMode;
+  /**
+   * Discover: read-only published note viewer. Null when closed.
+   * Owned by the machine — open/close via `PUBLISHED_NOTE_VIEWER_*` events.
+   */
+  publishedNoteViewerSessionId: Id<"sessions"> | null;
   selectedBatchIndex: number;
   /** Last seen batches.length from bridge (for clamp when length changes). */
   prevBatchesLength: number;
@@ -65,6 +78,9 @@ export type AppUiEvent =
   | { type: "ACTIVE_SESSION_SET"; sessionId: Id<"sessions"> | null }
   | { type: "ACTIVE_PROJECT_SET"; projectId: Id<"projects"> | null }
   | { type: "NOTES_LIST_DRILL_SET"; drill: NotesListDrill }
+  | { type: "NOTES_LIST_MODE_SET"; mode: NotesListMode }
+  | { type: "PUBLISHED_NOTE_VIEWER_OPEN"; sessionId: Id<"sessions"> }
+  | { type: "PUBLISHED_NOTE_VIEWER_CLOSE" }
   | { type: "SELECTED_BATCH_INDEX_SET"; index: number }
   | { type: "DRAFT_INPUT_SET"; value: string }
   | { type: "NOTES_SET"; value: string }

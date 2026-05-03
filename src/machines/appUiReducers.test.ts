@@ -12,6 +12,8 @@ function ctx(partial: Partial<AppUiContext>): AppUiContext {
     activeSessionId: null,
     activeProjectId: null,
     notesListDrill: null,
+    notesListMode: "mine",
+    publishedNoteViewerSessionId: null,
     selectedBatchIndex: 2,
     prevBatchesLength: 3,
     draftInput: "",

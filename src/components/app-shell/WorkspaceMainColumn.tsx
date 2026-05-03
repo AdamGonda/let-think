@@ -1,4 +1,4 @@
-import { useMemo, type RefObject } from "react";
+import { useCallback, useMemo, type RefObject } from "react";
 import { clsx } from "clsx";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import { useSessionData } from "../../contexts/SessionDataContext";
@@ -9,6 +9,7 @@ import type { AppLayoutSelectors } from "../../hooks/useAppShellMachineSelectors
 import { Chat } from "../chat/Chat";
 import { ChatHistoryPanel } from "../chat/ChatHistoryPanel";
 import { NotesListPanel } from "../notes-list/NotesListPanel";
+import { PublishedNoteViewerDialog } from "../notes-list/PublishedNoteViewerDialog";
 import { GraphSurfaceContainer } from "./GraphSurfaceContainer";
 import { CHAT_MESSAGES_PAGE_SIZE } from "@/config";
 import {
@@ -17,9 +18,12 @@ import {
 import { userInputForBatch, userMessageForBatch } from "../../lib/batchUserInput";
 import {
   closeHistoryPanel,
+  closePublishedNoteViewer,
+  openPublishedNoteViewer,
   setChatLoading,
   setDraftInput,
   setNotesListDrill,
+  setNotesListMode,
   setSelectedBatchIndex,
 } from "@/lib/appUiCommands";
 import type {
@@ -106,6 +110,17 @@ export function WorkspaceMainColumn({
     batchUserPrompt,
   ]);
 
+  const handleOpenPublishedNoteViewer = useCallback(
+    (sessionId: Id<"sessions">) => {
+      openPublishedNoteViewer(actor, sessionId);
+    },
+    [actor],
+  );
+
+  const handleClosePublishedNoteViewer = useCallback(() => {
+    closePublishedNoteViewer(actor);
+  }, [actor]);
+
   const chatComposerVisible = dock.viewMode === "graph";
 
   return (
@@ -152,6 +167,9 @@ export function WorkspaceMainColumn({
             activeSessionId={layout.activeSessionId}
             drill={layout.notesListDrill}
             onDrillChange={(drill) => setNotesListDrill(actor, drill)}
+            mode={layout.notesListMode}
+            onModeChange={(mode) => setNotesListMode(actor, mode)}
+            onOpenPublishedNoteViewer={handleOpenPublishedNoteViewer}
             onOpenNotesEditor={onSelectSessionFromNotesList}
             onOpenSessionGraph={onGoToSessionGraphFromNotesList}
           />
@@ -163,6 +181,12 @@ export function WorkspaceMainColumn({
           />
         )}
       </div>
+      {layout.viewMode === "notesList" ? (
+        <PublishedNoteViewerDialog
+          sessionId={layout.publishedNoteViewerSessionId}
+          onClose={handleClosePublishedNoteViewer}
+        />
+      ) : null}
       {chatComposerVisible && (
         <Chat
           sessionId={layout.activeSessionId}

@@ -115,6 +115,13 @@ export const remove = mutation({
       if (graphRow) {
         await ctx.db.delete(graphRow._id);
       }
+      const publishedRow = await ctx.db
+        .query("publishedSessions")
+        .withIndex("by_session", (q) => q.eq("sessionId", session._id))
+        .first();
+      if (publishedRow) {
+        await ctx.db.delete(publishedRow._id);
+      }
       await ctx.db.delete(session._id);
     }
     await ctx.db.delete(id);

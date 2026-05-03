@@ -111,4 +111,17 @@ export default defineSchema({
       )
     ),
   }).index("by_session", ["sessionId"]),
+
+  /**
+   * Global whitelist of sessions the owner has chosen to publish.
+   * Any signed-in user can read the published note (title + thinkingNotes)
+   * for sessions appearing in this table.
+   */
+  publishedSessions: defineTable({
+    sessionId: v.id("sessions"),
+    userId: v.id("users"),
+    publishedAt: v.number(),
+  })
+    .index("by_session", ["sessionId"])
+    .index("by_published", ["publishedAt"]),
 });

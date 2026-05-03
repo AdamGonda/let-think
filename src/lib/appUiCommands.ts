@@ -9,6 +9,7 @@
  */
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 import type { AppUiActorRef } from "../contexts/appUiActorContext";
+import type { NotesListMode } from "../machines/appUiTypes";
 import type { NotesListDrill } from "./notesListUtils";
 
 /**
@@ -87,6 +88,22 @@ export function openSessionGraphFromNotesListDrill(
 
 export function setNotesListDrill(actor: AppUiActorRef, drill: NotesListDrill): void {
   actor.send({ type: "NOTES_LIST_DRILL_SET", drill });
+}
+
+export function setNotesListMode(actor: AppUiActorRef, mode: NotesListMode): void {
+  actor.send({ type: "NOTES_LIST_MODE_SET", mode });
+}
+
+/** Discover: open the read-only published note viewer for a session id. */
+export function openPublishedNoteViewer(
+  actor: AppUiActorRef,
+  sessionId: Id<"sessions">,
+): void {
+  actor.send({ type: "PUBLISHED_NOTE_VIEWER_OPEN", sessionId });
+}
+
+export function closePublishedNoteViewer(actor: AppUiActorRef): void {
+  actor.send({ type: "PUBLISHED_NOTE_VIEWER_CLOSE" });
 }
 
 export function openEditor(actor: AppUiActorRef): void {
