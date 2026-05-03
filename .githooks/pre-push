@@ -1,0 +1,52 @@
+#!/bin/sh
+# Bump package.json patch version before push. First push attempt creates the
+# bump commit and aborts (exit 1); run `git push` again. Set SKIP_VERSION_BUMP=1
+# to skip.
+
+set -e
+
+if [ -n "$SKIP_VERSION_BUMP" ]; then
+  exit 0
+fi
+
+if ! git rev-parse --show-toplevel >/dev/null 2>&1; then
+  exit 0
+fi
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT" || exit 0
+
+if ! git log -1 --pretty=%s >/dev/null 2>&1; then
+  exit 0
+fi
+
+LAST_SUBJECT="$(git log -1 --pretty=%s)"
+case "$LAST_SUBJECT" in
+  chore:\ bump\ version*)
+    exit 0
+    ;;
+esac
+
+if [ ! -f package.json ]; then
+  exit 0
+fi
+
+NEW_VER="$(node -e "
+const fs = require('fs');
+const p = 'package.json';
+const pkg = JSON.parse(fs.readFileSync(p, 'utf8'));
+const parts = String(pkg.version || '').split('.');
+if (parts.length !== 3) throw new Error('package.json version must be semver X.Y.Z');
+const patch = Number(parts[2]);
+if (!Number.isFinite(patch)) throw new Error('Invalid patch version');
+parts[2] = String(patch + 1);
+pkg.version = parts.join('.');
+fs.writeFileSync(p, JSON.stringify(pkg, null, 2) + '\n');
+console.log(pkg.version);
+")"
+
+git add package.json
+git commit -m "chore: bump version to ${NEW_VER}"
+
+echo "pre-push: bumped version to ${NEW_VER} and committed. Run git push again." >&2
+exit 1

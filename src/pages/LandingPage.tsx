@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { SiteFooter } from "@/components/marketing/SiteFooter";
 import { buttonVariants } from "@/components/ui/button";
 import { SESSION_ACCENT } from "@/constants/sessionAccent";
@@ -12,7 +13,68 @@ const demoYoutubeEmbedUrl = demoYoutubeId
   ? `https://www.youtube.com/embed/${encodeURIComponent(demoYoutubeId)}?rel=0&modestbranding=1`
   : "";
 
+/** Poster when user has not clicked play; avoids loading YouTube until interaction. */
+function youtubeThumbnailUrl(videoId: string): string {
+  return `https://img.youtube.com/vi/${encodeURIComponent(videoId)}/hqdefault.jpg`;
+}
+
+function YoutubeDemoFacade({
+  embedUrl,
+  posterUrl,
+}: {
+  embedUrl: string;
+  posterUrl: string;
+}) {
+  const [active, setActive] = useState(false);
+
+  if (active) {
+    return (
+      <iframe
+        className="absolute inset-0 h-full w-full"
+        src={embedUrl}
+        title="Product demo video"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+        referrerPolicy="strict-origin-when-cross-origin"
+        allowFullScreen
+      />
+    );
+  }
+
+  return (
+    <>
+      <img
+        src={posterUrl}
+        alt=""
+        className="absolute inset-0 size-full object-cover"
+        decoding="async"
+        fetchPriority="low"
+      />
+      <div className="absolute inset-0 bg-black/25" aria-hidden />
+      <div className="absolute inset-0 flex items-center justify-center p-4">
+        <button
+          type="button"
+          className="group flex size-16 shrink-0 items-center justify-center rounded-full bg-background/95 text-foreground shadow-lg ring-1 ring-border/60 transition hover:bg-background hover:ring-border"
+          onClick={() => setActive(true)}
+          aria-label="Play product demo video"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            className="ml-1 size-9 text-foreground"
+            fill="currentColor"
+            aria-hidden
+          >
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        </button>
+      </div>
+    </>
+  );
+}
+
 export function LandingPage() {
+  const youtubePoster =
+    demoYoutubeId &&
+    (demoPosterSrc || youtubeThumbnailUrl(demoYoutubeId));
   return (
     <div className="min-h-screen bg-background sign-in-bg text-foreground">
       <header className="border-b border-border/60 bg-background/80 backdrop-blur-sm">
@@ -46,15 +108,10 @@ export function LandingPage() {
               scripts and streams do not run until the user asks.
             */}
             <div className="relative aspect-video w-full overflow-hidden rounded-2xl border border-border/60 bg-muted/40 shadow-sm">
-              {demoYoutubeEmbedUrl ? (
-                <iframe
-                  className="absolute inset-0 h-full w-full"
-                  src={demoYoutubeEmbedUrl}
-                  title="Product demo video"
-                  loading="lazy"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  referrerPolicy="strict-origin-when-cross-origin"
-                  allowFullScreen
+              {demoYoutubeEmbedUrl && youtubePoster ? (
+                <YoutubeDemoFacade
+                  embedUrl={demoYoutubeEmbedUrl}
+                  posterUrl={youtubePoster}
                 />
               ) : demoVideoSrc ? (
                 <video

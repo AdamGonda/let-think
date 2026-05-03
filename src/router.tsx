@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import {
   createRootRoute,
   createRoute,
@@ -8,12 +9,38 @@ import {
 } from "@tanstack/react-router";
 import { useConvexAuth } from "convex/react";
 import { PostHogProvider } from "posthog-js/react";
-import { AuthenticatedApp } from "./App";
 import { LandingPage } from "./pages/LandingPage";
-import { DataPolicyPage } from "./pages/DataPolicyPage";
-import { TermsOfUsePage } from "./pages/TermsOfUsePage";
 import { SignIn } from "./components/auth/SignIn";
-import { AdminAllowlistPage } from "./pages/AdminAllowlistPage";
+
+const AuthenticatedAppLazy = lazy(() =>
+  import("./App").then((m) => ({ default: m.AuthenticatedApp })),
+);
+
+const DataPolicyPageLazy = lazy(() =>
+  import("./pages/DataPolicyPage").then((m) => ({
+    default: m.DataPolicyPage,
+  })),
+);
+
+const TermsOfUsePageLazy = lazy(() =>
+  import("./pages/TermsOfUsePage").then((m) => ({
+    default: m.TermsOfUsePage,
+  })),
+);
+
+const AdminAllowlistPageLazy = lazy(() =>
+  import("./pages/AdminAllowlistPage").then((m) => ({
+    default: m.AdminAllowlistPage,
+  })),
+);
+
+function RouteChunkFallback() {
+  return (
+    <div className="flex h-screen w-screen items-center justify-center bg-background">
+      <span className="text-muted-foreground">Loading…</span>
+    </div>
+  );
+}
 
 const ADMIN_ROUTE_HASH = "a9f3d2c7be4e8f11";
 
@@ -65,9 +92,37 @@ function IndexRoute() {
 function LoginRoute() {
   const { isAuthenticated } = useConvexAuth();
   if (isAuthenticated) {
-    return <AuthenticatedApp />;
+    return (
+      <Suspense fallback={<RouteChunkFallback />}>
+        <AuthenticatedAppLazy />
+      </Suspense>
+    );
   }
   return <SignIn />;
+}
+
+function PrivacyRoute() {
+  return (
+    <Suspense fallback={<RouteChunkFallback />}>
+      <DataPolicyPageLazy />
+    </Suspense>
+  );
+}
+
+function TermsRoute() {
+  return (
+    <Suspense fallback={<RouteChunkFallback />}>
+      <TermsOfUsePageLazy />
+    </Suspense>
+  );
+}
+
+function AdminRoute() {
+  return (
+    <Suspense fallback={<RouteChunkFallback />}>
+      <AdminAllowlistPageLazy />
+    </Suspense>
+  );
 }
 
 const rootRoute = createRootRoute({
@@ -90,19 +145,19 @@ const appRoute = createRoute({
 const privacyRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/privacy",
-  component: DataPolicyPage,
+  component: PrivacyRoute,
 });
 
 const termsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: "/terms",
-  component: TermsOfUsePage,
+  component: TermsRoute,
 });
 
 const adminRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: `/admin/${ADMIN_ROUTE_HASH}`,
-  component: AdminAllowlistPage,
+  component: AdminRoute,
 });
 
 const routeTree = rootRoute.addChildren([
