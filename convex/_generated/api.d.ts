@@ -9,6 +9,8 @@
  */
 
 import type * as admin from "../admin.js";
+import type * as adminInternal from "../adminInternal.js";
+import type * as adminProjection from "../adminProjection.js";
 import type * as auth from "../auth.js";
 import type * as chat from "../chat.js";
 import type * as chatPipeline from "../chatPipeline.js";
@@ -33,6 +35,8 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   admin: typeof admin;
+  adminInternal: typeof adminInternal;
+  adminProjection: typeof adminProjection;
   auth: typeof auth;
   chat: typeof chat;
   chatPipeline: typeof chatPipeline;

@@ -2,8 +2,10 @@
 
 import { createHash } from "node:crypto";
 import { v } from "convex/values";
+import { UMAP } from "umap-js";
 import { internal } from "./_generated/api";
 import { internalAction } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
 
 type WeaviateUpsertInput = {
   weaviateUrl: string;
@@ -110,6 +112,7 @@ async function weaviateUpsertObject(input: WeaviateUpsertInput): Promise<void> {
   };
   if (input.weaviateApiKey) {
     headers.Authorization = `Bearer ${input.weaviateApiKey}`;
+    headers["X-API-Key"] = input.weaviateApiKey;
   }
   const payload = {
     class: input.collection,
@@ -170,6 +173,217 @@ async function weaviateUpsertObject(input: WeaviateUpsertInput): Promise<void> {
     objectId: input.objectId,
     collection: input.collection,
   });
+}
+
+type ProjectionVectorRow = {
+  embeddingId: Id<"conceptNodeEmbeddings">;
+  sessionId: Id<"sessions">;
+  userId: Id<"users">;
+  nodeId: string;
+  weaviateObjectId: string;
+  vector: number[];
+};
+
+function tryExtractNumericVector(value: unknown, depth = 0): number[] | null {
+  if (depth > 5) return null;
+  if (
+    Array.isArray(value) &&
+    value.length > 0 &&
+    value.every((item) => typeof item === "number" && Number.isFinite(item))
+  ) {
+    return value;
+  }
+  if (!value || typeof value !== "object") return null;
+  for (const nested of Object.values(value as Record<string, unknown>)) {
+    const extracted = tryExtractNumericVector(nested, depth + 1);
+    if (extracted) return extracted;
+  }
+  return null;
+}
+
+function parseOptionalPositiveInt(value: string | undefined, fallback: number): number {
+  if (!value) return fallback;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function parseOptionalPositiveNumber(value: string | undefined, fallback: number): number {
+  if (!value) return fallback;
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function euclideanDistance(a: number[], b: number[]): number {
+  let sum = 0;
+  const length = Math.min(a.length, b.length);
+  for (let i = 0; i < length; i += 1) {
+    const diff = a[i] - b[i];
+    sum += diff * diff;
+  }
+  return Math.sqrt(sum);
+}
+
+async function weaviateGetObjectVector(input: {
+  weaviateUrl: string;
+  weaviateApiKey: string | null;
+  collection: string;
+  objectId: string;
+}): Promise<number[]> {
+  const baseUrl = normalizeWeaviateUrl(input.weaviateUrl);
+  const headers: Record<string, string> = {};
+  if (input.weaviateApiKey) {
+    headers.Authorization = `Bearer ${input.weaviateApiKey}`;
+    headers["X-API-Key"] = input.weaviateApiKey;
+  }
+  const response = await fetch(
+    `${baseUrl}/v1/objects/${encodeURIComponent(input.collection)}/${input.objectId}?include=vector,vectors`,
+    {
+      method: "GET",
+      headers,
+    }
+  );
+  if (!response.ok) {
+    throw new Error(
+      `Weaviate read failed for ${input.objectId}: ${response.status} ${response.statusText}`
+    );
+  }
+  const data = (await response.json()) as {
+    vector?: number[];
+    vectors?: Record<string, unknown>;
+    [key: string]: unknown;
+  };
+  if (Array.isArray(data.vector) && data.vector.length > 0) {
+    return data.vector;
+  }
+  if (data.vectors && typeof data.vectors === "object") {
+    for (const candidate of Object.values(data.vectors)) {
+      if (
+        Array.isArray(candidate) &&
+        candidate.length > 0 &&
+        candidate.every((item) => typeof item === "number" && Number.isFinite(item))
+      ) {
+        return candidate;
+      }
+      if (
+        candidate &&
+        typeof candidate === "object" &&
+        Array.isArray(candidate.vector) &&
+        candidate.vector.length > 0
+      ) {
+        return candidate.vector;
+      }
+    }
+  }
+  const extracted = tryExtractNumericVector(data);
+  if (extracted) {
+    return extracted;
+  }
+  console.warn("[concept-embeddings] projection.vector_shape_unexpected", {
+    objectId: input.objectId,
+    collection: input.collection,
+    topLevelKeys: Object.keys(data),
+    hasVector: Object.prototype.hasOwnProperty.call(data, "vector"),
+    hasVectors: Object.prototype.hasOwnProperty.call(data, "vectors"),
+  });
+  throw new Error(`Weaviate object ${input.objectId} missing vector`);
+}
+
+async function weaviateListCollectionVectors(input: {
+  weaviateUrl: string;
+  weaviateApiKey: string | null;
+  collection: string;
+}): Promise<Map<string, number[]>> {
+  const baseUrl = normalizeWeaviateUrl(input.weaviateUrl);
+  const headers: Record<string, string> = {};
+  if (input.weaviateApiKey) {
+    headers.Authorization = `Bearer ${input.weaviateApiKey}`;
+    headers["X-API-Key"] = input.weaviateApiKey;
+  }
+
+  const vectorsByObjectId = new Map<string, number[]>();
+  const pageLimit = 200;
+  let after: string | null = null;
+
+  while (true) {
+    const attemptParamSets: URLSearchParams[] = [
+      new URLSearchParams({
+        class: input.collection,
+        include: "vector",
+        limit: String(pageLimit),
+      }),
+      new URLSearchParams({
+        include: "vector",
+        limit: String(pageLimit),
+      }),
+      new URLSearchParams({
+        limit: String(pageLimit),
+      }),
+    ];
+    if (after) {
+      for (const params of attemptParamSets) params.set("after", after);
+    }
+
+    let data: {
+      objects?: Array<Record<string, unknown>>;
+    } | null = null;
+    let lastFailure:
+      | {
+          status: number;
+          statusText: string;
+          body: string;
+          query: string;
+        }
+      | null = null;
+
+    for (const params of attemptParamSets) {
+      const query = params.toString();
+      const response = await fetch(`${baseUrl}/v1/objects?${query}`, {
+        method: "GET",
+        headers,
+      });
+      if (response.ok) {
+        data = (await response.json()) as {
+          objects?: Array<Record<string, unknown>>;
+        };
+        break;
+      }
+      const body = truncateForLog(await response.text(), 500);
+      lastFailure = {
+        status: response.status,
+        statusText: response.statusText,
+        body,
+        query,
+      };
+    }
+    if (!data) {
+      throw new Error(
+        `Weaviate collection scan failed (${input.collection}): ${lastFailure?.status ?? 0} ${lastFailure?.statusText ?? "Unknown"} query=${lastFailure?.query ?? "n/a"} body=${lastFailure?.body ?? "n/a"}`
+      );
+    }
+
+    const objects = Array.isArray(data.objects) ? data.objects : [];
+    if (objects.length === 0) break;
+
+    for (const obj of objects) {
+      const objectClass =
+        typeof obj.class === "string" && obj.class.length > 0 ? obj.class : null;
+      if (objectClass && objectClass !== input.collection) continue;
+      const objectId =
+        typeof obj.id === "string" && obj.id.length > 0 ? obj.id : null;
+      if (!objectId) continue;
+      const vector = tryExtractNumericVector(obj);
+      if (vector) {
+        vectorsByObjectId.set(objectId, vector);
+      }
+    }
+
+    const last = objects[objects.length - 1];
+    const lastId = last && typeof last.id === "string" ? last.id : null;
+    if (!lastId || objects.length < pageLimit) break;
+    after = lastId;
+  }
+
+  return vectorsByObjectId;
 }
 
 export const processConceptNodeEmbeddings = internalAction({
@@ -311,5 +525,181 @@ export const processConceptNodeEmbeddings = internalAction({
       userId,
       batchId,
     });
+  },
+});
+
+export const projectAllVectorsTo3d = internalAction({
+  args: {
+    triggeredBy: v.id("users"),
+  },
+  returns: v.object({
+    runId: v.id("globalVectorProjectionRuns"),
+    processedCount: v.number(),
+    successCount: v.number(),
+    skippedCount: v.number(),
+    failedCount: v.number(),
+  }),
+  handler: async (
+    ctx,
+    { triggeredBy }
+  ): Promise<{
+    runId: Id<"globalVectorProjectionRuns">;
+    processedCount: number;
+    successCount: number;
+    skippedCount: number;
+    failedCount: number;
+  }> => {
+    const weaviateUrl = process.env.WEAVIATE_URL;
+    const weaviateApiKey = process.env.WEAVIATE_API_KEY ?? null;
+    const weaviateCollection = process.env.WEAVIATE_COLLECTION ?? "ConceptNode";
+    if (!weaviateUrl) {
+      throw new Error("WEAVIATE_URL is required for global projection");
+    }
+
+    const projectionParams = {
+      nComponents: 3,
+      nNeighbors: parseOptionalPositiveInt(process.env.UMAP_N_NEIGHBORS, 15),
+      minDist: parseOptionalPositiveNumber(process.env.UMAP_MIN_DIST, 0.1),
+      spread: parseOptionalPositiveNumber(process.env.UMAP_SPREAD, 1),
+      distanceFn: "euclidean",
+    } as const;
+    const runId: Id<"globalVectorProjectionRuns"> = await ctx.runMutation(
+      internal.conceptEmbeddings.createGlobalProjectionRun,
+      {
+        triggeredBy,
+        projectionParams,
+      }
+    );
+
+    let processedCount = 0;
+    let successCount = 0;
+    let skippedCount = 0;
+    let failedCount = 0;
+
+    try {
+      const embeddings = await ctx.runQuery(
+        internal.conceptEmbeddings.getAllSyncedEmbeddingsForProjection
+      );
+      processedCount = embeddings.length;
+      const vectors: ProjectionVectorRow[] = [];
+      const vectorsByObjectId = await weaviateListCollectionVectors({
+        weaviateUrl,
+        weaviateApiKey,
+        collection: weaviateCollection,
+      });
+
+      for (const embedding of embeddings) {
+        const vector = vectorsByObjectId.get(embedding.weaviateObjectId);
+        if (vector && vector.length > 0) {
+          vectors.push({
+            ...embedding,
+            embeddingId: embedding.embeddingId,
+            sessionId: embedding.sessionId,
+            userId: embedding.userId,
+            nodeId: embedding.nodeId,
+            weaviateObjectId: embedding.weaviateObjectId,
+            vector,
+          });
+        } else {
+          failedCount += 1;
+          console.warn("[concept-embeddings] projection.vector_fetch_failed", {
+            embeddingId: embedding.embeddingId,
+            weaviateObjectId: embedding.weaviateObjectId,
+            error: "Vector not found in scanned Weaviate collection",
+          });
+        }
+      }
+
+      if (vectors.length === 0) {
+        skippedCount = processedCount;
+        await ctx.runMutation(internal.conceptEmbeddings.replaceGlobalProjectionPoints, {
+          projectionRunId: runId,
+          projectionParams,
+          points: [],
+        });
+        await ctx.runMutation(internal.conceptEmbeddings.completeGlobalProjectionRun, {
+          runId,
+          processedCount,
+          successCount: 0,
+          skippedCount,
+          failedCount,
+        });
+        return {
+          runId,
+          processedCount,
+          successCount: 0,
+          skippedCount,
+          failedCount,
+        };
+      }
+
+      let coordinates: number[][];
+      if (vectors.length < 3) {
+        coordinates = vectors.map((_, index) => [index, 0, 0]);
+      } else {
+        const nNeighbors = Math.min(
+          projectionParams.nNeighbors,
+          Math.max(2, vectors.length - 1)
+        );
+        const umap = new UMAP({
+          nComponents: 3,
+          nNeighbors,
+          minDist: projectionParams.minDist,
+          spread: projectionParams.spread,
+          distanceFn: euclideanDistance,
+        });
+        coordinates = umap.fit(vectors.map((row) => row.vector));
+      }
+
+      const points = vectors.map((row, index) => {
+        const projected = coordinates[index] ?? [0, 0, 0];
+        return {
+          embeddingId: row.embeddingId,
+          sessionId: row.sessionId,
+          userId: row.userId,
+          nodeId: row.nodeId,
+          weaviateObjectId: row.weaviateObjectId,
+          x: projected[0] ?? 0,
+          y: projected[1] ?? 0,
+          z: projected[2] ?? 0,
+        };
+      });
+
+      await ctx.runMutation(internal.conceptEmbeddings.replaceGlobalProjectionPoints, {
+        projectionRunId: runId,
+        projectionParams,
+        points,
+      });
+
+      successCount = points.length;
+      skippedCount = processedCount - successCount - failedCount;
+      await ctx.runMutation(internal.conceptEmbeddings.completeGlobalProjectionRun, {
+        runId,
+        processedCount,
+        successCount,
+        skippedCount,
+        failedCount,
+      });
+
+      return {
+        runId,
+        processedCount,
+        successCount,
+        skippedCount,
+        failedCount,
+      };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Unknown projection failure";
+      await ctx.runMutation(internal.conceptEmbeddings.failGlobalProjectionRun, {
+        runId,
+        processedCount,
+        successCount,
+        skippedCount,
+        failedCount,
+        errorMessage: message,
+      });
+      throw error;
+    }
   },
 });

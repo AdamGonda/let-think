@@ -13,6 +13,14 @@ export const conceptNodeValidator = v.object({
   description: v.optional(v.string()),
 });
 
+export const projectionParamsValidator = v.object({
+  nComponents: v.number(),
+  nNeighbors: v.number(),
+  minDist: v.number(),
+  spread: v.number(),
+  distanceFn: v.string(),
+});
+
 function buildConceptNodeEmbeddingText(
   node: { name: string; description?: string }
 ): string {
@@ -224,5 +232,153 @@ export const markEmbeddingFailure = internalMutation({
       syncError,
       updatedAt: Date.now(),
     });
+  },
+});
+
+export const getAllSyncedEmbeddingsForProjection = internalQuery({
+  args: {},
+  handler: async (ctx) => {
+    const rows = await ctx.db
+      .query("conceptNodeEmbeddings")
+      .withIndex("by_sync_status", (q) => q.eq("syncStatus", "success"))
+      .collect();
+    return rows
+      .filter((row) => row.weaviateObjectId)
+      .map((row) => ({
+        embeddingId: row._id,
+        sessionId: row.sessionId,
+        userId: row.userId,
+        nodeId: row.nodeId,
+        weaviateObjectId: row.weaviateObjectId as string,
+      }));
+  },
+});
+
+export const createGlobalProjectionRun = internalMutation({
+  args: {
+    triggeredBy: v.id("users"),
+    projectionParams: projectionParamsValidator,
+  },
+  returns: v.id("globalVectorProjectionRuns"),
+  handler: async (ctx, { triggeredBy, projectionParams }) => {
+    const now = Date.now();
+    return await ctx.db.insert("globalVectorProjectionRuns", {
+      triggeredBy,
+      status: "running",
+      projectionMethod: "umap",
+      projectionParams,
+      processedCount: 0,
+      successCount: 0,
+      skippedCount: 0,
+      failedCount: 0,
+      createdAt: now,
+      updatedAt: now,
+    });
+  },
+});
+
+export const completeGlobalProjectionRun = internalMutation({
+  args: {
+    runId: v.id("globalVectorProjectionRuns"),
+    processedCount: v.number(),
+    successCount: v.number(),
+    skippedCount: v.number(),
+    failedCount: v.number(),
+  },
+  returns: v.null(),
+  handler: async (
+    ctx,
+    { runId, processedCount, successCount, skippedCount, failedCount }
+  ) => {
+    const now = Date.now();
+    await ctx.db.patch(runId, {
+      status: "success",
+      processedCount,
+      successCount,
+      skippedCount,
+      failedCount,
+      updatedAt: now,
+      completedAt: now,
+    });
+    return null;
+  },
+});
+
+export const failGlobalProjectionRun = internalMutation({
+  args: {
+    runId: v.id("globalVectorProjectionRuns"),
+    processedCount: v.number(),
+    successCount: v.number(),
+    skippedCount: v.number(),
+    failedCount: v.number(),
+    errorMessage: v.string(),
+  },
+  returns: v.null(),
+  handler: async (
+    ctx,
+    {
+      runId,
+      processedCount,
+      successCount,
+      skippedCount,
+      failedCount,
+      errorMessage,
+    }
+  ) => {
+    const now = Date.now();
+    await ctx.db.patch(runId, {
+      status: "failed",
+      processedCount,
+      successCount,
+      skippedCount,
+      failedCount,
+      errorMessage,
+      updatedAt: now,
+      completedAt: now,
+    });
+    return null;
+  },
+});
+
+export const replaceGlobalProjectionPoints = internalMutation({
+  args: {
+    projectionRunId: v.id("globalVectorProjectionRuns"),
+    projectionParams: projectionParamsValidator,
+    points: v.array(
+      v.object({
+        embeddingId: v.id("conceptNodeEmbeddings"),
+        sessionId: v.id("sessions"),
+        userId: v.id("users"),
+        nodeId: v.string(),
+        weaviateObjectId: v.string(),
+        x: v.number(),
+        y: v.number(),
+        z: v.number(),
+      })
+    ),
+  },
+  returns: v.null(),
+  handler: async (ctx, { projectionRunId, projectionParams, points }) => {
+    const existing = await ctx.db.query("globalVectorProjectionPoints").collect();
+    await Promise.all(existing.map((doc) => ctx.db.delete(doc._id)));
+    const now = Date.now();
+    for (const point of points) {
+      await ctx.db.insert("globalVectorProjectionPoints", {
+        projectionRunId,
+        embeddingId: point.embeddingId,
+        sessionId: point.sessionId,
+        userId: point.userId,
+        nodeId: point.nodeId,
+        weaviateObjectId: point.weaviateObjectId,
+        x: point.x,
+        y: point.y,
+        z: point.z,
+        projectionMethod: "umap",
+        projectionParams,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+    return null;
   },
 });
