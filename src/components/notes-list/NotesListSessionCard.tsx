@@ -1,5 +1,4 @@
 import { clsx } from "clsx";
-import { FileText, MessageSquare } from "lucide-react";
 import type { Doc } from "../../../convex/_generated/dataModel";
 import { Button } from "@/components/ui/button";
 import { CornerRippleBackdrop } from "@/components/ui/corner-ripple-backdrop";
@@ -15,7 +14,7 @@ type NotesListSessionCardProps = {
 
 /**
  * Card for a session in the Files drill grid — matches project folder cards;
- * notes vs session actions appear on hover (always visible when hover is unavailable, e.g. touch).
+ * “To notes” / “To session” actions appear on hover (always visible when hover is unavailable, e.g. touch).
  */
 export function NotesListSessionCard({
   session,
@@ -41,7 +40,7 @@ export function NotesListSessionCard({
       </div>
       <div
         className={clsx(
-          "absolute bottom-2 right-2 z-20 flex items-center gap-0.5",
+          "absolute bottom-1.5 right-1.5 z-20 flex flex-wrap items-center justify-end gap-1",
           "opacity-0 pointer-events-none transition-opacity duration-200 ease-out",
           "group-hover:opacity-100 group-hover:pointer-events-auto",
           "focus-within:opacity-100 focus-within:pointer-events-auto",
@@ -51,28 +50,26 @@ export function NotesListSessionCard({
         <Button
           type="button"
           variant="ghost"
-          size="icon-xs"
-          className="h-7 w-7 shrink-0 text-muted-foreground/85 hover:bg-muted/50 hover:text-foreground"
+          size="xs"
+          className="h-7 shrink-0 px-2 font-normal text-muted-foreground/90 hover:bg-muted/50 hover:text-foreground"
           onClick={(e) => {
             e.stopPropagation();
             onOpenNotesEditor(session);
           }}
-          aria-label="Open notes"
         >
-          <FileText className="size-3.5 stroke-[1.5]" aria-hidden />
+          To notes
         </Button>
         <Button
           type="button"
           variant="ghost"
-          size="icon-xs"
-          className="h-7 w-7 shrink-0 text-muted-foreground/85 hover:bg-muted/50 hover:text-foreground"
+          size="xs"
+          className="h-7 shrink-0 px-2 font-normal text-muted-foreground/90 hover:bg-muted/50 hover:text-foreground"
           onClick={(e) => {
             e.stopPropagation();
             onOpenSessionGraph(session);
           }}
-          aria-label="Open session"
         >
-          <MessageSquare className="size-3.5 stroke-[1.5]" aria-hidden />
+          To session
         </Button>
       </div>
     </div>

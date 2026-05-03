@@ -119,7 +119,7 @@ export function SessionSidebarToolbar({
           aria-label={
             viewModeIsNotesList
               ? "Switch to graph view"
-              : "Switch to files"
+              : "Switch to explore"
           }
           aria-pressed={viewModeIsNotesList}
           data-tour="notes-toggle"
@@ -130,7 +130,7 @@ export function SessionSidebarToolbar({
           >
             <Layers className="size-4.5 stroke-[1.75]" />
           </span>
-          {!isCollapsed && "Files"}
+          {!isCollapsed && "Explore"}
         </Button>
       )}
     </div>
