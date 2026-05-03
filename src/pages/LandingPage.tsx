@@ -82,7 +82,7 @@ export function LandingPage() {
             </div>
             <div className="mt-5 text-center sm:mt-6">
               <p className="mx-auto max-w-xl text-sm text-muted-foreground sm:text-base">
-                Limited spots. We evaluate each application.
+                Limited spots, we evaluate each application.
               </p>
               <a
                 href="https://tally.so/r/D4v9jE"
