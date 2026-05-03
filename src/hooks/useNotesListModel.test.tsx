@@ -32,7 +32,7 @@ function mkProject(id: string, name: string, createdAt: number): Doc<"projects">
 }
 
 describe("useNotesListModel", () => {
-  it("counts total sessions and sorts by name", () => {
+  it("counts total sessions and sorts groups by recent activity", () => {
     const p1 = "p1" as Id<"projects">;
     const workspace: ProjectWithSessions[] = [
       { project: null, sessions: [mkSession("i1", "Inbox A", 100)] },
@@ -46,11 +46,8 @@ describe("useNotesListModel", () => {
       useNotesListModel(workspace, null, onDrill, "all"),
     );
     expect(result.current.totalSessions).toBe(2);
-    act(() => {
-      result.current.setSortMode("name");
-    });
-    expect(result.current.sortedGroups[0]?.project).toBeNull();
-    expect(result.current.sortedGroups[1]?.project?.name).toBe("Zebra");
+    expect(result.current.sortedGroups[0]?.project?.name).toBe("Zebra");
+    expect(result.current.sortedGroups[1]?.project).toBeNull();
   });
 
   it("filters groups by search query", () => {

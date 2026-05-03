@@ -7,8 +7,6 @@ import type {
 import type { NotesListPublishFilter } from "@/machines/appUiTypes";
 import {
   type NotesListDrill,
-  type SortMode,
-  groupDisplayName,
   projectGroupMatchesQuery,
   resolveDrillGroup,
   groupActivityMs,
@@ -30,7 +28,6 @@ export function useNotesListModel(
   publishFilter: NotesListPublishFilter,
 ) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [sortMode, setSortMode] = useState<SortMode>("activity");
 
   const totalSessions =
     workspace?.reduce((n, g) => n + g.sessions.length, 0) ?? 0;
@@ -46,15 +43,6 @@ export function useNotesListModel(
     if (inboxGroup) combined.push(inboxGroup);
     combined.push(...projectGroups);
 
-    if (sortMode === "name") {
-      combined.sort((a, b) =>
-        groupDisplayName(a).localeCompare(groupDisplayName(b), undefined, {
-          sensitivity: "base",
-        }),
-      );
-      return combined;
-    }
-
     combined.sort((a, b) => {
       const createdA = a.project?.createdAt ?? 0;
       const createdB = b.project?.createdAt ?? 0;
@@ -63,7 +51,7 @@ export function useNotesListModel(
       return tb - ta;
     });
     return combined;
-  }, [workspace, sortMode]);
+  }, [workspace]);
 
   const groupsAfterPublish = useMemo(() => {
     return sortedGroups
@@ -102,21 +90,13 @@ export function useNotesListModel(
         s.title.toLowerCase().includes(q),
       );
     }
-    if (sortMode === "name") {
-      sessions.sort((a, b) =>
-        a.title.localeCompare(b.title, undefined, { sensitivity: "base" }),
-      );
-    } else {
-      sessions.sort((a, b) => b.createdAt - a.createdAt);
-    }
+    sessions.sort((a, b) => b.createdAt - a.createdAt);
     return sessions;
-  }, [drillGroup, searchQuery, sortMode, publishFilter]);
+  }, [drillGroup, searchQuery, publishFilter]);
 
   return {
     searchQuery,
     setSearchQuery,
-    sortMode,
-    setSortMode,
     totalSessions,
     sortedGroups,
     filteredGroups,

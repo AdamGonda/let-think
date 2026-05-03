@@ -6,8 +6,6 @@ export type NotesListDrill =
   | { type: "inbox" }
   | { type: "project"; id: Id<"projects"> };
 
-export type SortMode = "activity" | "name";
-
 export function groupActivityMs(
   sessions: Doc<"sessions">[],
   projectCreated: number,

@@ -41,8 +41,6 @@ export function NotesListPanel({
   const {
     searchQuery,
     setSearchQuery,
-    sortMode,
-    setSortMode,
     totalSessions,
     filteredGroups,
     drillGroup,
@@ -96,8 +94,6 @@ export function NotesListPanel({
           drillHeading={drillHeading}
           searchQuery={searchQuery}
           onSearchQueryChange={setSearchQuery}
-          sortMode={sortMode}
-          onSortModeChange={setSortMode}
           publishFilter={publishFilter}
           onPublishFilterChange={onPublishFilterChange}
           onBackFromDrill={() => {
