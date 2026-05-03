@@ -3,7 +3,7 @@ import {
   FolderPlus,
   PanelLeftClose,
   PanelRight,
-  Layers,
+  Compass,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -128,7 +128,7 @@ export function SessionSidebarToolbar({
             className="inline-flex size-5 shrink-0 items-center justify-center"
             aria-hidden
           >
-            <Layers className="size-4.5 stroke-[1.75]" />
+            <Compass className="size-4.5 stroke-[1.75]" />
           </span>
           {!isCollapsed && "Explore"}
         </Button>
