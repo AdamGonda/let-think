@@ -92,58 +92,6 @@ export default defineSchema({
     .index("by_session", ["sessionId"])
     .index("by_sync_status", ["syncStatus", "updatedAt"]),
 
-  /** One run record per global vector->3d projection execution. */
-  globalVectorProjectionRuns: defineTable({
-    triggeredBy: v.id("users"),
-    status: v.union(
-      v.literal("running"),
-      v.literal("success"),
-      v.literal("failed")
-    ),
-    projectionMethod: v.literal("umap"),
-    projectionParams: v.object({
-      nComponents: v.number(),
-      nNeighbors: v.number(),
-      minDist: v.number(),
-      spread: v.number(),
-      distanceFn: v.string(),
-    }),
-    processedCount: v.number(),
-    successCount: v.number(),
-    skippedCount: v.number(),
-    failedCount: v.number(),
-    errorMessage: v.optional(v.string()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-    completedAt: v.optional(v.number()),
-  }).index("by_created", ["createdAt"]),
-
-  /** Projected 3d coordinates for nodes, keyed by projection run. */
-  globalVectorProjectionPoints: defineTable({
-    projectionRunId: v.id("globalVectorProjectionRuns"),
-    embeddingId: v.id("conceptNodeEmbeddings"),
-    sessionId: v.id("sessions"),
-    userId: v.id("users"),
-    nodeId: v.string(),
-    weaviateObjectId: v.string(),
-    x: v.number(),
-    y: v.number(),
-    z: v.number(),
-    projectionMethod: v.literal("umap"),
-    projectionParams: v.object({
-      nComponents: v.number(),
-      nNeighbors: v.number(),
-      minDist: v.number(),
-      spread: v.number(),
-      distanceFn: v.string(),
-    }),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_projection_run", ["projectionRunId"])
-    .index("by_embedding", ["embeddingId"])
-    .index("by_session_node", ["sessionId", "nodeId"]),
-
   messages: defineTable({
     sessionId: v.id("sessions"),
     role: v.union(v.literal("user"), v.literal("assistant")),

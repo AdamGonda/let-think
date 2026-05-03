@@ -34,12 +34,6 @@ const AdminAllowlistPageLazy = lazy(() =>
   })),
 );
 
-const GraphPageLazy = lazy(() =>
-  import("./pages/GraphPage").then((m) => ({
-    default: m.GraphPage,
-  })),
-);
-
 function RouteChunkFallback() {
   return (
     <div className="flex h-screen w-screen items-center justify-center bg-background">
@@ -131,14 +125,6 @@ function AdminRoute() {
   );
 }
 
-function GraphRoute() {
-  return (
-    <Suspense fallback={<RouteChunkFallback />}>
-      <GraphPageLazy />
-    </Suspense>
-  );
-}
-
 const rootRoute = createRootRoute({
   component: RootLayout,
   notFoundComponent: () => <Navigate to="/" />,
@@ -174,19 +160,12 @@ const adminRoute = createRoute({
   component: AdminRoute,
 });
 
-const graphRoute = createRoute({
-  getParentRoute: () => rootRoute,
-  path: "/graph",
-  component: GraphRoute,
-});
-
 const routeTree = rootRoute.addChildren([
   indexRoute,
   appRoute,
   privacyRoute,
   termsRoute,
   adminRoute,
-  graphRoute,
 ]);
 
 const router = createRouter({ routeTree });

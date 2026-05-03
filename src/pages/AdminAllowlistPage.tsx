@@ -14,9 +14,6 @@ export function AdminAllowlistPage() {
   const data = useQuery(api.admin.getWhitelist);
   const addAllowedEmail = useMutation(api.admin.addAllowedEmail);
   const removeAllowedEmail = useMutation(api.admin.removeAllowedEmail);
-  const recomputeGlobalVectorProjection3d = useAction(
-    api.adminProjection.recomputeGlobalVectorProjection3d
-  );
   const sendAllowlistApprovedEmail = useAction(
     api.transactionalEmails.sendAllowlistApprovedEmailFromAdmin
   );
@@ -28,9 +25,6 @@ export function AdminAllowlistPage() {
   const [emailSendError, setEmailSendError] = useState<string | null>(null);
   const [emailSendSuccess, setEmailSendSuccess] = useState<string | null>(null);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
-  const [projectionError, setProjectionError] = useState<string | null>(null);
-  const [projectionSuccess, setProjectionSuccess] = useState<string | null>(null);
-  const [isProjecting, setIsProjecting] = useState(false);
 
   const sortedEntries = useMemo(() => data?.entries ?? [], [data?.entries]);
 
@@ -93,26 +87,6 @@ export function AdminAllowlistPage() {
       );
     } finally {
       setIsSendingEmail(false);
-    }
-  }
-
-  async function onRunGlobalProjection() {
-    setIsProjecting(true);
-    setProjectionError(null);
-    setProjectionSuccess(null);
-    try {
-      const result = await recomputeGlobalVectorProjection3d({});
-      setProjectionSuccess(
-        `Projection run complete. Processed ${result.processedCount}, projected ${result.successCount}, skipped ${result.skippedCount}, failed ${result.failedCount}.`
-      );
-    } catch (projectionRunError) {
-      setProjectionError(
-        projectionRunError instanceof Error
-          ? projectionRunError.message
-          : "Failed to run global UMAP projection."
-      );
-    } finally {
-      setIsProjecting(false);
     }
   }
 
@@ -210,23 +184,6 @@ export function AdminAllowlistPage() {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold">Global Vector Projection</h2>
-          <CardDescription>
-            Recompute global 3D coordinates for all synced vectors using UMAP.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Button type="button" onClick={() => void onRunGlobalProjection()} disabled={isProjecting}>
-            Recompute Global 3D Projection
-          </Button>
-          {projectionError ? <p className="text-sm text-destructive">{projectionError}</p> : null}
-          {projectionSuccess ? (
-            <p className="text-sm text-emerald-500">{projectionSuccess}</p>
-          ) : null}
-        </CardContent>
-      </Card>
     </div>
   );
 }
