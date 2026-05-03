@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { Doc, Id } from "../../convex/_generated/dataModel";
-import type { ProjectWithSessions } from "@/components/session-sidebar/workspaceTypes";
+import type {
+  ProjectWithSessions,
+  SessionWithPublish,
+} from "@/components/session-sidebar/workspaceTypes";
 import {
   buildWorkspaceSnapshot,
   findSessionInWorkspace,
@@ -12,13 +15,14 @@ function session(
   id: string,
   createdAt: number,
   projectId?: Id<"projects">,
-): Doc<"sessions"> {
+): SessionWithPublish {
   return {
     _id: id as Id<"sessions">,
     _creationTime: createdAt,
     title: "t",
     createdAt,
     projectId,
+    isPublished: false,
   };
 }
 

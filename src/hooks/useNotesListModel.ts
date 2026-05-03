@@ -2,7 +2,9 @@ import { useState, useMemo, useEffect } from "react";
 import type {
   ProjectRow,
   ProjectWithSessions,
+  SessionWithPublish,
 } from "@/components/session-sidebar/workspaceTypes";
+import type { NotesListPublishFilter } from "@/machines/appUiTypes";
 import {
   type NotesListDrill,
   type SortMode,
@@ -12,10 +14,20 @@ import {
   groupActivityMs,
 } from "@/lib/notesListUtils";
 
+function filterSessionsByPublish(
+  sessions: SessionWithPublish[],
+  filter: NotesListPublishFilter,
+): SessionWithPublish[] {
+  if (filter === "all") return sessions;
+  if (filter === "published") return sessions.filter((s) => s.isPublished);
+  return sessions.filter((s) => !s.isPublished);
+}
+
 export function useNotesListModel(
   workspace: ProjectWithSessions[] | undefined,
   drill: NotesListDrill,
   onDrillChange: (drill: NotesListDrill) => void,
+  publishFilter: NotesListPublishFilter,
 ) {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortMode, setSortMode] = useState<SortMode>("activity");
@@ -53,11 +65,22 @@ export function useNotesListModel(
     return combined;
   }, [workspace, sortMode]);
 
+  const groupsAfterPublish = useMemo(() => {
+    return sortedGroups
+      .map((g) => ({
+        ...g,
+        sessions: filterSessionsByPublish(g.sessions, publishFilter),
+      }))
+      .filter((g) =>
+        publishFilter === "all" ? true : g.sessions.length > 0,
+      );
+  }, [sortedGroups, publishFilter]);
+
   const filteredGroups = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return sortedGroups;
-    return sortedGroups.filter((g) => projectGroupMatchesQuery(g, q));
-  }, [sortedGroups, searchQuery]);
+    if (!q) return groupsAfterPublish;
+    return groupsAfterPublish.filter((g) => projectGroupMatchesQuery(g, q));
+  }, [groupsAfterPublish, searchQuery]);
 
   const drillGroup = useMemo(
     () => (workspace && drill ? resolveDrillGroup(workspace, drill) : undefined),
@@ -73,7 +96,7 @@ export function useNotesListModel(
   const filteredDrillSessions = useMemo(() => {
     if (!drillGroup) return [];
     const q = searchQuery.trim().toLowerCase();
-    let sessions = [...drillGroup.sessions];
+    let sessions = filterSessionsByPublish([...drillGroup.sessions], publishFilter);
     if (q) {
       sessions = sessions.filter((s) =>
         s.title.toLowerCase().includes(q),
@@ -87,7 +110,7 @@ export function useNotesListModel(
       sessions.sort((a, b) => b.createdAt - a.createdAt);
     }
     return sessions;
-  }, [drillGroup, searchQuery, sortMode]);
+  }, [drillGroup, searchQuery, sortMode, publishFilter]);
 
   return {
     searchQuery,

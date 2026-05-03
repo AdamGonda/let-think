@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import { Search, ChevronLeft, ChevronDown } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import type { SortMode } from "@/lib/notesListUtils";
+import type { NotesListPublishFilter } from "@/machines/appUiTypes";
+import { NotesListPublishFilterSwitcher } from "./NotesListPublishFilterSwitcher";
 
 type NotesListToolbarProps = {
   drilled: boolean;
@@ -11,6 +13,8 @@ type NotesListToolbarProps = {
   onSearchQueryChange: (value: string) => void;
   sortMode: SortMode;
   onSortModeChange: (mode: SortMode) => void;
+  publishFilter: NotesListPublishFilter;
+  onPublishFilterChange: (filter: NotesListPublishFilter) => void;
   onBackFromDrill: () => void;
   /** Slot rendered to the right of the heading (e.g. Mine/Discover switcher). */
   modeSwitcher?: ReactNode;
@@ -24,6 +28,8 @@ export function NotesListToolbar({
   onSearchQueryChange,
   sortMode,
   onSortModeChange,
+  publishFilter,
+  onPublishFilterChange,
   onBackFromDrill,
   modeSwitcher,
 }: NotesListToolbarProps) {
@@ -59,7 +65,11 @@ export function NotesListToolbar({
           className="h-10 w-full pl-9 rounded-lg bg-muted/25 border-border/80 focus-visible:ring-2 focus-visible:ring-ring/40"
         />
       </div>
-      <div className="flex justify-end">
+      <div className="flex flex-wrap items-center justify-between gap-4 sm:gap-6">
+        <NotesListPublishFilterSwitcher
+          filter={publishFilter}
+          onFilterChange={onPublishFilterChange}
+        />
         <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground select-none">
           <span className="sr-only">Sort</span>
           <span className="hidden sm:inline">Sort by</span>

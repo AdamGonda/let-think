@@ -1,7 +1,7 @@
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
 import type { ProjectWithSessions } from "../session-sidebar/workspaceTypes";
 import { groupDisplayName, type NotesListDrill } from "@/lib/notesListUtils";
-import type { NotesListMode } from "@/machines/appUiTypes";
+import type { NotesListMode, NotesListPublishFilter } from "@/machines/appUiTypes";
 import { NotesListToolbar } from "./NotesListToolbar";
 import { NotesListModeSwitcher } from "./NotesListModeSwitcher";
 import { ProjectSummaryCard } from "./ProjectSummaryCard";
@@ -18,6 +18,8 @@ interface NotesListPanelProps {
   onDrillChange: (drill: NotesListDrill) => void;
   mode: NotesListMode;
   onModeChange: (mode: NotesListMode) => void;
+  publishFilter: NotesListPublishFilter;
+  onPublishFilterChange: (filter: NotesListPublishFilter) => void;
   onOpenPublishedNoteViewer: (sessionId: Id<"sessions">) => void;
   onOpenNotesEditor: (session: Doc<"sessions">) => void;
   onOpenSessionGraph: (session: Doc<"sessions">) => void;
@@ -30,6 +32,8 @@ export function NotesListPanel({
   onDrillChange,
   mode,
   onModeChange,
+  publishFilter,
+  onPublishFilterChange,
   onOpenPublishedNoteViewer,
   onOpenNotesEditor,
   onOpenSessionGraph,
@@ -43,7 +47,7 @@ export function NotesListPanel({
     filteredGroups,
     drillGroup,
     filteredDrillSessions,
-  } = useNotesListModel(workspace, drill, onDrillChange);
+  } = useNotesListModel(workspace, drill, onDrillChange, publishFilter);
 
   if (mode === "discover") {
     return (
@@ -94,6 +98,8 @@ export function NotesListPanel({
           onSearchQueryChange={setSearchQuery}
           sortMode={sortMode}
           onSortModeChange={setSortMode}
+          publishFilter={publishFilter}
+          onPublishFilterChange={onPublishFilterChange}
           onBackFromDrill={() => {
             onDrillChange(null);
             setSearchQuery("");
@@ -112,6 +118,10 @@ export function NotesListPanel({
                 <p className="text-center text-sm text-muted-foreground py-12">
                   {searchQuery.trim() ? (
                     <>Nothing matches &quot;{searchQuery}&quot;</>
+                  ) : publishFilter === "published" ? (
+                    <>No folders contain published notes for this filter.</>
+                  ) : publishFilter === "private" ? (
+                    <>No unpublished notes in any folder match this filter.</>
                   ) : (
                     <>
                       No folders to show. Sessions without a project live in{" "}
@@ -159,7 +169,13 @@ export function NotesListPanel({
                   <p className="text-sm text-muted-foreground">
                     {drillGroup.sessions.length === 0
                       ? "No notes here yet."
-                      : `Nothing matches "${searchQuery}"`}
+                      : searchQuery.trim()
+                        ? `Nothing matches "${searchQuery}"`
+                        : publishFilter === "published"
+                          ? "No published notes in this folder."
+                          : publishFilter === "private"
+                            ? "No unpublished notes in this folder."
+                            : "Nothing to show."}
                   </p>
                 </div>
               ) : (

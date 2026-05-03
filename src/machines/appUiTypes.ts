@@ -10,16 +10,32 @@ export type SurfaceMode = "graph" | "notesList";
  */
 export type NotesListMode = "mine" | "discover";
 
+/** Mine list: filter project cards and drill sessions by Discover publish state. */
+export type NotesListPublishFilter = "all" | "published" | "private";
+
+/** Data shown in the publish / unpublish confirmation dialog (parallel `publishConfirm` region). */
+export type PublishConfirmDraft =
+  | null
+  | {
+      sessionId: Id<"sessions">;
+      intent: "publish" | "unpublish";
+      sessionTitle: string;
+    };
+
 export type AppUiContext = {
   activeSessionId: Id<"sessions"> | null;
   activeProjectId: Id<"projects"> | null;
   notesListDrill: NotesListDrill;
   notesListMode: NotesListMode;
+  notesListPublishFilter: NotesListPublishFilter;
   /**
    * Discover: read-only published note viewer. Null when closed.
    * Owned by the machine — open/close via `PUBLISHED_NOTE_VIEWER_*` events.
    */
   publishedNoteViewerSessionId: Id<"sessions"> | null;
+  publishConfirmDraft: PublishConfirmDraft;
+  /** Last Convex / network error while confirming (cleared on new open). */
+  publishConfirmError: string | null;
   selectedBatchIndex: number;
   /** Last seen batches.length from bridge (for clamp when length changes). */
   prevBatchesLength: number;
@@ -79,8 +95,19 @@ export type AppUiEvent =
   | { type: "ACTIVE_PROJECT_SET"; projectId: Id<"projects"> | null }
   | { type: "NOTES_LIST_DRILL_SET"; drill: NotesListDrill }
   | { type: "NOTES_LIST_MODE_SET"; mode: NotesListMode }
+  | { type: "NOTES_LIST_PUBLISH_FILTER_SET"; filter: NotesListPublishFilter }
   | { type: "PUBLISHED_NOTE_VIEWER_OPEN"; sessionId: Id<"sessions"> }
   | { type: "PUBLISHED_NOTE_VIEWER_CLOSE" }
+  | {
+      type: "PUBLISH_CONFIRM_OPEN";
+      sessionId: Id<"sessions">;
+      intent: "publish" | "unpublish";
+      sessionTitle: string;
+    }
+  | { type: "PUBLISH_CONFIRM_CANCEL" }
+  | { type: "PUBLISH_CONFIRM_SUBMIT" }
+  /** Close publish confirm without saving (navigation, stacking modals, etc.). */
+  | { type: "PUBLISH_CONFIRM_DISMISS" }
   | { type: "SELECTED_BATCH_INDEX_SET"; index: number }
   | { type: "DRAFT_INPUT_SET"; value: string }
   | { type: "NOTES_SET"; value: string }

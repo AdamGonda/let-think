@@ -10,6 +10,7 @@ import { Chat } from "../chat/Chat";
 import { ChatHistoryPanel } from "../chat/ChatHistoryPanel";
 import { NotesListPanel } from "../notes-list/NotesListPanel";
 import { PublishedNoteViewerDialog } from "../notes-list/PublishedNoteViewerDialog";
+import { PublishConfirmDialog } from "../notes-list/PublishConfirmDialog";
 import { GraphSurfaceContainer } from "./GraphSurfaceContainer";
 import { CHAT_MESSAGES_PAGE_SIZE } from "@/config";
 import {
@@ -17,6 +18,7 @@ import {
 } from "../../lib/conceptReferences";
 import { userInputForBatch, userMessageForBatch } from "../../lib/batchUserInput";
 import {
+  cancelPublishConfirm,
   closeHistoryPanel,
   closePublishedNoteViewer,
   openPublishedNoteViewer,
@@ -24,7 +26,9 @@ import {
   setDraftInput,
   setNotesListDrill,
   setNotesListMode,
+  setNotesListPublishFilter,
   setSelectedBatchIndex,
+  submitPublishConfirm,
 } from "@/lib/appUiCommands";
 import type {
   ProjectWithSessions,
@@ -121,6 +125,17 @@ export function WorkspaceMainColumn({
     closePublishedNoteViewer(actor);
   }, [actor]);
 
+  const handleCancelPublishConfirm = useCallback(() => {
+    cancelPublishConfirm(actor);
+  }, [actor]);
+
+  const handleSubmitPublishConfirm = useCallback(() => {
+    submitPublishConfirm(actor);
+  }, [actor]);
+
+  const pc = layout.publishConfirm;
+  const publishConfirmOpen = pc.phase !== "closed";
+
   const chatComposerVisible = dock.viewMode === "graph";
 
   return (
@@ -169,6 +184,10 @@ export function WorkspaceMainColumn({
             onDrillChange={(drill) => setNotesListDrill(actor, drill)}
             mode={layout.notesListMode}
             onModeChange={(mode) => setNotesListMode(actor, mode)}
+            publishFilter={layout.notesListPublishFilter}
+            onPublishFilterChange={(filter) =>
+              setNotesListPublishFilter(actor, filter)
+            }
             onOpenPublishedNoteViewer={handleOpenPublishedNoteViewer}
             onOpenNotesEditor={onSelectSessionFromNotesList}
             onOpenSessionGraph={onGoToSessionGraphFromNotesList}
@@ -187,6 +206,15 @@ export function WorkspaceMainColumn({
           onClose={handleClosePublishedNoteViewer}
         />
       ) : null}
+      <PublishConfirmDialog
+        open={publishConfirmOpen}
+        intent={pc.draft?.intent ?? "publish"}
+        sessionTitle={pc.draft?.sessionTitle ?? ""}
+        error={pc.error}
+        busy={pc.phase === "executing"}
+        onCancel={handleCancelPublishConfirm}
+        onConfirm={handleSubmitPublishConfirm}
+      />
       {chatComposerVisible && (
         <Chat
           sessionId={layout.activeSessionId}

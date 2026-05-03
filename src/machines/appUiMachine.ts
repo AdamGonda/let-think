@@ -1,6 +1,11 @@
-import { assign, enqueueActions, raise, setup } from "xstate";
+import { assign, enqueueActions, fromPromise, raise, setup } from "xstate";
+import { toast } from "sonner";
 import { timings } from "@/config";
 import type { AppUiContext, AppUiEvent, SurfaceMode } from "./appUiTypes";
+import type {
+  PublishConfirmMutationInput,
+  PublishConfirmMutationOutput,
+} from "./publishConfirmMutationActor";
 import {
   reduceBatchesLengthChanged,
   reduceChatHistoryMeta,
@@ -52,6 +57,17 @@ export const appUiMachine = setup({
       event.type === "GRAPH_LOADING_PROGRESS" &&
       context.graphShowLoadingCards &&
       event.latestBatchNodeCount >= context.graphLoadingCardSlots,
+    publishConfirmDraftExists: ({ context }) => context.publishConfirmDraft != null,
+  },
+  actors: {
+    publishConfirmMutation: fromPromise<
+      PublishConfirmMutationOutput,
+      PublishConfirmMutationInput
+    >(async () => {
+      throw new Error(
+        "publishConfirmMutation actor must be provided via appUiMachine.provide (see AppUiProvider).",
+      );
+    }),
   },
   actions: {
     clearOnDemandEnd: assign({
@@ -137,33 +153,60 @@ export const appUiMachine = setup({
         return event.drill;
       },
     }),
-    setNotesListMode: assign({
-      notesListMode: ({ event, context }) => {
-        if (event.type !== "NOTES_LIST_MODE_SET") return context.notesListMode;
-        return event.mode;
-      },
-      notesListDrill: ({ event, context }) => {
-        if (event.type !== "NOTES_LIST_MODE_SET") return context.notesListDrill;
-        // Drill is only meaningful in "mine"; clear when switching either way
-        // so coming back to "mine" lands at the projects root.
-        return null;
-      },
-      publishedNoteViewerSessionId: ({ event, context }) => {
-        if (event.type !== "NOTES_LIST_MODE_SET") {
-          return context.publishedNoteViewerSessionId;
-        }
-        return null;
+    setNotesListMode: enqueueActions(({ enqueue, event }) => {
+      if (event.type !== "NOTES_LIST_MODE_SET") return;
+      enqueue.assign({
+        notesListMode: event.mode,
+        notesListDrill: null,
+        publishedNoteViewerSessionId: null,
+        notesListPublishFilter: "all",
+      });
+      enqueue.raise({ type: "PUBLISH_CONFIRM_DISMISS" });
+    }),
+    setNotesListPublishFilter: assign({
+      notesListPublishFilter: ({ event }) => {
+        if (event.type !== "NOTES_LIST_PUBLISH_FILTER_SET") return "all";
+        return event.filter;
       },
     }),
-    openPublishedNoteViewer: assign({
-      publishedNoteViewerSessionId: ({ event }) => {
-        if (event.type !== "PUBLISHED_NOTE_VIEWER_OPEN") return null;
-        return event.sessionId;
+    assignPublishConfirmOpen: assign({
+      publishConfirmDraft: ({ event }) => {
+        if (event.type !== "PUBLISH_CONFIRM_OPEN") return null;
+        return {
+          sessionId: event.sessionId,
+          intent: event.intent,
+          sessionTitle: event.sessionTitle,
+        };
       },
+      publishConfirmError: () => null,
+    }),
+    clearPublishConfirmDraft: assign({
+      publishConfirmDraft: () => null,
+      publishConfirmError: () => null,
+    }),
+    assignPublishConfirmError: assign({
+      publishConfirmError: ({ event }) => {
+        if (!("error" in event)) return "Request failed";
+        const err = (event as { error: unknown }).error;
+        return err instanceof Error ? err.message : String(err ?? "Request failed");
+      },
+    }),
+    toastPublishConfirmDone: ({ event }) => {
+      if (!("output" in event)) return;
+      const intent = (event as { output: PublishConfirmMutationOutput }).output
+        .intent;
+      if (intent === "publish") toast.success("Note published");
+      else toast.success("Note unpublished");
+    },
+    openPublishedNoteViewer: enqueueActions(({ enqueue, event }) => {
+      if (event.type !== "PUBLISHED_NOTE_VIEWER_OPEN") return;
+      enqueue.raise({ type: "PUBLISH_CONFIRM_DISMISS" });
+      enqueue.assign({ publishedNoteViewerSessionId: event.sessionId });
     }),
     closePublishedNoteViewer: assign({
       publishedNoteViewerSessionId: () => null,
     }),
+    raisePublishConfirmDismiss: raise({ type: "PUBLISH_CONFIRM_DISMISS" }),
     setSelectedBatchIndex: assign({
       selectedBatchIndex: ({ event }) => {
         if (event.type !== "SELECTED_BATCH_INDEX_SET") return 0;
@@ -211,9 +254,12 @@ export const appUiMachine = setup({
     ),
     assignEditorOpenTrue: assign({ editorOpen: true }),
     assignSurfaceModeNotesList: assign({ surfaceMode: "notesList" }),
-    assignSurfaceModeGraph: assign({
-      surfaceMode: "graph",
-      publishedNoteViewerSessionId: () => null,
+    assignSurfaceModeGraph: enqueueActions(({ enqueue }) => {
+      enqueue.assign({
+        surfaceMode: "graph",
+        publishedNoteViewerSessionId: null,
+      });
+      enqueue.raise({ type: "PUBLISH_CONFIRM_DISMISS" });
     }),
     raiseExitWakeUp: raise({ type: "USER_EXIT_WAKE_UP" }),
     assignNotesListDrillForOpenNotesIntent: assign(({ context }) => {
@@ -288,7 +334,10 @@ export const appUiMachine = setup({
       activeProjectId: inp?.activeProjectId ?? null,
       notesListDrill: inp?.notesListDrill ?? null,
       notesListMode: inp?.notesListMode ?? "mine",
+      notesListPublishFilter: inp?.notesListPublishFilter ?? "all",
       publishedNoteViewerSessionId: inp?.publishedNoteViewerSessionId ?? null,
+      publishConfirmDraft: inp?.publishConfirmDraft ?? null,
+      publishConfirmError: inp?.publishConfirmError ?? null,
       selectedBatchIndex: inp?.selectedBatchIndex ?? 0,
       prevBatchesLength: inp?.prevBatchesLength ?? 0,
       draftInput: inp?.draftInput ?? "",
@@ -331,6 +380,9 @@ export const appUiMachine = setup({
     },
     NOTES_LIST_MODE_SET: {
       actions: "setNotesListMode",
+    },
+    NOTES_LIST_PUBLISH_FILTER_SET: {
+      actions: "setNotesListPublishFilter",
     },
     PUBLISHED_NOTE_VIEWER_OPEN: {
       actions: "openPublishedNoteViewer",
@@ -446,6 +498,83 @@ export const appUiMachine = setup({
         notesList: {},
       },
     },
+    /**
+     * Publish / unpublish confirmation + Convex mutation invoke.
+     * Keeps all publish UI orchestration out of leaf components.
+     */
+    publishConfirm: {
+      initial: "closed",
+      states: {
+        closed: {
+          on: {
+            PUBLISH_CONFIRM_OPEN: {
+              target: "confirming",
+              actions: "assignPublishConfirmOpen",
+            },
+            PUBLISH_CONFIRM_DISMISS: { target: "closed" },
+          },
+        },
+        confirming: {
+          on: {
+            PUBLISH_CONFIRM_OPEN: {
+              target: "confirming",
+              actions: "assignPublishConfirmOpen",
+              reenter: true,
+            },
+            PUBLISH_CONFIRM_CANCEL: {
+              target: "closed",
+              actions: "clearPublishConfirmDraft",
+            },
+            PUBLISH_CONFIRM_DISMISS: {
+              target: "closed",
+              actions: "clearPublishConfirmDraft",
+            },
+            PUBLISH_CONFIRM_SUBMIT: {
+              guard: "publishConfirmDraftExists",
+              target: "executing",
+            },
+          },
+        },
+        executing: {
+          on: {
+            PUBLISH_CONFIRM_OPEN: {
+              target: "confirming",
+              actions: "assignPublishConfirmOpen",
+            },
+            PUBLISH_CONFIRM_DISMISS: {
+              target: "closed",
+              actions: "clearPublishConfirmDraft",
+            },
+            PUBLISH_CONFIRM_CANCEL: {
+              target: "closed",
+              actions: "clearPublishConfirmDraft",
+            },
+          },
+          invoke: {
+            id: "publishConfirmMutation",
+            src: "publishConfirmMutation",
+            input: ({ context }) => {
+              const d = context.publishConfirmDraft;
+              if (!d) {
+                throw new Error("publishConfirmDraft missing");
+              }
+              return {
+                sessionId: d.sessionId,
+                intent: d.intent,
+              };
+            },
+            onDone: {
+              target: "closed",
+              actions: ["clearPublishConfirmDraft", "toastPublishConfirmDone"],
+            },
+            onError: {
+              target: "confirming",
+              actions: "assignPublishConfirmError",
+            },
+          },
+        },
+      },
+    },
     sidebarCollapsePolicy: {
       initial: "idle",
       /** Parallel region: EDITOR_OPEN sets notes overlay without collapsing the sidebar. */
@@ -559,6 +688,32 @@ function surfaceState(snapshot: MachineSnapshot): SurfaceMode {
     if (s === "graph" || s === "notesList") return s;
   }
   return "graph";
+}
+
+function publishConfirmBranch(
+  snapshot: MachineSnapshot,
+): "closed" | "confirming" | "executing" | null {
+  const v = snapshot.value;
+  if (typeof v === "object" && v !== null && "publishConfirm" in v) {
+    const p = (v as { publishConfirm: string }).publishConfirm;
+    if (p === "closed" || p === "confirming" || p === "executing") return p;
+  }
+  return null;
+}
+
+/** Publish / unpublish confirmation dialog model (parallel `publishConfirm` + context draft). */
+export function selectPublishConfirmModel(snapshot: MachineSnapshot): {
+  draft: AppUiContext["publishConfirmDraft"];
+  error: string | null;
+  phase: "closed" | "confirming" | "executing";
+} {
+  const phase = publishConfirmBranch(snapshot) ?? "closed";
+  const c = snapshot.context;
+  return {
+    draft: c.publishConfirmDraft,
+    error: c.publishConfirmError,
+    phase,
+  };
 }
 
 /** Fullscreen focus layer (wake-up) — same as previous showOverlay. */

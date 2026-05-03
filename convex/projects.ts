@@ -57,18 +57,28 @@ export const listWithSessions = query({
       .query("sessions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
+    const publishedRows = await ctx.db
+      .query("publishedSessions")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+    const publishedSessionIds = new Set(
+      publishedRows.map((row) => row.sessionId),
+    );
+    const attachPublished = <T extends (typeof allSessions)[0]>(s: T) => ({
+      ...s,
+      isPublished: publishedSessionIds.has(s._id),
+    });
     const inboxSessions = allSessions
       .filter((s) => s.projectId === undefined)
+      .map(attachPublished)
       .sort((a, b) => b.createdAt - a.createdAt);
-    const byProject = new Map<
-      string,
-      Array<(typeof allSessions)[0]>
-    >();
+    type SessionWithPublished = (typeof allSessions)[0] & { isPublished: boolean };
+    const byProject = new Map<string, SessionWithPublished[]>();
     for (const s of allSessions) {
       if (s.projectId) {
         const key = s.projectId;
         if (!byProject.has(key)) byProject.set(key, []);
-        byProject.get(key)!.push(s);
+        byProject.get(key)!.push(attachPublished(s));
       }
     }
     for (const arr of byProject.values()) {
@@ -76,13 +86,13 @@ export const listWithSessions = query({
     }
     const result: Array<{
       project: (typeof projects)[0] | null;
-      sessions: (typeof allSessions)[0][];
+      sessions: SessionWithPublished[];
     }> = [];
     result.push({ project: null, sessions: inboxSessions });
     for (const project of projects) {
       result.push({
         project,
-        sessions: byProject.get(project._id) ?? [],
+        sessions: (byProject.get(project._id) ?? []) as SessionWithPublished[],
       });
     }
     return result;

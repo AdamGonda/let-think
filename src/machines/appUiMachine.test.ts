@@ -13,6 +13,7 @@ import {
   selectShowOverlayAction,
   selectShowWakeUpOverlay,
   selectOverlayActionReturnsToGraph,
+  selectPublishConfirmModel,
   selectSurface,
   sessionSelected,
 } from "./appUiMachine";
@@ -25,7 +26,10 @@ function baseInput(over: Partial<AppUiContext> = {}): Partial<AppUiContext> {
     activeProjectId: null,
     notesListDrill: null,
     notesListMode: "mine",
+    notesListPublishFilter: "all",
     publishedNoteViewerSessionId: null,
+    publishConfirmDraft: null,
+    publishConfirmError: null,
     selectedBatchIndex: 0,
     prevBatchesLength: 0,
     draftInput: "",
@@ -87,6 +91,48 @@ describe("selectors from running actor", () => {
     actor.start();
     actor.send({ type: "EDITOR_OPEN" });
     expect(selectShowWakeUpOverlay(actor.getSnapshot())).toBe(true);
+    actor.stop();
+  });
+});
+
+describe("publish confirm (parallel region)", () => {
+  it("opens with draft on PUBLISH_CONFIRM_OPEN", () => {
+    const actor = createActor(appUiMachine, { input: baseInput() });
+    actor.start();
+    actor.send({
+      type: "PUBLISH_CONFIRM_OPEN",
+      sessionId: sid,
+      intent: "publish",
+      sessionTitle: "My note",
+    });
+    expect(actor.getSnapshot().context.publishConfirmDraft).toEqual({
+      sessionId: sid,
+      intent: "publish",
+      sessionTitle: "My note",
+    });
+    expect(selectPublishConfirmModel(actor.getSnapshot()).phase).toBe(
+      "confirming",
+    );
+    actor.stop();
+  });
+});
+
+describe("notes list publish filter", () => {
+  it("NOTES_LIST_PUBLISH_FILTER_SET updates context", () => {
+    const actor = createActor(appUiMachine, { input: baseInput() });
+    actor.start();
+    actor.send({ type: "NOTES_LIST_PUBLISH_FILTER_SET", filter: "published" });
+    expect(actor.getSnapshot().context.notesListPublishFilter).toBe("published");
+    actor.stop();
+  });
+
+  it("resets to all when switching Mine / Discover mode", () => {
+    const actor = createActor(appUiMachine, {
+      input: baseInput({ notesListPublishFilter: "private" }),
+    });
+    actor.start();
+    actor.send({ type: "NOTES_LIST_MODE_SET", mode: "discover" });
+    expect(actor.getSnapshot().context.notesListPublishFilter).toBe("all");
     actor.stop();
   });
 });

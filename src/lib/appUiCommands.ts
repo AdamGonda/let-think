@@ -9,7 +9,7 @@
  */
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 import type { AppUiActorRef } from "../contexts/appUiActorContext";
-import type { NotesListMode } from "../machines/appUiTypes";
+import type { NotesListMode, NotesListPublishFilter } from "../machines/appUiTypes";
 import type { NotesListDrill } from "./notesListUtils";
 
 /**
@@ -94,6 +94,13 @@ export function setNotesListMode(actor: AppUiActorRef, mode: NotesListMode): voi
   actor.send({ type: "NOTES_LIST_MODE_SET", mode });
 }
 
+export function setNotesListPublishFilter(
+  actor: AppUiActorRef,
+  filter: NotesListPublishFilter,
+): void {
+  actor.send({ type: "NOTES_LIST_PUBLISH_FILTER_SET", filter });
+}
+
 /** Discover: open the read-only published note viewer for a session id. */
 export function openPublishedNoteViewer(
   actor: AppUiActorRef,
@@ -104,6 +111,26 @@ export function openPublishedNoteViewer(
 
 export function closePublishedNoteViewer(actor: AppUiActorRef): void {
   actor.send({ type: "PUBLISHED_NOTE_VIEWER_CLOSE" });
+}
+
+/** Open publish / unpublish confirmation (parallel `publishConfirm` + Convex invoke). */
+export function openPublishConfirm(
+  actor: AppUiActorRef,
+  payload: {
+    sessionId: Id<"sessions">;
+    intent: "publish" | "unpublish";
+    sessionTitle: string;
+  },
+): void {
+  actor.send({ type: "PUBLISH_CONFIRM_OPEN", ...payload });
+}
+
+export function cancelPublishConfirm(actor: AppUiActorRef): void {
+  actor.send({ type: "PUBLISH_CONFIRM_CANCEL" });
+}
+
+export function submitPublishConfirm(actor: AppUiActorRef): void {
+  actor.send({ type: "PUBLISH_CONFIRM_SUBMIT" });
 }
 
 export function openEditor(actor: AppUiActorRef): void {

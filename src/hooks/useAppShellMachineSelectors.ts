@@ -12,6 +12,7 @@ import {
   selectGraphShowLoadingCards,
   selectIsExitingWakeUp,
   selectOverlayActionReturnsToGraph,
+  selectPublishConfirmModel,
   selectSurface,
   selectUiCollapseSignal,
 } from "../machines/appUiMachine";
@@ -24,10 +25,26 @@ export type AppLayoutSelectors = {
   activeProjectId: AppSnapshot["context"]["activeProjectId"];
   notesListDrill: AppSnapshot["context"]["notesListDrill"];
   notesListMode: AppSnapshot["context"]["notesListMode"];
+  notesListPublishFilter: AppSnapshot["context"]["notesListPublishFilter"];
   publishedNoteViewerSessionId: AppSnapshot["context"]["publishedNoteViewerSessionId"];
+  publishConfirm: ReturnType<typeof selectPublishConfirmModel>;
   viewMode: ReturnType<typeof selectSurface>;
   chatLoading: AppSnapshot["context"]["chatLoading"];
 };
+
+function publishConfirmModelEqual(
+  a: ReturnType<typeof selectPublishConfirmModel>,
+  b: ReturnType<typeof selectPublishConfirmModel>,
+): boolean {
+  if (a.phase !== b.phase || a.error !== b.error) return false;
+  if (a.draft === b.draft) return true;
+  if (a.draft == null || b.draft == null) return a.draft === b.draft;
+  return (
+    a.draft.sessionId === b.draft.sessionId &&
+    a.draft.intent === b.draft.intent &&
+    a.draft.sessionTitle === b.draft.sessionTitle
+  );
+}
 
 function shallowEqualLayout(a: AppLayoutSelectors, b: AppLayoutSelectors): boolean {
   return (
@@ -35,7 +52,9 @@ function shallowEqualLayout(a: AppLayoutSelectors, b: AppLayoutSelectors): boole
     a.activeProjectId === b.activeProjectId &&
     a.notesListDrill === b.notesListDrill &&
     a.notesListMode === b.notesListMode &&
+    a.notesListPublishFilter === b.notesListPublishFilter &&
     a.publishedNoteViewerSessionId === b.publishedNoteViewerSessionId &&
+    publishConfirmModelEqual(a.publishConfirm, b.publishConfirm) &&
     a.viewMode === b.viewMode &&
     a.chatLoading === b.chatLoading
   );
@@ -47,7 +66,9 @@ function selectLayoutSnapshot(s: AppSnapshot): AppLayoutSelectors {
     activeProjectId: s.context.activeProjectId,
     notesListDrill: s.context.notesListDrill,
     notesListMode: s.context.notesListMode,
+    notesListPublishFilter: s.context.notesListPublishFilter,
     publishedNoteViewerSessionId: s.context.publishedNoteViewerSessionId,
+    publishConfirm: selectPublishConfirmModel(s),
     viewMode: selectSurface(s),
     chatLoading: s.context.chatLoading,
   };

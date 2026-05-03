@@ -123,5 +123,6 @@ export default defineSchema({
     publishedAt: v.number(),
   })
     .index("by_session", ["sessionId"])
-    .index("by_published", ["publishedAt"]),
+    .index("by_published", ["publishedAt"])
+    .index("by_user", ["userId", "publishedAt"]),
 });
