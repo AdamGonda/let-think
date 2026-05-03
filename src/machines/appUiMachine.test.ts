@@ -106,8 +106,20 @@ describe("intent orchestration", () => {
     actor.stop();
   });
 
-  it("INTENT_OPEN_NOTES_LIST clears drill when no active project", () => {
+  it("INTENT_OPEN_NOTES_LIST drills into inbox when active session has no project", () => {
     const actor = createActor(appUiMachine, { input: baseInput() });
+    actor.start();
+    actor.send({ type: "INTENT_OPEN_NOTES_LIST" });
+    expect(actor.getSnapshot().context.notesListDrill).toEqual({ type: "inbox" });
+    expect(selectSurface(actor.getSnapshot())).toBe("notesList");
+    actor.stop();
+  });
+
+  it("INTENT_OPEN_NOTES_LIST clears drill when no active session and no project", () => {
+    const actor = createActor(
+      appUiMachine,
+      { input: baseInput({ activeSessionId: null, hasEverHadSessionSelection: false }) },
+    );
     actor.start();
     actor.send({ type: "INTENT_OPEN_NOTES_LIST" });
     expect(actor.getSnapshot().context.notesListDrill).toBeNull();

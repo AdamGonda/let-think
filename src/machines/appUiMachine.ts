@@ -195,6 +195,13 @@ export const appUiMachine = setup({
           },
         };
       }
+      if (context.activeSessionId != null) {
+        return {
+          notesListDrill: {
+            type: "inbox" as const,
+          },
+        };
+      }
       return { notesListDrill: null };
     }),
     /** Leave note overlay for graph; clears Files drill so navigation stays predictable. */
