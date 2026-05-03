@@ -6,8 +6,6 @@ export type NotesListDrill =
   | { type: "inbox" }
   | { type: "project"; id: Id<"projects"> };
 
-export type SortMode = "activity" | "name";
-
 export function formatUpdatedLabel(ms: number): string {
   const diff = Date.now() - ms;
   const minutes = Math.floor(diff / 60_000);

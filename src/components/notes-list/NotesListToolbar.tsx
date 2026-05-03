@@ -1,6 +1,5 @@
-import { Search, ChevronLeft, ChevronDown } from "lucide-react";
+import { Search, ChevronLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import type { SortMode } from "@/lib/notesListUtils";
 
 type NotesListToolbarProps = {
   drilled: boolean;
@@ -8,8 +7,6 @@ type NotesListToolbarProps = {
   drillHeading: string;
   searchQuery: string;
   onSearchQueryChange: (value: string) => void;
-  sortMode: SortMode;
-  onSortModeChange: (mode: SortMode) => void;
   onBackFromDrill: () => void;
 };
 
@@ -19,8 +16,6 @@ export function NotesListToolbar({
   drillHeading,
   searchQuery,
   onSearchQueryChange,
-  sortMode,
-  onSortModeChange,
   onBackFromDrill,
 }: NotesListToolbarProps) {
   return (
@@ -44,7 +39,7 @@ export function NotesListToolbar({
           {drillHeading}
         </h1>
       </div>
-      <div className="relative mb-3 w-full">
+      <div className="relative w-full">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
         <Input
           type="search"
@@ -53,23 +48,6 @@ export function NotesListToolbar({
           onChange={(e) => onSearchQueryChange(e.target.value)}
           className="h-10 w-full pl-9 rounded-lg bg-muted/25 border-border/80 focus-visible:ring-2 focus-visible:ring-ring/40"
         />
-      </div>
-      <div className="flex justify-end">
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground select-none">
-          <span className="sr-only">Sort</span>
-          <span className="hidden sm:inline">Sort by</span>
-          <div className="relative">
-            <select
-              value={sortMode}
-              onChange={(e) => onSortModeChange(e.target.value as SortMode)}
-              className="appearance-none cursor-pointer rounded-lg border border-border/80 bg-card py-1.5 pl-3 pr-8 text-sm text-foreground transition-colors hover:border-border hover:bg-muted/10 active:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <option value="activity">Last changed</option>
-              <option value="name">Name</option>
-            </select>
-            <ChevronDown className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          </div>
-        </label>
       </div>
     </div>
   );
