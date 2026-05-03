@@ -27,12 +27,7 @@ export function LandingPage() {
         <div className="mx-auto max-w-3xl">
           <div className="text-center">
             <h1 className="text-balance text-4xl leading-[1.05] font-semibold tracking-tight sm:text-5xl md:text-6xl">
-              <span
-                className="underline decoration-[6px] underline-offset-[0.09em]"
-                style={{ textDecorationColor: SESSION_ACCENT }}
-              >
-                Pure ideas
-              </span>{" "}
+              <span style={{ color: SESSION_ACCENT }}>Pure ideas</span>{" "}
               from AI <br /> no syco flattery
             </h1>
           </div>
