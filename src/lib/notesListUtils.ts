@@ -8,18 +8,6 @@ export type NotesListDrill =
 
 export type SortMode = "activity" | "name";
 
-export function formatUpdatedLabel(ms: number): string {
-  const diff = Date.now() - ms;
-  const minutes = Math.floor(diff / 60_000);
-  const hours = Math.floor(diff / 3600_000);
-  const days = Math.floor(diff / 86400_000);
-  if (minutes < 1) return "Updated just now";
-  if (minutes < 60) return `Updated ${minutes}m ago`;
-  if (hours < 24) return `Updated ${hours}h ago`;
-  if (days < 7) return `Updated ${days}d ago`;
-  return `Updated ${new Date(ms).toLocaleDateString()}`;
-}
-
 export function groupActivityMs(
   sessions: Doc<"sessions">[],
   projectCreated: number,

@@ -8,7 +8,7 @@ type NotesListPublishFilterSwitcherProps = {
 
 const OPTIONS: Array<{ value: NotesListPublishFilter; label: string }> = [
   { value: "all", label: "All" },
-  { value: "published", label: "Published" },
+  { value: "published", label: "Public" },
   { value: "private", label: "Private" },
 ];
 

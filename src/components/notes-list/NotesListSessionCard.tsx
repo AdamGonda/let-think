@@ -3,7 +3,6 @@ import { clsx } from "clsx";
 import { Globe, Lock, Unplug } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CornerRippleBackdrop } from "@/components/ui/corner-ripple-backdrop";
-import { formatUpdatedLabel } from "@/lib/notesListUtils";
 import { useAppUiActor } from "@/hooks/useAppUi";
 import { openPublishConfirm } from "@/lib/appUiCommands";
 import type { SessionWithPublish } from "@/components/session-sidebar/workspaceTypes";
@@ -18,8 +17,8 @@ type NotesListSessionCardProps = {
 
 /**
  * Card for a session in the Files drill grid — matches project folder cards.
- * Updated time is fixed bottom-right (always). To notes / To session sit bottom-left and
- * only show on card hover (or touch / when that strip has focus). Public toggle is top-right, hover-only the same way.
+ * To notes / To session sit bottom-left and only show on card hover (or touch / when that strip has focus).
+ * Public toggle is top-right, hover-only the same way.
  */
 export function NotesListSessionCard({
   session,
@@ -119,10 +118,6 @@ export function NotesListSessionCard({
         </div>
 
         <div className="min-h-0 flex-1" aria-hidden />
-
-        <p className="pointer-events-none absolute bottom-5 right-5 z-[1] text-right text-xs leading-snug text-muted-foreground/90 whitespace-nowrap tabular-nums">
-          {formatUpdatedLabel(session.createdAt)}
-        </p>
 
         <div
           className={clsx(
