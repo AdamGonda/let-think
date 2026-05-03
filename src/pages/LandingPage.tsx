@@ -75,7 +75,7 @@ export function LandingPage() {
             </div>
             <div className="mt-5 text-center sm:mt-6">
               <p className="mx-auto max-w-xl text-sm text-muted-foreground sm:text-base">
-                Only 20 beta spots. Early access closes as soon as they are accepted.
+                Limited spots. We evaluate each application.
               </p>
               <a
                 href="https://tally.so/r/D4v9jE"
