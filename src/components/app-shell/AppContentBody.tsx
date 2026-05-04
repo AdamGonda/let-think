@@ -74,7 +74,9 @@ export function AppContentBody({
         onSelectSession={navigationHandlers.onSelectSessionFromSidebar}
         onSelectProject={navigationHandlers.onSelectProjectFromSidebar}
         viewMode={layout.viewMode}
-        onViewModeChange={navigationHandlers.setViewMode}
+        notesListMode={layout.notesListMode}
+        onOpenFilesView={navigationHandlers.openFilesView}
+        onOpenDiscoverView={navigationHandlers.openDiscoverView}
         onRunTutorial={runTutorial}
         isDisabled={layout.chatLoading}
       />

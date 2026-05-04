@@ -1,5 +1,6 @@
-import { forwardRef, useEffect, useMemo } from "react";
+import { forwardRef } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
+import type { NotesListMode } from "@/machines/appUiTypes";
 import { UserCard } from "../user/UserCard";
 import {
   SIDEBAR_WIDTH,
@@ -22,7 +23,9 @@ interface SessionSidebarProps {
   onSelectSession: (id: Id<"sessions"> | null) => void;
   onSelectProject: (id: Id<"projects"> | null) => void;
   viewMode: "graph" | "notesList";
-  onViewModeChange: (mode: "graph" | "notesList") => void;
+  notesListMode: NotesListMode;
+  onOpenFilesView: () => void;
+  onOpenDiscoverView: () => void;
   onRunTutorial?: () => void;
   isDisabled?: boolean;
 }
@@ -38,7 +41,9 @@ export const SessionSidebar = forwardRef<
     onSelectSession,
     onSelectProject,
     viewMode,
-    onViewModeChange,
+    notesListMode,
+    onOpenFilesView,
+    onOpenDiscoverView,
     onRunTutorial,
     isDisabled = false,
   },
@@ -52,22 +57,6 @@ export const SessionSidebar = forwardRef<
     onSelectProject,
     imperativeRef: ref,
   });
-
-  const viewModeIsNotesList = viewMode === "notesList";
-
-  const hasSessionInProject = useMemo(
-    () =>
-      workspace?.some(
-        (g) => g.project != null && g.sessions.length > 0,
-      ) ?? false,
-    [workspace],
-  );
-
-  useEffect(() => {
-    if (!hasSessionInProject && viewMode === "notesList") {
-      onViewModeChange("graph");
-    }
-  }, [hasSessionInProject, viewMode, onViewModeChange]);
 
   return (
     <aside
@@ -87,9 +76,10 @@ export const SessionSidebar = forwardRef<
           if (w.isCollapsed) w.setIsCollapsed(false);
           void w.handleNewProject();
         }}
-        showProjectsViewToggle={hasSessionInProject}
-        viewModeIsNotesList={viewModeIsNotesList}
-        onViewModeChange={onViewModeChange}
+        viewMode={viewMode}
+        notesListMode={notesListMode}
+        onOpenFilesView={onOpenFilesView}
+        onOpenDiscoverView={onOpenDiscoverView}
       />
       <SessionSidebarProjectsNav
         model={w}

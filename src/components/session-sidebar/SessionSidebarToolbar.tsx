@@ -4,29 +4,52 @@ import {
   PanelLeftClose,
   PanelRight,
   Compass,
+  Layers,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import type { NotesListMode } from "@/machines/appUiTypes";
 
 type SessionSidebarToolbarProps = {
   isCollapsed: boolean;
   onToggleCollapsed: () => void;
   onNewSession: () => void;
   onNewProject: () => void;
-  /** Project notes view toggle; only once there is at least one session under a project. */
-  showProjectsViewToggle: boolean;
-  viewModeIsNotesList: boolean;
-  onViewModeChange: (mode: "graph" | "notesList") => void;
+  viewMode: "graph" | "notesList";
+  notesListMode: NotesListMode;
+  onOpenFilesView: () => void;
+  onOpenDiscoverView: () => void;
 };
+
+function sidebarNavButtonClass(
+  isCollapsed: boolean,
+  isActive: boolean,
+): string {
+  const layout = isCollapsed
+    ? isActive
+      ? "h-10 w-10 p-0 justify-center rounded-none rounded-r-lg overflow-hidden"
+      : "h-10 w-10 p-0 justify-center rounded-lg overflow-hidden"
+    : "justify-start h-10 w-full gap-2 px-3 rounded-none rounded-r-lg border-y border-r border-transparent";
+
+  const tone = isActive
+    ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent"
+    : "border-l-2 border-l-transparent hover:border-border hover:bg-muted/10 active:bg-muted/20";
+
+  return `transition-colors ${layout} ${tone}`;
+}
 
 export function SessionSidebarToolbar({
   isCollapsed,
   onToggleCollapsed,
   onNewSession,
   onNewProject,
-  showProjectsViewToggle,
-  viewModeIsNotesList,
-  onViewModeChange,
+  viewMode,
+  notesListMode,
+  onOpenFilesView,
+  onOpenDiscoverView,
 }: SessionSidebarToolbarProps) {
+  const filesActive = viewMode === "notesList" && notesListMode === "mine";
+  const exploreActive = viewMode === "notesList" && notesListMode === "discover";
+
   return (
     <div
       className={`flex flex-col gap-1 min-w-0 transition-opacity duration-150 shrink-0 ${
@@ -99,40 +122,38 @@ export function SessionSidebarToolbar({
         </span>
         {!isCollapsed && "New project"}
       </Button>
-      {showProjectsViewToggle && (
-        <Button
-          variant="ghost"
-          className={`transition-colors ${
-            isCollapsed
-              ? viewModeIsNotesList
-                ? "h-10 w-10 p-0 justify-center rounded-none rounded-r-lg overflow-hidden"
-                : "h-10 w-10 p-0 justify-center rounded-lg overflow-hidden"
-              : "justify-start h-10 w-full gap-2 px-3 rounded-none rounded-r-lg border-y border-r border-transparent"
-          } ${
-            viewModeIsNotesList
-              ? "border-l-2 border-l-sidebar-primary bg-sidebar-accent text-sidebar-accent-foreground hover:bg-sidebar-accent"
-              : "border-l-2 border-l-transparent hover:border-border hover:bg-muted/10 active:bg-muted/20"
-          }`}
-          onClick={() =>
-            onViewModeChange(viewModeIsNotesList ? "graph" : "notesList")
-          }
-          aria-label={
-            viewModeIsNotesList
-              ? "Switch to graph view"
-              : "Switch to explore"
-          }
-          aria-pressed={viewModeIsNotesList}
-          data-tour="notes-toggle"
+      <Button
+        variant="ghost"
+        className={sidebarNavButtonClass(isCollapsed, filesActive)}
+        onClick={onOpenFilesView}
+        aria-label="Open Files"
+        aria-pressed={filesActive}
+        data-tour="sidebar-files"
+      >
+        <span
+          className="inline-flex size-5 shrink-0 items-center justify-center"
+          aria-hidden
         >
-          <span
-            className="inline-flex size-5 shrink-0 items-center justify-center"
-            aria-hidden
-          >
-            <Compass className="size-4.5 stroke-[1.75]" />
-          </span>
-          {!isCollapsed && "Explore"}
-        </Button>
-      )}
+          <Layers className="size-4.5 stroke-[1.75]" />
+        </span>
+        {!isCollapsed && "Files"}
+      </Button>
+      <Button
+        variant="ghost"
+        className={sidebarNavButtonClass(isCollapsed, exploreActive)}
+        onClick={onOpenDiscoverView}
+        aria-label="Open Explore"
+        aria-pressed={exploreActive}
+        data-tour="sidebar-explore"
+      >
+        <span
+          className="inline-flex size-5 shrink-0 items-center justify-center"
+          aria-hidden
+        >
+          <Compass className="size-4.5 stroke-[1.75]" />
+        </span>
+        {!isCollapsed && "Explore"}
+      </Button>
     </div>
   );
 }

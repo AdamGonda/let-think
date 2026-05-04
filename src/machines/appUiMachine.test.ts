@@ -4,6 +4,10 @@ import type { Id } from "../../convex/_generated/dataModel";
 import { timings } from "@/config";
 import type { AppUiContext } from "./appUiTypes";
 import {
+  intentOpenDiscoverView,
+  intentOpenFilesView,
+} from "@/lib/appUiCommands";
+import {
   appUiMachine,
   focusLayerDemand,
   selectGraphInteractionBlocked,
@@ -206,6 +210,43 @@ describe("intent orchestration", () => {
     );
     actor.start();
     actor.send({ type: "INTENT_OPEN_NOTES_LIST" });
+    expect(actor.getSnapshot().context.notesListDrill).toBeNull();
+    expect(selectSurface(actor.getSnapshot())).toBe("notesList");
+    actor.stop();
+  });
+
+  it("intentOpenFilesView forces mine and restores drill from active context", () => {
+    const pid = "proj_xyz789" as Id<"projects">;
+    const actor = createActor(appUiMachine, {
+      input: baseInput({
+        surfaceMode: "notesList",
+        notesListMode: "discover",
+        activeProjectId: pid,
+        notesListDrill: null,
+      }),
+    });
+    actor.start();
+    intentOpenFilesView(actor);
+    expect(actor.getSnapshot().context.notesListMode).toBe("mine");
+    expect(actor.getSnapshot().context.notesListDrill).toEqual({
+      type: "project",
+      id: pid,
+    });
+    expect(selectSurface(actor.getSnapshot())).toBe("notesList");
+    actor.stop();
+  });
+
+  it("intentOpenDiscoverView switches to notesList discover from graph", () => {
+    const actor = createActor(appUiMachine, {
+      input: baseInput({
+        surfaceMode: "graph",
+        notesListMode: "mine",
+        notesListDrill: { type: "project", id: "proj_xyz789" as Id<"projects"> },
+      }),
+    });
+    actor.start();
+    intentOpenDiscoverView(actor);
+    expect(actor.getSnapshot().context.notesListMode).toBe("discover");
     expect(actor.getSnapshot().context.notesListDrill).toBeNull();
     expect(selectSurface(actor.getSnapshot())).toBe("notesList");
     actor.stop();

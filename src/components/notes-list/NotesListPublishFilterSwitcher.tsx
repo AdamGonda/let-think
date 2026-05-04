@@ -13,8 +13,7 @@ const OPTIONS: Array<{ value: NotesListPublishFilter; label: string }> = [
 ];
 
 /**
- * Segmented control for filtering project / session cards by publish state (Mine view).
- * Styled like {@link NotesListModeSwitcher}.
+ * Segmented control for filtering project / session cards by publish state (Files view).
  */
 export function NotesListPublishFilterSwitcher({
   filter,

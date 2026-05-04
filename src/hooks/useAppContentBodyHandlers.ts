@@ -5,7 +5,8 @@ import type { AppUiActorRef } from "@/contexts/appUiActorContext";
 import {
   intentBreadcrumbProjectsRootClick,
   intentBreadcrumbSessionClick,
-  intentOpenNotesList,
+  intentOpenDiscoverView,
+  intentOpenFilesView,
   intentSelectSessionFromSidebar,
   intentOverlayActionClick,
   openSessionGraphFromNotesListDrill,
@@ -21,17 +22,15 @@ import { toggleAtReferenceInDraft } from "@/lib/conceptReferences";
 export function useAppShellIntentHandlers(actor: AppUiActorRef) {
   const posthog = usePostHog();
 
-  const setViewMode = useCallback(
-    (mode: "graph" | "notesList") => {
-      posthog.capture("view_mode_changed", { mode });
-      if (mode === "notesList") {
-        intentOpenNotesList(actor);
-      } else {
-        actor.send({ type: "VIEW_SET", mode: "graph" });
-      }
-    },
-    [actor, posthog],
-  );
+  const openFilesView = useCallback(() => {
+    posthog.capture("sidebar_files_open");
+    intentOpenFilesView(actor);
+  }, [actor, posthog]);
+
+  const openDiscoverView = useCallback(() => {
+    posthog.capture("sidebar_discover_open");
+    intentOpenDiscoverView(actor);
+  }, [actor, posthog]);
 
   const handleBreadcrumbProjectsRootClick = useCallback(() => {
     intentBreadcrumbProjectsRootClick(actor);
@@ -74,7 +73,8 @@ export function useAppShellIntentHandlers(actor: AppUiActorRef) {
   );
 
   return {
-    setViewMode,
+    openFilesView,
+    openDiscoverView,
     handleBreadcrumbProjectsRootClick,
     handleBreadcrumbSessionClick,
     handleWakeUpOverlayActionClick,

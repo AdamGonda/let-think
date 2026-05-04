@@ -49,6 +49,18 @@ export function intentOpenNotesList(actor: AppUiActorRef): void {
   actor.send({ type: "INTENT_OPEN_NOTES_LIST" });
 }
 
+/** Sidebar Files: mine list + drill from active project/session (Projects / inbox). */
+export function intentOpenFilesView(actor: AppUiActorRef): void {
+  actor.send({ type: "NOTES_LIST_MODE_SET", mode: "mine" });
+  actor.send({ type: "INTENT_OPEN_NOTES_LIST" });
+}
+
+/** Sidebar Explore: published discover feed on the notes list surface. */
+export function intentOpenDiscoverView(actor: AppUiActorRef): void {
+  actor.send({ type: "NOTES_LIST_MODE_SET", mode: "discover" });
+  actor.send({ type: "VIEW_SET", mode: "notesList" });
+}
+
 export function intentOverlayActionClick(actor: AppUiActorRef): void {
   actor.send({ type: "INTENT_OVERLAY_ACTION_CLICK" });
 }

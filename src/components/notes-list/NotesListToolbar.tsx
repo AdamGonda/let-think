@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import { Search, ChevronLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import type { NotesListPublishFilter } from "@/machines/appUiTypes";
@@ -13,8 +12,6 @@ type NotesListToolbarProps = {
   publishFilter: NotesListPublishFilter;
   onPublishFilterChange: (filter: NotesListPublishFilter) => void;
   onBackFromDrill: () => void;
-  /** Slot rendered to the right of the heading (e.g. Mine/Discover switcher). */
-  modeSwitcher?: ReactNode;
 };
 
 export function NotesListToolbar({
@@ -26,7 +23,6 @@ export function NotesListToolbar({
   publishFilter,
   onPublishFilterChange,
   onBackFromDrill,
-  modeSwitcher,
 }: NotesListToolbarProps) {
   return (
     <div className="shrink-0 border-b border-border py-6">
@@ -48,7 +44,6 @@ export function NotesListToolbar({
         <h1 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight text-foreground truncate">
           {drillHeading}
         </h1>
-        {modeSwitcher}
       </div>
       <div className="flex min-w-0 flex-wrap items-center gap-3">
         <NotesListPublishFilterSwitcher

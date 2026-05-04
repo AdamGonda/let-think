@@ -22,27 +22,37 @@ export function DiscoverGrid({ onOpenPublishedNote }: DiscoverGridProps) {
   }
 
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto py-6">
+    <div className="min-h-0 flex-1 overflow-y-auto py-5 sm:py-6">
       {items.length === 0 ? (
         <p className="py-12 text-center text-sm text-muted-foreground">
           Nothing has been published yet. Be the first — open a session and hit
           Publish on its file card.
         </p>
       ) : (
-        <ul className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {items.map((item) => (
-            <li key={item.sessionId}>
-              <PublishedNoteCard
-                sessionId={item.sessionId}
-                title={item.title}
-                publisherName={item.publisherName}
-                publishedAt={item.publishedAt}
-                isMine={item.isMine}
-                onOpen={onOpenPublishedNote}
-              />
-            </li>
-          ))}
-        </ul>
+        <div className="flex flex-col gap-10 sm:gap-12">
+          <section aria-labelledby="discover-section-for-you">
+            <h2
+              id="discover-section-for-you"
+              className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground sm:mb-5"
+            >
+              For you
+            </h2>
+            <ul className="grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 lg:gap-x-6 lg:gap-y-8 xl:grid-cols-4">
+              {items.map((item) => (
+                <li key={item.sessionId}>
+                  <PublishedNoteCard
+                    sessionId={item.sessionId}
+                    title={item.title}
+                    publisherName={item.publisherName}
+                    publishedAt={item.publishedAt}
+                    isMine={item.isMine}
+                    onOpen={onOpenPublishedNote}
+                  />
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
       )}
     </div>
   );

@@ -25,7 +25,6 @@ import {
   setChatLoading,
   setDraftInput,
   setNotesListDrill,
-  setNotesListMode,
   setNotesListPublishFilter,
   setSelectedBatchIndex,
   submitPublishConfirm,
@@ -183,7 +182,6 @@ export function WorkspaceMainColumn({
             drill={layout.notesListDrill}
             onDrillChange={(drill) => setNotesListDrill(actor, drill)}
             mode={layout.notesListMode}
-            onModeChange={(mode) => setNotesListMode(actor, mode)}
             publishFilter={layout.notesListPublishFilter}
             onPublishFilterChange={(filter) =>
               setNotesListPublishFilter(actor, filter)

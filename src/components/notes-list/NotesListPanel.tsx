@@ -3,7 +3,6 @@ import type { ProjectWithSessions } from "../session-sidebar/workspaceTypes";
 import { groupDisplayName, type NotesListDrill } from "@/lib/notesListUtils";
 import type { NotesListMode, NotesListPublishFilter } from "@/machines/appUiTypes";
 import { NotesListToolbar } from "./NotesListToolbar";
-import { NotesListModeSwitcher } from "./NotesListModeSwitcher";
 import { ProjectSummaryCard } from "./ProjectSummaryCard";
 import { NotesListLoading } from "./NotesListLoading";
 import { NotesListEmptyState } from "./NotesListEmptyState";
@@ -17,7 +16,6 @@ interface NotesListPanelProps {
   drill: NotesListDrill;
   onDrillChange: (drill: NotesListDrill) => void;
   mode: NotesListMode;
-  onModeChange: (mode: NotesListMode) => void;
   publishFilter: NotesListPublishFilter;
   onPublishFilterChange: (filter: NotesListPublishFilter) => void;
   onOpenPublishedNoteViewer: (sessionId: Id<"sessions">) => void;
@@ -31,7 +29,6 @@ export function NotesListPanel({
   drill,
   onDrillChange,
   mode,
-  onModeChange,
   publishFilter,
   onPublishFilterChange,
   onOpenPublishedNoteViewer,
@@ -49,14 +46,8 @@ export function NotesListPanel({
 
   if (mode === "discover") {
     return (
-      <div className="flex flex-1 flex-col min-h-0 bg-background">
-        <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-6">
-          <div className="shrink-0 flex items-center justify-between gap-4 border-b border-border py-6">
-            <h1 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight text-foreground truncate">
-              Discover
-            </h1>
-            <NotesListModeSwitcher mode={mode} onModeChange={onModeChange} />
-          </div>
+      <div className="flex min-h-0 flex-1 flex-col bg-background">
+        <div className="flex min-h-0 w-full flex-1 flex-col px-3 sm:px-4 md:px-5 lg:px-6">
           <DiscoverGrid onOpenPublishedNote={onOpenPublishedNoteViewer} />
         </div>
       </div>
@@ -71,9 +62,6 @@ export function NotesListPanel({
     return (
       <div className="flex flex-1 flex-col min-h-0 bg-background">
         <div className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col px-6">
-          <div className="shrink-0 flex items-center justify-end gap-4 py-6">
-            <NotesListModeSwitcher mode={mode} onModeChange={onModeChange} />
-          </div>
           <NotesListEmptyState />
         </div>
       </div>
@@ -100,11 +88,6 @@ export function NotesListPanel({
             onDrillChange(null);
             setSearchQuery("");
           }}
-          modeSwitcher={
-            !drilled ? (
-              <NotesListModeSwitcher mode={mode} onModeChange={onModeChange} />
-            ) : null
-          }
         />
 
         <div className="min-h-0 flex-1 overflow-y-auto py-6">
