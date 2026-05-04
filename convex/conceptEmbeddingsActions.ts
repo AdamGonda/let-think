@@ -3,7 +3,9 @@
 import { createHash } from "node:crypto";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { internalAction } from "./_generated/server";
+import { action, internalAction } from "./_generated/server";
+import type { Id } from "./_generated/dataModel";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { isConceptEmbeddingsSyncEnabled } from "./featureFlags";
 
 type WeaviateUpsertInput = {
@@ -39,6 +41,44 @@ export function makeDeterministicWeaviateObjectId(
     hex.slice(16, 20),
     hex.slice(20, 32),
   ].join("-");
+}
+
+export function makeDeterministicSessionCentroidObjectId(
+  sessionId: string
+): string {
+  const hex = createHash("sha256")
+    .update(`session-centroid:${sessionId}`)
+    .digest("hex")
+    .slice(0, 32);
+  return [
+    hex.slice(0, 8),
+    hex.slice(8, 12),
+    hex.slice(12, 16),
+    hex.slice(16, 20),
+    hex.slice(20, 32),
+  ].join("-");
+}
+
+export function computeCentroidVector(vectors: number[][]): number[] {
+  if (vectors.length === 0) {
+    throw new Error("Cannot compute centroid without source vectors");
+  }
+  const dimension = vectors[0]?.length ?? 0;
+  if (dimension === 0) {
+    throw new Error("Cannot compute centroid for empty vectors");
+  }
+  for (const vector of vectors) {
+    if (vector.length !== dimension) {
+      throw new Error("Cannot compute centroid with mixed vector dimensions");
+    }
+  }
+  const sums = new Array<number>(dimension).fill(0);
+  for (const vector of vectors) {
+    for (let i = 0; i < dimension; i += 1) {
+      sums[i] += vector[i] ?? 0;
+    }
+  }
+  return sums.map((sum) => sum / vectors.length);
 }
 
 async function embedTextWithGoogle(
@@ -172,6 +212,211 @@ async function weaviateUpsertObject(input: WeaviateUpsertInput): Promise<void> {
     objectId: input.objectId,
     collection: input.collection,
   });
+}
+
+async function fetchWeaviateVectorByObjectId(input: {
+  weaviateUrl: string;
+  weaviateApiKey: string | null;
+  objectId: string;
+}): Promise<number[]> {
+  const baseUrl = normalizeWeaviateUrl(input.weaviateUrl);
+  const headers: Record<string, string> = {};
+  if (input.weaviateApiKey) {
+    headers.Authorization = `Bearer ${input.weaviateApiKey}`;
+    headers["X-API-Key"] = input.weaviateApiKey;
+  }
+  const response = await fetch(`${baseUrl}/v1/objects/${input.objectId}?include=vector`, {
+    method: "GET",
+    headers,
+  });
+  if (!response.ok) {
+    const body = truncateForLog(await response.text());
+    throw new Error(
+      `Weaviate vector fetch failed for ${input.objectId}: ${response.status} ${response.statusText} ${body}`
+    );
+  }
+  const data = (await response.json()) as { vector?: number[] };
+  if (!Array.isArray(data.vector) || data.vector.length === 0) {
+    throw new Error(`Weaviate vector missing for object ${input.objectId}`);
+  }
+  return data.vector;
+}
+
+export const fetchSessionCentroidVectors = action({
+  args: {
+    refs: v.array(
+      v.object({
+        sessionId: v.id("sessions"),
+        sessionTitle: v.string(),
+        projectId: v.optional(v.id("projects")),
+        projectName: v.union(v.string(), v.null()),
+        weaviateCollection: v.string(),
+        weaviateObjectId: v.string(),
+        embeddingModel: v.optional(v.string()),
+        embeddingDimension: v.optional(v.number()),
+        sourceNodeCount: v.number(),
+        syncStatus: v.literal("success"),
+        updatedAt: v.number(),
+        lastSyncedAt: v.optional(v.number()),
+      })
+    ),
+  },
+  handler: async (ctx, { refs }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Must be signed in");
+    }
+    const weaviateUrl = process.env.WEAVIATE_URL;
+    const weaviateApiKey = process.env.WEAVIATE_API_KEY ?? null;
+    if (!weaviateUrl) {
+      throw new Error("WEAVIATE_URL is required for centroid vector reads");
+    }
+    return await Promise.all(
+      refs.map(async (ref) => {
+        const canAccessSession = await ctx.runQuery(
+          internal.sessions.internalCanAccessSession,
+          {
+            sessionId: ref.sessionId,
+            userId,
+          }
+        );
+        if (!canAccessSession) return null;
+        const vector = await fetchWeaviateVectorByObjectId({
+          weaviateUrl,
+          weaviateApiKey,
+          objectId: ref.weaviateObjectId,
+        });
+        return {
+          ...ref,
+          vector,
+        };
+      })
+    ).then((rows) => rows.filter((row) => row != null));
+  },
+});
+
+export const processSessionCentroidEmbedding = internalAction({
+  args: {
+    sessionId: v.id("sessions"),
+    userId: v.id("users"),
+    batchId: v.string(),
+  },
+  handler: async (ctx, { sessionId, userId, batchId }) => {
+    if (!isConceptEmbeddingsSyncEnabled()) {
+      return;
+    }
+    const weaviateUrl = process.env.WEAVIATE_URL;
+    const weaviateApiKey = process.env.WEAVIATE_API_KEY ?? null;
+    const centroidCollection =
+      process.env.WEAVIATE_SESSION_CENTROID_COLLECTION ?? "SessionCentroid";
+    if (!weaviateUrl) {
+      throw new Error("WEAVIATE_URL is required for centroid vector sync");
+    }
+
+    const successfulRows = await ctx.runQuery(
+      internal.conceptEmbeddings.listSuccessfulEmbeddingsForSession,
+      { sessionId, userId }
+    );
+    const centroidId = await ctx.runMutation(
+      internal.conceptEmbeddings.upsertSessionCentroidPending,
+      {
+        sessionId,
+        userId,
+        weaviateCollection: centroidCollection,
+        sourceNodeCount: successfulRows.length,
+      }
+    );
+    await ctx.runMutation(internal.conceptEmbeddings.markSessionCentroidProcessing, {
+      centroidId,
+      sourceNodeCount: successfulRows.length,
+    });
+
+    try {
+      if (successfulRows.length === 0) {
+        throw new Error("No successful node embeddings available for centroid");
+      }
+      const model = successfulRows[0].embeddingModel;
+      const dimension = successfulRows[0].embeddingDimension;
+      if (!model || !dimension) {
+        throw new Error("Missing embedding metadata for centroid source rows");
+      }
+      for (const row of successfulRows) {
+        if (row.embeddingModel !== model) {
+          throw new Error("Mixed embedding models found in session centroid source rows");
+        }
+        if (row.embeddingDimension !== dimension) {
+          throw new Error(
+            "Mixed embedding dimensions found in session centroid source rows"
+          );
+        }
+      }
+
+      const vectors = await Promise.all(
+        successfulRows.map((row) => {
+          const objectId = row.weaviateObjectId;
+          if (!objectId) {
+            throw new Error(`Missing Weaviate object id for node ${row.nodeId}`);
+          }
+          return fetchWeaviateVectorByObjectId({
+            weaviateUrl,
+            weaviateApiKey,
+            objectId,
+          });
+        })
+      );
+      const centroidVector = computeCentroidVector(vectors);
+      const centroidObjectId = makeDeterministicSessionCentroidObjectId(sessionId);
+
+      await weaviateUpsertObject({
+        weaviateUrl,
+        weaviateApiKey,
+        collection: centroidCollection,
+        objectId: centroidObjectId,
+        vector: centroidVector,
+        properties: {
+          sessionId,
+          userId,
+          batchId,
+          sourceNodeCount: successfulRows.length,
+          embeddingModel: model,
+          embeddingDimension: dimension,
+          updatedAt: Date.now(),
+        },
+      });
+
+      await ctx.runMutation(internal.conceptEmbeddings.markSessionCentroidSuccess, {
+        centroidId,
+        weaviateObjectId: centroidObjectId,
+        embeddingModel: model,
+        embeddingDimension: dimension,
+        sourceNodeCount: successfulRows.length,
+      });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown centroid sync error";
+      await ctx.runMutation(internal.conceptEmbeddings.markSessionCentroidFailure, {
+        centroidId,
+        syncError: message,
+        sourceNodeCount: successfulRows.length,
+      });
+    }
+  },
+});
+
+export async function scheduleSessionCentroidRecompute(
+  scheduler: {
+    runAfter: (
+      delayMs: number,
+      fnRef: typeof internal.conceptEmbeddingsActions.processSessionCentroidEmbedding,
+      args: { sessionId: Id<"sessions">; userId: Id<"users">; batchId: string }
+    ) => Promise<unknown>;
+  },
+  args: { sessionId: Id<"sessions">; userId: Id<"users">; batchId: string }
+): Promise<void> {
+  await scheduler.runAfter(
+    0,
+    internal.conceptEmbeddingsActions.processSessionCentroidEmbedding,
+    args
+  );
 }
 
 export const processConceptNodeEmbeddings = internalAction({
@@ -319,6 +564,11 @@ export const processConceptNodeEmbeddings = internalAction({
       }
     }
     console.info("[concept-embeddings] process.done", {
+      sessionId,
+      userId,
+      batchId,
+    });
+    await scheduleSessionCentroidRecompute(ctx.scheduler, {
       sessionId,
       userId,
       batchId,

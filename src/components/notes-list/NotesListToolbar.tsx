@@ -1,5 +1,6 @@
 import { Search, ChevronLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
 
 type NotesListToolbarProps = {
   drilled: boolean;
@@ -8,6 +9,8 @@ type NotesListToolbarProps = {
   searchQuery: string;
   onSearchQueryChange: (value: string) => void;
   onBackFromDrill: () => void;
+  /** Merged onto the root wrapper (e.g. split-layout padding). */
+  className?: string;
 };
 
 export function NotesListToolbar({
@@ -17,9 +20,12 @@ export function NotesListToolbar({
   searchQuery,
   onSearchQueryChange,
   onBackFromDrill,
+  className,
 }: NotesListToolbarProps) {
   return (
-    <div className="shrink-0 border-b border-border py-6">
+    <div
+      className={cn("shrink-0 border-b border-border py-6", className)}
+    >
       <div
         className={`mb-5 flex min-h-10 items-center ${
           drilled && hasDrillGroup ? "gap-6" : ""

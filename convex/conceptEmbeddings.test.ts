@@ -1,6 +1,12 @@
 import { afterAll, describe, expect, it } from "vitest";
+import type { Id } from "./_generated/dataModel";
 import { makeNodeContentHash } from "./conceptEmbeddings";
-import { makeDeterministicWeaviateObjectId } from "./conceptEmbeddingsActions";
+import {
+  computeCentroidVector,
+  makeDeterministicSessionCentroidObjectId,
+  scheduleSessionCentroidRecompute,
+  makeDeterministicWeaviateObjectId,
+} from "./conceptEmbeddingsActions";
 import { isConceptEmbeddingsSyncEnabled } from "./featureFlags";
 
 describe("makeNodeContentHash", () => {
@@ -47,6 +53,72 @@ describe("makeDeterministicWeaviateObjectId", () => {
     const a = makeDeterministicWeaviateObjectId("session-1", "node-1");
     const b = makeDeterministicWeaviateObjectId("session-1", "node-2");
     expect(a).not.toBe(b);
+  });
+});
+
+describe("makeDeterministicSessionCentroidObjectId", () => {
+  it("produces stable UUID-like ids", () => {
+    const id = makeDeterministicSessionCentroidObjectId("session-1");
+    expect(id).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+    );
+    expect(makeDeterministicSessionCentroidObjectId("session-1")).toBe(id);
+  });
+
+  it("changes when session id differs", () => {
+    const a = makeDeterministicSessionCentroidObjectId("session-1");
+    const b = makeDeterministicSessionCentroidObjectId("session-2");
+    expect(a).not.toBe(b);
+  });
+});
+
+describe("computeCentroidVector", () => {
+  it("computes arithmetic mean per dimension", () => {
+    const centroid = computeCentroidVector([
+      [1, 2, 3],
+      [4, 5, 6],
+      [7, 8, 9],
+    ]);
+    expect(centroid).toEqual([4, 5, 6]);
+  });
+
+  it("throws for empty input", () => {
+    expect(() => computeCentroidVector([])).toThrow(
+      "Cannot compute centroid without source vectors"
+    );
+  });
+
+  it("throws for mixed dimensions", () => {
+    expect(() => computeCentroidVector([[1, 2], [3]])).toThrow(
+      "Cannot compute centroid with mixed vector dimensions"
+    );
+  });
+});
+
+describe("scheduleSessionCentroidRecompute", () => {
+  it("schedules centroid recompute with zero delay", async () => {
+    const calls: Array<{ delayMs: number; fnRef: unknown; args: unknown }> = [];
+    await scheduleSessionCentroidRecompute(
+      {
+        runAfter: async (delayMs, fnRef, args) => {
+          calls.push({ delayMs, fnRef, args });
+          return null;
+        },
+      },
+      {
+        sessionId: "session-1" as Id<"sessions">,
+        userId: "user-1" as Id<"users">,
+        batchId: "batch-1",
+      }
+    );
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]?.delayMs).toBe(0);
+    expect(calls[0]?.args).toEqual({
+      sessionId: "session-1",
+      userId: "user-1",
+      batchId: "batch-1",
+    });
   });
 });
 

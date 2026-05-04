@@ -364,6 +364,17 @@ export const internalLoadSessionForChatSend = internalQuery({
   },
 });
 
+export const internalCanAccessSession = internalQuery({
+  args: {
+    sessionId: v.id("sessions"),
+    userId: v.id("users"),
+  },
+  handler: async (ctx, { sessionId, userId }) => {
+    const session = await ctx.db.get(sessionId);
+    return !!session && session.userId === userId;
+  },
+});
+
 export const getEditorFields = query({
   args: { sessionId: v.id("sessions") },
   handler: async (ctx, { sessionId }) => {

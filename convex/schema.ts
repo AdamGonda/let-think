@@ -92,6 +92,30 @@ export default defineSchema({
     .index("by_session", ["sessionId"])
     .index("by_sync_status", ["syncStatus", "updatedAt"]),
 
+  /** Rolling per-session centroid embedding sync state for vector DB. */
+  sessionCentroidEmbeddings: defineTable({
+    sessionId: v.id("sessions"),
+    userId: v.id("users"),
+    weaviateCollection: v.string(),
+    weaviateObjectId: v.optional(v.string()),
+    embeddingModel: v.optional(v.string()),
+    embeddingDimension: v.optional(v.number()),
+    sourceNodeCount: v.number(),
+    syncStatus: v.union(
+      v.literal("pending"),
+      v.literal("processing"),
+      v.literal("success"),
+      v.literal("failed")
+    ),
+    syncError: v.optional(v.string()),
+    lastSyncedAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_session", ["sessionId"])
+    .index("by_user", ["userId", "updatedAt"])
+    .index("by_sync_status", ["syncStatus", "updatedAt"]),
+
   messages: defineTable({
     sessionId: v.id("sessions"),
     role: v.union(v.literal("user"), v.literal("assistant")),
