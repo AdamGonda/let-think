@@ -87,7 +87,7 @@ export const SessionSidebar = forwardRef<
           if (w.isCollapsed) w.setIsCollapsed(false);
           void w.handleNewProject();
         }}
-        showProjectsViewToggle={hasSessionInProject}
+        showProjectsViewToggle
         viewModeIsNotesList={viewModeIsNotesList}
         onViewModeChange={onViewModeChange}
       />
