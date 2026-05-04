@@ -1,11 +1,20 @@
 import { ResponsiveScatterPlot } from "@nivo/scatterplot";
+import type { ScatterPlotDatum } from "@nivo/scatterplot";
 import type { SessionCentroidProjectedPoint } from "@/lib/sessionCentroidProjection";
+
+type CentroidScatterDatum = ScatterPlotDatum & {
+  sessionId: string;
+  sessionTitle: string;
+  projectName: string | null;
+  sourceNodeCount: number;
+};
 
 type SessionCentroidScatterChartProps = {
   points: SessionCentroidProjectedPoint[];
   isLoading?: boolean;
   error?: string | null;
-  onSelectSession?: (sessionId: string) => void;
+  /** Fired when the pointer hovers a dot (or leaves the chart wrapper). */
+  onHoveredSessionIdChange?: (sessionId: string | null) => void;
 };
 
 const FIXED_DOMAIN = { min: -1.1, max: 1.1 } as const;
@@ -14,7 +23,7 @@ export function SessionCentroidScatterChart({
   points,
   isLoading = false,
   error = null,
-  onSelectSession,
+  onHoveredSessionIdChange,
 }: SessionCentroidScatterChartProps) {
   if (isLoading) {
     return (
@@ -38,7 +47,7 @@ export function SessionCentroidScatterChart({
     );
   }
 
-  const series = [
+  const series: Array<{ id: string; data: CentroidScatterDatum[] }> = [
     {
       id: "sessions",
       data: points.map((point) => ({
@@ -52,9 +61,16 @@ export function SessionCentroidScatterChart({
     },
   ];
 
+  const setHoverFromNode = (node: { data: CentroidScatterDatum }) => {
+    onHoveredSessionIdChange?.(String(node.data.sessionId));
+  };
+
   return (
-    <div className="h-[320px] rounded-xl border border-border bg-background p-1">
-      <ResponsiveScatterPlot
+    <div
+      className="h-[320px] rounded-xl border border-border bg-background p-1"
+      onMouseLeave={() => onHoveredSessionIdChange?.(null)}
+    >
+      <ResponsiveScatterPlot<CentroidScatterDatum>
         data={series}
         margin={{ top: 12, right: 12, bottom: 12, left: 12 }}
         xScale={{ type: "linear", ...FIXED_DOMAIN }}
@@ -68,11 +84,12 @@ export function SessionCentroidScatterChart({
         enableGridX={false}
         enableGridY={false}
         tooltip={({ node }) => (
-          <div className="rounded-md border border-border bg-background px-2 py-1 text-xs font-medium shadow-sm whitespace-nowrap">
+          <div className="rounded-md border border-border bg-background px-3 py-2 text-base font-semibold leading-snug text-foreground shadow-sm whitespace-nowrap max-w-[min(100vw-2rem,20rem)] truncate">
             {String(node.data.sessionTitle)}
           </div>
         )}
-        onClick={(node) => onSelectSession?.(String(node.data.sessionId))}
+        onMouseEnter={(node) => setHoverFromNode(node)}
+        onMouseMove={(node) => setHoverFromNode(node)}
       />
     </div>
   );

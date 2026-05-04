@@ -7,12 +7,15 @@ type ProjectSummaryCardProps = {
   group: ProjectWithSessions;
   /** True when the globally active session belongs to this project or Inbox. */
   isSelected: boolean;
+  /** A session in this folder is hovered on the session map. */
+  isMapHighlighted?: boolean;
   onDrill: () => void;
 };
 
 export function ProjectSummaryCard({
   group,
   isSelected,
+  isMapHighlighted = false,
   onDrill,
 }: ProjectSummaryCardProps) {
   const title = groupDisplayName(group);
@@ -28,8 +31,9 @@ export function ProjectSummaryCard({
   return (
     <div
       className={clsx(
-        "relative overflow-hidden rounded-xl border-2",
+        "relative overflow-hidden rounded-xl border-2 transition-[border-color,background-color] duration-150",
         isSelected ? "border-sidebar-primary" : "border-border/90",
+        isMapHighlighted && "bg-muted/45",
       )}
     >
       <CornerRippleBackdrop />

@@ -7,6 +7,8 @@ type NotesListSessionCardProps = {
   session: Doc<"sessions">;
   /** Matches the active session in the sidebar / graph. */
   isSelected: boolean;
+  /** Session map dot is hovered for this session. */
+  isMapHighlighted?: boolean;
   onOpenNotesEditor: (session: Doc<"sessions">) => void;
   onOpenSessionGraph: (session: Doc<"sessions">) => void;
 };
@@ -18,14 +20,17 @@ type NotesListSessionCardProps = {
 export function NotesListSessionCard({
   session,
   isSelected,
+  isMapHighlighted = false,
   onOpenNotesEditor,
   onOpenSessionGraph,
 }: NotesListSessionCardProps) {
   return (
     <div
       className={clsx(
-        "group relative overflow-hidden rounded-xl border-2",
+        "group relative overflow-hidden rounded-xl border-2 transition-[border-color,background-color] duration-150",
         isSelected ? "border-sidebar-primary" : "border-border/90",
+        // Map hover: neutral surface tint (not session accent — avoids clashing with chart dots).
+        isMapHighlighted && "bg-muted/45",
       )}
     >
       <CornerRippleBackdrop />

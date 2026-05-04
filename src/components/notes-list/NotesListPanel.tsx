@@ -9,7 +9,7 @@ import { NotesListSessionCard } from "./NotesListSessionCard";
 import { useNotesListModel } from "@/hooks/useNotesListModel";
 import { SessionCentroidScatterChart } from "@/components/session-centroid/SessionCentroidScatterChart";
 import { useSessionCentroidMapData } from "@/hooks/useSessionCentroidMapData";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 interface NotesListPanelProps {
   workspace: ProjectWithSessions[] | undefined;
@@ -63,9 +63,9 @@ export function NotesListPanel({
       drill && drill.type === "project" ? drill.id : undefined,
     sessionIds: scopedSessionIds,
   });
-  const sessionsById = useMemo(() => {
-    return new Map(scopedSessions.map((session) => [session._id, session]));
-  }, [scopedSessions]);
+  const [mapHoveredSessionId, setMapHoveredSessionId] = useState<
+    Id<"sessions"> | null
+  >(null);
 
   return (
     <div className="flex flex-1 min-h-0 bg-background">
@@ -108,11 +108,17 @@ export function NotesListPanel({
                       const folderHasActiveSession =
                         activeSessionId != null &&
                         group.sessions.some((s) => s._id === activeSessionId);
+                      const folderMatchesMapHover =
+                        mapHoveredSessionId != null &&
+                        group.sessions.some(
+                          (s) => s._id === mapHoveredSessionId,
+                        );
                       return (
                         <li key={cardKey}>
                           <ProjectSummaryCard
                             group={group}
                             isSelected={folderHasActiveSession}
+                            isMapHighlighted={folderMatchesMapHover}
                             onDrill={() =>
                               onDrillChange(
                                 isInbox
@@ -149,6 +155,7 @@ export function NotesListPanel({
                         <NotesListSessionCard
                           session={session}
                           isSelected={activeSessionId === session._id}
+                          isMapHighlighted={mapHoveredSessionId === session._id}
                           onOpenNotesEditor={onOpenNotesEditor}
                           onOpenSessionGraph={onOpenSessionGraph}
                         />
@@ -172,9 +179,10 @@ export function NotesListPanel({
                 points={points}
                 isLoading={isLoading}
                 error={error}
-                onSelectSession={(sessionId) => {
-                  const session = sessionsById.get(sessionId as Id<"sessions">);
-                  if (session) onOpenSessionGraph(session);
+                onHoveredSessionIdChange={(sessionId) => {
+                  setMapHoveredSessionId(
+                    sessionId ? (sessionId as Id<"sessions">) : null,
+                  );
                 }}
               />
             </div>
