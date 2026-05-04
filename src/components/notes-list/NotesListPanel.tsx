@@ -70,29 +70,7 @@ export function NotesListPanel({
   return (
     <div className="flex flex-1 min-h-0 bg-background">
       <div className="flex min-h-0 w-full min-w-0 flex-1 flex-col px-4 pt-6 sm:px-6 lg:px-8">
-        <div className="grid min-h-0 w-full min-w-0 flex-1 grid-cols-1 gap-8 lg:grid-cols-[minmax(280px,400px)_minmax(0,1fr)] lg:items-start lg:gap-x-10">
-          <aside className="flex w-full min-w-0 flex-col lg:sticky lg:top-6 lg:self-start">
-            <div className="mb-5 flex min-h-10 items-center">
-              <p className="text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Session Map
-              </p>
-            </div>
-            <div className="w-full min-w-0">
-              <SessionCentroidScatterChart
-                points={points}
-                isLoading={isLoading}
-                error={error}
-                onSelectSession={(sessionId) => {
-                  const session = sessionsById.get(sessionId as Id<"sessions">);
-                  if (session) onOpenSessionGraph(session);
-                }}
-              />
-            </div>
-            <p className="mt-2 max-w-sm text-left text-xs leading-snug text-muted-foreground">
-              UMAP projection of session centroids for the current scope.
-            </p>
-          </aside>
-
+        <div className="grid min-h-0 w-full min-w-0 flex-1 grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(280px,400px)] lg:items-start lg:gap-x-10">
           <div className="flex min-h-0 min-w-0 flex-col">
             <NotesListToolbar
               className="py-0 pb-6"
@@ -182,6 +160,28 @@ export function NotesListPanel({
             )}
             </div>
           </div>
+
+          <aside className="flex w-full min-w-0 flex-col lg:sticky lg:top-6 lg:self-start">
+            <div className="mb-5 flex min-h-10 items-center">
+              <p className="text-left text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Session Map
+              </p>
+            </div>
+            <div className="w-full min-w-0">
+              <SessionCentroidScatterChart
+                points={points}
+                isLoading={isLoading}
+                error={error}
+                onSelectSession={(sessionId) => {
+                  const session = sessionsById.get(sessionId as Id<"sessions">);
+                  if (session) onOpenSessionGraph(session);
+                }}
+              />
+            </div>
+            <p className="mt-2 max-w-sm text-left text-xs leading-snug text-muted-foreground">
+              UMAP projection of session centroids for the current scope.
+            </p>
+          </aside>
         </div>
       </div>
     </div>
