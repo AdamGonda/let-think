@@ -56,6 +56,37 @@ export function ChatComposer({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mirrorRef = useRef<HTMLDivElement>(null);
   const pendingSelectionRef = useRef<number | null>(null);
+  const pendingExternalFocusRef = useRef(false);
+
+  const focusComposerWithRetry = () => {
+    let attempts = 0;
+    const maxAttempts = 20;
+
+    const focusWhenReady = () => {
+      const textarea = textareaRef.current;
+      if (!textarea) return;
+
+      // During view transitions / batch card motion, composer can be present but
+      // not reliably focusable yet.
+      const canFocus =
+        !textarea.disabled &&
+        textarea.offsetParent !== null &&
+        textarea.getClientRects().length > 0;
+
+      if (canFocus) {
+        textarea.focus();
+        pendingExternalFocusRef.current = false;
+        return;
+      }
+
+      attempts += 1;
+      if (attempts < maxAttempts) {
+        window.setTimeout(focusWhenReady, 32);
+      }
+    };
+
+    focusWhenReady();
+  };
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -76,14 +107,19 @@ export function ChatComposer({
 
   useEffect(() => {
     const handleFocusComposer = () => {
-      requestAnimationFrame(() => {
-        textareaRef.current?.focus();
-      });
+      pendingExternalFocusRef.current = true;
+      requestAnimationFrame(focusComposerWithRetry);
     };
     window.addEventListener(FOCUS_COMPOSER_EVENT, handleFocusComposer);
     return () =>
       window.removeEventListener(FOCUS_COMPOSER_EVENT, handleFocusComposer);
   }, []);
+
+  useEffect(() => {
+    if (!isDisabled && pendingExternalFocusRef.current) {
+      requestAnimationFrame(focusComposerWithRetry);
+    }
+  }, [isDisabled]);
 
   const handleScroll = () => {
     const ta = textareaRef.current;
@@ -227,6 +263,7 @@ export function ChatComposer({
                   <textarea
                     ref={textareaRef}
                     data-session-input-textarea
+                    autoFocus
                     rows={1}
                     className="relative z-10 w-full min-h-[48px] max-h-[450px] py-3 px-4 pr-14 bg-transparent text-transparent caret-foreground font-inherit text-[0.95rem] leading-[1.5] placeholder:transparent focus:outline-none focus:ring-0 disabled:opacity-60 disabled:cursor-not-allowed resize-none overflow-y-auto"
                     style={{ color: "transparent" }}

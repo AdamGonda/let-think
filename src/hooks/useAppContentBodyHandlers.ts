@@ -15,6 +15,14 @@ import {
 } from "@/lib/appUiCommands";
 import { toggleAtReferenceInDraft } from "@/lib/conceptReferences";
 
+const FOCUS_COMPOSER_EVENT = "let-think:focus-composer";
+
+function requestFocusComposer(): void {
+  requestAnimationFrame(() => {
+    window.dispatchEvent(new Event(FOCUS_COMPOSER_EVENT));
+  });
+}
+
 /**
  * Navigation / sidebar / overlay intents — no draft coupling (safe for layout-only parents).
  */
@@ -28,6 +36,7 @@ export function useAppShellIntentHandlers(actor: AppUiActorRef) {
         intentOpenNotesList(actor);
       } else {
         actor.send({ type: "VIEW_SET", mode: "graph" });
+        requestFocusComposer();
       }
     },
     [actor, posthog],
@@ -55,6 +64,7 @@ export function useAppShellIntentHandlers(actor: AppUiActorRef) {
   const onGoToSessionGraphFromNotesList = useCallback(
     (session: Doc<"sessions">) => {
       openSessionGraphFromNotesListDrill(actor, session);
+      requestFocusComposer();
     },
     [actor],
   );
