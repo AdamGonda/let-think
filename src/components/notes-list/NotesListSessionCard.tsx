@@ -49,10 +49,10 @@ export function NotesListSessionCard({
             className="h-7 shrink-0 px-2 font-normal text-muted-foreground/90 hover:bg-muted/50 hover:text-foreground"
             onClick={(e) => {
               e.stopPropagation();
-              onOpenNotesEditor(session);
+              onOpenSessionGraph(session);
             }}
           >
-            Open file
+            Session
           </Button>
           <Button
             type="button"
@@ -61,10 +61,10 @@ export function NotesListSessionCard({
             className="h-7 shrink-0 px-2 font-normal text-muted-foreground/90 hover:bg-muted/50 hover:text-foreground"
             onClick={(e) => {
               e.stopPropagation();
-              onOpenSessionGraph(session);
+              onOpenNotesEditor(session);
             }}
           >
-            Session
+            Open file
           </Button>
         </div>
       </div>
