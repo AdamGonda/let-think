@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
 import { internalAction } from "./_generated/server";
+import { isConceptEmbeddingsSyncEnabled } from "./featureFlags";
 
 type WeaviateUpsertInput = {
   weaviateUrl: string;
@@ -181,6 +182,16 @@ export const processConceptNodeEmbeddings = internalAction({
     nodeIds: v.array(v.string()),
   },
   handler: async (ctx, { sessionId, userId, batchId, nodeIds }) => {
+    if (!isConceptEmbeddingsSyncEnabled()) {
+      console.info("[concept-embeddings] process.skipped.feature_flag_disabled", {
+        sessionId,
+        userId,
+        batchId,
+        requestedNodeCount: nodeIds.length,
+      });
+      return;
+    }
+
     const googleApiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
     const weaviateUrl = process.env.WEAVIATE_URL;
     const weaviateCollection = process.env.WEAVIATE_COLLECTION ?? "ConceptNode";

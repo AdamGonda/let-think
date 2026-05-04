@@ -26,6 +26,7 @@ import {
   PROMPT_SUMMARY_OUTPUT_MAX_CHARS,
 } from "./constants";
 import { modelConfig } from "./modelConfig";
+import { isConceptEmbeddingsSyncEnabled } from "./featureFlags";
 
 type GenerationUsageMetrics = {
   inputTokens: number | null;
@@ -494,12 +495,18 @@ export const send = action({
       }
     }
     const addedNodes = Array.from(nodesAddedInThisTurn.values());
-    if (addedNodes.length > 0) {
+    if (addedNodes.length > 0 && isConceptEmbeddingsSyncEnabled()) {
       await ctx.runMutation(internal.conceptEmbeddings.enqueueConceptNodesForEmbedding, {
         sessionId,
         userId,
         batchId: batchMeta.id,
         nodes: addedNodes,
+      });
+    } else if (addedNodes.length > 0) {
+      console.info("[concept-embeddings] enqueue.skipped.feature_flag_disabled", {
+        sessionId,
+        batchId: batchMeta.id,
+        skippedNodeCount: addedNodes.length,
       });
     }
 

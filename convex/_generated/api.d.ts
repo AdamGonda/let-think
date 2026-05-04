@@ -15,6 +15,7 @@ import type * as chatPipeline from "../chatPipeline.js";
 import type * as conceptEmbeddings from "../conceptEmbeddings.js";
 import type * as conceptEmbeddingsActions from "../conceptEmbeddingsActions.js";
 import type * as constants from "../constants.js";
+import type * as featureFlags from "../featureFlags.js";
 import type * as http from "../http.js";
 import type * as lib_access from "../lib/access.js";
 import type * as lib_transactionalEmails_resend from "../lib/transactionalEmails/resend.js";
@@ -39,6 +40,7 @@ declare const fullApi: ApiFromModules<{
   conceptEmbeddings: typeof conceptEmbeddings;
   conceptEmbeddingsActions: typeof conceptEmbeddingsActions;
   constants: typeof constants;
+  featureFlags: typeof featureFlags;
   http: typeof http;
   "lib/access": typeof lib_access;
   "lib/transactionalEmails/resend": typeof lib_transactionalEmails_resend;

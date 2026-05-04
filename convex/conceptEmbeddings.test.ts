@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import { makeNodeContentHash } from "./conceptEmbeddings";
 import { makeDeterministicWeaviateObjectId } from "./conceptEmbeddingsActions";
+import { isConceptEmbeddingsSyncEnabled } from "./featureFlags";
 
 describe("makeNodeContentHash", () => {
   it("is stable for same node content", () => {
@@ -46,5 +47,34 @@ describe("makeDeterministicWeaviateObjectId", () => {
     const a = makeDeterministicWeaviateObjectId("session-1", "node-1");
     const b = makeDeterministicWeaviateObjectId("session-1", "node-2");
     expect(a).not.toBe(b);
+  });
+});
+
+describe("isConceptEmbeddingsSyncEnabled", () => {
+  const original = process.env.CONCEPT_EMBEDDINGS_SYNC_ENABLED;
+
+  it("defaults to enabled when unset", () => {
+    delete process.env.CONCEPT_EMBEDDINGS_SYNC_ENABLED;
+    expect(isConceptEmbeddingsSyncEnabled()).toBe(true);
+  });
+
+  it("returns false for disabled values", () => {
+    process.env.CONCEPT_EMBEDDINGS_SYNC_ENABLED = "false";
+    expect(isConceptEmbeddingsSyncEnabled()).toBe(false);
+    process.env.CONCEPT_EMBEDDINGS_SYNC_ENABLED = "0";
+    expect(isConceptEmbeddingsSyncEnabled()).toBe(false);
+  });
+
+  it("returns true for truthy values", () => {
+    process.env.CONCEPT_EMBEDDINGS_SYNC_ENABLED = "true";
+    expect(isConceptEmbeddingsSyncEnabled()).toBe(true);
+    process.env.CONCEPT_EMBEDDINGS_SYNC_ENABLED = "1";
+    expect(isConceptEmbeddingsSyncEnabled()).toBe(true);
+    process.env.CONCEPT_EMBEDDINGS_SYNC_ENABLED = "yes";
+    expect(isConceptEmbeddingsSyncEnabled()).toBe(true);
+  });
+
+  afterAll(() => {
+    process.env.CONCEPT_EMBEDDINGS_SYNC_ENABLED = original;
   });
 });
