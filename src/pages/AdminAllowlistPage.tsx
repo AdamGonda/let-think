@@ -3,6 +3,8 @@ import type { FormEvent } from "react";
 import { useAction, useMutation, useQuery } from "convex/react";
 import { useConvexAuth } from "convex/react";
 import { Navigate } from "@tanstack/react-router";
+import MDEditor from "@uiw/react-md-editor";
+import "@uiw/react-md-editor/markdown-editor.css";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
@@ -17,6 +19,9 @@ export function AdminAllowlistPage() {
   const sendAllowlistApprovedEmail = useAction(
     api.transactionalEmails.sendAllowlistApprovedEmailFromAdmin
   );
+  const sendCustomEmail = useAction(
+    api.transactionalEmails.sendCustomEmailFromAdmin
+  );
   const [emailInput, setEmailInput] = useState("");
   const [allowlistError, setAllowlistError] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
@@ -25,6 +30,12 @@ export function AdminAllowlistPage() {
   const [emailSendError, setEmailSendError] = useState<string | null>(null);
   const [emailSendSuccess, setEmailSendSuccess] = useState<string | null>(null);
   const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [customTo, setCustomTo] = useState("");
+  const [customSubject, setCustomSubject] = useState("");
+  const [customBody, setCustomBody] = useState("");
+  const [customError, setCustomError] = useState<string | null>(null);
+  const [customSuccess, setCustomSuccess] = useState<string | null>(null);
+  const [isSendingCustom, setIsSendingCustom] = useState(false);
 
   const sortedEntries = useMemo(() => data?.entries ?? [], [data?.entries]);
 
@@ -60,6 +71,49 @@ export function AdminAllowlistPage() {
         removeError instanceof Error ? removeError.message : "Failed to remove email."
       );
     }
+  }
+
+  async function onSendCustomEmail(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const to = customTo.trim();
+    const subject = customSubject.trim();
+    const body = customBody.trim();
+    if (!to) {
+      setCustomError("Enter at least one recipient email.");
+      return;
+    }
+    if (!subject) {
+      setCustomError("Enter a subject.");
+      return;
+    }
+    if (!body) {
+      setCustomError("Email body is empty.");
+      return;
+    }
+
+    setIsSendingCustom(true);
+    setCustomError(null);
+    setCustomSuccess(null);
+    try {
+      const result = await sendCustomEmail({
+        to,
+        subject,
+        bodyMarkdown: body,
+      });
+      setCustomSuccess(
+        `Sent to ${result.sentCount} recipient${result.sentCount === 1 ? "" : "s"}.`
+      );
+    } catch (sendError) {
+      setCustomError(
+        sendError instanceof Error ? sendError.message : "Failed to send email."
+      );
+    } finally {
+      setIsSendingCustom(false);
+    }
+  }
+
+  function fillRecipientsFromAllowlist() {
+    setCustomTo(sortedEntries.map((entry) => entry.email).join(", "));
   }
 
   async function onSendEmail(event: FormEvent<HTMLFormElement>) {
@@ -181,6 +235,88 @@ export function AdminAllowlistPage() {
           {emailSendSuccess ? (
             <p className="text-sm text-emerald-500">{emailSendSuccess}</p>
           ) : null}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <h2 className="text-lg font-semibold">Send Custom Email</h2>
+          <CardDescription>
+            Compose a one-off email in markdown and send it to any users. Use
+            commas, semicolons or newlines to separate multiple recipients.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <form className="space-y-3" onSubmit={onSendCustomEmail}>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-medium text-muted-foreground" htmlFor="custom-to">
+                  Recipients
+                </label>
+                {sortedEntries.length > 0 ? (
+                  <button
+                    type="button"
+                    onClick={fillRecipientsFromAllowlist}
+                    className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline"
+                  >
+                    Fill from allowlist ({sortedEntries.length})
+                  </button>
+                ) : null}
+              </div>
+              <Input
+                id="custom-to"
+                value={customTo}
+                onChange={(event) => setCustomTo(event.target.value)}
+                placeholder="alice@example.com, bob@example.com"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground" htmlFor="custom-subject">
+                Subject
+              </label>
+              <Input
+                id="custom-subject"
+                value={customSubject}
+                onChange={(event) => setCustomSubject(event.target.value)}
+                placeholder="Subject line"
+              />
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground">
+                Body (markdown)
+              </label>
+              <div data-color-mode="dark" className="rounded-lg overflow-hidden border border-input">
+                <MDEditor
+                  value={customBody}
+                  onChange={(value) => setCustomBody(value ?? "")}
+                  height={320}
+                  preview="live"
+                  visibleDragbar={false}
+                  textareaProps={{
+                    placeholder:
+                      "Hi {name},\n\nWrite your message here. **Markdown** is supported — _italics_, [links](https://letthink.co), lists, and headings all render in the email.",
+                  }}
+                />
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Your message is wrapped with the LET THINK logo. Plain-text
+                fallback uses the raw markdown.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-3">
+              {customError ? (
+                <p className="text-sm text-destructive">{customError}</p>
+              ) : customSuccess ? (
+                <p className="text-sm text-emerald-500">{customSuccess}</p>
+              ) : null}
+              <Button type="submit" disabled={isSendingCustom}>
+                {isSendingCustom ? "Sending…" : "Send Email"}
+              </Button>
+            </div>
+          </form>
         </CardContent>
       </Card>
 
