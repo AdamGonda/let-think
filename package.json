@@ -14,7 +14,19 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "----------": "node -e \"void 0\"",
+    "prepare:local": "warlock run -- sh scripts/install-git-hooks.sh",
+    "dev:local": "warlock run -- concurrently -n vite,convex -c blue,green \"vite --host\" \"npx convex dev\"",
+    "dev:convex:local": "warlock run -- npx convex dev",
+    "build:local": "warlock run -- sh -c \"tsc -b && vite build\"",
+    "build:analyze:local": "warlock run -- sh -c \"ANALYZE=true tsc -b && ANALYZE=true vite build\"",
+    "typecheck:ci:local": "warlock run -- tsc -p tsconfig.ci.json --pretty false",
+    "lint:local": "warlock run -- eslint .",
+    "preview:local": "warlock run -- vite preview",
+    "test:local": "warlock run -- vitest run",
+    "test:watch:local": "warlock run -- vitest",
+    "test:coverage:local": "warlock run -- vitest run --coverage"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.43",
