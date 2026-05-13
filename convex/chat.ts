@@ -79,11 +79,20 @@ async function capturePosthogGenerationEvent(
     selectedNodeCount: number;
   }
 ): Promise<void> {
-  const apiKey =
+  const apiKey = (
     process.env.POSTHOG_PROJECT_API_KEY ??
-    process.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN;
-  const host = process.env.POSTHOG_HOST ?? process.env.VITE_PUBLIC_POSTHOG_HOST;
-  if (!apiKey || !host) return;
+    process.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN
+  )?.trim();
+  const host = (
+    process.env.POSTHOG_HOST ?? process.env.VITE_PUBLIC_POSTHOG_HOST
+  )?.trim();
+  if (!apiKey || !host) {
+    console.warn(
+      "[posthog] skip generation_completed: Convex env missing or empty. Set POSTHOG_PROJECT_API_KEY and POSTHOG_HOST on this deployment (or VITE_PUBLIC_POSTHOG_* fallbacks).",
+      { hasApiKey: Boolean(apiKey), hasHost: Boolean(host) }
+    );
+    return;
+  }
 
   const captureUrl = `${host.replace(/\/+$/, "")}/capture/`;
   const nowIso = new Date().toISOString();
@@ -115,10 +124,13 @@ async function capturePosthogGenerationEvent(
       body: JSON.stringify(payload),
     });
     if (!response.ok) {
+      const detail = (await response.text()).slice(0, 500);
       console.warn(
         "[posthog] Failed to capture generation_completed",
         response.status,
-        response.statusText
+        response.statusText,
+        captureUrl,
+        detail || "(empty body)"
       );
     }
   } catch (error) {
