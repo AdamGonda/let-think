@@ -7,6 +7,7 @@ import {
 import { useAppLayoutSelectors } from "../../hooks/useAppShellMachineSelectors";
 import { useAppShellIntentHandlers } from "../../hooks/useAppContentBodyHandlers";
 import { selectDisplayWakeUpLayer } from "../../machines/appUiMachine";
+import type { MainColumnWidthControls } from "@/hooks/useMainColumnWidth";
 import {
   SessionSidebar,
   type ProjectWithSessions,
@@ -25,6 +26,7 @@ type AppContentBodyProps = {
   workspace: ProjectWithSessions[] | undefined;
   mainContentRef: RefObject<HTMLDivElement | null>;
   sessionSidebarRef: RefObject<SessionSidebarHandle | null>;
+  mainColumnWidth: MainColumnWidthControls;
 };
 
 export function AppContentBody({
@@ -32,6 +34,7 @@ export function AppContentBody({
   workspace,
   mainContentRef,
   sessionSidebarRef,
+  mainColumnWidth,
 }: AppContentBodyProps) {
   const layout = useAppLayoutSelectors();
   const displayWakeUpLayer = useAppUiSelector(selectDisplayWakeUpLayer);
@@ -61,7 +64,12 @@ export function AppContentBody({
 
   return (
     <AppShell
-      wakeUpOverlay={<WakeUpOverlayContainer workspace={workspace} />}
+      wakeUpOverlay={
+        <WakeUpOverlayContainer
+          workspace={workspace}
+          mainColumnWidth={mainColumnWidth}
+        />
+      }
       tutorial={<Tutorial autoStart={!getTutorialCompleted()} />}
       mainInert={!!displayWakeUpLayer}
       toaster={<Toaster theme="dark" />}

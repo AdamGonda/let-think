@@ -7,6 +7,7 @@ import { useAppUiSelector } from "./hooks/useAppUi";
 import { AppContentBody } from "./components/app-shell/AppContentBody";
 import { type SessionSidebarHandle } from "./components/session-sidebar/SessionSidebar";
 import { useSessionAccentCssVars } from "./hooks/useSessionAccentCssVars";
+import { useMainColumnWidth } from "./hooks/useMainColumnWidth";
 import { AppUiSessionBridge } from "./bridge/AppUiSessionBridge";
 import { useSessionEditorSync } from "./hooks/useSessionEditorSync";
 import { useDefaultSessionSelection } from "./hooks/useDefaultSessionSelection";
@@ -29,6 +30,7 @@ function AppContent() {
   const { handleCreateSessionForFirstMessage } = useDefaultSessionSelection();
   useSessionEditorSync(activeSessionId);
   useSessionAccentCssVars();
+  const mainColumnWidth = useMainColumnWidth();
   const mainContentRef = useRef<HTMLDivElement>(null);
   const sessionSidebarRef = useRef<SessionSidebarHandle>(null);
 
@@ -46,6 +48,7 @@ function AppContent() {
             workspace={projectsWithSessions}
             mainContentRef={mainContentRef}
             sessionSidebarRef={sessionSidebarRef}
+            mainColumnWidth={mainColumnWidth}
           />
         </AppUiSessionBridge>
       </SessionDataProvider>

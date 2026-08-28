@@ -3,6 +3,7 @@ import { layout } from "@/config";
 import { Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MarkdownEditor } from "@/components/editor/MarkdownEditor";
+import { MainColumnWidthHandle } from "@/components/editor/MainColumnWidthHandle";
 import { NoteBreadcrumb } from "@/components/navigation/NoteBreadcrumb";
 import type { Id } from "../../../convex/_generated/dataModel";
 
@@ -26,6 +27,10 @@ type WakeUpOverlayProps = {
   onNotesChange: (value: string) => void;
   onBreadcrumbProjectsRootClick: () => void;
   onBreadcrumbProjectNameClick: () => void;
+  mainColumnWidth: number;
+  mainColumnWidthMin: number;
+  mainColumnWidthMax: number;
+  onMainColumnWidthChange: (width: number) => void;
 };
 
 export function WakeUpOverlay({
@@ -42,6 +47,10 @@ export function WakeUpOverlay({
   onNotesChange,
   onBreadcrumbProjectsRootClick,
   onBreadcrumbProjectNameClick,
+  mainColumnWidth,
+  mainColumnWidthMin,
+  mainColumnWidthMax,
+  onMainColumnWidthChange,
 }: WakeUpOverlayProps) {
   const showFileNavBreadcrumb =
     editorOpen && !!activeSessionInWorkspace;
@@ -102,7 +111,7 @@ export function WakeUpOverlay({
               }`}
             >
               <div
-                className={`mx-auto flex w-full min-h-0 flex-1 flex-col justify-start ${layout.mainColumnMaxWidthClass}`}
+                className={`relative mx-auto flex w-full min-h-0 flex-1 flex-col justify-start ${layout.mainColumnMaxWidthClass}`}
               >
                 <MarkdownEditor
                   value={notes}
@@ -113,6 +122,12 @@ export function WakeUpOverlay({
                   dark={true}
                   autoFocus
                   autoFocusEnd
+                />
+                <MainColumnWidthHandle
+                  width={mainColumnWidth}
+                  min={mainColumnWidthMin}
+                  max={mainColumnWidthMax}
+                  onWidthChange={onMainColumnWidthChange}
                 />
               </div>
             </div>

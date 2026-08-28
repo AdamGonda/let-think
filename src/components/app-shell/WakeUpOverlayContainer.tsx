@@ -9,6 +9,7 @@ import {
   intentOverlayActionClick,
   setWakeNotes,
 } from "@/lib/appUiCommands";
+import type { MainColumnWidthControls } from "@/hooks/useMainColumnWidth";
 import { WakeUpOverlay } from "../onboarding/WakeUpOverlay";
 import type { ProjectWithSessions } from "../session-sidebar/SessionSidebar";
 
@@ -16,12 +17,16 @@ const FOCUS_COMPOSER_EVENT = "let-think:focus-composer";
 
 type WakeUpOverlayContainerProps = {
   workspace: ProjectWithSessions[] | undefined;
+  mainColumnWidth: MainColumnWidthControls;
 };
 
 /**
  * Subscribes only to wake-up overlay machine fields — not graph loading progress / batch events.
  */
-export function WakeUpOverlayContainer({ workspace }: WakeUpOverlayContainerProps) {
+export function WakeUpOverlayContainer({
+  workspace,
+  mainColumnWidth,
+}: WakeUpOverlayContainerProps) {
   const displayLayer = useAppUiSelector(selectDisplayWakeUpLayer);
   const actor = useAppUiActor();
   const overlay = useWakeUpOverlaySelectors();
@@ -73,6 +78,10 @@ export function WakeUpOverlayContainer({ workspace }: WakeUpOverlayContainerProp
       onNotesChange={handleWakeNotesChange}
       onBreadcrumbProjectsRootClick={handleBreadcrumbProjectsRootClick}
       onBreadcrumbProjectNameClick={handleBreadcrumbSessionClick}
+      mainColumnWidth={mainColumnWidth.width}
+      mainColumnWidthMin={mainColumnWidth.min}
+      mainColumnWidthMax={mainColumnWidth.max}
+      onMainColumnWidthChange={mainColumnWidth.setWidth}
     />
   );
 }

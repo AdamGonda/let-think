@@ -3,7 +3,12 @@
  */
 export const layout = {
   wakeUpOverlayZIndexClass: "z-[9999]",
-  mainColumnMaxWidthClass: "max-w-[720px]",
+  /** Backed by a CSS var (set by useMainColumnWidth) so the writing column stays user-adjustable. */
+  mainColumnMaxWidthClass: "max-w-[var(--main-column-width)]",
+  mainColumnWidthCssVar: "--main-column-width",
+  mainColumnWidthDefaultPx: 960,
+  mainColumnWidthMinPx: 640,
+  mainColumnWidthMaxPx: 1200,
   /** Inner session input card (composer + historical dock): matches empty single-line textarea row + padding. */
   sessionInputChromeMinClass: "min-h-[4.75rem]",
   /** Historical prompt expanded panel: stack above graph / cards. */
