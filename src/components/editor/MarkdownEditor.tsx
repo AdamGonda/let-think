@@ -2,6 +2,7 @@ import { memo, useRef, useEffect } from "react";
 import MDEditor from "@uiw/react-md-editor";
 import "@uiw/react-md-editor/markdown-editor.css";
 import { timings } from "@/config";
+import { editorScrollThumbLayout } from "./editorScrollThumbLayout";
 
 /** Pixel offset of caret from top of content (for scroll-into-view) */
 function getCaretOffset(textarea: HTMLTextAreaElement): number {
@@ -32,19 +33,6 @@ function getCaretOffset(textarea: HTMLTextAreaElement): number {
   const offset = span.offsetTop;
   document.body.removeChild(mirror);
   return offset;
-}
-
-/** Overlay thumb size/offset. null when the note doesn’t overflow. */
-export function editorScrollThumbLayout(
-  clientHeight: number,
-  scrollHeight: number,
-  scrollTop: number,
-): { height: number; top: number } | null {
-  const maxScroll = scrollHeight - clientHeight;
-  if (maxScroll <= 1) return null;
-  const height = Math.max(48, (clientHeight / scrollHeight) * clientHeight);
-  const top = (scrollTop / maxScroll) * (clientHeight - height);
-  return { height, top };
 }
 
 function scrollCaretToEyeLevel(

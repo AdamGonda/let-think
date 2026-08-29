@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { editorScrollThumbLayout } from "./MarkdownEditor";
+import { editorScrollThumbLayout } from "./editorScrollThumbLayout";
 
 describe("editorScrollThumbLayout", () => {
   it("returns null when content fits", () => {
