@@ -10,4 +10,6 @@ export const timings = {
   wakeUpExitMs: 300,
   graphReferenceStabilizeMs: 250,
   paginationDotsSpringMs: 300,
+  /** Notes editor overlay scrollbar: hide after scrolling stops */
+  editorScrollbarIdleMs: 800,
 } as const;

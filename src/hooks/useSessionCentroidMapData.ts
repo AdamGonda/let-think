@@ -7,6 +7,24 @@ import {
   type SessionCentroidProjectedPoint,
 } from "@/lib/sessionCentroidProjection";
 
+type VectorRow = {
+  sessionId: Id<"sessions">;
+  sessionTitle: string;
+  projectId?: Id<"projects">;
+  projectName: string | null;
+  vector: number[];
+  sourceNodeCount: number;
+  syncStatus: "success";
+  updatedAt: number;
+  lastSyncedAt?: number;
+};
+
+type FetchedCentroids = {
+  key: string;
+  rows: VectorRow[];
+  error: string | null;
+};
+
 type UseSessionCentroidMapDataArgs = {
   projectId?: Id<"projects">;
   sessionIds?: Id<"sessions">[];
@@ -23,21 +41,6 @@ export function useSessionCentroidMapData({
   const fetchVectors = useAction(
     api.conceptEmbeddingsActions.fetchSessionCentroidVectors
   );
-  const [vectorRows, setVectorRows] = useState<
-    Array<{
-      sessionId: Id<"sessions">;
-      sessionTitle: string;
-      projectId?: Id<"projects">;
-      projectName: string | null;
-      vector: number[];
-      sourceNodeCount: number;
-      syncStatus: "success";
-      updatedAt: number;
-      lastSyncedAt?: number;
-    }>
-  >([]);
-  const [isLoadingVectors, setIsLoadingVectors] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const refsKey = useMemo(() => {
     if (!refs) return "loading";
@@ -46,46 +49,34 @@ export function useSessionCentroidMapData({
       .join("|");
   }, [refs]);
 
+  const [fetched, setFetched] = useState<FetchedCentroids | null>(null);
+
   useEffect(() => {
+    if (!refs || refs.length === 0) return;
     let cancelled = false;
-    if (!refs) {
-      setVectorRows([]);
-      setIsLoadingVectors(true);
-      setError(null);
-      return () => {
-        cancelled = true;
-      };
-    }
-    if (refs.length === 0) {
-      setVectorRows([]);
-      setIsLoadingVectors(false);
-      setError(null);
-      return () => {
-        cancelled = true;
-      };
-    }
-    setIsLoadingVectors(true);
-    setError(null);
     void fetchVectors({ refs })
       .then((rows) => {
         if (cancelled) return;
-        setVectorRows(rows);
-        setIsLoadingVectors(false);
+        setFetched({ key: refsKey, rows, error: null });
       })
       .catch((err: unknown) => {
         if (cancelled) return;
-        setVectorRows([]);
-        setIsLoadingVectors(false);
-        setError(err instanceof Error ? err.message : "Failed to load centroids");
+        setFetched({
+          key: refsKey,
+          rows: [],
+          error: err instanceof Error ? err.message : "Failed to load centroids",
+        });
       });
     return () => {
       cancelled = true;
     };
   }, [fetchVectors, refsKey, refs]);
 
+  const current = fetched?.key === refsKey ? fetched : null;
+
   const points: SessionCentroidProjectedPoint[] = useMemo(() => {
     return projectSessionCentroidsTo2D(
-      vectorRows.map((row) => ({
+      (current?.rows ?? []).map((row) => ({
         sessionId: row.sessionId,
         sessionTitle: row.sessionTitle,
         projectName: row.projectName,
@@ -93,11 +84,11 @@ export function useSessionCentroidMapData({
         sourceNodeCount: row.sourceNodeCount,
       }))
     );
-  }, [vectorRows]);
+  }, [current]);
 
   return {
     points,
-    isLoading: refs === undefined || isLoadingVectors,
-    error,
+    isLoading: refs === undefined || (refs.length > 0 && current === null),
+    error: current?.error ?? null,
   };
 }

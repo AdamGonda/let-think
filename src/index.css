@@ -46,6 +46,8 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.863 0 0);
   --sidebar-ring: oklch(0.55 0 0);
+  /* Writing column width; overridden per-user by useMainColumnWidth (localStorage). */
+  --main-column-width: 960px;
 }
 
 .dark {
@@ -426,10 +428,17 @@ body {
 .md-editor-focused .w-md-editor-content {
   flex: 1;
   min-height: 0;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.md-editor-focused .w-md-editor-content::-webkit-scrollbar {
+  display: none;
 }
 .md-editor-focused .w-md-editor-area {
   flex: 1;
   min-height: 0;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
   /* Soften clipped lines at the viewport edges instead of hard cutoffs. */
   -webkit-mask-image: linear-gradient(
     to bottom,
@@ -445,6 +454,22 @@ body {
     #000 calc(100% - 3.5rem),
     transparent 100%
   );
+}
+.md-editor-focused .w-md-editor-area::-webkit-scrollbar {
+  display: none;
+}
+
+/* Overlay position thumb — shown while scrolling, fades after idle */
+.editor-scroll-thumb {
+  position: absolute;
+  right: 3px;
+  top: 0;
+  width: 6px;
+  border-radius: 999px;
+  background: rgb(161 161 170 / 0.4);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 6;
 }
 /* Padding only on container; text-input uses padding:inherit so cursor aligns with text */
 /* Extra bottom padding = scroll past end (like VS Code) so cursor isn't stuck at viewport bottom */
