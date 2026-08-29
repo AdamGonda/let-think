@@ -36,6 +36,8 @@ function baseInput(over: Partial<AppUiContext> = {}): Partial<AppUiContext> {
     graphLatestBatchNodeCount: 0,
     graphReferenceFreezeActive: false,
     editorOpen: false,
+    editorChatOpen: false,
+    notesChatLoading: false,
     overlayDismissed: false,
     historyPanelOpen: false,
     hasChatHistory: false,
@@ -223,6 +225,18 @@ describe("intent orchestration", () => {
     actor.send({ type: "VIEW_SET", mode: "graph" });
     expect(selectShowOverlayAction(actor.getSnapshot())).toBe(true);
     actor.stop();
+  });
+
+  it("EDITOR_CHAT_TOGGLE flips editorChatOpen", () => {
+    const actor = createActor(appUiMachine, {
+      input: baseInput({ editorOpen: true }),
+    });
+    actor.start();
+    expect(actor.getSnapshot().context.editorChatOpen).toBe(false);
+    actor.send({ type: "EDITOR_CHAT_TOGGLE" });
+    expect(actor.getSnapshot().context.editorChatOpen).toBe(true);
+    actor.send({ type: "EDITOR_CHAT_TOGGLE" });
+    expect(actor.getSnapshot().context.editorChatOpen).toBe(false);
   });
 
   it("INTENT_BREADCRUMB_FILE_CLICK closes editor and exits explorer drill without sidebar collapse token", () => {

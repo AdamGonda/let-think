@@ -24,6 +24,8 @@ function ctx(partial: Partial<AppUiContext>): AppUiContext {
     graphLatestBatchNodeCount: 0,
     graphReferenceFreezeActive: false,
     editorOpen: false,
+    editorChatOpen: false,
+    notesChatLoading: false,
     overlayDismissed: false,
     historyPanelOpen: false,
     hasChatHistory: true,

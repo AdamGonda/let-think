@@ -116,6 +116,14 @@ export default defineSchema({
     .index("by_user", ["userId", "updatedAt"])
     .index("by_sync_status", ["syncStatus", "updatedAt"]),
 
+  /** Chat about thinking notes in the editor overlay — separate from graph session chat. */
+  notesChatMessages: defineTable({
+    sessionId: v.id("sessions"),
+    role: v.union(v.literal("user"), v.literal("assistant")),
+    content: v.string(),
+    createdAt: v.number(),
+  }).index("by_session", ["sessionId"]),
+
   messages: defineTable({
     sessionId: v.id("sessions"),
     role: v.union(v.literal("user"), v.literal("assistant")),

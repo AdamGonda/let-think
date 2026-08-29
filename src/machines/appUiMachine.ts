@@ -63,6 +63,8 @@ export const appUiMachine = setup({
     completeUserExit: assign({
       overlayDismissed: true,
       editorOpen: false,
+      editorChatOpen: false,
+      notesChatLoading: false,
     }),
     sessionCleared: assign({
       chatLoading: false,
@@ -72,6 +74,8 @@ export const appUiMachine = setup({
       graphLoadingStartBatchLength: 0,
       graphReferenceFreezeActive: false,
       editorOpen: false,
+      editorChatOpen: false,
+      notesChatLoading: false,
       overlayDismissed: false,
       historyPanelOpen: false,
     }),
@@ -244,7 +248,14 @@ export const appUiMachine = setup({
     }),
     editorClose: assign({
       editorOpen: false,
+      editorChatOpen: false,
+      notesChatLoading: false,
     }),
+    toggleEditorChat: assign({
+      editorChatOpen: ({ context }) => !context.editorChatOpen,
+    }),
+    startNotesChatLoading: assign({ notesChatLoading: true }),
+    endNotesChatLoading: assign({ notesChatLoading: false }),
     historyOpen: assign({ historyPanelOpen: true }),
     historyClose: assign({ historyPanelOpen: false }),
   },
@@ -269,6 +280,8 @@ export const appUiMachine = setup({
       graphLatestBatchNodeCount: 0,
       graphReferenceFreezeActive: false,
       editorOpen: inp?.editorOpen ?? false,
+      editorChatOpen: inp?.editorChatOpen ?? false,
+      notesChatLoading: false,
       overlayDismissed: false,
       historyPanelOpen: false,
       hasChatHistory: false,
@@ -358,6 +371,15 @@ export const appUiMachine = setup({
     ],
     EDITOR_CLOSE: {
       actions: "editorClose",
+    },
+    EDITOR_CHAT_TOGGLE: {
+      actions: "toggleEditorChat",
+    },
+    NOTES_CHAT_LOADING_START: {
+      actions: "startNotesChatLoading",
+    },
+    NOTES_CHAT_LOADING_END: {
+      actions: "endNotesChatLoading",
     },
     INTENT_OVERLAY_ACTION_CLICK: [
       {

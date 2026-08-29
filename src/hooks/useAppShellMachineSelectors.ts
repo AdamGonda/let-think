@@ -55,8 +55,10 @@ export function useAppLayoutSelectors(): AppLayoutSelectors {
 /** Wake-up / notes overlay — isolated from graph loading progress updates. */
 export type WakeUpOverlaySelectors = {
   chatLoading: AppSnapshot["context"]["chatLoading"];
+  notesChatLoading: AppSnapshot["context"]["notesChatLoading"];
   isExitingOverlay: ReturnType<typeof selectIsExitingWakeUp>;
   editorOpen: AppSnapshot["context"]["editorOpen"];
+  editorChatOpen: AppSnapshot["context"]["editorChatOpen"];
   overlayActionReturnsToGraph: ReturnType<typeof selectOverlayActionReturnsToGraph>;
   editorRevealReady: ReturnType<typeof selectEditorRevealReady>;
   notes: AppSnapshot["context"]["notes"];
@@ -66,8 +68,10 @@ export type WakeUpOverlaySelectors = {
 function shallowEqualWakeUp(a: WakeUpOverlaySelectors, b: WakeUpOverlaySelectors): boolean {
   return (
     a.chatLoading === b.chatLoading &&
+    a.notesChatLoading === b.notesChatLoading &&
     a.isExitingOverlay === b.isExitingOverlay &&
     a.editorOpen === b.editorOpen &&
+    a.editorChatOpen === b.editorChatOpen &&
     a.overlayActionReturnsToGraph === b.overlayActionReturnsToGraph &&
     a.editorRevealReady === b.editorRevealReady &&
     a.notes === b.notes &&
@@ -79,8 +83,10 @@ function shallowEqualWakeUp(a: WakeUpOverlaySelectors, b: WakeUpOverlaySelectors
 export function selectWakeUpOverlayModel(s: AppSnapshot): WakeUpOverlaySelectors {
   return {
     chatLoading: s.context.chatLoading,
+    notesChatLoading: s.context.notesChatLoading,
     isExitingOverlay: selectIsExitingWakeUp(s),
     editorOpen: s.context.editorOpen,
+    editorChatOpen: s.context.editorChatOpen,
     overlayActionReturnsToGraph: selectOverlayActionReturnsToGraph(s),
     editorRevealReady: selectEditorRevealReady(s),
     notes: s.context.notes,

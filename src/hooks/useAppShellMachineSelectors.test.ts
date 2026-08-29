@@ -21,6 +21,8 @@ function baseInput(over: Partial<AppUiContext> = {}): Partial<AppUiContext> {
     notes: "overlay-notes",
     graphLoadingCardSlots: 6,
     editorOpen: true,
+    editorChatOpen: false,
+    notesChatLoading: false,
     overlayDismissed: false,
     historyPanelOpen: false,
     hasChatHistory: false,

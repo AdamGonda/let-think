@@ -119,6 +119,18 @@ export function setChatLoading(actor: AppUiActorRef, loading: boolean): void {
   );
 }
 
+export function toggleEditorChat(actor: AppUiActorRef): void {
+  actor.send({ type: "EDITOR_CHAT_TOGGLE" });
+}
+
+export function setNotesChatLoading(actor: AppUiActorRef, loading: boolean): void {
+  actor.send(
+    loading
+      ? { type: "NOTES_CHAT_LOADING_START" }
+      : { type: "NOTES_CHAT_LOADING_END" },
+  );
+}
+
 export function setGraphLoadingProgress(
   actor: AppUiActorRef,
   latestBatchNodeCount: number,

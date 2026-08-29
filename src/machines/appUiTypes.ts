@@ -26,6 +26,10 @@ export type AppUiContext = {
   /** Machine-owned freeze gate for @n reference highlights during load->settle transitions. */
   graphReferenceFreezeActive: boolean;
   editorOpen: boolean;
+  /** Side chat panel open in the notes overlay. */
+  editorChatOpen: boolean;
+  /** Notes-overlay chat request in flight (separate from graph chatLoading). */
+  notesChatLoading: boolean;
   /** User dismissed the focus layer while demand could still be true. */
   overlayDismissed: boolean;
   historyPanelOpen: boolean;
@@ -61,6 +65,9 @@ export type AppUiEvent =
     }
   | { type: "EDITOR_OPEN" }
   | { type: "EDITOR_CLOSE" }
+  | { type: "EDITOR_CHAT_TOGGLE" }
+  | { type: "NOTES_CHAT_LOADING_START" }
+  | { type: "NOTES_CHAT_LOADING_END" }
   | { type: "USER_EXIT_WAKE_UP" }
   | { type: "ACTIVE_SESSION_SET"; sessionId: Id<"sessions"> | null }
   | { type: "ACTIVE_PROJECT_SET"; projectId: Id<"projects"> | null }

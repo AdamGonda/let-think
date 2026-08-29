@@ -21,6 +21,8 @@ import type * as lib_access from "../lib/access.js";
 import type * as lib_transactionalEmails_resend from "../lib/transactionalEmails/resend.js";
 import type * as lib_transactionalEmails_templates from "../lib/transactionalEmails/templates.js";
 import type * as modelConfig from "../modelConfig.js";
+import type * as notesChat from "../notesChat.js";
+import type * as notesChatActions from "../notesChatActions.js";
 import type * as projects from "../projects.js";
 import type * as sessions from "../sessions.js";
 import type * as transactionalEmails from "../transactionalEmails.js";
@@ -46,6 +48,8 @@ declare const fullApi: ApiFromModules<{
   "lib/transactionalEmails/resend": typeof lib_transactionalEmails_resend;
   "lib/transactionalEmails/templates": typeof lib_transactionalEmails_templates;
   modelConfig: typeof modelConfig;
+  notesChat: typeof notesChat;
+  notesChatActions: typeof notesChatActions;
   projects: typeof projects;
   sessions: typeof sessions;
   transactionalEmails: typeof transactionalEmails;

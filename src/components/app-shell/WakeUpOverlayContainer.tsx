@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { useAppUiActor, useAppUiSelector } from "../../hooks/useAppUi";
 import { useWakeUpOverlaySelectors } from "../../hooks/useAppShellMachineSelectors";
+import { useNotesChat } from "../../hooks/useNotesChat";
 import { selectDisplayWakeUpLayer } from "../../machines/appUiMachine";
 import { findSessionInWorkspace } from "../../lib/workspaceQueries";
 import {
@@ -8,6 +9,7 @@ import {
   intentBreadcrumbSessionClick,
   intentOverlayActionClick,
   setWakeNotes,
+  toggleEditorChat,
 } from "@/lib/appUiCommands";
 import { WakeUpOverlay } from "../onboarding/WakeUpOverlay";
 import type { ProjectWithSessions } from "../session-sidebar/SessionSidebar";
@@ -31,12 +33,26 @@ export function WakeUpOverlayContainer({ workspace }: WakeUpOverlayContainerProp
     [workspace, overlay.activeSessionId],
   );
 
+  const {
+    messages: notesChatMessages,
+    messagesLoading: notesChatMessagesLoading,
+    sendMessage: sendNotesChatMessage,
+  } = useNotesChat(
+    overlay.activeSessionId,
+    overlay.notes,
+    overlay.editorChatOpen,
+  );
+
   const handleWakeNotesChange = useCallback(
     (value: string) => {
       setWakeNotes(actor, value);
     },
     [actor],
   );
+
+  const handleEditorChatToggle = useCallback(() => {
+    toggleEditorChat(actor);
+  }, [actor]);
 
   const handleOverlayActionClick = useCallback(() => {
     const shouldFocusComposer = overlay.overlayActionReturnsToGraph;
@@ -61,8 +77,11 @@ export function WakeUpOverlayContainer({ workspace }: WakeUpOverlayContainerProp
   return (
     <WakeUpOverlay
       chatLoading={overlay.chatLoading}
+      notesChatLoading={overlay.notesChatLoading}
       isExitingOverlay={overlay.isExitingOverlay}
       editorOpen={overlay.editorOpen}
+      editorChatOpen={overlay.editorChatOpen}
+      onEditorChatToggle={handleEditorChatToggle}
       overlayActionReturnsToGraph={overlay.overlayActionReturnsToGraph}
       onOverlayActionClick={handleOverlayActionClick}
       editorRevealReady={overlay.editorRevealReady}
@@ -73,6 +92,9 @@ export function WakeUpOverlayContainer({ workspace }: WakeUpOverlayContainerProp
       onNotesChange={handleWakeNotesChange}
       onBreadcrumbProjectsRootClick={handleBreadcrumbProjectsRootClick}
       onBreadcrumbProjectNameClick={handleBreadcrumbSessionClick}
+      notesChatMessages={notesChatMessages}
+      notesChatMessagesLoading={notesChatMessagesLoading}
+      onNotesChatSend={sendNotesChatMessage}
     />
   );
 }
