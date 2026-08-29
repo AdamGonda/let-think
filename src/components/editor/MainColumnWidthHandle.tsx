@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { clsx } from "clsx";
 
 const KEYBOARD_STEP_PX = 40;
@@ -13,8 +13,8 @@ type MainColumnWidthHandleProps = {
 };
 
 /**
- * Vertical drag handle on the writing column's right edge. The column is centered
- * (`mx-auto`), so widening it by dragging one edge by `dx` grows the column by `2 * dx`.
+ * Vertical drag handle on the writing column's left edge (right is the scrollbar).
+ * The column is centered (`mx-auto`), so moving the edge by `dx` grows the column by `2 * dx`.
  */
 export function MainColumnWidthHandle({
   width,
@@ -22,6 +22,7 @@ export function MainColumnWidthHandle({
   max,
   onWidthChange,
 }: MainColumnWidthHandleProps) {
+  const [dragging, setDragging] = useState(false);
   /** Live listeners for the drag in progress, so they can be torn down from either handler. */
   const activeDragListenersRef = useRef<{
     onMove: (e: PointerEvent) => void;
@@ -52,14 +53,15 @@ export function MainColumnWidthHandle({
     if (e.button !== 0) return;
     const startX = e.clientX;
     const startWidth = width;
+    setDragging(true);
     document.body.style.cursor = "col-resize";
     document.body.style.userSelect = "none";
 
     const onMove = (moveEvent: PointerEvent) => {
-      const delta = (moveEvent.clientX - startX) * 2;
-      onWidthChange(clampToViewport(startWidth + delta));
+      onWidthChange(clampToViewport(startWidth + (startX - moveEvent.clientX) * 2));
     };
     const onUp = () => {
+      setDragging(false);
       document.body.style.removeProperty("cursor");
       document.body.style.removeProperty("user-select");
       window.removeEventListener("pointermove", onMove);
@@ -74,10 +76,10 @@ export function MainColumnWidthHandle({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     if (e.key === "ArrowLeft") {
       e.preventDefault();
-      onWidthChange(clampToViewport(width - KEYBOARD_STEP_PX));
+      onWidthChange(clampToViewport(width + KEYBOARD_STEP_PX));
     } else if (e.key === "ArrowRight") {
       e.preventDefault();
-      onWidthChange(clampToViewport(width + KEYBOARD_STEP_PX));
+      onWidthChange(clampToViewport(width - KEYBOARD_STEP_PX));
     } else if (e.key === "Home") {
       e.preventDefault();
       onWidthChange(min);
@@ -98,14 +100,19 @@ export function MainColumnWidthHandle({
       tabIndex={0}
       onPointerDown={handlePointerDown}
       onKeyDown={handleKeyDown}
-      className="group absolute inset-y-0 -right-3 z-10 flex w-3 touch-none items-center justify-center cursor-col-resize focus:outline-none"
+      className="group absolute top-2 -left-3 z-10 flex h-24 w-4 touch-none items-start justify-center cursor-col-resize focus:outline-none"
     >
       <div
         className={clsx(
-          "h-16 w-1 rounded-full bg-foreground/15 transition-colors",
-          "group-hover:bg-foreground/40 group-focus-visible:bg-foreground/60",
+          "flex gap-0.5 transition-opacity duration-200",
+          dragging
+            ? "opacity-100"
+            : "opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100",
         )}
-      />
+      >
+        <div className="h-16 w-0.5 rounded-full bg-foreground/40" />
+        <div className="h-16 w-0.5 rounded-full bg-foreground/40" />
+      </div>
     </div>
   );
 }

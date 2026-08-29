@@ -1,6 +1,7 @@
 import { memo, useRef, useEffect } from "react";
 import MDEditor from "@uiw/react-md-editor";
 import "@uiw/react-md-editor/markdown-editor.css";
+import { timings } from "@/config";
 
 /** Pixel offset of caret from top of content (for scroll-into-view) */
 function getCaretOffset(textarea: HTMLTextAreaElement): number {
@@ -31,6 +32,19 @@ function getCaretOffset(textarea: HTMLTextAreaElement): number {
   const offset = span.offsetTop;
   document.body.removeChild(mirror);
   return offset;
+}
+
+/** Overlay thumb size/offset. null when the note doesn’t overflow. */
+export function editorScrollThumbLayout(
+  clientHeight: number,
+  scrollHeight: number,
+  scrollTop: number,
+): { height: number; top: number } | null {
+  const maxScroll = scrollHeight - clientHeight;
+  if (maxScroll <= 1) return null;
+  const height = Math.max(48, (clientHeight / scrollHeight) * clientHeight);
+  const top = (scrollTop / maxScroll) * (clientHeight - height);
+  return { height, top };
 }
 
 function scrollCaretToEyeLevel(
@@ -89,6 +103,7 @@ function MarkdownEditorComponent({
 }: MarkdownEditorProps) {
   const isFocused = variant === "focused";
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const scrollThumbRef = useRef<HTMLDivElement>(null);
   const endCursorAppliedRef = useRef(false);
   /** Last programmatic range we applied — keyed by start/end only (not value length). */
   const appliedSelectionRangeKeyRef = useRef<string | null>(null);
@@ -202,6 +217,65 @@ function MarkdownEditorComponent({
     return () => cancelAnimationFrame(id);
   }, [value, isFocused]);
 
+  /* Overlay thumb: native bars stay hidden; this fades in on scroll and out after idle. */
+  useEffect(() => {
+    if (!isFocused) return;
+    const wrapper = wrapperRef.current;
+    const thumb = scrollThumbRef.current;
+    if (!wrapper || !thumb) return;
+
+    let hideTimer = 0;
+    const hide = () => {
+      thumb.style.transition = "opacity 0.5s ease";
+      thumb.style.opacity = "0";
+    };
+    const onScroll = (event: Event) => {
+      const el = event.currentTarget as HTMLElement;
+      const layout = editorScrollThumbLayout(
+        el.clientHeight,
+        el.scrollHeight,
+        el.scrollTop,
+      );
+      if (!layout) {
+        hide();
+        return;
+      }
+      thumb.style.height = `${layout.height}px`;
+      thumb.style.transform = `translateY(${layout.top}px)`;
+      thumb.style.transition = "opacity 0.12s ease";
+      thumb.style.opacity = "1";
+      window.clearTimeout(hideTimer);
+      hideTimer = window.setTimeout(hide, timings.editorScrollbarIdleMs);
+    };
+
+    const scrollers: HTMLElement[] = [];
+    const bind = () => {
+      const area = wrapper.querySelector(".w-md-editor-area");
+      const content = wrapper.querySelector(".w-md-editor-content");
+      for (const node of [area, content]) {
+        if (!(node instanceof HTMLElement)) continue;
+        if (scrollers.includes(node)) continue;
+        node.addEventListener("scroll", onScroll, { passive: true });
+        scrollers.push(node);
+      }
+      return scrollers.length > 0;
+    };
+
+    const first = requestAnimationFrame(() => {
+      if (bind()) return;
+      requestAnimationFrame(() => {
+        bind();
+      });
+    });
+    return () => {
+      cancelAnimationFrame(first);
+      window.clearTimeout(hideTimer);
+      for (const el of scrollers) {
+        el.removeEventListener("scroll", onScroll);
+      }
+    };
+  }, [isFocused]);
+
   const handleWrapperClick = () => {
     const input = wrapperRef.current?.querySelector(
       "textarea, .w-md-editor-text-input"
@@ -215,7 +289,7 @@ function MarkdownEditorComponent({
       onClick={handleWrapperClick}
       className={`md-editor-wrapper overflow-hidden cursor-text ${
         isFocused
-          ? `md-editor-focused flex-1 min-h-0 flex flex-col ${dark ? "md-editor-dark" : ""} ${className}`
+          ? `md-editor-focused relative flex-1 min-h-0 flex flex-col ${dark ? "md-editor-dark" : ""} ${className}`
           : "rounded-lg border border-zinc-300 dark:border-zinc-700 focus-within:border-white dark:focus-within:border-zinc-800 transition-colors"
       } ${className}`}
     >
@@ -234,6 +308,13 @@ function MarkdownEditorComponent({
           placeholder,
         }}
       />
+      {isFocused ? (
+        <div
+          ref={scrollThumbRef}
+          className="editor-scroll-thumb"
+          aria-hidden
+        />
+      ) : null}
     </div>
   );
 }
