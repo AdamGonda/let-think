@@ -36,7 +36,7 @@ export function NotesListToolbar({
           <button
             type="button"
             onClick={onBackFromDrill}
-            className="shrink-0 cursor-pointer rounded-lg border border-border/80 bg-card p-2 text-foreground transition-colors hover:border-border hover:bg-muted/10 active:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex size-9 shrink-0 items-center justify-center cursor-pointer rounded-lg border border-border/80 bg-card text-foreground transition-colors hover:border-border hover:bg-muted/10 active:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             aria-label="Back to files"
           >
             <ChevronLeft className="size-5" />
