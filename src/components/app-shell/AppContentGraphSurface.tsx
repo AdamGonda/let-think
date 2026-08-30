@@ -1,12 +1,9 @@
-import type { RefObject } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { GraphViewHeader } from "../concept-graph-overlay/GraphViewHeader";
 import { ConceptGraphOverlay } from "../concept-graph-overlay/ConceptGraphOverlay";
 import type { ConceptGraphData } from "@/contexts/SessionDataContext";
-import type { SessionSidebarHandle } from "../session-sidebar/workspaceTypes";
 
 type AppContentGraphSurfaceProps = {
-  sessionSidebarRef: RefObject<SessionSidebarHandle | null>;
   activeSessionId: Id<"sessions"> | null;
   activeSessionTitle: string | undefined;
   batchesLength: number;
@@ -22,15 +19,12 @@ type AppContentGraphSurfaceProps = {
   onSelectBatch: (index: number) => void;
   onHistoryOpen: () => void;
   onEditorOpen: () => void;
+  onOpenExplorer: () => void;
   onCardReferenceClick?: (conceptNumber: number) => void;
   onConceptCopy?: (concept: { name: string; description?: string }) => void;
 };
 
-/**
- * Graph mode header + concept area (layout only).
- */
 export function AppContentGraphSurface({
-  sessionSidebarRef,
   activeSessionId,
   activeSessionTitle,
   batchesLength,
@@ -46,6 +40,7 @@ export function AppContentGraphSurface({
   onSelectBatch,
   onHistoryOpen,
   onEditorOpen,
+  onOpenExplorer,
   onCardReferenceClick,
   onConceptCopy,
 }: AppContentGraphSurfaceProps) {
@@ -63,7 +58,7 @@ export function AppContentGraphSurface({
           hasChatHistory={hasChatHistory}
           onHistoryOpen={onHistoryOpen}
           onEditorOpen={onEditorOpen}
-          onSessionTitleClick={() => sessionSidebarRef.current?.expand()}
+          onOpenExplorer={onOpenExplorer}
         />
       )}
       <div

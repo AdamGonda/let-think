@@ -10,7 +10,6 @@ import {
 const FIRST_CONCEPT_CARD_SELECTOR = "[data-tour='concept-card-1']";
 const FIRST_CONCEPT_REF_BUTTON_SELECTOR = "button[data-tour='concept-ref-btn-1']";
 const NEW_SESSION_BUTTON_SELECTOR = "button[data-tour='new-session']";
-const COLLAPSE_SIDEBAR_BUTTON_SELECTOR = "button[aria-label='Collapse sidebar']";
 const GRAPH_STEP_INDEX = 1;
 const TUTORIAL_PROMPT = "let's give me a good idea to think about";
 
@@ -153,17 +152,19 @@ export function Tutorial({ autoStart = false, onComplete }: TutorialProps) {
     switch (stepIndex) {
       case 0: {
         if (!firstStepSessionStartedRef.current) {
-          const collapseSidebarButton = document.querySelector<HTMLButtonElement>(
-            COLLAPSE_SIDEBAR_BUTTON_SELECTOR,
-          );
-          collapseSidebarButton?.click();
-
           const newSessionButton = document.querySelector<HTMLButtonElement>(
             NEW_SESSION_BUTTON_SELECTOR,
           );
           newSessionButton?.click();
           firstStepSessionStartedRef.current = true;
-          // Let the new session mount its composer before attempting to type.
+          return false;
+        }
+
+        const overlayAction = document.querySelector<HTMLButtonElement>(
+          'button[aria-label="Return to concept graph"], button[aria-label="Summarize and return to session"]',
+        );
+        if (overlayAction) {
+          overlayAction.click();
           return false;
         }
 

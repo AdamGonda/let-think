@@ -43,6 +43,38 @@ describe("useNotesListModel", () => {
     expect(result.current.totalSessions).toBe(2);
     expect(result.current.sortedGroups[0]?.project).toBeNull();
     expect(result.current.sortedGroups[1]?.project?.name).toBe("Zebra");
+    expect(result.current.rootFolders).toHaveLength(1);
+    expect(result.current.rootFiles).toHaveLength(1);
+    expect(result.current.rootFiles[0]?.title).toBe("Inbox A");
+  });
+
+  it("treats workspace as empty only when there are no files and no folders", () => {
+    const onDrill = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ ws }) => useNotesListModel(ws, null, onDrill),
+      {
+        initialProps: {
+          ws: [
+            { project: null, sessions: [] },
+          ] as ProjectWithSessions[],
+        },
+      },
+    );
+    expect(result.current.isEmpty).toBe(true);
+    expect(result.current.hasProjects).toBe(false);
+
+    rerender({
+      ws: [
+        { project: null, sessions: [] },
+        {
+          project: mkProject("p1", "Solo", 1),
+          sessions: [],
+        },
+      ],
+    });
+    expect(result.current.isEmpty).toBe(false);
+    expect(result.current.hasProjects).toBe(true);
+    expect(result.current.rootFolders).toHaveLength(1);
   });
 
   it("filters groups by search query", () => {

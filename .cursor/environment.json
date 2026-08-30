@@ -11,7 +11,7 @@
     {
       "name": "vite",
       "command": "vite --host",
-      "description": "Vite dev server for the React SPA on port 5173."
+      "description": "Vite dev server for the React SPA on port 5173. Authenticated /app testing: follow docs/agent-local-login.md (see AGENTS.md)."
     }
   ],
   "ports": [

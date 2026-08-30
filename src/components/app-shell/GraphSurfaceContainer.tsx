@@ -4,7 +4,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type RefObject,
 } from "react";
 import { toast } from "sonner";
 import { usePostHog } from "posthog-js/react";
@@ -22,18 +21,15 @@ import {
 import { userInputForBatch } from "../../lib/batchUserInput";
 import { findSessionInWorkspace } from "../../lib/workspaceQueries";
 import {
+  intentOpenNotesList,
   openEditor,
   openHistoryPanel,
   setGraphLoadingProgress,
   setSelectedBatchIndex,
 } from "@/lib/appUiCommands";
-import type {
-  ProjectWithSessions,
-  SessionSidebarHandle,
-} from "../session-sidebar/SessionSidebar";
+import type { ProjectWithSessions } from "../session-sidebar/workspaceTypes";
 type GraphSurfaceContainerProps = {
   workspace: ProjectWithSessions[] | undefined;
-  sessionSidebarRef: RefObject<SessionSidebarHandle | null>;
   activeSessionId: Id<"sessions"> | null;
 };
 
@@ -42,7 +38,6 @@ type GraphSurfaceContainerProps = {
  */
 export function GraphSurfaceContainer({
   workspace,
-  sessionSidebarRef,
   activeSessionId,
 }: GraphSurfaceContainerProps) {
   const posthog = usePostHog();
@@ -177,7 +172,6 @@ export function GraphSurfaceContainer({
 
   return (
     <AppContentGraphSurface
-      sessionSidebarRef={sessionSidebarRef}
       activeSessionId={activeSessionId}
       activeSessionTitle={activeSessionInWorkspace?.session.title}
       batchesLength={batches.length}
@@ -196,6 +190,7 @@ export function GraphSurfaceContainer({
         openHistoryPanel(actor);
       }}
       onEditorOpen={handleEditorOpen}
+      onOpenExplorer={() => intentOpenNotesList(actor)}
       onCardReferenceClick={
         isLatestBatch ? handleCardReferenceClick : undefined
       }

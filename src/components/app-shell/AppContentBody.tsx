@@ -1,18 +1,11 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { type RefObject } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
-import {
-  useAppUiActor,
-  useAppUiSelector,
-} from "../../hooks/useAppUi";
+import { useAppUiActor, useAppUiSelector } from "../../hooks/useAppUi";
 import { useAppLayoutSelectors } from "../../hooks/useAppShellMachineSelectors";
 import { useAppShellIntentHandlers } from "../../hooks/useAppContentBodyHandlers";
 import { selectDisplayWakeUpLayer } from "../../machines/appUiMachine";
 import type { MainColumnWidthControls } from "@/hooks/useMainColumnWidth";
-import {
-  SessionSidebar,
-  type ProjectWithSessions,
-  type SessionSidebarHandle,
-} from "../session-sidebar/SessionSidebar";
+import type { ProjectWithSessions } from "../session-sidebar/workspaceTypes";
 import { Tutorial } from "../onboarding/Tutorial";
 import { runTutorial } from "@/lib/runTutorial";
 import { getTutorialCompleted } from "@/lib/tutorialStorage";
@@ -25,7 +18,6 @@ type AppContentBodyProps = {
   onCreateSessionForFirstMessage?: () => Promise<Id<"sessions">>;
   workspace: ProjectWithSessions[] | undefined;
   mainContentRef: RefObject<HTMLDivElement | null>;
-  sessionSidebarRef: RefObject<SessionSidebarHandle | null>;
   mainColumnWidth: MainColumnWidthControls;
 };
 
@@ -33,34 +25,12 @@ export function AppContentBody({
   onCreateSessionForFirstMessage,
   workspace,
   mainContentRef,
-  sessionSidebarRef,
   mainColumnWidth,
 }: AppContentBodyProps) {
   const layout = useAppLayoutSelectors();
   const displayWakeUpLayer = useAppUiSelector(selectDisplayWakeUpLayer);
-  const uiCollapseSignal = useAppUiSelector(
-    (s) =>
-      `${s.context.sidebarCollapseRequestSeq}:${s.context.sidebarCollapseImmediateSeq}`,
-  );
   const actor = useAppUiActor();
   const navigationHandlers = useAppShellIntentHandlers(actor);
-
-  const prevCollapseSignalRef = useRef<string>("");
-  const prevChatLoadingRef = useRef(false);
-
-  useEffect(() => {
-    if (uiCollapseSignal === prevCollapseSignalRef.current) return;
-    prevCollapseSignalRef.current = uiCollapseSignal;
-    sessionSidebarRef.current?.collapse();
-  }, [uiCollapseSignal, sessionSidebarRef]);
-
-  useEffect(() => {
-    const wasLoading = prevChatLoadingRef.current;
-    if (layout.chatLoading && !wasLoading) {
-      sessionSidebarRef.current?.collapse();
-    }
-    prevChatLoadingRef.current = layout.chatLoading;
-  }, [layout.chatLoading, sessionSidebarRef]);
 
   return (
     <AppShell
@@ -74,27 +44,15 @@ export function AppContentBody({
       mainInert={!!displayWakeUpLayer}
       toaster={<Toaster theme="dark" />}
     >
-      <SessionSidebar
-        ref={sessionSidebarRef}
-        workspace={workspace}
-        activeSessionId={layout.activeSessionId}
-        activeProjectId={layout.activeProjectId}
-        onSelectSession={navigationHandlers.onSelectSessionFromSidebar}
-        onSelectProject={navigationHandlers.onSelectProjectFromSidebar}
-        viewMode={layout.viewMode}
-        onViewModeChange={navigationHandlers.setViewMode}
-        onRunTutorial={runTutorial}
-        isDisabled={layout.chatLoading}
-      />
       <WorkspaceMainColumn
         workspace={workspace}
         mainContentRef={mainContentRef}
-        sessionSidebarRef={sessionSidebarRef}
         onCreateSessionForFirstMessage={onCreateSessionForFirstMessage}
         layout={layout}
         onSelectSessionFromNotesList={
           navigationHandlers.onSelectSessionFromNotesList
         }
+        onRunTutorial={runTutorial}
       />
     </AppShell>
   );

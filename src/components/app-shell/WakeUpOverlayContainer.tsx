@@ -11,7 +11,7 @@ import {
 } from "@/lib/appUiCommands";
 import type { MainColumnWidthControls } from "@/hooks/useMainColumnWidth";
 import { WakeUpOverlay } from "../onboarding/WakeUpOverlay";
-import type { ProjectWithSessions } from "../session-sidebar/SessionSidebar";
+import type { ProjectWithSessions } from "../session-sidebar/workspaceTypes";
 
 const FOCUS_COMPOSER_EVENT = "let-think:focus-composer";
 
