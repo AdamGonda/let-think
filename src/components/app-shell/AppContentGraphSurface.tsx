@@ -20,7 +20,6 @@ type AppContentGraphSurfaceProps = {
   onHistoryOpen: () => void;
   onEditorOpen: () => void;
   onOpenExplorer: () => void;
-  onRunTutorial?: () => void;
   onCardReferenceClick?: (conceptNumber: number) => void;
   onConceptCopy?: (concept: { name: string; description?: string }) => void;
 };
@@ -42,7 +41,6 @@ export function AppContentGraphSurface({
   onHistoryOpen,
   onEditorOpen,
   onOpenExplorer,
-  onRunTutorial,
   onCardReferenceClick,
   onConceptCopy,
 }: AppContentGraphSurfaceProps) {
@@ -61,7 +59,6 @@ export function AppContentGraphSurface({
           onHistoryOpen={onHistoryOpen}
           onEditorOpen={onEditorOpen}
           onOpenExplorer={onOpenExplorer}
-          onRunTutorial={onRunTutorial}
         />
       )}
       <div

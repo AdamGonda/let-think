@@ -71,6 +71,7 @@ describe("selectors from running actor", () => {
   it("VIEW_SET switches surface", () => {
     const actor = createActor(appUiMachine, { input: baseInput() });
     actor.start();
+    expect(selectSurface(actor.getSnapshot())).toBe("notesList");
     actor.send({ type: "VIEW_SET", mode: "notesList" });
     expect(selectSurface(actor.getSnapshot())).toBe("notesList");
     actor.send({ type: "VIEW_SET", mode: "graph" });
@@ -200,6 +201,7 @@ describe("intent orchestration", () => {
       }),
     });
     actor.start();
+    actor.send({ type: "VIEW_SET", mode: "graph" });
     expect(selectOverlayActionReturnsToGraph(actor.getSnapshot())).toBe(true);
     const imm = actor.getSnapshot().context.sidebarCollapseImmediateSeq;
     actor.send({ type: "INTENT_OVERLAY_ACTION_CLICK" });

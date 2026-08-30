@@ -155,7 +155,6 @@ export function WorkspaceMainColumn({
           <GraphSurfaceContainer
             workspace={workspace}
             activeSessionId={layout.activeSessionId}
-            onRunTutorial={onRunTutorial}
           />
         )}
       </div>

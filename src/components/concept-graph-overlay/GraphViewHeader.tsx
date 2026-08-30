@@ -1,7 +1,6 @@
 import { FileText, History, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StepNavigator } from "@/components/navigation/StepNavigator";
-import { UserCard } from "@/components/user/UserCard";
 
 type GraphViewHeaderProps = {
   sessionTitle: string | undefined;
@@ -15,7 +14,6 @@ type GraphViewHeaderProps = {
   onHistoryOpen: () => void;
   onEditorOpen: () => void;
   onOpenExplorer: () => void;
-  onRunTutorial?: () => void;
 };
 
 export function GraphViewHeader({
@@ -30,7 +28,6 @@ export function GraphViewHeader({
   onHistoryOpen,
   onEditorOpen,
   onOpenExplorer,
-  onRunTutorial,
 }: GraphViewHeaderProps) {
   const sessionLabel =
     sessionTitle != null && sessionTitle.trim() !== ""
@@ -106,11 +103,6 @@ export function GraphViewHeader({
         >
           <FileText className="size-5" />
         </Button>
-        <div className="relative h-7 w-7 shrink-0">
-          <div className="absolute right-0 top-0 z-20 w-[13.5rem]">
-            <UserCard compact onRunTutorial={onRunTutorial} />
-          </div>
-        </div>
       </div>
     </header>
   );

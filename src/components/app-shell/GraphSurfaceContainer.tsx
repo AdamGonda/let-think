@@ -31,7 +31,6 @@ import type { ProjectWithSessions } from "../session-sidebar/workspaceTypes";
 type GraphSurfaceContainerProps = {
   workspace: ProjectWithSessions[] | undefined;
   activeSessionId: Id<"sessions"> | null;
-  onRunTutorial?: () => void;
 };
 
 /**
@@ -40,7 +39,6 @@ type GraphSurfaceContainerProps = {
 export function GraphSurfaceContainer({
   workspace,
   activeSessionId,
-  onRunTutorial,
 }: GraphSurfaceContainerProps) {
   const posthog = usePostHog();
   const actor = useAppUiActor();
@@ -193,7 +191,6 @@ export function GraphSurfaceContainer({
       }}
       onEditorOpen={handleEditorOpen}
       onOpenExplorer={() => intentOpenNotesList(actor)}
-      onRunTutorial={onRunTutorial}
       onCardReferenceClick={
         isLatestBatch ? handleCardReferenceClick : undefined
       }
