@@ -11,68 +11,7 @@ import {
 import type { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
-import { deleteSessionOwnedRows } from "./lib/sessionOwned";
-import {
-  createFileWithSession,
-  deleteFileCascade,
-  maybeTitleFileFromFirstGraphMessage,
-} from "./files";
-
-export const list = query({
-  args: {},
-  handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return [];
-    return ctx.db
-      .query("sessions")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .order("desc")
-      .collect();
-  },
-});
-
-export const listByProject = query({
-  args: { projectId: v.optional(v.id("projects")) },
-  handler: async (ctx, { projectId }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return [];
-    if (projectId === undefined) {
-      const sessions = await ctx.db
-        .query("sessions")
-        .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect();
-      return sessions
-        .filter((s) => s.projectId === undefined)
-        .sort((a, b) => b.createdAt - a.createdAt);
-    }
-    const project = await ctx.db.get(projectId);
-    if (!project || project.userId !== userId) return [];
-    return ctx.db
-      .query("sessions")
-      .withIndex("by_project", (q) => q.eq("projectId", projectId))
-      .order("desc")
-      .collect();
-  },
-});
-
-export const create = mutation({
-  args: { projectId: v.optional(v.id("projects")) },
-  handler: async (ctx, { projectId }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Must be signed in to create a session");
-    if (projectId) {
-      const project = await ctx.db.get(projectId);
-      if (!project || project.userId !== userId) {
-        throw new Error("Project not found or access denied");
-      }
-    }
-    const { sessionId } = await createFileWithSession(ctx, {
-      userId,
-      projectId,
-    });
-    return sessionId;
-  },
-});
+import { maybeTitleFileFromFirstGraphMessage } from "./files";
 
 async function requireSessionOwner(ctx: MutationCtx, sessionId: Id<"sessions">) {
   const userId = await getAuthUserId(ctx);
@@ -81,70 +20,6 @@ async function requireSessionOwner(ctx: MutationCtx, sessionId: Id<"sessions">) 
   if (!session || session.userId !== userId) throw new Error("Session not found or access denied");
   return session;
 }
-
-export { deleteSessionOwnedRows };
-
-export const updateTitle = mutation({
-  args: {
-    id: v.id("sessions"),
-    title: v.string(),
-  },
-  handler: async (ctx, { id, title }) => {
-    const session = await requireSessionOwner(ctx, id);
-    await ctx.db.patch(id, { title });
-    if (session.fileId) {
-      await ctx.db.patch(session.fileId, { title });
-    }
-  },
-});
-
-export const moveToProject = mutation({
-  args: {
-    id: v.id("sessions"),
-    projectId: v.optional(v.id("projects")),
-  },
-  handler: async (ctx, { id, projectId }) => {
-    const session = await requireSessionOwner(ctx, id);
-    if (projectId) {
-      const userId = await getAuthUserId(ctx);
-      const project = await ctx.db.get(projectId);
-      if (!project || project.userId !== userId) throw new Error("Project not found or access denied");
-    }
-    await ctx.db.patch(id, { projectId });
-    if (session.fileId) {
-      await ctx.db.patch(session.fileId, { projectId });
-    }
-  },
-});
-
-export const remove = mutation({
-  args: { id: v.id("sessions") },
-  handler: async (ctx, { id }) => {
-    const session = await requireSessionOwner(ctx, id);
-    if (session.fileId) {
-      await deleteFileCascade(ctx, session.fileId);
-      return;
-    }
-    await deleteSessionOwnedRows(ctx, id);
-    await ctx.db.delete(id);
-  },
-});
-
-/** Full message list — for actions (e.g. chat.send); avoid subscribing from UI. */
-export const getMessages = query({
-  args: { sessionId: v.id("sessions") },
-  handler: async (ctx, { sessionId }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return [];
-    const session = await ctx.db.get(sessionId);
-    if (!session || session.userId !== userId) return [];
-    return ctx.db
-      .query("messages")
-      .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
-      .order("asc")
-      .collect();
-  },
-});
 
 export const listMessagesPaginated = query({
   args: {
@@ -170,30 +45,6 @@ export const listMessagesPaginated = query({
     }
     return await ctx.db
       .query("messages")
-      .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
-      .order("desc")
-      .paginate(paginationOpts);
-  },
-});
-
-const emptyMessagePage = {
-  page: [],
-  isDone: true,
-  continueCursor: "",
-};
-
-export const listChatMessagesPaginated = query({
-  args: {
-    sessionId: v.id("sessions"),
-    paginationOpts: paginationOptsValidator,
-  },
-  handler: async (ctx, { sessionId, paginationOpts }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return emptyMessagePage;
-    const session = await ctx.db.get(sessionId);
-    if (!session || session.userId !== userId) return emptyMessagePage;
-    return await ctx.db
-      .query("chatMessages")
       .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
       .order("desc")
       .paginate(paginationOpts);
@@ -255,117 +106,6 @@ export const addMessages = mutation({
       });
     }
     await maybeTitleFileFromFirstGraphMessage(ctx, sessionId, userContent);
-  },
-});
-
-async function maybeTitleFromFirstUserMessage(
-  ctx: MutationCtx,
-  sessionId: Id<"sessions">,
-  userContent: string,
-) {
-  await maybeTitleFileFromFirstGraphMessage(ctx, sessionId, userContent);
-}
-
-async function insertChatTurn(
-  ctx: MutationCtx,
-  args: {
-    sessionId: Id<"sessions">;
-    userContent: string;
-    assistantContent: string;
-    mentions?: Array<{
-      start: number;
-      end: number;
-      conceptId: string;
-      name: string;
-    }>;
-  },
-): Promise<Id<"chatMessages">> {
-  const now = Date.now();
-  await ctx.db.insert("chatMessages", {
-    sessionId: args.sessionId,
-    role: "user",
-    content: args.userContent,
-    createdAt: now,
-    ...(args.mentions && args.mentions.length > 0
-      ? { mentions: args.mentions }
-      : {}),
-  });
-  const assistantMessageId = await ctx.db.insert("chatMessages", {
-    sessionId: args.sessionId,
-    role: "assistant",
-    content: args.assistantContent,
-    createdAt: now + 1,
-  });
-  await maybeTitleFromFirstUserMessage(ctx, args.sessionId, args.userContent);
-  return assistantMessageId;
-}
-
-export const addChatMessages = mutation({
-  args: {
-    sessionId: v.id("sessions"),
-    userContent: v.string(),
-    assistantContent: v.string(),
-    mentions: mentionValidator,
-  },
-  handler: async (
-    ctx,
-    { sessionId, userContent, assistantContent, mentions }
-  ): Promise<void> => {
-    await requireSessionOwner(ctx, sessionId);
-    await insertChatTurn(ctx, {
-      sessionId,
-      userContent,
-      assistantContent,
-      mentions,
-    });
-  },
-});
-
-/** Insert the user turn plus an empty assistant row so the client can stream into it. */
-export const startChatTurn = internalMutation({
-  args: {
-    sessionId: v.id("sessions"),
-    userId: v.id("users"),
-    userContent: v.string(),
-    mentions: mentionValidator,
-  },
-  returns: v.object({ assistantMessageId: v.id("chatMessages") }),
-  handler: async (ctx, { sessionId, userId, userContent, mentions }) => {
-    const session = await ctx.db.get(sessionId);
-    if (!session || session.userId !== userId) {
-      throw new Error("Session not found or access denied");
-    }
-    const assistantMessageId = await insertChatTurn(ctx, {
-      sessionId,
-      userContent,
-      assistantContent: "",
-      mentions,
-    });
-    return { assistantMessageId };
-  },
-});
-
-export const patchChatMessage = internalMutation({
-  args: {
-    messageId: v.id("chatMessages"),
-    userId: v.id("users"),
-    content: v.string(),
-  },
-  returns: v.null(),
-  handler: async (ctx, { messageId, userId, content }) => {
-    const msg = await ctx.db.get(messageId);
-    if (!msg || msg.role !== "assistant") {
-      throw new Error("Assistant message not found");
-    }
-    if (!msg.sessionId) {
-      throw new Error("Session not found or access denied");
-    }
-    const session = await ctx.db.get(msg.sessionId);
-    if (!session || session.userId !== userId) {
-      throw new Error("Session not found or access denied");
-    }
-    await ctx.db.patch(messageId, { content });
-    return null;
   },
 });
 
@@ -490,33 +230,6 @@ export const internalLoadSessionForChatSend = internalQuery({
   },
 });
 
-export const internalLoadSessionForChatLaneSend = internalQuery({
-  args: {
-    sessionId: v.id("sessions"),
-    userId: v.id("users"),
-  },
-  handler: async (
-    ctx,
-    { sessionId, userId }
-  ): Promise<{
-    messages: Array<{
-      role: "user" | "assistant";
-      content: string;
-    }>;
-  } | null> => {
-    const session = await ctx.db.get(sessionId);
-    if (!session || session.userId !== userId) return null;
-    const messages = await ctx.db
-      .query("chatMessages")
-      .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
-      .order("asc")
-      .collect();
-    return {
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
-    };
-  },
-});
-
 export const internalCanAccessSession = internalQuery({
   args: {
     sessionId: v.id("sessions"),
@@ -525,26 +238,6 @@ export const internalCanAccessSession = internalQuery({
   handler: async (ctx, { sessionId, userId }) => {
     const session = await ctx.db.get(sessionId);
     return !!session && session.userId === userId;
-  },
-});
-
-export const getEditorFields = query({
-  args: { sessionId: v.id("sessions") },
-  handler: async (ctx, { sessionId }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return null;
-    const session = await ctx.db.get(sessionId);
-    if (!session || session.userId !== userId) return null;
-    return {
-      draftInput: session.draftInput ?? "",
-      chatDraftInput: session.chatDraftInput ?? "",
-      thinkingNotes:
-        (session.fileId
-          ? (await ctx.db.get(session.fileId))?.thinkingNotes
-          : undefined) ??
-        session.thinkingNotes ??
-        "",
-    };
   },
 });
 
@@ -559,36 +252,5 @@ export const updateDraft = mutation({
     const session = await ctx.db.get(sessionId);
     if (!session || session.userId !== userId) return;
     await ctx.db.patch(sessionId, { draftInput });
-  },
-});
-
-export const updateChatDraft = mutation({
-  args: {
-    sessionId: v.id("sessions"),
-    chatDraftInput: v.string(),
-  },
-  handler: async (ctx, { sessionId, chatDraftInput }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return;
-    const session = await ctx.db.get(sessionId);
-    if (!session || session.userId !== userId) return;
-    await ctx.db.patch(sessionId, { chatDraftInput });
-  },
-});
-
-export const updateThinkingNotes = mutation({
-  args: {
-    sessionId: v.id("sessions"),
-    thinkingNotes: v.string(),
-  },
-  handler: async (ctx, { sessionId, thinkingNotes }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return;
-    const session = await ctx.db.get(sessionId);
-    if (!session || session.userId !== userId) return;
-    await ctx.db.patch(sessionId, { thinkingNotes });
-    if (session.fileId) {
-      await ctx.db.patch(session.fileId, { thinkingNotes });
-    }
   },
 });

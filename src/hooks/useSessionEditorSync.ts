@@ -37,23 +37,17 @@ export function useSessionEditorSync(
     api.files.getEditorFields,
     activeFileId ? { fileId: activeFileId } : "skip",
   );
-  const storedSession = useQuery(
-    api.sessions.getEditorFields,
-    !activeFileId && activeSessionId ? { sessionId: activeSessionId } : "skip",
-  );
   const storedChatDraft = useQuery(
     api.chatSessions.getDraft,
     activeChatSessionId ? { chatSessionId: activeChatSessionId } : "skip",
   );
 
-  const storedDraft = storedFile?.draftInput ?? storedSession?.draftInput;
-  const storedThinkingNotes =
-    storedFile?.thinkingNotes ?? storedSession?.thinkingNotes;
+  const storedDraft = storedFile?.draftInput;
+  const storedThinkingNotes = storedFile?.thinkingNotes;
 
   const updateDraft = useMutation(api.sessions.updateDraft);
   const updateChatDraft = useMutation(api.chatSessions.updateDraft);
   const updateFileNotes = useMutation(api.files.updateThinkingNotes);
-  const updateSessionNotes = useMutation(api.sessions.updateThinkingNotes);
 
   const prevSessionIdRef = useRef<Id<"sessions"> | null>(null);
   const prevFileIdRef = useRef<Id<"files"> | null>(null);
@@ -191,20 +185,15 @@ export function useSessionEditorSync(
     (value: string) => {
       if (activeFileId) {
         void updateFileNotes({ fileId: activeFileId, thinkingNotes: value });
-      } else if (activeSessionId) {
-        void updateSessionNotes({
-          sessionId: activeSessionId,
-          thinkingNotes: value,
-        });
       }
     },
-    [activeFileId, activeSessionId, updateFileNotes, updateSessionNotes],
+    [activeFileId, updateFileNotes],
   );
   useEffect(() => {
-    if (!activeFileId && !activeSessionId) return;
+    if (!activeFileId) return;
     const timer = setTimeout(() => {
       saveThinkingNotes(notes);
     }, timings.draftSaveDebounceMs);
     return () => clearTimeout(timer);
-  }, [activeFileId, activeSessionId, notes, saveThinkingNotes]);
+  }, [activeFileId, notes, saveThinkingNotes]);
 }

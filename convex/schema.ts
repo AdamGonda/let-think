@@ -64,14 +64,8 @@ export default defineSchema({
     fileId: v.optional(v.id("files")),
     title: v.string(),
     createdAt: v.number(),
-    /** User's draft for next graph prompt, preserved across sessions */
+    /** Graph composer draft */
     draftInput: v.optional(v.string()),
-    /** Independent composer draft for the chat lane (legacy; chatSessions.draftInput) */
-    chatDraftInput: v.optional(v.string()),
-    /** Notes written during thinking/break period (legacy; files.thinkingNotes) */
-    thinkingNotes: v.optional(v.string()),
-    /** Present on some stored sessions (e.g. "open"); kept optional for backward compatibility */
-    interactionRestriction: v.optional(v.string()),
   })
     .index("by_created", ["createdAt"])
     .index("by_project", ["projectId", "createdAt"])
@@ -166,7 +160,7 @@ export default defineSchema({
     ),
   }).index("by_session", ["sessionId"]),
 
-  /** Independent chat-lane messages (graph ideation stays on `messages`). */
+  /** Chat-lane messages. Listed by `chatSessionId`; `sessionId` may exist on old rows. */
   chatMessages: defineTable({
     sessionId: v.optional(v.id("sessions")),
     chatSessionId: v.optional(v.id("chatSessions")),

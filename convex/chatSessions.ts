@@ -163,7 +163,6 @@ async function insertChatTurn(
   ctx: MutationCtx,
   args: {
     chatSessionId: Id<"chatSessions">;
-    sessionId?: Id<"sessions">;
     userContent: string;
     assistantContent: string;
     mentions?: Array<{
@@ -177,7 +176,6 @@ async function insertChatTurn(
   const now = Date.now();
   await ctx.db.insert("chatMessages", {
     chatSessionId: args.chatSessionId,
-    ...(args.sessionId ? { sessionId: args.sessionId } : {}),
     role: "user",
     content: args.userContent,
     createdAt: now,
@@ -187,7 +185,6 @@ async function insertChatTurn(
   });
   const assistantMessageId = await ctx.db.insert("chatMessages", {
     chatSessionId: args.chatSessionId,
-    ...(args.sessionId ? { sessionId: args.sessionId } : {}),
     role: "assistant",
     content: args.assistantContent,
     createdAt: now + 1,
@@ -209,13 +206,8 @@ export const startChatTurn = internalMutation({
     if (!chatSession || chatSession.userId !== userId) {
       throw new Error("Chat session not found or access denied");
     }
-    const ideation = await ctx.db
-      .query("sessions")
-      .withIndex("by_file", (q) => q.eq("fileId", chatSession.fileId))
-      .first();
     const assistantMessageId = await insertChatTurn(ctx, {
       chatSessionId,
-      sessionId: ideation?._id,
       userContent,
       assistantContent: "",
       mentions,
@@ -236,18 +228,12 @@ export const patchChatMessage = internalMutation({
     if (!msg || msg.role !== "assistant") {
       throw new Error("Assistant message not found");
     }
-    if (msg.chatSessionId) {
-      const chatSession = await ctx.db.get(msg.chatSessionId);
-      if (!chatSession || chatSession.userId !== userId) {
-        throw new Error("Chat session not found or access denied");
-      }
-    } else if (msg.sessionId) {
-      const session = await ctx.db.get(msg.sessionId);
-      if (!session || session.userId !== userId) {
-        throw new Error("Session not found or access denied");
-      }
-    } else {
-      throw new Error("Chat message has no session");
+    if (!msg.chatSessionId) {
+      throw new Error("Chat message has no chat session");
+    }
+    const chatSession = await ctx.db.get(msg.chatSessionId);
+    if (!chatSession || chatSession.userId !== userId) {
+      throw new Error("Chat session not found or access denied");
     }
     await ctx.db.patch(messageId, { content });
     return null;

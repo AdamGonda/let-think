@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useRef } from "react";
+import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { SessionDataProvider } from "./contexts/SessionDataContext";
 import { AppUiProvider } from "./contexts/AppUiProvider";
@@ -24,28 +24,6 @@ export function AuthenticatedApp() {
   );
 }
 
-function useEnsureFilesMigrated() {
-  const ensureMigrated = useMutation(api.files.ensureMigrated);
-  const [done, setDone] = useState(false);
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        for (let i = 0; i < 40 && !cancelled; i++) {
-          const result = await ensureMigrated({});
-          if (result.done) break;
-        }
-      } finally {
-        if (!cancelled) setDone(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [ensureMigrated]);
-  return done;
-}
-
 function AppContent() {
   const activeSessionId = useAppUiSelector((s) => s.context.activeSessionId);
   const activeFileId = useAppUiSelector((s) => s.context.activeFileId);
@@ -54,15 +32,12 @@ function AppContent() {
   );
   const projectsWithSessions = useQuery(api.projects.listWithSessions);
   const { handleCreateSessionForFirstMessage } = useDefaultSessionSelection();
-  const filesMigrated = useEnsureFilesMigrated();
   useSessionEditorSync(activeSessionId, activeFileId, activeChatSessionId);
   useSessionAccentCssVars();
   const mainColumnWidth = useMainColumnWidth();
   const mainContentRef = useRef<HTMLDivElement>(null);
 
-  const workspace = filesMigrated
-    ? normalizeWorkspace(projectsWithSessions)
-    : undefined;
+  const workspace = normalizeWorkspace(projectsWithSessions);
 
   return (
     <>

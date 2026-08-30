@@ -1,6 +1,5 @@
 import { v } from "convex/values";
 import {
-  internalMutation,
   mutation,
   query,
   type MutationCtx,
@@ -143,7 +142,7 @@ export const getEditorFields = query({
       .first();
     return {
       draftInput: session?.draftInput ?? "",
-      thinkingNotes: file.thinkingNotes ?? session?.thinkingNotes ?? "",
+      thinkingNotes: file.thinkingNotes ?? "",
     };
   },
 });
@@ -204,98 +203,11 @@ export async function maybeTitleFileFromFirstGraphMessage(
   userContent: string,
 ) {
   const session = await ctx.db.get(sessionId);
-  if (!session || !userContent.trim()) return;
-  const defaultTitle =
-    session.title === "New file" || session.title === "New session";
-  if (session.fileId) {
-    const file = await ctx.db.get(session.fileId);
-    if (file && (file.title === "New file" || file.title === "New session")) {
-      await ctx.db.patch(session.fileId, {
-        title: titleFromFirstMessage(userContent),
-      });
-    }
-  } else if (defaultTitle) {
-    await ctx.db.patch(sessionId, { title: titleFromFirstMessage(userContent) });
-  }
-}
-
-const MIGRATE_BATCH = 25;
-
-/**
- * Backfill files + chatSessions for the signed-in user's unmigrated sessions.
- * Idempotent: sessions that already have fileId are skipped.
- */
-export const ensureMigrated = mutation({
-  args: {},
-  returns: v.object({ migrated: v.number(), done: v.boolean() }),
-  handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return { migrated: 0, done: true };
-    const sessions = await ctx.db
-      .query("sessions")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
-    const pending = sessions.filter((s) => s.fileId === undefined);
-    let migrated = 0;
-    for (const session of pending.slice(0, MIGRATE_BATCH)) {
-      await migrateOneSession(ctx, session._id);
-      migrated += 1;
-    }
-    return { migrated, done: pending.length <= MIGRATE_BATCH };
-  },
-});
-
-/** Admin/dev: migrate a single session by id (idempotent). */
-export const migrateSessionInternal = internalMutation({
-  args: { sessionId: v.id("sessions") },
-  returns: v.null(),
-  handler: async (ctx, { sessionId }) => {
-    await migrateOneSession(ctx, sessionId);
-    return null;
-  },
-});
-
-async function migrateOneSession(
-  ctx: MutationCtx,
-  sessionId: Id<"sessions">,
-) {
-  const session = await ctx.db.get(sessionId);
-  if (!session || !session.userId) return;
-  if (session.fileId) return;
-
-  const fileId = await ctx.db.insert("files", {
-    userId: session.userId,
-    projectId: session.projectId,
-    title: session.title,
-    createdAt: session.createdAt,
-    ...(session.thinkingNotes ? { thinkingNotes: session.thinkingNotes } : {}),
-  });
-  await ctx.db.patch(sessionId, { fileId });
-
-  const chatMessages = await ctx.db
-    .query("chatMessages")
-    .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
-    .collect();
-  if (chatMessages.length === 0) return;
-
-  chatMessages.sort((a, b) => a.createdAt - b.createdAt);
-  const firstUser = chatMessages.find(
-    (m) => m.role === "user" && m.content.trim(),
-  );
-  const chatTitle = firstUser
-    ? titleFromFirstMessage(firstUser.content)
-    : "Chat";
-  const chatSessionId = await ctx.db.insert("chatSessions", {
-    fileId,
-    userId: session.userId,
-    title: chatTitle,
-    createdAt: chatMessages[0]?.createdAt ?? session.createdAt,
-    ...(session.chatDraftInput
-      ? { draftInput: session.chatDraftInput }
-      : {}),
-  });
-  for (const msg of chatMessages) {
-    if (msg.chatSessionId) continue;
-    await ctx.db.patch(msg._id, { chatSessionId });
+  if (!session?.fileId || !userContent.trim()) return;
+  const file = await ctx.db.get(session.fileId);
+  if (file && (file.title === "New file" || file.title === "New session")) {
+    await ctx.db.patch(session.fileId, {
+      title: titleFromFirstMessage(userContent),
+    });
   }
 }
