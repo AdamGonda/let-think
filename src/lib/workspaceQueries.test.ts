@@ -8,6 +8,7 @@ import {
   firstFileByRecency,
   flattenFilesSorted,
   listFilesInWorkspace,
+  normalizeWorkspace,
 } from "./workspaceQueries";
 
 function file(
@@ -98,6 +99,20 @@ describe("findFileInWorkspace / findFileBySessionId", () => {
     expect(found?.projectName).toBe("Alpha");
     expect(found?.projectId).toBe(pid);
     expect(findFileBySessionId(ws, sid)?.file._id).toBe(fid);
+  });
+});
+
+describe("normalizeWorkspace", () => {
+  it("treats a missing files array as empty instead of throwing", () => {
+    const ws = [
+      { project: null },
+      { project: project("p1", "P", 1), files: [file("f1", 2, "s1")] },
+    ] as unknown as ProjectWithSessions[];
+    const normalized = normalizeWorkspace(ws);
+    expect(normalized?.[0]?.files).toEqual([]);
+    expect(findFileInWorkspace(ws, "f1" as Id<"files">)?.file._id).toBe("f1");
+    expect(flattenFilesSorted(ws).map((f) => f._id)).toEqual(["f1"]);
+    expect(() => buildWorkspaceSnapshot(ws)).not.toThrow();
   });
 });
 

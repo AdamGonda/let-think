@@ -158,7 +158,7 @@ export function NotesListPanel({
                       const cardKey = isInbox ? "inbox" : project._id;
                       const folderHasActiveFile =
                         activeFileId != null &&
-                        group.files.some((s) => s._id === activeFileId);
+                        (group.files ?? []).some((s) => s._id === activeFileId);
                       return (
                         <li key={cardKey}>
                           <ProjectSummaryCard
@@ -251,7 +251,7 @@ export function NotesListPanel({
                 {filteredDrillSessions.length === 0 ? (
                   <div className="py-12 text-center">
                     <p className="text-sm text-muted-foreground">
-                      {drillGroup.files.length === 0
+                      {(drillGroup.files ?? []).length === 0
                         ? "No files here yet."
                         : `Nothing matches "${searchQuery}"`}
                     </p>

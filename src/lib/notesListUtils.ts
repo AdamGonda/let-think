@@ -35,7 +35,7 @@ export function projectGroupMatchesQuery(
   q: string,
 ): boolean {
   if (groupDisplayName(group).toLowerCase().includes(q)) return true;
-  return group.files.some((s) => s.title.toLowerCase().includes(q));
+  return (group.files ?? []).some((s) => s.title.toLowerCase().includes(q));
 }
 
 export function resolveDrillGroup(

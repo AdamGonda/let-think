@@ -10,6 +10,7 @@ import { useMainColumnWidth } from "./hooks/useMainColumnWidth";
 import { AppUiSessionBridge } from "./bridge/AppUiSessionBridge";
 import { useSessionEditorSync } from "./hooks/useSessionEditorSync";
 import { useDefaultSessionSelection } from "./hooks/useDefaultSessionSelection";
+import { normalizeWorkspace } from "./lib/workspaceQueries";
 
 /**
  * Authenticated workspace (routes, session UI). Public marketing and sign-in live
@@ -59,7 +60,9 @@ function AppContent() {
   const mainColumnWidth = useMainColumnWidth();
   const mainContentRef = useRef<HTMLDivElement>(null);
 
-  const workspace = filesMigrated ? projectsWithSessions : undefined;
+  const workspace = filesMigrated
+    ? normalizeWorkspace(projectsWithSessions)
+    : undefined;
 
   return (
     <>

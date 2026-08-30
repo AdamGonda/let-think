@@ -39,7 +39,7 @@ export function useWorkspaceActions({
   const updateProjectName = useMutation(api.projects.updateName);
 
   const allFiles = useMemo(
-    () => workspace?.flatMap((g: ProjectWithSessions) => g.files) ?? [],
+    () => workspace?.flatMap((g: ProjectWithSessions) => g.files ?? []) ?? [],
     [workspace],
   );
 

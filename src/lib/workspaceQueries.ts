@@ -10,6 +10,21 @@ export type FileInWorkspaceContext = {
   projectId: Id<"projects"> | null;
 };
 
+/** Prod SPA once rendered while Convex still returned `{ sessions }` with no `files`. */
+function filesOf(g: ProjectWithSessions): WorkspaceFile[] {
+  return g.files ?? [];
+}
+
+export function normalizeWorkspace(
+  workspace: ProjectWithSessions[] | undefined,
+): ProjectWithSessions[] | undefined {
+  if (workspace === undefined) return undefined;
+  return workspace.map((g) => ({
+    project: g.project,
+    files: filesOf(g),
+  }));
+}
+
 export function listFilesInWorkspace(
   workspace: ProjectWithSessions[] | undefined,
 ): FileInWorkspaceContext[] {
@@ -18,7 +33,7 @@ export function listFilesInWorkspace(
   for (const g of workspace) {
     const projectName = g.project?.name ?? "Inbox";
     const projectId = g.project?._id ?? null;
-    for (const file of g.files) {
+    for (const file of filesOf(g)) {
       rows.push({ file, projectName, projectId });
     }
   }
@@ -28,7 +43,7 @@ export function listFilesInWorkspace(
 export function flattenFilesSorted(
   workspace: ProjectWithSessions[],
 ): WorkspaceFile[] {
-  return [...workspace.flatMap((g) => g.files)].sort(
+  return [...workspace.flatMap((g) => filesOf(g))].sort(
     (a, b) => b.createdAt - a.createdAt,
   );
 }
@@ -54,7 +69,7 @@ export function buildWorkspaceSnapshot(
   if (workspace === undefined) return null;
   const hasProjects = workspace.some((g) => g.project != null);
   const inboxGroup = workspace.find((g) => g.project == null);
-  const inboxEmpty = !inboxGroup || inboxGroup.files.length === 0;
+  const inboxEmpty = !inboxGroup || filesOf(inboxGroup).length === 0;
   const first = firstFileByRecency(workspace);
   return {
     inboxEmpty,
@@ -71,7 +86,7 @@ export function findFileInWorkspace(
 ): FileInWorkspaceContext | undefined {
   if (!workspace || !fileId) return undefined;
   for (const g of workspace) {
-    const f = g.files.find((x) => x._id === fileId);
+    const f = filesOf(g).find((x) => x._id === fileId);
     if (f) {
       return {
         file: f,
@@ -89,7 +104,7 @@ export function findFileBySessionId(
 ): FileInWorkspaceContext | undefined {
   if (!workspace || !sessionId) return undefined;
   for (const g of workspace) {
-    const f = g.files.find((x) => x.sessionId === sessionId);
+    const f = filesOf(g).find((x) => x.sessionId === sessionId);
     if (f) {
       return {
         file: f,

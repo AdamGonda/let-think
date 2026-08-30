@@ -49,7 +49,7 @@ export function ProjectSummaryCard({
   onDropSession,
 }: ProjectSummaryCardProps) {
   const title = groupDisplayName(group);
-  const files = group.files;
+  const files = group.files ?? [];
   const count = files.length;
   const fileCountLabel =
     count === 0
