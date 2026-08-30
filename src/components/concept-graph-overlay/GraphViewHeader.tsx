@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { layout } from "@/config";
 import { NoteBreadcrumb } from "@/components/navigation/NoteBreadcrumb";
 import { StepNavigator } from "@/components/navigation/StepNavigator";
+import { cn } from "@/lib/utils";
 import type { SessionView } from "@/machines/appUiTypes";
 
 type GraphViewHeaderProps = {
@@ -71,27 +72,13 @@ export function GraphViewHeader({
         )}
       </div>
       <div className="flex h-7 items-center justify-end gap-2 leading-none">
-        <Button
-          variant="outline"
-          size="icon-sm"
-          onClick={() => onSessionViewChange("chat")}
-          aria-pressed={chatOpen}
-          title="Chat view"
-          aria-label="Chat view"
+        <div
+          className={cn(
+            "relative flex size-7 shrink-0 items-center justify-center transition-opacity duration-75 ease-out motion-reduce:transition-none",
+            chatOpen && "pointer-events-none opacity-0",
+          )}
+          aria-hidden={chatOpen || undefined}
         >
-          <MessageSquare className="size-5" />
-        </Button>
-        <Button
-          variant="outline"
-          size="icon-sm"
-          onClick={() => onSessionViewChange("graph")}
-          aria-pressed={!chatOpen}
-          title="Graph view"
-          aria-label="Graph view"
-        >
-          <LayoutGrid className="size-5" />
-        </Button>
-        <div className="relative flex size-7 shrink-0 items-center justify-center">
           <Button
             variant="outline"
             size="icon-sm"
@@ -110,6 +97,43 @@ export function GraphViewHeader({
             />
           ) : null}
         </div>
+        <Button
+          variant="outline"
+          className="relative h-7 w-14 overflow-hidden rounded-[min(var(--radius-md),12px)] p-0 active:translate-y-0"
+          onClick={() => onSessionViewChange(chatOpen ? "graph" : "chat")}
+          title={chatOpen ? "Switch to graph view" : "Switch to chat view"}
+          aria-label={chatOpen ? "Switch to graph view" : "Switch to chat view"}
+        >
+          <span
+            aria-hidden
+            className={cn(
+              "pointer-events-none absolute inset-0 w-1/2 rounded-[inherit] bg-foreground/15 shadow-[inset_0_0_0_1px] shadow-foreground/40 transition-transform duration-75 ease-out motion-reduce:transition-none",
+              chatOpen ? "translate-x-full" : "translate-x-0",
+            )}
+          />
+          <span aria-hidden className="relative z-10 flex">
+            <span
+              className={cn(
+                "flex size-7 items-center justify-center transition-colors duration-75",
+                chatOpen ? "text-muted-foreground/55" : "text-foreground",
+              )}
+            >
+              <LayoutGrid
+                className={cn("size-4", !chatOpen && "fill-current")}
+              />
+            </span>
+            <span
+              className={cn(
+                "flex size-7 items-center justify-center transition-colors duration-75",
+                chatOpen ? "text-foreground" : "text-muted-foreground/55",
+              )}
+            >
+              <MessageSquare
+                className={cn("size-4", chatOpen && "fill-current")}
+              />
+            </span>
+          </span>
+        </Button>
         <Button
           variant="outline"
           size="icon-sm"

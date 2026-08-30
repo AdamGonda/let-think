@@ -19,31 +19,27 @@ const base = {
 afterEach(cleanup);
 
 describe("GraphViewHeader session view toggle", () => {
-  it("presses Graph and shows history; chat hides step nav and keeps history", () => {
+  it("toggles session view; chat hides step nav and keeps history in layout", () => {
     const { rerender, getByLabelText, queryByLabelText } = render(
       <GraphViewHeader {...base} sessionView="graph" />,
     );
-    expect(getByLabelText("Graph view").getAttribute("aria-pressed")).toBe("true");
-    expect(getByLabelText("Chat view").getAttribute("aria-pressed")).toBe("false");
-    expect((getByLabelText("Session history") as HTMLButtonElement).disabled).toBe(
-      false,
-    );
+    expect(getByLabelText("Switch to chat view")).toBeTruthy();
+    const history = getByLabelText("Session history");
+    expect((history as HTMLButtonElement).disabled).toBe(false);
+    expect(history.closest(".opacity-0")).toBeNull();
     expect(queryByLabelText("Previous step")).toBeTruthy();
 
-    fireEvent.click(getByLabelText("Chat view"));
+    fireEvent.click(getByLabelText("Switch to chat view"));
     expect(base.onSessionViewChange).toHaveBeenCalledWith("chat");
 
     rerender(<GraphViewHeader {...base} sessionView="chat" />);
-    expect(getByLabelText("Chat view").getAttribute("aria-pressed")).toBe("true");
-    expect(getByLabelText("Graph view").getAttribute("aria-pressed")).toBe(
-      "false",
-    );
-    expect(getByLabelText("Session history")).toBeTruthy();
+    expect(getByLabelText("Switch to graph view")).toBeTruthy();
+    expect(getByLabelText("Session history").closest(".opacity-0")).toBeTruthy();
     expect(queryByLabelText("New chat")).toBeNull();
     expect(queryByLabelText("Previous step")).toBeNull();
     expect(getByLabelText("Open file")).toBeTruthy();
 
-    fireEvent.click(getByLabelText("Graph view"));
+    fireEvent.click(getByLabelText("Switch to graph view"));
     expect(base.onSessionViewChange).toHaveBeenCalledWith("graph");
   });
 
