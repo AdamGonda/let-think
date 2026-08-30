@@ -70,7 +70,7 @@ export function NotesListPanel({
   const [confirmDeleteProjectId, setConfirmDeleteProjectId] =
     useState<Id<"projects"> | null>(null);
   const [dragOverProjectId, setDragOverProjectId] = useState<
-    Id<"projects"> | "inbox" | null
+    Id<"projects"> | null
   >(null);
   const sessionInputRef = useRef<HTMLInputElement>(null);
   const projectInputRef = useRef<HTMLInputElement>(null);
@@ -239,65 +239,6 @@ export function NotesListPanel({
 
             {drilled && drillGroup && (
               <>
-                <div className="mb-4 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
-                      dragOverProjectId === "inbox"
-                        ? "border-ring bg-muted/40 text-foreground"
-                        : "border-border/80 text-muted-foreground hover:bg-muted/15"
-                    }`}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.dataTransfer.dropEffect = "move";
-                      setDragOverProjectId("inbox");
-                    }}
-                    onDragLeave={() => setDragOverProjectId(null)}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      const sessionId = e.dataTransfer.getData(
-                        "text/plain",
-                      ) as Id<"sessions">;
-                      if (sessionId) {
-                        void handleMoveSession(sessionId, null);
-                      }
-                      setDragOverProjectId(null);
-                    }}
-                  >
-                    Move to Files
-                  </button>
-                  {rootFolders
-                    .filter((g) => g.project._id !== drillGroup.project?._id)
-                    .map((g) => (
-                      <button
-                        key={g.project._id}
-                        type="button"
-                        className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
-                          dragOverProjectId === g.project._id
-                            ? "border-ring bg-muted/40 text-foreground"
-                            : "border-border/80 text-muted-foreground hover:bg-muted/15"
-                        }`}
-                        onDragOver={(e) => {
-                          e.preventDefault();
-                          e.dataTransfer.dropEffect = "move";
-                          setDragOverProjectId(g.project._id);
-                        }}
-                        onDragLeave={() => setDragOverProjectId(null)}
-                        onDrop={(e) => {
-                          e.preventDefault();
-                          const sessionId = e.dataTransfer.getData(
-                            "text/plain",
-                          ) as Id<"sessions">;
-                          if (sessionId) {
-                            void handleMoveSession(sessionId, g.project._id);
-                          }
-                          setDragOverProjectId(null);
-                        }}
-                      >
-                        Move to {g.project.name}
-                      </button>
-                    ))}
-                </div>
                 {filteredDrillSessions.length === 0 ? (
                   <div className="py-12 text-center">
                     <p className="text-sm text-muted-foreground">
