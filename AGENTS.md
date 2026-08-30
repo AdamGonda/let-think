@@ -12,3 +12,5 @@ The authenticated workspace is gated by Google OAuth and a beta allowlist. Cloud
 Do not invent another login path. Do not commit `convex/devSeed.ts` or other throwaway seed files from that guide.
 
 That flow only unlocks the authenticated UI. Chat/AI still needs `GOOGLE_GENERATIVE_AI_API_KEY` on the Convex env.
+
+The same pointer is also an always-on project rule (`.cursor/rules/cloud-agent-auth.mdc`) and a repo skill (`.cursor/skills/agent-local-login/SKILL.md`) so Cloud Agents pick it up even when they skip this file.

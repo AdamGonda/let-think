@@ -1,0 +1,12 @@
+---
+description: Mint a local Convex Auth session before any Cloud Agent browser test of /app
+alwaysApply: true
+---
+
+# Cloud Agent local login
+
+The authenticated workspace is gated by Google OAuth and a beta allowlist. Cloud agents cannot complete Google sign-in.
+
+Before any browser or UI verification of `/app`, follow @docs/agent-local-login.md end to end against the anonymous local backend (`CONVEX_AGENT_MODE=anonymous`). Vite is on port `5173`.
+
+Do not invent another login path. Do not commit `convex/devSeed.ts` or other throwaway seed files from that guide. That flow only unlocks the authenticated UI; chat/AI still needs `GOOGLE_GENERATIVE_AI_API_KEY`.
