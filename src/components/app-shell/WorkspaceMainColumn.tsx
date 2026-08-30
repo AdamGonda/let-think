@@ -141,7 +141,15 @@ export function WorkspaceMainColumn({
         ref={mainContentRef}
         className="relative flex flex-1 min-h-0 flex-col"
       >
-        {layout.viewMode === "notesList" ? (
+        {/* Keep explorer mounted on graph so UserCard (and list state) do not remount — same as file overlay. */}
+        <div
+          className={clsx(
+            layout.viewMode === "notesList"
+              ? "flex min-h-0 flex-1 flex-col"
+              : "hidden",
+          )}
+          inert={layout.viewMode !== "notesList" ? true : undefined}
+        >
           <NotesListPanel
             workspace={workspace}
             activeSessionId={layout.activeSessionId}
@@ -151,12 +159,13 @@ export function WorkspaceMainColumn({
             onOpenNotesEditor={onSelectSessionFromNotesList}
             onRunTutorial={onRunTutorial}
           />
-        ) : (
+        </div>
+        {layout.viewMode === "graph" ? (
           <GraphSurfaceContainer
             workspace={workspace}
             activeSessionId={layout.activeSessionId}
           />
-        )}
+        ) : null}
       </div>
       {chatComposerVisible && (
         <Chat
