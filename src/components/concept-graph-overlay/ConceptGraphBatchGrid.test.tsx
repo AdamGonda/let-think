@@ -19,18 +19,10 @@ const base = {
 };
 
 describe("ConceptGraphBatchGrid", () => {
-  it("keeps the under-1024 2×3 grid when compactGrid is set", () => {
-    const { container, rerender } = render(<ConceptGraphBatchGrid {...base} />);
+  it("uses a 3-column grid on wide viewports", () => {
+    const { container } = render(<ConceptGraphBatchGrid {...base} />);
     expect((container.firstChild as HTMLElement).className).toContain(
       "lg:grid-cols-3",
-    );
-
-    rerender(<ConceptGraphBatchGrid {...base} compactGrid />);
-    expect((container.firstChild as HTMLElement).className).not.toContain(
-      "lg:grid-cols-3",
-    );
-    expect((container.firstChild as HTMLElement).className).toContain(
-      "sm:grid-cols-2",
     );
   });
 });

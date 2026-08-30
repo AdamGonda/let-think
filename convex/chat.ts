@@ -604,6 +604,7 @@ export const sendChat = action({
     selectedNodeContext: selectedNodeContextValidator,
     mentions: mentionSpanValidator,
   },
+  returns: v.object({ content: v.string() }),
   handler: async (
     ctx,
     { sessionId, userContent, selectedNodeContext, mentions }
@@ -630,28 +631,61 @@ export const sendChat = action({
       { role: "user" as const, content: userContent },
     ]);
 
+    const { assistantMessageId } = await ctx.runMutation(
+      internal.sessions.startChatTurn,
+      { sessionId, userId, userContent, mentions },
+    );
+
     let generationUsage: GenerationUsageMetrics = {
       inputTokens: null,
       outputTokens: null,
       totalTokens: null,
     };
-    const result = await generateText({
+    const streamResult = streamText({
       model: google(modelConfig.mainContextGraphModel),
-      system: "You are a helpful assistant.",
+      system:
+        "You are a helpful assistant. Format replies in Markdown (headings, lists, bold, and code when useful).",
       messages: modelMessages,
+      onFinish: ({ usage }) => {
+        generationUsage = {
+          inputTokens: coerceFiniteNumber(usage?.inputTokens),
+          outputTokens: coerceFiniteNumber(usage?.outputTokens),
+          totalTokens: coerceFiniteNumber(usage?.totalTokens),
+        };
+      },
     });
-    generationUsage = {
-      inputTokens: coerceFiniteNumber(result.usage?.inputTokens),
-      outputTokens: coerceFiniteNumber(result.usage?.outputTokens),
-      totalTokens: coerceFiniteNumber(result.usage?.totalTokens),
-    };
-    const content = result.text.trim();
 
-    await ctx.runMutation(api.sessions.addChatMessages, {
-      sessionId,
-      userContent,
-      assistantContent: content,
-      mentions,
+    let displayText = "";
+    let lastFlushAt = 0;
+    const STREAM_FLUSH_MS = 50;
+    const flushAssistant = async () => {
+      await ctx.runMutation(internal.sessions.patchChatMessage, {
+        messageId: assistantMessageId,
+        userId,
+        content: displayText,
+      });
+      lastFlushAt = Date.now();
+    };
+
+    try {
+      for await (const textPart of streamResult.textStream) {
+        displayText += textPart;
+        if (Date.now() - lastFlushAt >= STREAM_FLUSH_MS) {
+          await flushAssistant();
+        }
+      }
+    } catch (err) {
+      if (!displayText.trim()) {
+        displayText = "Something went wrong. Please try again.";
+        await flushAssistant();
+      }
+      throw err;
+    }
+    const content = displayText.trim();
+    await ctx.runMutation(internal.sessions.patchChatMessage, {
+      messageId: assistantMessageId,
+      userId,
+      content,
     });
 
     console.info(

@@ -36,8 +36,8 @@ const base = {
   onProjectNameClick: vi.fn(),
 };
 
-describe("AppContentGraphSurface split layout", () => {
-  it("keeps the graph visible when the chat panel is open", () => {
+describe("AppContentGraphSurface session views", () => {
+  it("swaps graph for a full chat view", () => {
     const { getByTestId, queryByTestId, rerender } = render(
       <AppContentGraphSurface {...base} sessionView="graph" />,
     );
@@ -47,14 +47,9 @@ describe("AppContentGraphSurface split layout", () => {
     expect(queryByTestId("chat-composer")).toBeNull();
 
     rerender(<AppContentGraphSurface {...base} sessionView="chat" />);
-    const graph = getByTestId("graph-cards");
-    const chat = getByTestId("chat-thread");
-    expect(graph).toBeTruthy();
-    expect(getByTestId("graph-composer")).toBeTruthy();
-    expect(chat).toBeTruthy();
+    expect(queryByTestId("graph-cards")).toBeNull();
+    expect(queryByTestId("graph-composer")).toBeNull();
+    expect(getByTestId("chat-thread")).toBeTruthy();
     expect(getByTestId("chat-composer")).toBeTruthy();
-    expect(
-      graph.compareDocumentPosition(chat) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy();
   });
 });

@@ -3,7 +3,7 @@ import type { NotesListDrill } from "../lib/notesListUtils";
 
 export type SurfaceMode = "graph" | "notesList";
 
-/** Graph-only vs graph with the chat panel open on the left. */
+/** Concept cards vs classic chat thread, while the session surface is open. */
 export type SessionView = "graph" | "chat";
 
 export type AppUiContext = {
@@ -46,7 +46,7 @@ export type AppUiContext = {
   hasEverHadSessionSelection: boolean;
   /** Mirrors `surface` parallel state for guards that only receive `context`. */
   surfaceMode: SurfaceMode;
-  /** Graph-only vs graph + left chat panel (orthogonal to Files). */
+  /** Graph cards vs chat thread (orthogonal to Files). */
   sessionView: SessionView;
   /** Monotonic token for sidebar collapse (legacy; no longer incremented on editor open). */
   sidebarCollapseRequestSeq: number;

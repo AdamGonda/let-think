@@ -1,15 +1,21 @@
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef } from "react";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { CHAT_MESSAGES_PAGE_SIZE } from "@/config";
+import { CHAT_MESSAGES_PAGE_SIZE, layout } from "@/config";
 import { useSessionData } from "@/contexts/SessionDataContext";
 import { renderContentWithMentions } from "@/lib/chatHistoryRender";
+import { renderChatMarkdown } from "@/lib/chatMarkdown";
 import { ConceptGraphEmptyState } from "@/components/concept-graph-overlay/ConceptGraphEmptyState";
 import { clsx } from "clsx";
 
 type SessionChatThreadProps = {
   isLoading: boolean;
 };
+
+function ChatMarkdown({ content }: { content: string }) {
+  const html = useMemo(() => renderChatMarkdown(content), [content]);
+  return <div className="chat-md" dangerouslySetInnerHTML={{ __html: html }} />;
+}
 
 export function SessionChatThread({ isLoading }: SessionChatThreadProps) {
   const {
@@ -19,8 +25,11 @@ export function SessionChatThread({ isLoading }: SessionChatThreadProps) {
     chatMessagesLoading,
   } = useSessionData();
   const scrollerRef = useRef<HTMLDivElement | null>(null);
-  const lastMessageKey =
-    chatMessages.at(-1)?._id ?? chatMessages.at(-1)?.content;
+  const lastMessage = chatMessages.at(-1);
+  const lastMessageKey = `${lastMessage?._id ?? ""}:${lastMessage?.content ?? ""}`;
+  const showThinking =
+    isLoading &&
+    !(lastMessage?.role === "assistant" && lastMessage.content.trim());
 
   useLayoutEffect(() => {
     const el = scrollerRef.current;
@@ -40,7 +49,10 @@ export function SessionChatThread({ isLoading }: SessionChatThreadProps) {
       ) : (
         <div
           ref={scrollerRef}
-          className="mx-auto flex w-full flex-1 min-h-0 flex-col overflow-y-auto px-3 py-3"
+          className={clsx(
+            "mx-auto flex w-full flex-1 min-h-0 flex-col overflow-y-auto px-4 py-4",
+            layout.mainColumnMaxWidthClass,
+          )}
         >
           {canLoadOlderChatMessages ? (
             <div className="flex justify-center pb-4">
@@ -57,32 +69,35 @@ export function SessionChatThread({ isLoading }: SessionChatThreadProps) {
           ) : null}
           <ul className="mt-auto flex flex-col gap-3 list-none p-0 m-0">
             {chatMessages.map((msg, index) => {
-                      const key = msg._id ?? `msg-${index}`;
+              const key = msg._id ?? `msg-${index}`;
               const isUser = msg.role === "user";
+              if (!isUser && !msg.content.trim()) return null;
               return (
                 <li
                   key={key}
                   className={clsx(
                     "max-w-[min(100%,36rem)]",
-                    isUser ? "ml-auto" : "mr-auto",
+                    isUser ? "ml-auto" : "mr-auto w-full",
                   )}
                 >
                   <div
                     className={clsx(
-                      "px-4 py-3 text-[0.95rem] leading-relaxed whitespace-pre-wrap break-words",
+                      "px-4 py-3 text-[0.95rem] leading-relaxed break-words",
                       isUser
-                        ? "rounded-2xl rounded-tr-md bg-muted text-foreground border border-border"
+                        ? "rounded-2xl rounded-tr-md bg-muted text-foreground border border-border whitespace-pre-wrap"
                         : "text-foreground",
                     )}
                   >
-                    {msg.content.trim()
-                      ? renderContentWithMentions(msg.content, msg.mentions)
-                      : null}
+                    {isUser ? (
+                      renderContentWithMentions(msg.content, msg.mentions)
+                    ) : (
+                      <ChatMarkdown content={msg.content} />
+                    )}
                   </div>
                 </li>
               );
             })}
-            {isLoading ? (
+            {showThinking ? (
               <li className="mr-auto max-w-[min(100%,36rem)]">
                 <div
                   className="flex items-center gap-2 px-4 py-3 text-muted-foreground"

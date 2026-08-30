@@ -611,3 +611,83 @@ body {
 .dark .driver-popover-arrow {
   border-color: var(--popover) !important;
 }
+
+/* Assistant chat replies — compact markdown that matches bubble type */
+.chat-md {
+  font-size: 0.95rem;
+  line-height: 1.625;
+  overflow-wrap: anywhere;
+}
+.chat-md > :first-child {
+  margin-top: 0;
+}
+.chat-md > :last-child {
+  margin-bottom: 0;
+}
+.chat-md h1,
+.chat-md h2,
+.chat-md h3,
+.chat-md h4 {
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 0.9em 0 0.35em;
+}
+.chat-md h1 {
+  font-size: 1.15em;
+}
+.chat-md h2 {
+  font-size: 1.08em;
+}
+.chat-md h3,
+.chat-md h4 {
+  font-size: 1.02em;
+}
+.chat-md p {
+  margin: 0.55em 0;
+}
+.chat-md ul,
+.chat-md ol {
+  margin: 0.4em 0;
+  padding-left: 1.35em;
+}
+.chat-md li {
+  margin: 0.2em 0;
+}
+.chat-md li > p {
+  margin: 0.2em 0;
+}
+.chat-md strong {
+  font-weight: 650;
+}
+.chat-md a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.chat-md code {
+  font-size: 0.88em;
+  background: var(--muted);
+  padding: 0.1em 0.35em;
+  border-radius: 0.25rem;
+}
+.chat-md pre {
+  background: var(--muted);
+  padding: 0.75em 0.9em;
+  border-radius: 0.5rem;
+  overflow-x: auto;
+  margin: 0.65em 0;
+}
+.chat-md pre code {
+  background: none;
+  padding: 0;
+}
+.chat-md blockquote {
+  border-left: 2px solid var(--border);
+  padding-left: 0.8em;
+  color: var(--muted-foreground);
+  margin: 0.55em 0;
+}
+.chat-md hr {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 0.9em 0;
+}

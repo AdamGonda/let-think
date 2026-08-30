@@ -263,20 +263,62 @@ export const addMessages = mutation({
         userContent,
       });
     }
-    const session = await ctx.db.get(sessionId);
-    if (
-      (session?.title === "New file" || session?.title === "New session") &&
-      userContent.trim()
-    ) {
-      const title =
-        userContent.slice(0, SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS) +
-        (userContent.length > SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS
-          ? "…"
-          : "");
-      await ctx.db.patch(sessionId, { title });
-    }
+    await maybeTitleFromFirstUserMessage(ctx, sessionId, userContent);
   },
 });
+
+async function maybeTitleFromFirstUserMessage(
+  ctx: MutationCtx,
+  sessionId: Id<"sessions">,
+  userContent: string,
+) {
+  const session = await ctx.db.get(sessionId);
+  if (
+    (session?.title === "New file" || session?.title === "New session") &&
+    userContent.trim()
+  ) {
+    const title =
+      userContent.slice(0, SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS) +
+      (userContent.length > SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS
+        ? "…"
+        : "");
+    await ctx.db.patch(sessionId, { title });
+  }
+}
+
+async function insertChatTurn(
+  ctx: MutationCtx,
+  args: {
+    sessionId: Id<"sessions">;
+    userContent: string;
+    assistantContent: string;
+    mentions?: Array<{
+      start: number;
+      end: number;
+      conceptId: string;
+      name: string;
+    }>;
+  },
+): Promise<Id<"chatMessages">> {
+  const now = Date.now();
+  await ctx.db.insert("chatMessages", {
+    sessionId: args.sessionId,
+    role: "user",
+    content: args.userContent,
+    createdAt: now,
+    ...(args.mentions && args.mentions.length > 0
+      ? { mentions: args.mentions }
+      : {}),
+  });
+  const assistantMessageId = await ctx.db.insert("chatMessages", {
+    sessionId: args.sessionId,
+    role: "assistant",
+    content: args.assistantContent,
+    createdAt: now + 1,
+  });
+  await maybeTitleFromFirstUserMessage(ctx, args.sessionId, args.userContent);
+  return assistantMessageId;
+}
 
 export const addChatMessages = mutation({
   args: {
@@ -290,32 +332,57 @@ export const addChatMessages = mutation({
     { sessionId, userContent, assistantContent, mentions }
   ): Promise<void> => {
     await requireSessionOwner(ctx, sessionId);
-    const now = Date.now();
-    await ctx.db.insert("chatMessages", {
+    await insertChatTurn(ctx, {
       sessionId,
-      role: "user",
-      content: userContent,
-      createdAt: now,
-      ...(mentions && mentions.length > 0 ? { mentions } : {}),
+      userContent,
+      assistantContent,
+      mentions,
     });
-    await ctx.db.insert("chatMessages", {
-      sessionId,
-      role: "assistant",
-      content: assistantContent,
-      createdAt: now + 1,
-    });
+  },
+});
+
+/** Insert the user turn plus an empty assistant row so the client can stream into it. */
+export const startChatTurn = internalMutation({
+  args: {
+    sessionId: v.id("sessions"),
+    userId: v.id("users"),
+    userContent: v.string(),
+    mentions: mentionValidator,
+  },
+  returns: v.object({ assistantMessageId: v.id("chatMessages") }),
+  handler: async (ctx, { sessionId, userId, userContent, mentions }) => {
     const session = await ctx.db.get(sessionId);
-    if (
-      (session?.title === "New file" || session?.title === "New session") &&
-      userContent.trim()
-    ) {
-      const title =
-        userContent.slice(0, SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS) +
-        (userContent.length > SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS
-          ? "…"
-          : "");
-      await ctx.db.patch(sessionId, { title });
+    if (!session || session.userId !== userId) {
+      throw new Error("Session not found or access denied");
     }
+    const assistantMessageId = await insertChatTurn(ctx, {
+      sessionId,
+      userContent,
+      assistantContent: "",
+      mentions,
+    });
+    return { assistantMessageId };
+  },
+});
+
+export const patchChatMessage = internalMutation({
+  args: {
+    messageId: v.id("chatMessages"),
+    userId: v.id("users"),
+    content: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, { messageId, userId, content }) => {
+    const msg = await ctx.db.get(messageId);
+    if (!msg || msg.role !== "assistant") {
+      throw new Error("Assistant message not found");
+    }
+    const session = await ctx.db.get(msg.sessionId);
+    if (!session || session.userId !== userId) {
+      throw new Error("Session not found or access denied");
+    }
+    await ctx.db.patch(messageId, { content });
+    return null;
   },
 });
 

@@ -1,4 +1,4 @@
-import { FileText, History, MessageSquare } from "lucide-react";
+import { FileText, History, LayoutGrid, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { layout } from "@/config";
 import { NoteBreadcrumb } from "@/components/navigation/NoteBreadcrumb";
@@ -45,7 +45,8 @@ export function GraphViewHeader({
       ? sessionTitle.trim()
       : "Loading…";
   const chatOpen = sessionView === "chat";
-  const historyDisabled = !hasChatHistory || isHistoryButtonDisabled;
+  const historyDisabled =
+    chatOpen || !hasChatHistory || isHistoryButtonDisabled;
 
   return (
     <header className={layout.workspaceTopBarClass}>
@@ -61,23 +62,35 @@ export function GraphViewHeader({
         ) : null}
       </div>
       <div className="flex justify-center">
-        <StepNavigator
-          totalSteps={batchCount}
-          selectedIndex={selectedBatchIndex}
-          onSelect={onSelectBatch}
-          isDisabled={isBatchNavigationDisabled}
-        />
+        {chatOpen ? null : (
+          <StepNavigator
+            totalSteps={batchCount}
+            selectedIndex={selectedBatchIndex}
+            onSelect={onSelectBatch}
+            isDisabled={isBatchNavigationDisabled}
+          />
+        )}
       </div>
       <div className="flex h-7 items-center justify-end gap-2 leading-none">
         <Button
           variant="outline"
           size="icon-sm"
-          onClick={() => onSessionViewChange(chatOpen ? "graph" : "chat")}
+          onClick={() => onSessionViewChange("chat")}
           aria-pressed={chatOpen}
-          title="Chat panel"
+          title="Chat view"
           aria-label="Chat view"
         >
           <MessageSquare className="size-5" />
+        </Button>
+        <Button
+          variant="outline"
+          size="icon-sm"
+          onClick={() => onSessionViewChange("graph")}
+          aria-pressed={!chatOpen}
+          title="Graph view"
+          aria-label="Graph view"
+        >
+          <LayoutGrid className="size-5" />
         </Button>
         <div className="relative flex size-7 shrink-0 items-center justify-center">
           <Button

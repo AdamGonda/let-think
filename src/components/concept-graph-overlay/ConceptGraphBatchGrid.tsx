@@ -21,8 +21,6 @@ type ConceptGraphBatchGridProps = {
   onReferenceClick?: (conceptNumber: number) => void;
   onCopyClick?: (node: GraphNode) => void;
   onAnimationEnd: () => void;
-  /** Match the ≤1024 (2×3) grid even on wide viewports — used when the chat pane is open. */
-  compactGrid?: boolean;
 };
 
 export function ConceptGraphBatchGrid({
@@ -42,7 +40,6 @@ export function ConceptGraphBatchGrid({
   onReferenceClick,
   onCopyClick,
   onAnimationEnd,
-  compactGrid = false,
 }: ConceptGraphBatchGridProps) {
   const renderNodeCard = (
     item: ConceptGraphNodeItem,
@@ -78,8 +75,7 @@ export function ConceptGraphBatchGrid({
   return (
     <div
       className={clsx(
-        "grid h-full min-h-full min-w-0 w-full grid-cols-1 grid-rows-6 gap-6 p-4 sm:grid-cols-2 sm:grid-rows-3",
-        !compactGrid && "lg:grid-cols-3 lg:grid-rows-2",
+        "grid h-full min-h-full min-w-0 w-full grid-cols-1 grid-rows-6 gap-6 p-4 sm:grid-cols-2 sm:grid-rows-3 lg:grid-cols-3 lg:grid-rows-2",
         showSwipeAnimation &&
           (swipeDirection === "right"
             ? "animate-batch-swipe-right"

@@ -99,9 +99,11 @@ export function Chat({
         mentions: mentions.length > 0 ? mentions : undefined,
       };
       if (sendLane === "chat") {
+        setInput("");
         await sendChatMessage(payload);
       } else {
         await sendGraphMessage(payload);
+        setInput("");
       }
       posthog.capture("message_sent", {
         session_id: effectiveSessionId,
@@ -110,7 +112,6 @@ export function Chat({
         concept_reference_count: referencedConcepts.length,
         is_new_session: !!createdViaCallback,
       });
-      setInput("");
       setIsLoading(false);
     } catch (err) {
       console.error("Chat error:", err);
@@ -155,7 +156,6 @@ export function Chat({
       onSubmit={handleSubmit}
       autoFocus={autoFocus}
       listenForFocusEvent={listenForFocusEvent}
-      chrome={sendLane === "chat" ? "dock" : "island"}
     />
   );
 }

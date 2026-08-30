@@ -66,27 +66,32 @@ export function AppContentGraphSurface({
   const chatOpen = sessionView === "chat";
 
   return (
-    <div className="flex min-h-0 flex-1">
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
-        {activeSessionId && (
-          <GraphViewHeader
-            projectName={activeProjectName}
-            sessionTitle={activeSessionTitle}
-            batchCount={batchesLength}
-            selectedBatchIndex={selectedBatchIndex}
-            onSelectBatch={onSelectBatch}
-            isBatchNavigationDisabled={chatLoading}
-            isSessionTitleDisabled={chatLoading}
-            isHistoryButtonDisabled={chatLoading}
-            hasChatHistory={hasChatHistory}
-            sessionView={sessionView}
-            onSessionViewChange={onSessionViewChange}
-            onHistoryOpen={onHistoryOpen}
-            onEditorOpen={onEditorOpen}
-            onProjectsRootClick={onProjectsRootClick}
-            onProjectNameClick={onProjectNameClick}
-          />
-        )}
+    <div className="flex min-h-0 flex-1 flex-col">
+      {activeSessionId && (
+        <GraphViewHeader
+          projectName={activeProjectName}
+          sessionTitle={activeSessionTitle}
+          batchCount={batchesLength}
+          selectedBatchIndex={selectedBatchIndex}
+          onSelectBatch={onSelectBatch}
+          isBatchNavigationDisabled={chatLoading}
+          isSessionTitleDisabled={chatLoading}
+          isHistoryButtonDisabled={chatLoading}
+          hasChatHistory={hasChatHistory}
+          sessionView={sessionView}
+          onSessionViewChange={onSessionViewChange}
+          onHistoryOpen={onHistoryOpen}
+          onEditorOpen={onEditorOpen}
+          onProjectsRootClick={onProjectsRootClick}
+          onProjectNameClick={onProjectNameClick}
+        />
+      )}
+      {chatOpen ? (
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          <SessionChatThread isLoading={chatThreadLoading} />
+          {chatComposer}
+        </div>
+      ) : (
         <div className="relative flex min-h-0 flex-1 flex-col">
           {sessionPastFrame ? (
             <div
@@ -118,21 +123,11 @@ export function AppContentGraphSurface({
               referencedConceptIds={referencedConceptIds}
               onCardReferenceClick={chatVisible ? onCardReferenceClick : undefined}
               onConceptCopy={chatVisible ? onConceptCopy : undefined}
-              compactGrid={chatOpen}
             />
           </div>
           {graphComposer}
         </div>
-      </div>
-      {chatOpen ? (
-        <aside
-          className="flex w-[min(28rem,40%)] shrink-0 min-h-0 min-w-[16rem] flex-col border-l border-border bg-background"
-          data-tour="chat-thread"
-        >
-          <SessionChatThread isLoading={chatThreadLoading} />
-          {chatComposer}
-        </aside>
-      ) : null}
+      )}
     </div>
   );
 }
