@@ -354,31 +354,14 @@
 
 }
 
-/* Wake up overlay – dissolve in / out */
-@keyframes wake-up-dissolve-in {
-  from {
-    opacity: 0;
-    transform: scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
+/* File overlay – fade out only (open is instant; no scale-up) */
 @keyframes wake-up-dissolve-out {
   from {
     opacity: 1;
-    transform: scale(1);
   }
   to {
     opacity: 0;
-    transform: scale(0.99);
   }
-}
-
-.animate-wake-up-in {
-  animation: wake-up-dissolve-in 0.4s cubic-bezier(0.32, 0.72, 0, 1) both;
 }
 
 .animate-wake-up-out {

@@ -66,7 +66,7 @@ export function WakeUpOverlay({
   return (
     <div
       className={`fixed inset-0 ${layout.wakeUpOverlayZIndexClass} flex h-screen w-screen flex-col bg-background ${
-        isExitingOverlay ? "animate-wake-up-out" : "animate-wake-up-in"
+        isExitingOverlay ? "animate-wake-up-out" : ""
       }`}
       aria-busy={chatLoading}
       aria-live="polite"
@@ -114,30 +114,24 @@ export function WakeUpOverlay({
         {activeSessionId && (
           <div className="flex-1 min-h-0 flex flex-col items-stretch justify-start overflow-hidden px-6 pb-8">
             <div
-              className={`relative flex min-h-0 w-full flex-1 flex-col justify-start overflow-hidden transition-opacity duration-150 ${
-                editorRevealReady ? "opacity-100" : "opacity-0"
-              }`}
+              className={`relative mx-auto flex w-full min-h-0 flex-1 flex-col justify-start ${layout.mainColumnMaxWidthClass}`}
             >
-              <div
-                className={`relative mx-auto flex w-full min-h-0 flex-1 flex-col justify-start ${layout.mainColumnMaxWidthClass}`}
-              >
-                <MarkdownEditor
-                  value={notes}
-                  onChange={handleEditorChange}
-                  selectionRange={notesSelectionRange}
-                  placeholder="Let's build out your idea..."
-                  variant="focused"
-                  dark={true}
-                  autoFocus
-                  autoFocusEnd
-                />
-                <MainColumnWidthHandle
-                  width={mainColumnWidth}
-                  min={mainColumnWidthMin}
-                  max={mainColumnWidthMax}
-                  onWidthChange={onMainColumnWidthChange}
-                />
-              </div>
+              <MarkdownEditor
+                value={notes}
+                onChange={handleEditorChange}
+                selectionRange={notesSelectionRange}
+                placeholder="Let's build out your idea..."
+                variant="focused"
+                dark={true}
+                autoFocus
+                autoFocusEnd
+              />
+              <MainColumnWidthHandle
+                width={mainColumnWidth}
+                min={mainColumnWidthMin}
+                max={mainColumnWidthMax}
+                onWidthChange={onMainColumnWidthChange}
+              />
             </div>
           </div>
         )}
