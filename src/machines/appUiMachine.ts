@@ -1,6 +1,6 @@
 import { assign, enqueueActions, raise, setup } from "xstate";
 import { timings } from "@/config";
-import type { AppUiContext, AppUiEvent, SurfaceMode } from "./appUiTypes";
+import type { AppUiContext, AppUiEvent, SessionView, SurfaceMode } from "./appUiTypes";
 import {
   reduceBatchesLengthChanged,
   reduceChatHistoryMeta,
@@ -66,6 +66,7 @@ export const appUiMachine = setup({
     }),
     sessionCleared: assign({
       chatLoading: false,
+      chatThreadLoading: false,
       graphShowLoadingCards: false,
       graphInteractionBlocked: false,
       graphLatestBatchNodeCount: 0,
@@ -108,6 +109,7 @@ export const appUiMachine = setup({
       activeProjectId: () => null,
       prevBatchesLength: () => 0,
       chatLoading: () => false,
+      chatThreadLoading: () => false,
       graphLoadingStartBatchLength: () => 0,
       graphShowLoadingCards: () => false,
       graphInteractionBlocked: () => false,
@@ -149,6 +151,12 @@ export const appUiMachine = setup({
         return event.value;
       },
     }),
+    setChatDraftInput: assign({
+      chatDraftInput: ({ event }) => {
+        if (event.type !== "CHAT_DRAFT_INPUT_SET") return "";
+        return event.value;
+      },
+    }),
     setNotes: assign({
       notes: ({ event }) => {
         if (event.type !== "NOTES_SET") return "";
@@ -156,6 +164,8 @@ export const appUiMachine = setup({
       },
     }),
     startChatLoading: assign({ chatLoading: true }),
+    startChatThreadLoading: assign({ chatThreadLoading: true }),
+    endChatThreadLoading: assign({ chatThreadLoading: false }),
     startGraphLoading: assign(({ context }) => ({
       graphLoadingStartBatchLength: context.prevBatchesLength,
       graphShowLoadingCards: true,
@@ -185,6 +195,14 @@ export const appUiMachine = setup({
     assignEditorOpenTrue: assign({ editorOpen: true }),
     assignSurfaceModeNotesList: assign({ surfaceMode: "notesList" }),
     assignSurfaceModeGraph: assign({ surfaceMode: "graph" }),
+    assignSessionView: assign(({ event, context }) => {
+      if (event.type !== "SESSION_VIEW_SET") return {};
+      return {
+        sessionView: event.view,
+        historyPanelOpen:
+          event.view === "chat" ? false : context.historyPanelOpen,
+      };
+    }),
     raiseExitWakeUp: raise({ type: "USER_EXIT_WAKE_UP" }),
     assignNotesListDrillForOpenNotesIntent: assign(({ context }) => {
       if (context.activeProjectId != null) {
@@ -256,8 +274,10 @@ export const appUiMachine = setup({
       selectedBatchIndex: inp?.selectedBatchIndex ?? 0,
       prevBatchesLength: inp?.prevBatchesLength ?? 0,
       draftInput: inp?.draftInput ?? "",
+      chatDraftInput: inp?.chatDraftInput ?? "",
       notes: inp?.notes ?? "",
       chatLoading: false,
+      chatThreadLoading: false,
       graphLoadingStartBatchLength: 0,
       graphLoadingCardSlots: inp?.graphLoadingCardSlots ?? 6,
       graphShowLoadingCards: false,
@@ -271,6 +291,7 @@ export const appUiMachine = setup({
       messagesLoading: false,
       hasEverHadSessionSelection: inp?.hasEverHadSessionSelection ?? false,
       surfaceMode: inp?.surfaceMode ?? "notesList",
+      sessionView: inp?.sessionView ?? "graph",
       sidebarCollapseRequestSeq: inp?.sidebarCollapseRequestSeq ?? 0,
       sidebarCollapseImmediateSeq: inp?.sidebarCollapseImmediateSeq ?? 0,
     };
@@ -299,6 +320,15 @@ export const appUiMachine = setup({
     DRAFT_INPUT_SET: {
       actions: "setDraftInput",
     },
+    CHAT_DRAFT_INPUT_SET: {
+      actions: "setChatDraftInput",
+    },
+    CHAT_THREAD_LOADING_START: {
+      actions: "startChatThreadLoading",
+    },
+    CHAT_THREAD_LOADING_END: {
+      actions: "endChatThreadLoading",
+    },
     NOTES_SET: {
       actions: "setNotes",
     },
@@ -314,6 +344,9 @@ export const appUiMachine = setup({
         target: ".surface.graph",
       },
     ],
+    SESSION_VIEW_SET: {
+      actions: "assignSessionView",
+    },
     CHAT_HISTORY_META: {
       actions: "syncChatHistoryMeta",
     },
@@ -602,6 +635,10 @@ export function selectGraphReferenceFreezeActive(
 
 export function selectSurface(snapshot: MachineSnapshot): SurfaceMode {
   return surfaceState(snapshot);
+}
+
+export function selectSessionView(snapshot: MachineSnapshot): SessionView {
+  return snapshot.context.sessionView;
 }
 
 /** General collapse signal token for UI elements that should close together. */

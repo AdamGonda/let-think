@@ -80,12 +80,27 @@ async function requireSessionOwner(ctx: MutationCtx, sessionId: Id<"sessions">) 
   return session;
 }
 
-async function deleteConceptGraphRow(ctx: MutationCtx, sessionId: Id<"sessions">) {
-  const row = await ctx.db
-    .query("sessionConceptGraphs")
+async function deleteRowsBySession(
+  ctx: MutationCtx,
+  table: "messages" | "chatMessages" | "sessionConceptGraphs",
+  sessionId: Id<"sessions">,
+) {
+  const rows = await ctx.db
+    .query(table)
     .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
-    .first();
-  if (row) await ctx.db.delete(row._id);
+    .collect();
+  for (const row of rows) {
+    await ctx.db.delete(row._id);
+  }
+}
+
+export async function deleteSessionOwnedRows(
+  ctx: MutationCtx,
+  sessionId: Id<"sessions">,
+) {
+  await deleteRowsBySession(ctx, "messages", sessionId);
+  await deleteRowsBySession(ctx, "chatMessages", sessionId);
+  await deleteRowsBySession(ctx, "sessionConceptGraphs", sessionId);
 }
 
 export const updateTitle = mutation({
@@ -119,14 +134,7 @@ export const remove = mutation({
   args: { id: v.id("sessions") },
   handler: async (ctx, { id }) => {
     await requireSessionOwner(ctx, id);
-    const messages = await ctx.db
-      .query("messages")
-      .withIndex("by_session", (q) => q.eq("sessionId", id))
-      .collect();
-    for (const msg of messages) {
-      await ctx.db.delete(msg._id);
-    }
-    await deleteConceptGraphRow(ctx, id);
+    await deleteSessionOwnedRows(ctx, id);
     await ctx.db.delete(id);
   },
 });
@@ -171,6 +179,30 @@ export const listMessagesPaginated = query({
     }
     return await ctx.db
       .query("messages")
+      .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+      .order("desc")
+      .paginate(paginationOpts);
+  },
+});
+
+const emptyMessagePage = {
+  page: [],
+  isDone: true,
+  continueCursor: "",
+};
+
+export const listChatMessagesPaginated = query({
+  args: {
+    sessionId: v.id("sessions"),
+    paginationOpts: paginationOptsValidator,
+  },
+  handler: async (ctx, { sessionId, paginationOpts }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return emptyMessagePage;
+    const session = await ctx.db.get(sessionId);
+    if (!session || session.userId !== userId) return emptyMessagePage;
+    return await ctx.db
+      .query("chatMessages")
       .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
       .order("desc")
       .paginate(paginationOpts);
@@ -231,6 +263,47 @@ export const addMessages = mutation({
         userContent,
       });
     }
+    const session = await ctx.db.get(sessionId);
+    if (
+      (session?.title === "New file" || session?.title === "New session") &&
+      userContent.trim()
+    ) {
+      const title =
+        userContent.slice(0, SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS) +
+        (userContent.length > SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS
+          ? "…"
+          : "");
+      await ctx.db.patch(sessionId, { title });
+    }
+  },
+});
+
+export const addChatMessages = mutation({
+  args: {
+    sessionId: v.id("sessions"),
+    userContent: v.string(),
+    assistantContent: v.string(),
+    mentions: mentionValidator,
+  },
+  handler: async (
+    ctx,
+    { sessionId, userContent, assistantContent, mentions }
+  ): Promise<void> => {
+    await requireSessionOwner(ctx, sessionId);
+    const now = Date.now();
+    await ctx.db.insert("chatMessages", {
+      sessionId,
+      role: "user",
+      content: userContent,
+      createdAt: now,
+      ...(mentions && mentions.length > 0 ? { mentions } : {}),
+    });
+    await ctx.db.insert("chatMessages", {
+      sessionId,
+      role: "assistant",
+      content: assistantContent,
+      createdAt: now + 1,
+    });
     const session = await ctx.db.get(sessionId);
     if (
       (session?.title === "New file" || session?.title === "New session") &&
@@ -367,6 +440,33 @@ export const internalLoadSessionForChatSend = internalQuery({
   },
 });
 
+export const internalLoadSessionForChatLaneSend = internalQuery({
+  args: {
+    sessionId: v.id("sessions"),
+    userId: v.id("users"),
+  },
+  handler: async (
+    ctx,
+    { sessionId, userId }
+  ): Promise<{
+    messages: Array<{
+      role: "user" | "assistant";
+      content: string;
+    }>;
+  } | null> => {
+    const session = await ctx.db.get(sessionId);
+    if (!session || session.userId !== userId) return null;
+    const messages = await ctx.db
+      .query("chatMessages")
+      .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+      .order("asc")
+      .collect();
+    return {
+      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+    };
+  },
+});
+
 export const internalCanAccessSession = internalQuery({
   args: {
     sessionId: v.id("sessions"),
@@ -387,6 +487,7 @@ export const getEditorFields = query({
     if (!session || session.userId !== userId) return null;
     return {
       draftInput: session.draftInput ?? "",
+      chatDraftInput: session.chatDraftInput ?? "",
       thinkingNotes: session.thinkingNotes ?? "",
     };
   },
@@ -403,6 +504,20 @@ export const updateDraft = mutation({
     const session = await ctx.db.get(sessionId);
     if (!session || session.userId !== userId) return;
     await ctx.db.patch(sessionId, { draftInput });
+  },
+});
+
+export const updateChatDraft = mutation({
+  args: {
+    sessionId: v.id("sessions"),
+    chatDraftInput: v.string(),
+  },
+  handler: async (ctx, { sessionId, chatDraftInput }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return;
+    const session = await ctx.db.get(sessionId);
+    if (!session || session.userId !== userId) return;
+    await ctx.db.patch(sessionId, { chatDraftInput });
   },
 });
 

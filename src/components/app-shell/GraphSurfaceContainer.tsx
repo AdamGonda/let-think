@@ -4,6 +4,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type ReactNode,
 } from "react";
 import { toast } from "sonner";
 import { usePostHog } from "posthog-js/react";
@@ -27,11 +28,16 @@ import {
   openHistoryPanel,
   setGraphLoadingProgress,
   setSelectedBatchIndex,
+  setSessionView,
 } from "@/lib/appUiCommands";
+import type { SessionView } from "@/machines/appUiTypes";
 import type { ProjectWithSessions } from "../session-sidebar/workspaceTypes";
 type GraphSurfaceContainerProps = {
   workspace: ProjectWithSessions[] | undefined;
   activeSessionId: Id<"sessions"> | null;
+  sessionPastFrame: boolean;
+  graphComposer: ReactNode;
+  chatComposer: ReactNode;
 };
 
 /**
@@ -40,6 +46,9 @@ type GraphSurfaceContainerProps = {
 export function GraphSurfaceContainer({
   workspace,
   activeSessionId,
+  sessionPastFrame,
+  graphComposer,
+  chatComposer,
 }: GraphSurfaceContainerProps) {
   const posthog = usePostHog();
   const actor = useAppUiActor();
@@ -156,6 +165,14 @@ export function GraphSurfaceContainer({
     openEditor(actor);
   }, [actor, posthog]);
 
+  const handleSessionViewChange = useCallback(
+    (view: SessionView) => {
+      posthog.capture("session_view_changed", { view });
+      setSessionView(actor, view);
+    },
+    [actor, posthog],
+  );
+
   const handleConceptCopy = useCallback(
     async (concept: { name: string; description?: string }) => {
       const text = formatConceptPlainForClipboard(concept);
@@ -180,13 +197,19 @@ export function GraphSurfaceContainer({
       selectedBatchIndex={graph.selectedBatchIndex}
       hasChatHistory={graph.hasChatHistory}
       chatLoading={graph.chatLoading}
+      chatThreadLoading={graph.chatThreadLoading}
       graphShowLoadingCards={graph.graphShowLoadingCards}
       graphInteractionBlocked={graph.graphInteractionBlocked}
       graphLoadingStartBatchLength={graph.graphLoadingStartBatchLength}
       conceptGraph={conceptGraph}
       chatVisible={chatComposerVisible}
+      sessionView={graph.sessionView}
+      sessionPastFrame={sessionPastFrame}
       referencedConceptIds={referencedConceptIds}
+      graphComposer={graphComposer}
+      chatComposer={chatComposer}
       onSelectBatch={(i) => setSelectedBatchIndex(actor, i)}
+      onSessionViewChange={handleSessionViewChange}
       onHistoryOpen={() => {
         posthog.capture("chat_history_opened");
         openHistoryPanel(actor);

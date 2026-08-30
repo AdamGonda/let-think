@@ -27,8 +27,10 @@ function baseInput(over: Partial<AppUiContext> = {}): Partial<AppUiContext> {
     selectedBatchIndex: 0,
     prevBatchesLength: 0,
     draftInput: "",
+    chatDraftInput: "",
     notes: "",
     chatLoading: false,
+    chatThreadLoading: false,
     graphLoadingStartBatchLength: 0,
     graphLoadingCardSlots: 6,
     graphShowLoadingCards: false,
@@ -42,6 +44,7 @@ function baseInput(over: Partial<AppUiContext> = {}): Partial<AppUiContext> {
     messagesLoading: false,
     hasEverHadSessionSelection: true,
     surfaceMode: "graph",
+    sessionView: "graph",
     sidebarCollapseRequestSeq: 0,
     sidebarCollapseImmediateSeq: 0,
     ...over,
@@ -76,6 +79,58 @@ describe("selectors from running actor", () => {
     expect(selectSurface(actor.getSnapshot())).toBe("notesList");
     actor.send({ type: "VIEW_SET", mode: "graph" });
     expect(selectSurface(actor.getSnapshot())).toBe("graph");
+    actor.stop();
+  });
+
+  it("SESSION_VIEW_SET flips sessionView without changing surfaceMode", () => {
+    const actor = createActor(appUiMachine, {
+      input: baseInput({ sessionView: "graph" }),
+    });
+    actor.start();
+    actor.send({ type: "VIEW_SET", mode: "graph" });
+    expect(selectSurface(actor.getSnapshot())).toBe("graph");
+    expect(actor.getSnapshot().context.sessionView).toBe("graph");
+    actor.send({ type: "SESSION_VIEW_SET", view: "chat" });
+    expect(actor.getSnapshot().context.sessionView).toBe("chat");
+    expect(selectSurface(actor.getSnapshot())).toBe("graph");
+    expect(actor.getSnapshot().context.surfaceMode).toBe("graph");
+    actor.send({ type: "SESSION_VIEW_SET", view: "graph" });
+    expect(actor.getSnapshot().context.sessionView).toBe("graph");
+    expect(selectSurface(actor.getSnapshot())).toBe("graph");
+    actor.stop();
+  });
+
+  it("SESSION_VIEW_SET to chat closes the history panel", () => {
+    const actor = createActor(appUiMachine, {
+      input: baseInput({ historyPanelOpen: true }),
+    });
+    actor.start();
+    actor.send({ type: "HISTORY_OPEN" });
+    expect(actor.getSnapshot().context.historyPanelOpen).toBe(true);
+    actor.send({ type: "SESSION_VIEW_SET", view: "chat" });
+    expect(actor.getSnapshot().context.historyPanelOpen).toBe(false);
+    actor.stop();
+  });
+
+  it("CHAT_THREAD_LOADING does not start graph card skeletons", () => {
+    const actor = createActor(appUiMachine, { input: baseInput() });
+    actor.start();
+    actor.send({ type: "CHAT_THREAD_LOADING_START" });
+    expect(actor.getSnapshot().context.chatThreadLoading).toBe(true);
+    expect(actor.getSnapshot().context.chatLoading).toBe(false);
+    expect(selectGraphShowLoadingCards(actor.getSnapshot())).toBe(false);
+    actor.send({ type: "CHAT_THREAD_LOADING_END" });
+    expect(actor.getSnapshot().context.chatThreadLoading).toBe(false);
+    actor.stop();
+  });
+
+  it("graph and chat drafts are independent", () => {
+    const actor = createActor(appUiMachine, { input: baseInput() });
+    actor.start();
+    actor.send({ type: "DRAFT_INPUT_SET", value: "graph draft" });
+    actor.send({ type: "CHAT_DRAFT_INPUT_SET", value: "chat draft" });
+    expect(actor.getSnapshot().context.draftInput).toBe("graph draft");
+    expect(actor.getSnapshot().context.chatDraftInput).toBe("chat draft");
     actor.stop();
   });
 

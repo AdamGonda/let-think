@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { deleteSessionOwnedRows } from "./sessions";
 
 export const list = query({
   args: {},
@@ -101,20 +102,7 @@ export const remove = mutation({
       .withIndex("by_project", (q) => q.eq("projectId", id))
       .collect();
     for (const session of sessions) {
-      const messages = await ctx.db
-        .query("messages")
-        .withIndex("by_session", (q) => q.eq("sessionId", session._id))
-        .collect();
-      for (const msg of messages) {
-        await ctx.db.delete(msg._id);
-      }
-      const graphRow = await ctx.db
-        .query("sessionConceptGraphs")
-        .withIndex("by_session", (q) => q.eq("sessionId", session._id))
-        .first();
-      if (graphRow) {
-        await ctx.db.delete(graphRow._id);
-      }
+      await deleteSessionOwnedRows(ctx, session._id);
       await ctx.db.delete(session._id);
     }
     await ctx.db.delete(id);

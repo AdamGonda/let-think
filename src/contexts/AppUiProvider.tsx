@@ -19,6 +19,7 @@ export function AppUiProvider({ children }: { children: ReactNode }) {
         activeSessionId: snapshot.context.activeSessionId,
         activeProjectId: snapshot.context.activeProjectId,
         hasEverHadSessionSelection: snapshot.context.hasEverHadSessionSelection,
+        sessionView: snapshot.context.sessionView,
       });
     });
     return () => subscription.unsubscribe();

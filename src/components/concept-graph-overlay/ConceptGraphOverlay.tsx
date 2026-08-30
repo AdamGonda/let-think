@@ -30,6 +30,8 @@ interface ConceptGraphOverlayProps {
     name: string;
     description?: string;
   }) => void | Promise<void>;
+  /** 2×3 grid even above 1024px (chat pane open). */
+  compactGrid?: boolean;
 }
 
 export function ConceptGraphOverlay({
@@ -44,6 +46,7 @@ export function ConceptGraphOverlay({
   referencedConceptIds,
   onCardReferenceClick,
   onConceptCopy,
+  compactGrid = false,
 }: ConceptGraphOverlayProps) {
   const LOADING_CARD_SLOTS = 6;
   const isInteractionBlocked = interactionBlocked;
@@ -139,6 +142,7 @@ export function ConceptGraphOverlay({
               onReferenceClick={onCardReferenceClick}
               onCopyClick={onConceptCopy ? handleConceptCopyClick : undefined}
               onAnimationEnd={handleBatchAnimationEnd}
+              compactGrid={compactGrid}
             />
           </div>
         </>

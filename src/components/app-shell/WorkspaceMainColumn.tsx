@@ -18,6 +18,8 @@ import { userInputForBatch, userMessageForBatch } from "../../lib/batchUserInput
 import {
   closeHistoryPanel,
   setChatLoading,
+  setChatThreadLoading,
+  setChatDraftInput,
   setDraftInput,
   setNotesListDrill,
   setSelectedBatchIndex,
@@ -63,7 +65,10 @@ export function WorkspaceMainColumn({
     canLoadOlderMessages,
   } = useSessionData();
 
-  const numberedConcepts = useMemo(
+  const chatOpen = dock.sessionView === "chat";
+  const latestBatchIndex = Math.max(0, batches.length - 1);
+
+  const graphNumberedConcepts = useMemo(
     () =>
       buildNumberedConceptsFromGraph(
         conceptGraph,
@@ -72,11 +77,18 @@ export function WorkspaceMainColumn({
       ),
     [conceptGraph, batches, dock.selectedBatchIndex],
   );
+  const chatNumberedConcepts = useMemo(
+    () =>
+      buildNumberedConceptsFromGraph(conceptGraph, batches, latestBatchIndex),
+    [conceptGraph, batches, latestBatchIndex],
+  );
 
   const isLatestBatch =
     batches.length === 0 || dock.selectedBatchIndex === batches.length - 1;
   const isPastBatchSelected =
-    dock.viewMode === "graph" && batches.length > 0 && !isLatestBatch;
+    dock.viewMode === "graph" &&
+    batches.length > 0 &&
+    !isLatestBatch;
 
   const batchUserPrompt = useMemo(
     () => userInputForBatch(batches, messages, dock.selectedBatchIndex),
@@ -112,6 +124,7 @@ export function WorkspaceMainColumn({
         !dock.chatLoadingOnGraphFrame &&
           !dock.chatLoadingOnNotesList &&
           isPastBatchSelected &&
+          !chatOpen &&
           "rounded-md",
       )}
       data-tour="main-content"
@@ -121,22 +134,6 @@ export function WorkspaceMainColumn({
           : undefined
       }
     >
-      {!dock.chatLoadingOnGraphFrame &&
-      !dock.chatLoadingOnNotesList &&
-      isPastBatchSelected ? (
-        <div
-          className="pointer-events-none absolute inset-0 z-20 rounded-md session-past-frame-overlay"
-          aria-hidden
-        />
-      ) : null}
-      {!dock.chatLoadingOnGraphFrame &&
-      !dock.chatLoadingOnNotesList &&
-      isPastBatchSelected ? (
-        <div
-          className="pointer-events-none absolute bottom-0 left-1/2 z-30 h-[2px] w-[min(calc(100%-2rem),720px)] -translate-x-1/2 bg-background"
-          aria-hidden
-        />
-      ) : null}
       <div
         ref={mainContentRef}
         className="relative flex flex-1 min-h-0 flex-col"
@@ -164,25 +161,53 @@ export function WorkspaceMainColumn({
           <GraphSurfaceContainer
             workspace={workspace}
             activeSessionId={layout.activeSessionId}
+            sessionPastFrame={
+              !dock.chatLoadingOnGraphFrame &&
+              !dock.chatLoadingOnNotesList &&
+              isPastBatchSelected
+            }
+            graphComposer={
+              chatComposerVisible ? (
+                <Chat
+                  sessionId={layout.activeSessionId}
+                  sessionLoadingFrame={dock.chatLoadingOnGraphFrame}
+                  sessionPastFrame={isPastBatchSelected}
+                  autoCollapseSignal={dock.uiCollapseSignal}
+                  isLoading={dock.chatLoading}
+                  setIsLoading={(loading) => setChatLoading(actor, loading)}
+                  numberedConcepts={graphNumberedConcepts}
+                  draftInput={dock.draftInput}
+                  setDraftInput={(v) => setDraftInput(actor, v)}
+                  onCreateSession={onCreateSessionForFirstMessage}
+                  lockedHistorical={lockedHistorical}
+                  selectedBatchIndex={dock.selectedBatchIndex}
+                  sendLane="graph"
+                  autoFocus={!chatOpen}
+                />
+              ) : null
+            }
+            chatComposer={
+              <Chat
+                sessionId={layout.activeSessionId}
+                sessionLoadingFrame={dock.chatThreadLoading}
+                autoCollapseSignal={dock.uiCollapseSignal}
+                isLoading={dock.chatThreadLoading}
+                setIsLoading={(loading) =>
+                  setChatThreadLoading(actor, loading)
+                }
+                numberedConcepts={chatNumberedConcepts}
+                draftInput={dock.chatDraftInput}
+                setDraftInput={(v) => setChatDraftInput(actor, v)}
+                onCreateSession={onCreateSessionForFirstMessage}
+                selectedBatchIndex={dock.selectedBatchIndex}
+                sendLane="chat"
+                autoFocus={chatOpen}
+                listenForFocusEvent={false}
+              />
+            }
           />
         ) : null}
       </div>
-      {chatComposerVisible && (
-        <Chat
-          sessionId={layout.activeSessionId}
-          sessionLoadingFrame={dock.chatLoadingOnGraphFrame}
-          sessionPastFrame={isPastBatchSelected}
-          autoCollapseSignal={dock.uiCollapseSignal}
-          isLoading={dock.chatLoading}
-          setIsLoading={(loading) => setChatLoading(actor, loading)}
-          numberedConcepts={numberedConcepts}
-          draftInput={dock.draftInput}
-          setDraftInput={(v) => setDraftInput(actor, v)}
-          onCreateSession={onCreateSessionForFirstMessage}
-          lockedHistorical={lockedHistorical}
-          selectedBatchIndex={dock.selectedBatchIndex}
-        />
-      )}
       {dock.viewMode === "graph" && (
         <ChatHistoryPanel
           isOpen={dock.historyPanelOpen}

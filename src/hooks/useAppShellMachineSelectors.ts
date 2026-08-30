@@ -12,6 +12,7 @@ import {
   selectGraphShowLoadingCards,
   selectIsExitingWakeUp,
   selectOverlayActionReturnsToGraph,
+  selectSessionView,
   selectSurface,
   selectUiCollapseSignal,
 } from "../machines/appUiMachine";
@@ -103,6 +104,8 @@ export type GraphSurfaceMachineSelectors = {
   graphLoadingStartBatchLength: ReturnType<typeof selectGraphLoadingStartBatchLength>;
   graphReferenceFreezeActive: ReturnType<typeof selectGraphReferenceFreezeActive>;
   hasChatHistory: AppSnapshot["context"]["hasChatHistory"];
+  sessionView: ReturnType<typeof selectSessionView>;
+  chatThreadLoading: AppSnapshot["context"]["chatThreadLoading"];
 };
 
 function shallowEqualGraphSurface(
@@ -117,7 +120,9 @@ function shallowEqualGraphSurface(
     a.graphInteractionBlocked === b.graphInteractionBlocked &&
     a.graphLoadingStartBatchLength === b.graphLoadingStartBatchLength &&
     a.graphReferenceFreezeActive === b.graphReferenceFreezeActive &&
-    a.hasChatHistory === b.hasChatHistory
+    a.hasChatHistory === b.hasChatHistory &&
+    a.sessionView === b.sessionView &&
+    a.chatThreadLoading === b.chatThreadLoading
   );
 }
 
@@ -134,6 +139,8 @@ export function selectGraphSurfaceMachineModel(
     graphLoadingStartBatchLength: selectGraphLoadingStartBatchLength(s),
     graphReferenceFreezeActive: selectGraphReferenceFreezeActive(s),
     hasChatHistory: s.context.hasChatHistory,
+    sessionView: selectSessionView(s),
+    chatThreadLoading: s.context.chatThreadLoading,
   };
 }
 
@@ -145,24 +152,30 @@ export function useGraphSurfaceMachineSelectors(): GraphSurfaceMachineSelectors 
 /** Chat composer + history panel dock. */
 export type ChatDockMachineSelectors = {
   draftInput: AppSnapshot["context"]["draftInput"];
+  chatDraftInput: AppSnapshot["context"]["chatDraftInput"];
   chatLoading: AppSnapshot["context"]["chatLoading"];
+  chatThreadLoading: AppSnapshot["context"]["chatThreadLoading"];
   chatLoadingOnGraphFrame: ReturnType<typeof selectChatLoadingOnGraphFrame>;
   chatLoadingOnNotesList: ReturnType<typeof selectChatLoadingOnNotesList>;
   uiCollapseSignal: ReturnType<typeof selectUiCollapseSignal>;
   historyPanelOpen: AppSnapshot["context"]["historyPanelOpen"];
   viewMode: ReturnType<typeof selectSurface>;
+  sessionView: ReturnType<typeof selectSessionView>;
   selectedBatchIndex: AppSnapshot["context"]["selectedBatchIndex"];
 };
 
 function shallowEqualChatDock(a: ChatDockMachineSelectors, b: ChatDockMachineSelectors): boolean {
   return (
     a.draftInput === b.draftInput &&
+    a.chatDraftInput === b.chatDraftInput &&
     a.chatLoading === b.chatLoading &&
+    a.chatThreadLoading === b.chatThreadLoading &&
     a.chatLoadingOnGraphFrame === b.chatLoadingOnGraphFrame &&
     a.chatLoadingOnNotesList === b.chatLoadingOnNotesList &&
     a.uiCollapseSignal === b.uiCollapseSignal &&
     a.historyPanelOpen === b.historyPanelOpen &&
     a.viewMode === b.viewMode &&
+    a.sessionView === b.sessionView &&
     a.selectedBatchIndex === b.selectedBatchIndex
   );
 }
@@ -170,12 +183,15 @@ function shallowEqualChatDock(a: ChatDockMachineSelectors, b: ChatDockMachineSel
 export function selectChatDockMachineModel(s: AppSnapshot): ChatDockMachineSelectors {
   return {
     draftInput: s.context.draftInput,
+    chatDraftInput: s.context.chatDraftInput,
     chatLoading: s.context.chatLoading,
+    chatThreadLoading: s.context.chatThreadLoading,
     chatLoadingOnGraphFrame: selectChatLoadingOnGraphFrame(s),
     chatLoadingOnNotesList: selectChatLoadingOnNotesList(s),
     uiCollapseSignal: selectUiCollapseSignal(s),
     historyPanelOpen: s.context.historyPanelOpen,
     viewMode: selectSurface(s),
+    sessionView: selectSessionView(s),
     selectedBatchIndex: s.context.selectedBatchIndex,
   };
 }

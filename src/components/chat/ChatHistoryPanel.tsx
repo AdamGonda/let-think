@@ -6,7 +6,6 @@ import {
   useState,
   type MouseEvent,
 } from "react";
-import type { Id } from "../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { Loader2, X, Copy, Check } from "lucide-react";
 import {
@@ -27,7 +26,7 @@ import { timings } from "@/config";
 import { userMessageChronoIndexForBatch } from "@/lib/batchUserInput";
 
 interface UserMessage {
-  _id?: Id<"messages">;
+  _id?: string;
   role: "user" | "assistant";
   content: string;
   createdAt?: number;
@@ -227,7 +226,7 @@ export function ChatHistoryPanel({
             <div className="relative">
               <ul className="flex flex-col gap-0 list-none p-0 m-0">
                 {displayOrder.map((msg, index) => {
-                  const key = (msg._id as string) ?? `msg-${index}`;
+                  const key = msg._id ?? `msg-${index}`;
                   const isLong =
                     msg.content.length > CHAT_HISTORY_COLLAPSE_THRESHOLD;
                   const isExpanded = expandedIds.has(key);

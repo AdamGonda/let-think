@@ -23,7 +23,7 @@ export type ConceptGraphData = {
 };
 
 export type SessionMessage = {
-  _id?: Id<"messages">;
+  _id?: string;
   role: "user" | "assistant";
   content: string;
   createdAt?: number;
@@ -39,20 +39,41 @@ export type SessionMessage = {
 type SessionDataContextValue = {
   /** Concept graph for the active session (reactive, always subscribed when sessionId set) */
   conceptGraph: ConceptGraphData | null | undefined;
-  /** Message history for the active session (paginated, chronological) */
+  /** Graph-lane message history (paginated, chronological) */
   messages: SessionMessage[];
-  /** Load older messages (history panel / long threads) */
+  /** Chat-lane message history (paginated, chronological) */
+  chatMessages: SessionMessage[];
   loadOlderMessages: (count?: number) => void;
-  /** True while first page of messages is loading */
+  loadOlderChatMessages: (count?: number) => void;
   messagesLoading: boolean;
-  /** More older messages available via loadOlderMessages */
+  chatMessagesLoading: boolean;
   canLoadOlderMessages: boolean;
-  /** Batches derived from concept graph */
+  canLoadOlderChatMessages: boolean;
   batches: NonNullable<ConceptGraphData["batches"]>;
   canSend: boolean;
 };
 
 const SessionDataContext = createContext<SessionDataContextValue | null>(null);
+
+function mapPageToSessionMessages(
+  results: Array<{
+    _id: string;
+    role: "user" | "assistant";
+    content: string;
+    createdAt: number;
+    topic?: string;
+    mentions?: SessionMessage["mentions"];
+  }>,
+): SessionMessage[] {
+  return [...results].reverse().map((m) => ({
+    _id: m._id,
+    role: m.role,
+    content: m.content,
+    createdAt: m.createdAt,
+    topic: m.topic,
+    mentions: m.mentions,
+  }));
+}
 
 export function SessionDataProvider({
   sessionId,
@@ -74,19 +95,24 @@ export function SessionDataProvider({
     sessionId ? { sessionId } : "skip",
     { initialNumItems: CHAT_MESSAGES_PAGE_SIZE }
   );
+  const {
+    results: chatMessageResults,
+    status: chatMessagesStatus,
+    loadMore: loadMoreChat,
+  } = usePaginatedQuery(
+    api.sessions.listChatMessagesPaginated,
+    sessionId ? { sessionId } : "skip",
+    { initialNumItems: CHAT_MESSAGES_PAGE_SIZE }
+  );
 
-  const messages = useMemo((): SessionMessage[] => {
-    return [...messageResults]
-      .reverse()
-      .map((m) => ({
-        _id: m._id,
-        role: m.role,
-        content: m.content,
-        createdAt: m.createdAt,
-        topic: m.topic,
-        mentions: m.mentions,
-      }));
-  }, [messageResults]);
+  const messages = useMemo(
+    () => mapPageToSessionMessages(messageResults),
+    [messageResults],
+  );
+  const chatMessages = useMemo(
+    () => mapPageToSessionMessages(chatMessageResults),
+    [chatMessageResults],
+  );
 
   const loadOlderMessages = useCallback(
     (count = CHAT_MESSAGES_PAGE_SIZE) => {
@@ -94,9 +120,17 @@ export function SessionDataProvider({
     },
     [loadMore]
   );
+  const loadOlderChatMessages = useCallback(
+    (count = CHAT_MESSAGES_PAGE_SIZE) => {
+      loadMoreChat(count);
+    },
+    [loadMoreChat]
+  );
 
   const messagesLoading = messagesStatus === "LoadingFirstPage";
+  const chatMessagesLoading = chatMessagesStatus === "LoadingFirstPage";
   const canLoadOlderMessages = messagesStatus === "CanLoadMore";
+  const canLoadOlderChatMessages = chatMessagesStatus === "CanLoadMore";
 
   const { canSend } = useSessionManager(sessionId);
 
@@ -109,18 +143,26 @@ export function SessionDataProvider({
     () => ({
       conceptGraph: conceptGraph ?? null,
       messages,
+      chatMessages,
       loadOlderMessages,
+      loadOlderChatMessages,
       messagesLoading,
+      chatMessagesLoading,
       canLoadOlderMessages,
+      canLoadOlderChatMessages,
       batches,
       canSend,
     }),
     [
       conceptGraph,
       messages,
+      chatMessages,
       loadOlderMessages,
+      loadOlderChatMessages,
       messagesLoading,
+      chatMessagesLoading,
       canLoadOlderMessages,
+      canLoadOlderChatMessages,
       batches,
       canSend,
     ]

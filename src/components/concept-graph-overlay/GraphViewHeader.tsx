@@ -1,8 +1,9 @@
-import { FileText, History } from "lucide-react";
+import { FileText, History, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { layout } from "@/config";
 import { NoteBreadcrumb } from "@/components/navigation/NoteBreadcrumb";
 import { StepNavigator } from "@/components/navigation/StepNavigator";
+import type { SessionView } from "@/machines/appUiTypes";
 
 type GraphViewHeaderProps = {
   projectName: string | undefined;
@@ -14,6 +15,8 @@ type GraphViewHeaderProps = {
   isSessionTitleDisabled?: boolean;
   isHistoryButtonDisabled?: boolean;
   hasChatHistory: boolean;
+  sessionView: SessionView;
+  onSessionViewChange: (view: SessionView) => void;
   onHistoryOpen: () => void;
   onEditorOpen: () => void;
   onProjectsRootClick: () => void;
@@ -30,6 +33,8 @@ export function GraphViewHeader({
   isSessionTitleDisabled = false,
   isHistoryButtonDisabled = false,
   hasChatHistory,
+  sessionView,
+  onSessionViewChange,
   onHistoryOpen,
   onEditorOpen,
   onProjectsRootClick,
@@ -39,6 +44,8 @@ export function GraphViewHeader({
     sessionTitle != null && sessionTitle.trim() !== ""
       ? sessionTitle.trim()
       : "Loading…";
+  const chatOpen = sessionView === "chat";
+  const historyDisabled = !hasChatHistory || isHistoryButtonDisabled;
 
   return (
     <header className={layout.workspaceTopBarClass}>
@@ -61,28 +68,36 @@ export function GraphViewHeader({
           isDisabled={isBatchNavigationDisabled}
         />
       </div>
-      <div className="flex items-center justify-end gap-2">
-        {hasChatHistory ? (
-          <div className="relative">
-            <Button
-              variant="outline"
-              size="icon-sm"
-              onClick={onHistoryOpen}
-              disabled={isHistoryButtonDisabled}
-              title="Session history"
-              aria-label="Session history"
-              data-tour="history-btn"
-            >
-              <History className="size-5" />
-            </Button>
-            {isHistoryButtonDisabled ? (
-              <div
-                className="absolute inset-0 z-10 cursor-not-allowed rounded-[min(var(--radius-md),12px)]"
-                aria-hidden
-              />
-            ) : null}
-          </div>
-        ) : null}
+      <div className="flex h-7 items-center justify-end gap-2 leading-none">
+        <Button
+          variant="outline"
+          size="icon-sm"
+          onClick={() => onSessionViewChange(chatOpen ? "graph" : "chat")}
+          aria-pressed={chatOpen}
+          title="Chat panel"
+          aria-label="Chat view"
+        >
+          <MessageSquare className="size-5" />
+        </Button>
+        <div className="relative flex size-7 shrink-0 items-center justify-center">
+          <Button
+            variant="outline"
+            size="icon-sm"
+            onClick={onHistoryOpen}
+            disabled={historyDisabled}
+            title="Session history"
+            aria-label="Session history"
+            data-tour="history-btn"
+          >
+            <History className="size-5" />
+          </Button>
+          {historyDisabled ? (
+            <div
+              className="absolute inset-0 z-10 cursor-not-allowed rounded-[min(var(--radius-md),12px)]"
+              aria-hidden
+            />
+          ) : null}
+        </div>
         <Button
           variant="outline"
           size="icon-sm"

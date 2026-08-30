@@ -39,6 +39,10 @@ type ChatComposerProps = {
   sessionLoadingFrame: boolean;
   sessionPastFrame?: boolean;
   onSubmit: (e: React.FormEvent) => void;
+  autoFocus?: boolean;
+  listenForFocusEvent?: boolean;
+  /** Island is the graph dock; dock is a flush bar for the chat panel. */
+  chrome?: "island" | "dock";
 };
 
 export function ChatComposer({
@@ -51,8 +55,13 @@ export function ChatComposer({
   sessionLoadingFrame,
   sessionPastFrame = false,
   onSubmit,
+  autoFocus = true,
+  listenForFocusEvent = true,
+  chrome = "island",
 }: ChatComposerProps) {
   const canSubmit = !isDisabled && input.trim().length > 0;
+  const compact = chrome === "dock";
+  const growMaxPx = compact ? 192 : 450;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mirrorRef = useRef<HTMLDivElement>(null);
   const pendingSelectionRef = useRef<number | null>(null);
@@ -92,8 +101,8 @@ export function ChatComposer({
     const el = textareaRef.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 450)}px`;
-  }, [input]);
+    el.style.height = `${Math.min(el.scrollHeight, growMaxPx)}px`;
+  }, [input, growMaxPx]);
 
   useLayoutEffect(() => {
     const pos = pendingSelectionRef.current;
@@ -106,6 +115,7 @@ export function ChatComposer({
   }, [input]);
 
   useEffect(() => {
+    if (!listenForFocusEvent) return;
     const handleFocusComposer = () => {
       pendingExternalFocusRef.current = true;
       requestAnimationFrame(focusComposerWithRetry);
@@ -113,7 +123,7 @@ export function ChatComposer({
     window.addEventListener(FOCUS_COMPOSER_EVENT, handleFocusComposer);
     return () =>
       window.removeEventListener(FOCUS_COMPOSER_EVENT, handleFocusComposer);
-  }, []);
+  }, [listenForFocusEvent]);
 
   useEffect(() => {
     if (!isDisabled && pendingExternalFocusRef.current) {
@@ -187,10 +197,121 @@ export function ChatComposer({
     setInput(next);
   };
 
+  const fieldMinH = compact ? "min-h-10" : "min-h-[48px]";
+  const fieldMaxH = compact ? "max-h-48" : "max-h-[450px]";
+  const fieldPad = compact ? "py-2 px-3 pr-12" : "py-3 px-4 pr-14";
+
+  const form = (
+    <form
+      className="flex flex-col gap-2"
+      onSubmit={onSubmit}
+      aria-busy={isLoading}
+    >
+      <div className="flex gap-2 items-end">
+        <div
+          className={clsx(
+            "flex-1 flex relative overflow-hidden border border-input bg-background",
+            compact ? "rounded-lg" : "rounded-xl",
+            fieldMinH,
+            fieldMaxH,
+          )}
+        >
+          <div
+            ref={mirrorRef}
+            className={clsx(
+              "absolute inset-0 z-0 overflow-y-auto pointer-events-none whitespace-pre-wrap break-words text-[0.95rem] leading-[1.5] text-zinc-950 dark:text-zinc-100",
+              fieldPad,
+            )}
+            aria-hidden
+          >
+            {input ? (
+              parseInputTokens(input, numberedConcepts).map((seg, i) =>
+                seg.type === "token" && seg.name ? (
+                  <span
+                    key={i}
+                    className="rounded-sm bg-zinc-300/70 dark:bg-zinc-600/70 text-inherit"
+                    title={seg.name}
+                  >
+                    {seg.content}
+                  </span>
+                ) : (
+                  seg.content
+                ),
+              )
+            ) : (
+              <span className="text-muted-foreground">{placeholder}</span>
+            )}
+          </div>
+          <textarea
+            ref={textareaRef}
+            data-session-input-textarea
+            autoFocus={autoFocus}
+            rows={1}
+            className={clsx(
+              "relative z-10 w-full bg-transparent text-transparent caret-foreground font-inherit text-[0.95rem] leading-[1.5] placeholder:transparent focus:outline-none focus:ring-0 disabled:opacity-60 disabled:cursor-not-allowed resize-none overflow-y-auto",
+              fieldMinH,
+              fieldMaxH,
+              fieldPad,
+            )}
+            style={{ color: "transparent" }}
+            value={input}
+            onChange={handleChange}
+            onScroll={handleScroll}
+            onKeyDown={handleKeyDown}
+            placeholder={placeholder}
+            disabled={isDisabled}
+          />
+          <div className="absolute right-1.5 top-1/2 -translate-y-1/2 z-20 flex items-center">
+            <Button
+              type="submit"
+              size="icon"
+              variant="ghost"
+              className="rounded-full text-muted-foreground hover:text-foreground"
+              disabled={!canSubmit}
+              aria-label={
+                isLoading ? "Generating response" : "Generate response"
+              }
+              title={isLoading ? "Generating response" : "Generate response"}
+            >
+              {isLoading ? (
+                <Loader2
+                  size={16}
+                  className="animate-spin text-(--session-accent)"
+                  strokeWidth={2}
+                  aria-hidden
+                />
+              ) : (
+                <ArrowUp size={16} strokeWidth={2} aria-hidden />
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
+    </form>
+  );
+
+  if (compact) {
+    return (
+      <div
+        className={clsx(
+          "shrink-0 border-t bg-background px-3 py-2",
+          sessionLoadingFrame
+            ? "border-t-2 border-(--session-accent) session-loading-chat-chrome-pulse"
+            : "border-border",
+        )}
+        data-tour="session-input"
+        data-composer-chrome="dock"
+      >
+        {form}
+      </div>
+    );
+  }
+
   return (
     <div
       className="flex flex-col items-center px-4 pt-4 shrink-0"
       data-tour="session-input"
+      data-composer-chrome="island"
     >
       <div className={clsx("relative w-full", layout.mainColumnMaxWidthClass)}>
         <div className="invisible pointer-events-none w-full" aria-hidden>
@@ -230,79 +351,7 @@ export function ChatComposer({
             )}
             style={{ backgroundColor: "#2B2B28" }}
           >
-            <form
-              className="flex flex-col gap-2"
-              onSubmit={onSubmit}
-              aria-busy={isLoading}
-            >
-              <div className="flex gap-2 items-end">
-                <div className="flex-1 flex relative min-h-[48px] max-h-[450px] rounded-xl border border-input bg-background overflow-hidden">
-                  <div
-                    ref={mirrorRef}
-                    className="absolute inset-0 z-0 py-3 px-4 pr-14 overflow-y-auto pointer-events-none whitespace-pre-wrap break-words text-[0.95rem] leading-[1.5] text-zinc-950 dark:text-zinc-100"
-                    aria-hidden
-                  >
-                    {input ? (
-                      parseInputTokens(input, numberedConcepts).map((seg, i) =>
-                        seg.type === "token" && seg.name ? (
-                          <span
-                            key={i}
-                            className="rounded-sm bg-zinc-300/70 dark:bg-zinc-600/70 text-inherit"
-                            title={seg.name}
-                          >
-                            {seg.content}
-                          </span>
-                        ) : (
-                          seg.content
-                        ),
-                      )
-                    ) : (
-                      <span className="text-muted-foreground">{placeholder}</span>
-                    )}
-                  </div>
-                  <textarea
-                    ref={textareaRef}
-                    data-session-input-textarea
-                    autoFocus
-                    rows={1}
-                    className="relative z-10 w-full min-h-[48px] max-h-[450px] py-3 px-4 pr-14 bg-transparent text-transparent caret-foreground font-inherit text-[0.95rem] leading-[1.5] placeholder:transparent focus:outline-none focus:ring-0 disabled:opacity-60 disabled:cursor-not-allowed resize-none overflow-y-auto"
-                    style={{ color: "transparent" }}
-                    value={input}
-                    onChange={handleChange}
-                    onScroll={handleScroll}
-                    onKeyDown={handleKeyDown}
-                    placeholder={placeholder}
-                    disabled={isDisabled}
-                  />
-                  <div
-                    className="absolute right-1.5 top-1/2 -translate-y-1/2 z-20 flex items-center"
-                  >
-                    <Button
-                      type="submit"
-                      size="icon"
-                      variant="ghost"
-                      className="rounded-full text-muted-foreground hover:text-foreground"
-                      disabled={!canSubmit}
-                      aria-label={
-                        isLoading ? "Generating response" : "Generate response"
-                      }
-                      title={isLoading ? "Generating response" : "Generate response"}
-                    >
-                      {isLoading ? (
-                        <Loader2
-                          size={16}
-                          className="animate-spin text-(--session-accent)"
-                          strokeWidth={2}
-                          aria-hidden
-                        />
-                      ) : (
-                        <ArrowUp size={16} strokeWidth={2} aria-hidden />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </form>
+            {form}
           </div>
         </div>
       </div>

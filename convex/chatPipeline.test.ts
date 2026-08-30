@@ -4,6 +4,8 @@ import {
   extractConceptGraph,
   preProcess,
   stripConceptGraphBlock,
+  conversationTableForSend,
+  buildReferencedConceptsSystemNote,
 } from "./chatPipeline";
 import { CONCEPT_GRAPH_PROMPT_BATCH_WINDOW } from "./constants";
 
@@ -139,5 +141,30 @@ describe("preProcess with windowed conceptGraph", () => {
 
   it("uses default batch window size constant for typical window calls", () => {
     expect(CONCEPT_GRAPH_PROMPT_BATCH_WINDOW).toBe(3);
+  });
+});
+
+describe("conversationTableForSend", () => {
+  it("keeps graph and chat on separate tables", () => {
+    expect(conversationTableForSend("graph")).toBe("messages");
+    expect(conversationTableForSend("chat")).toBe("chatMessages");
+  });
+});
+
+describe("buildReferencedConceptsSystemNote", () => {
+  it("returns null when no nodes", () => {
+    expect(buildReferencedConceptsSystemNote(undefined)).toBeNull();
+    expect(buildReferencedConceptsSystemNote([])).toBeNull();
+  });
+
+  it("lists referenced concept names for the chat model", () => {
+    expect(
+      buildReferencedConceptsSystemNote([
+        { name: "Murmuration", description: "Flock motion" },
+        { name: "Boids" },
+      ]),
+    ).toBe(
+      "The user referenced these concepts:\n- Murmuration: Flock motion\n- Boids",
+    );
   });
 });

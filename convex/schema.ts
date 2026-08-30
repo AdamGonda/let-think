@@ -51,8 +51,10 @@ export default defineSchema({
     projectId: v.optional(v.id("projects")),
     title: v.string(),
     createdAt: v.number(),
-    /** User's draft for next chat message, preserved across sessions */
+    /** User's draft for next graph prompt, preserved across sessions */
     draftInput: v.optional(v.string()),
+    /** Independent composer draft for the chat lane */
+    chatDraftInput: v.optional(v.string()),
     /** Notes written during thinking/break period, separate from chat draft */
     thinkingNotes: v.optional(v.string()),
     /** Present on some stored sessions (e.g. "open"); kept optional for backward compatibility */
@@ -124,6 +126,24 @@ export default defineSchema({
     /** Short topic/summary for user messages – shown above bubble in history (max ~2 lines) */
     topic: v.optional(v.string()),
     /** Mention spans in content (user messages only) – for styling @ references in history */
+    mentions: v.optional(
+      v.array(
+        v.object({
+          start: v.number(),
+          end: v.number(),
+          conceptId: v.string(),
+          name: v.string(),
+        })
+      )
+    ),
+  }).index("by_session", ["sessionId"]),
+
+  /** Independent chat-lane messages (graph ideation stays on `messages`). */
+  chatMessages: defineTable({
+    sessionId: v.id("sessions"),
+    role: v.union(v.literal("user"), v.literal("assistant")),
+    content: v.string(),
+    createdAt: v.number(),
     mentions: v.optional(
       v.array(
         v.object({

@@ -9,6 +9,7 @@
  */
 import type { Doc, Id } from "../../convex/_generated/dataModel";
 import type { AppUiActorRef } from "../contexts/appUiActorContext";
+import type { SessionView } from "../machines/appUiTypes";
 import type { NotesListDrill } from "./notesListUtils";
 
 /**
@@ -84,12 +85,20 @@ export function closeHistoryPanel(actor: AppUiActorRef): void {
   actor.send({ type: "HISTORY_CLOSE" });
 }
 
+export function setSessionView(actor: AppUiActorRef, view: SessionView): void {
+  actor.send({ type: "SESSION_VIEW_SET", view });
+}
+
 export function setSelectedBatchIndex(actor: AppUiActorRef, index: number): void {
   actor.send({ type: "SELECTED_BATCH_INDEX_SET", index });
 }
 
 export function setDraftInput(actor: AppUiActorRef, value: string): void {
   actor.send({ type: "DRAFT_INPUT_SET", value });
+}
+
+export function setChatDraftInput(actor: AppUiActorRef, value: string): void {
+  actor.send({ type: "CHAT_DRAFT_INPUT_SET", value });
 }
 
 export function setWakeNotes(actor: AppUiActorRef, value: string): void {
@@ -99,6 +108,14 @@ export function setWakeNotes(actor: AppUiActorRef, value: string): void {
 export function setChatLoading(actor: AppUiActorRef, loading: boolean): void {
   actor.send(
     loading ? { type: "CHAT_LOADING_START" } : { type: "CHAT_LOADING_END" },
+  );
+}
+
+export function setChatThreadLoading(actor: AppUiActorRef, loading: boolean): void {
+  actor.send(
+    loading
+      ? { type: "CHAT_THREAD_LOADING_START" }
+      : { type: "CHAT_THREAD_LOADING_END" },
   );
 }
 

@@ -329,3 +329,20 @@ export async function postProcess(
 ): Promise<string> {
   return stripConceptGraphBlock(stripConceptEventBlocks(text));
 }
+
+/** Graph send reads `messages`; chat send reads `chatMessages`. */
+export function conversationTableForSend(
+  lane: "graph" | "chat",
+): "messages" | "chatMessages" {
+  return lane === "chat" ? "chatMessages" : "messages";
+}
+
+export function buildReferencedConceptsSystemNote(
+  nodes: Array<{ name: string; description?: string }> | undefined,
+): string | null {
+  if (!nodes?.length) return null;
+  const lines = nodes.map((n) =>
+    n.description ? `- ${n.name}: ${n.description}` : `- ${n.name}`,
+  );
+  return `The user referenced these concepts:\n${lines.join("\n")}`;
+}

@@ -32,6 +32,9 @@ interface ChatProps {
   lockedHistorical?: Pick<SessionMessage, "content" | "mentions"> | null;
   /** Graph step index; used to reset historical prompt UI when navigating batches. */
   selectedBatchIndex: number;
+  sendLane?: "graph" | "chat";
+  autoFocus?: boolean;
+  listenForFocusEvent?: boolean;
 }
 
 export function Chat({
@@ -47,13 +50,17 @@ export function Chat({
   sessionPastFrame = false,
   lockedHistorical = null,
   selectedBatchIndex,
+  sendLane = "graph",
+  autoFocus = true,
+  listenForFocusEvent = true,
 }: ChatProps) {
   const [internalInput, setInternalInput] = useState("");
   const draft = draftInput !== undefined ? draftInput : internalInput;
   const setInput =
     setDraftInput !== undefined ? setDraftInput : setInternalInput;
   const input = draft;
-  const sendMessage = useAction(api.chat.send);
+  const sendGraphMessage = useAction(api.chat.send);
+  const sendChatMessage = useAction(api.chat.sendChat);
   const { canSend } = useSessionData();
   const posthog = usePostHog();
 
@@ -78,7 +85,7 @@ export function Chat({
     setIsLoading(true);
 
     try {
-      await sendMessage({
+      const payload = {
         sessionId: effectiveSessionId,
         userContent: resolvedContent,
         selectedNodeContext:
@@ -90,9 +97,15 @@ export function Chat({
               }))
             : undefined,
         mentions: mentions.length > 0 ? mentions : undefined,
-      });
+      };
+      if (sendLane === "chat") {
+        await sendChatMessage(payload);
+      } else {
+        await sendGraphMessage(payload);
+      }
       posthog.capture("message_sent", {
         session_id: effectiveSessionId,
+        lane: sendLane,
         has_concept_references: referencedConcepts.length > 0,
         concept_reference_count: referencedConcepts.length,
         is_new_session: !!createdViaCallback,
@@ -140,6 +153,9 @@ export function Chat({
       sessionLoadingFrame={sessionLoadingFrame}
       sessionPastFrame={sessionPastFrame}
       onSubmit={handleSubmit}
+      autoFocus={autoFocus}
+      listenForFocusEvent={listenForFocusEvent}
+      chrome={sendLane === "chat" ? "dock" : "island"}
     />
   );
 }

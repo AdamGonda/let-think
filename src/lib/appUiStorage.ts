@@ -1,14 +1,22 @@
 import type { Id } from "../../convex/_generated/dataModel";
-import type { AppUiContext } from "@/machines/appUiTypes";
+import type { AppUiContext, SessionView } from "@/machines/appUiTypes";
 
 const STORAGE_KEY_ACTIVE_SESSION = "think-active-session-id";
 const STORAGE_KEY_ACTIVE_PROJECT = "think-active-project-id";
 const STORAGE_KEY_HAS_EVER_SELECTED = "think-has-ever-session-selection";
+const STORAGE_KEY_SESSION_VIEW = "think-session-view";
 
 type StoredAppUiSelection = Pick<
   AppUiContext,
-  "activeSessionId" | "activeProjectId" | "hasEverHadSessionSelection"
+  | "activeSessionId"
+  | "activeProjectId"
+  | "hasEverHadSessionSelection"
+  | "sessionView"
 >;
+
+function parseSessionView(value: string | null): SessionView {
+  return value === "chat" ? "chat" : "graph";
+}
 
 function getStoredId(key: string): string | null {
   try {
@@ -29,10 +37,17 @@ export function getStoredAppUiSelection(): StoredAppUiSelection {
   } catch {
     hasEverHadSessionSelection = false;
   }
+  let sessionView: SessionView = "graph";
+  try {
+    sessionView = parseSessionView(localStorage.getItem(STORAGE_KEY_SESSION_VIEW));
+  } catch {
+    sessionView = "graph";
+  }
   return {
     activeSessionId,
     activeProjectId,
     hasEverHadSessionSelection,
+    sessionView,
   };
 }
 
@@ -54,6 +69,7 @@ export function setStoredAppUiSelection(value: StoredAppUiSelection): void {
       STORAGE_KEY_HAS_EVER_SELECTED,
       value.hasEverHadSessionSelection ? "true" : "false",
     );
+    localStorage.setItem(STORAGE_KEY_SESSION_VIEW, value.sessionView);
   } catch {
     /* ignore persistence failures */
   }

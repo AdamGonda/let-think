@@ -3,6 +3,9 @@ import type { NotesListDrill } from "../lib/notesListUtils";
 
 export type SurfaceMode = "graph" | "notesList";
 
+/** Graph-only vs graph with the chat panel open on the left. */
+export type SessionView = "graph" | "chat";
+
 export type AppUiContext = {
   activeSessionId: Id<"sessions"> | null;
   activeProjectId: Id<"projects"> | null;
@@ -11,8 +14,12 @@ export type AppUiContext = {
   /** Last seen batches.length from bridge (for clamp when length changes). */
   prevBatchesLength: number;
   draftInput: string;
+  /** Independent composer draft for the chat lane. */
+  chatDraftInput: string;
   notes: string;
   chatLoading: boolean;
+  /** True while the chat-lane send is in flight (must not start graph skeletons). */
+  chatThreadLoading: boolean;
   /** Batches length snapshot captured when loading starts (machine-owned loading baseline). */
   graphLoadingStartBatchLength: number;
   /** Number of cards that must exist before graph interaction unlocks. */
@@ -39,6 +46,8 @@ export type AppUiContext = {
   hasEverHadSessionSelection: boolean;
   /** Mirrors `surface` parallel state for guards that only receive `context`. */
   surfaceMode: SurfaceMode;
+  /** Graph-only vs graph + left chat panel (orthogonal to Files). */
+  sessionView: SessionView;
   /** Monotonic token for sidebar collapse (legacy; no longer incremented on editor open). */
   sidebarCollapseRequestSeq: number;
   /** Monotonic token (legacy; brain / return-to-graph no longer bump it). */
@@ -47,8 +56,12 @@ export type AppUiContext = {
 
 export type AppUiEvent =
   | { type: "VIEW_SET"; mode: SurfaceMode }
+  | { type: "SESSION_VIEW_SET"; view: SessionView }
   | { type: "CHAT_LOADING_START" }
   | { type: "CHAT_LOADING_END" }
+  | { type: "CHAT_THREAD_LOADING_START" }
+  | { type: "CHAT_THREAD_LOADING_END" }
+  | { type: "CHAT_DRAFT_INPUT_SET"; value: string }
   | { type: "GRAPH_LOADING_PROGRESS"; latestBatchNodeCount: number }
   | { type: "CHAT_HISTORY_META"; hasChatHistory: boolean; messagesLoading: boolean }
   | { type: "BATCHES_LENGTH_CHANGED"; length: number }

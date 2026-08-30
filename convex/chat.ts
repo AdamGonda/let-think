@@ -14,6 +14,7 @@ import {
   createConceptStreamParseState,
   flushConceptStreamParseState,
   parseConceptStreamChunk,
+  buildReferencedConceptsSystemNote,
   type ConceptGraph,
   type ConceptStreamEvent,
 } from "./chatPipeline";
@@ -569,5 +570,106 @@ export const send = action({
     }
 
     return { content: processedContent, conceptGraph: finalGraph };
+  },
+});
+
+const selectedNodeContextValidator = v.optional(
+  v.array(
+    v.object({
+      id: v.string(),
+      name: v.string(),
+      description: v.optional(v.string()),
+    })
+  )
+);
+
+const mentionSpanValidator = v.optional(
+  v.array(
+    v.object({
+      start: v.number(),
+      end: v.number(),
+      conceptId: v.string(),
+      name: v.string(),
+    })
+  )
+);
+
+/**
+ * Plain chat-lane send: conversation is `chatMessages` only (no concept graph write).
+ */
+export const sendChat = action({
+  args: {
+    sessionId: v.id("sessions"),
+    userContent: v.string(),
+    selectedNodeContext: selectedNodeContextValidator,
+    mentions: mentionSpanValidator,
+  },
+  handler: async (
+    ctx,
+    { sessionId, userContent, selectedNodeContext, mentions }
+  ): Promise<{ content: string }> => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Must be signed in");
+
+    const bundle = await ctx.runQuery(
+      internal.sessions.internalLoadSessionForChatLaneSend,
+      { sessionId, userId },
+    );
+    if (!bundle) throw new Error("Session not found or access denied");
+
+    const google = createGoogleGenerativeAI({
+      apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+    });
+
+    const conceptNote = buildReferencedConceptsSystemNote(selectedNodeContext);
+    const modelMessages = toModelMessages([
+      ...(conceptNote
+        ? [{ role: "system" as const, content: conceptNote }]
+        : []),
+      ...bundle.messages,
+      { role: "user" as const, content: userContent },
+    ]);
+
+    let generationUsage: GenerationUsageMetrics = {
+      inputTokens: null,
+      outputTokens: null,
+      totalTokens: null,
+    };
+    const result = await generateText({
+      model: google(modelConfig.mainContextGraphModel),
+      system: "You are a helpful assistant.",
+      messages: modelMessages,
+    });
+    generationUsage = {
+      inputTokens: coerceFiniteNumber(result.usage?.inputTokens),
+      outputTokens: coerceFiniteNumber(result.usage?.outputTokens),
+      totalTokens: coerceFiniteNumber(result.usage?.totalTokens),
+    };
+    const content = result.text.trim();
+
+    await ctx.runMutation(api.sessions.addChatMessages, {
+      sessionId,
+      userContent,
+      assistantContent: content,
+      mentions,
+    });
+
+    console.info(
+      "[generation]",
+      formatGenerationUsageLog(generationUsage, {
+        sessionId,
+        userId,
+        model: modelConfig.mainContextGraphModel,
+      }),
+    );
+    await capturePosthogGenerationEvent(generationUsage, {
+      sessionId,
+      userId,
+      model: modelConfig.mainContextGraphModel,
+      messageCount: modelMessages.length,
+      selectedNodeCount: selectedNodeContext?.length ?? 0,
+    });
+
+    return { content };
   },
 });
