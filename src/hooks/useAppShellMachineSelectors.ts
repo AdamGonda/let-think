@@ -21,6 +21,8 @@ type AppSnapshot = SnapshotFrom<typeof appUiMachine>;
 
 /** Sidebar, routing, session chrome — excludes overlay/graph/chat-dock-only fields where possible. */
 export type AppLayoutSelectors = {
+  activeFileId: AppSnapshot["context"]["activeFileId"];
+  activeChatSessionId: AppSnapshot["context"]["activeChatSessionId"];
   activeSessionId: AppSnapshot["context"]["activeSessionId"];
   activeProjectId: AppSnapshot["context"]["activeProjectId"];
   notesListDrill: AppSnapshot["context"]["notesListDrill"];
@@ -30,6 +32,8 @@ export type AppLayoutSelectors = {
 
 function shallowEqualLayout(a: AppLayoutSelectors, b: AppLayoutSelectors): boolean {
   return (
+    a.activeFileId === b.activeFileId &&
+    a.activeChatSessionId === b.activeChatSessionId &&
     a.activeSessionId === b.activeSessionId &&
     a.activeProjectId === b.activeProjectId &&
     a.notesListDrill === b.notesListDrill &&
@@ -40,6 +44,8 @@ function shallowEqualLayout(a: AppLayoutSelectors, b: AppLayoutSelectors): boole
 
 function selectLayoutSnapshot(s: AppSnapshot): AppLayoutSelectors {
   return {
+    activeFileId: s.context.activeFileId,
+    activeChatSessionId: s.context.activeChatSessionId,
     activeSessionId: s.context.activeSessionId,
     activeProjectId: s.context.activeProjectId,
     notesListDrill: s.context.notesListDrill,
@@ -61,6 +67,7 @@ export type WakeUpOverlaySelectors = {
   overlayActionReturnsToGraph: ReturnType<typeof selectOverlayActionReturnsToGraph>;
   editorRevealReady: ReturnType<typeof selectEditorRevealReady>;
   notes: AppSnapshot["context"]["notes"];
+  activeFileId: AppSnapshot["context"]["activeFileId"];
   activeSessionId: AppSnapshot["context"]["activeSessionId"];
 };
 
@@ -72,6 +79,7 @@ function shallowEqualWakeUp(a: WakeUpOverlaySelectors, b: WakeUpOverlaySelectors
     a.overlayActionReturnsToGraph === b.overlayActionReturnsToGraph &&
     a.editorRevealReady === b.editorRevealReady &&
     a.notes === b.notes &&
+    a.activeFileId === b.activeFileId &&
     a.activeSessionId === b.activeSessionId
   );
 }
@@ -85,6 +93,7 @@ export function selectWakeUpOverlayModel(s: AppSnapshot): WakeUpOverlaySelectors
     overlayActionReturnsToGraph: selectOverlayActionReturnsToGraph(s),
     editorRevealReady: selectEditorRevealReady(s),
     notes: s.context.notes,
+    activeFileId: s.context.activeFileId,
     activeSessionId: s.context.activeSessionId,
   };
 }

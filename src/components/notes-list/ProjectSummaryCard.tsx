@@ -25,7 +25,7 @@ type ProjectSummaryCardProps = {
   onNewFile?: () => void;
   onDragOver?: () => void;
   onDragLeave?: () => void;
-  onDropSession?: (sessionId: Id<"sessions">) => void;
+  onDropSession?: (fileId: Id<"files">) => void;
 };
 
 export function ProjectSummaryCard({
@@ -49,8 +49,8 @@ export function ProjectSummaryCard({
   onDropSession,
 }: ProjectSummaryCardProps) {
   const title = groupDisplayName(group);
-  const sessions = group.sessions;
-  const count = sessions.length;
+  const files = group.files;
+  const count = files.length;
   const fileCountLabel =
     count === 0
       ? "No files yet"
@@ -82,10 +82,10 @@ export function ProjectSummaryCard({
         onDropSession
           ? (e) => {
               e.preventDefault();
-              const sessionId = e.dataTransfer.getData(
+              const fileId = e.dataTransfer.getData(
                 "text/plain",
-              ) as Id<"sessions">;
-              if (sessionId) onDropSession(sessionId);
+              ) as Id<"files">;
+              if (fileId) onDropSession(fileId);
             }
           : undefined
       }

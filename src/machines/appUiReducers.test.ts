@@ -9,6 +9,8 @@ import {
 
 function ctx(partial: Partial<AppUiContext>): AppUiContext {
   return {
+    activeFileId: null,
+    activeChatSessionId: null,
     activeSessionId: null,
     activeProjectId: null,
     notesListDrill: null,

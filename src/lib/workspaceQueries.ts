@@ -1,77 +1,110 @@
-import type { Doc, Id } from "../../convex/_generated/dataModel";
-import type { ProjectWithSessions } from "@/components/session-sidebar/workspaceTypes";
+import type { Id } from "../../convex/_generated/dataModel";
+import type {
+  ProjectWithSessions,
+  WorkspaceFile,
+} from "@/components/session-sidebar/workspaceTypes";
 
-/** Session plus display context for the group it belongs to (Inbox vs project). */
-type SessionInWorkspaceContext = {
-  session: Doc<"sessions">;
+export type FileInWorkspaceContext = {
+  file: WorkspaceFile;
   projectName: string;
   projectId: Id<"projects"> | null;
 };
 
-/**
- * All sessions in the workspace, newest first (same ordering as auto-select in the app UI bridge).
- */
-export function flattenSessionsSorted(
+export function listFilesInWorkspace(
+  workspace: ProjectWithSessions[] | undefined,
+): FileInWorkspaceContext[] {
+  if (!workspace) return [];
+  const rows: FileInWorkspaceContext[] = [];
+  for (const g of workspace) {
+    const projectName = g.project?.name ?? "Inbox";
+    const projectId = g.project?._id ?? null;
+    for (const file of g.files) {
+      rows.push({ file, projectName, projectId });
+    }
+  }
+  return rows.sort((a, b) => b.file.createdAt - a.file.createdAt);
+}
+
+export function flattenFilesSorted(
   workspace: ProjectWithSessions[],
-): Doc<"sessions">[] {
-  return [...workspace.flatMap((g) => g.sessions)].sort(
+): WorkspaceFile[] {
+  return [...workspace.flatMap((g) => g.files)].sort(
     (a, b) => b.createdAt - a.createdAt,
   );
 }
 
-/**
- * Most recently created session across inbox and projects, or null if none.
- */
-export function firstSessionByRecency(
+export function firstFileByRecency(
   workspace: ProjectWithSessions[],
-): Doc<"sessions"> | null {
-  const sorted = flattenSessionsSorted(workspace);
+): WorkspaceFile | null {
+  const sorted = flattenFilesSorted(workspace);
   return sorted[0] ?? null;
 }
 
 type WorkspaceSnapshotForMachine = {
   inboxEmpty: boolean;
   hasProjects: boolean;
+  firstFileId: Id<"files"> | null;
   firstSessionId: Id<"sessions"> | null;
   firstProjectId: Id<"projects"> | null;
 };
 
-/**
- * Snapshot fields sent as WORKSPACE_SNAPSHOT to the app UI machine (auto-select, empty workspace).
- */
 export function buildWorkspaceSnapshot(
   workspace: ProjectWithSessions[] | undefined,
 ): WorkspaceSnapshotForMachine | null {
   if (workspace === undefined) return null;
   const hasProjects = workspace.some((g) => g.project != null);
   const inboxGroup = workspace.find((g) => g.project == null);
-  const inboxEmpty = !inboxGroup || inboxGroup.sessions.length === 0;
-  const first = firstSessionByRecency(workspace);
+  const inboxEmpty = !inboxGroup || inboxGroup.files.length === 0;
+  const first = firstFileByRecency(workspace);
   return {
     inboxEmpty,
     hasProjects,
-    firstSessionId: first?._id ?? null,
+    firstFileId: first?._id ?? null,
+    firstSessionId: first?.sessionId ?? null,
     firstProjectId: first?.projectId ?? null,
   };
 }
 
-/**
- * Find a session by id and return it with its project/inbox label.
- */
-export function findSessionInWorkspace(
+export function findFileInWorkspace(
   workspace: ProjectWithSessions[] | undefined,
-  sessionId: Id<"sessions"> | null,
-): SessionInWorkspaceContext | undefined {
-  if (!workspace || !sessionId) return undefined;
+  fileId: Id<"files"> | null,
+): FileInWorkspaceContext | undefined {
+  if (!workspace || !fileId) return undefined;
   for (const g of workspace) {
-    const s = g.sessions.find((x) => x._id === sessionId);
-    if (s) {
+    const f = g.files.find((x) => x._id === fileId);
+    if (f) {
       return {
-        session: s,
+        file: f,
         projectName: g.project?.name ?? "Inbox",
         projectId: g.project?._id ?? null,
       };
     }
   }
   return undefined;
+}
+
+export function findFileBySessionId(
+  workspace: ProjectWithSessions[] | undefined,
+  sessionId: Id<"sessions"> | null,
+): FileInWorkspaceContext | undefined {
+  if (!workspace || !sessionId) return undefined;
+  for (const g of workspace) {
+    const f = g.files.find((x) => x.sessionId === sessionId);
+    if (f) {
+      return {
+        file: f,
+        projectName: g.project?.name ?? "Inbox",
+        projectId: g.project?._id ?? null,
+      };
+    }
+  }
+  return undefined;
+}
+
+/** @deprecated Use findFileInWorkspace */
+export function findSessionInWorkspace(
+  workspace: ProjectWithSessions[] | undefined,
+  sessionId: Id<"sessions"> | null,
+): FileInWorkspaceContext | undefined {
+  return findFileBySessionId(workspace, sessionId);
 }

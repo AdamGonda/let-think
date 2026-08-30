@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { usePostHog } from "posthog-js/react";
-import type { Doc, Id } from "../../convex/_generated/dataModel";
+import type { Id } from "../../convex/_generated/dataModel";
+import type { WorkspaceFile } from "@/components/session-sidebar/workspaceTypes";
 import type { AppUiActorRef } from "@/contexts/appUiActorContext";
 import {
   intentBreadcrumbProjectsRootClick,
@@ -54,8 +55,8 @@ export function useAppShellIntentHandlers(actor: AppUiActorRef) {
   }, [actor]);
 
   const onSelectSessionFromNotesList = useCallback(
-    (session: Doc<"sessions">) => {
-      openSessionInFilesWithEditor(actor, session);
+    (file: WorkspaceFile) => {
+      openSessionInFilesWithEditor(actor, file);
     },
     [actor],
   );

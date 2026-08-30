@@ -34,11 +34,15 @@ const base = {
   onEditorOpen: vi.fn(),
   onProjectsRootClick: vi.fn(),
   onProjectNameClick: vi.fn(),
+  fileChats: [],
+  activeChatSessionId: null,
+  onSelectChatSession: vi.fn(),
+  onNewChat: vi.fn(),
 };
 
 describe("AppContentGraphSurface session views", () => {
   it("swaps graph for a full chat view", () => {
-    const { getByTestId, queryByTestId, rerender } = render(
+    const { getByTestId, queryByTestId, getByLabelText, rerender } = render(
       <AppContentGraphSurface {...base} sessionView="graph" />,
     );
     expect(getByTestId("graph-cards")).toBeTruthy();
@@ -51,5 +55,6 @@ describe("AppContentGraphSurface session views", () => {
     expect(queryByTestId("graph-composer")).toBeNull();
     expect(getByTestId("chat-thread")).toBeTruthy();
     expect(getByTestId("chat-composer")).toBeTruthy();
+    expect(getByLabelText("New chat")).toBeTruthy();
   });
 });

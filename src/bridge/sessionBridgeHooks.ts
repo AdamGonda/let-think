@@ -2,7 +2,11 @@ import { useEffect, useRef } from "react";
 import type { AppUiActorRef } from "@/contexts/appUiActorContext";
 import type { ProjectWithSessions } from "@/components/session-sidebar/workspaceTypes";
 import type { Id } from "../../convex/_generated/dataModel";
-import { buildWorkspaceSnapshot } from "@/lib/workspaceQueries";
+import {
+  buildWorkspaceSnapshot,
+  findFileBySessionId,
+  findFileInWorkspace,
+} from "@/lib/workspaceQueries";
 
 export function useSyncChatHistoryMeta(
   actor: AppUiActorRef,
@@ -55,4 +59,31 @@ export function useSyncWorkspaceSnapshot(
     prevWorkspaceKeyRef.current = key;
     actor.send({ type: "WORKSPACE_SNAPSHOT", ...snap });
   }, [workspace, actor]);
+}
+
+/** Map leftover session ids onto files, and keep ideation session in sync with the file. */
+export function useSyncFileSelectionFromWorkspace(
+  actor: AppUiActorRef,
+  workspace: ProjectWithSessions[] | undefined,
+  activeFileId: Id<"files"> | null,
+  activeSessionId: Id<"sessions"> | null,
+): void {
+  useEffect(() => {
+    if (!workspace) return;
+    if (activeFileId) {
+      const found = findFileInWorkspace(workspace, activeFileId);
+      if (found?.file.sessionId && found.file.sessionId !== activeSessionId) {
+        actor.send({
+          type: "ACTIVE_SESSION_SET",
+          sessionId: found.file.sessionId,
+        });
+      }
+      return;
+    }
+    if (!activeSessionId) return;
+    const found = findFileBySessionId(workspace, activeSessionId);
+    if (found) {
+      actor.send({ type: "ACTIVE_FILE_SET", fileId: found.file._id });
+    }
+  }, [workspace, activeFileId, activeSessionId, actor]);
 }

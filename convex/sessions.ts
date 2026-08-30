@@ -1,6 +1,5 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS } from "./constants";
 import {
   internalMutation,
   internalQuery,
@@ -12,6 +11,12 @@ import {
 import type { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
+import { deleteSessionOwnedRows } from "./lib/sessionOwned";
+import {
+  createFileWithSession,
+  deleteFileCascade,
+  maybeTitleFileFromFirstGraphMessage,
+} from "./files";
 
 export const list = query({
   args: {},
@@ -61,14 +66,11 @@ export const create = mutation({
         throw new Error("Project not found or access denied");
       }
     }
-    const now = Date.now();
-    const id = await ctx.db.insert("sessions", {
+    const { sessionId } = await createFileWithSession(ctx, {
       userId,
       projectId,
-      title: "New file",
-      createdAt: now,
     });
-    return id;
+    return sessionId;
   },
 });
 
@@ -80,28 +82,7 @@ async function requireSessionOwner(ctx: MutationCtx, sessionId: Id<"sessions">) 
   return session;
 }
 
-async function deleteRowsBySession(
-  ctx: MutationCtx,
-  table: "messages" | "chatMessages" | "sessionConceptGraphs",
-  sessionId: Id<"sessions">,
-) {
-  const rows = await ctx.db
-    .query(table)
-    .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
-    .collect();
-  for (const row of rows) {
-    await ctx.db.delete(row._id);
-  }
-}
-
-export async function deleteSessionOwnedRows(
-  ctx: MutationCtx,
-  sessionId: Id<"sessions">,
-) {
-  await deleteRowsBySession(ctx, "messages", sessionId);
-  await deleteRowsBySession(ctx, "chatMessages", sessionId);
-  await deleteRowsBySession(ctx, "sessionConceptGraphs", sessionId);
-}
+export { deleteSessionOwnedRows };
 
 export const updateTitle = mutation({
   args: {
@@ -109,8 +90,11 @@ export const updateTitle = mutation({
     title: v.string(),
   },
   handler: async (ctx, { id, title }) => {
-    await requireSessionOwner(ctx, id);
+    const session = await requireSessionOwner(ctx, id);
     await ctx.db.patch(id, { title });
+    if (session.fileId) {
+      await ctx.db.patch(session.fileId, { title });
+    }
   },
 });
 
@@ -120,20 +104,27 @@ export const moveToProject = mutation({
     projectId: v.optional(v.id("projects")),
   },
   handler: async (ctx, { id, projectId }) => {
-    await requireSessionOwner(ctx, id);
+    const session = await requireSessionOwner(ctx, id);
     if (projectId) {
       const userId = await getAuthUserId(ctx);
       const project = await ctx.db.get(projectId);
       if (!project || project.userId !== userId) throw new Error("Project not found or access denied");
     }
     await ctx.db.patch(id, { projectId });
+    if (session.fileId) {
+      await ctx.db.patch(session.fileId, { projectId });
+    }
   },
 });
 
 export const remove = mutation({
   args: { id: v.id("sessions") },
   handler: async (ctx, { id }) => {
-    await requireSessionOwner(ctx, id);
+    const session = await requireSessionOwner(ctx, id);
+    if (session.fileId) {
+      await deleteFileCascade(ctx, session.fileId);
+      return;
+    }
     await deleteSessionOwnedRows(ctx, id);
     await ctx.db.delete(id);
   },
@@ -263,7 +254,7 @@ export const addMessages = mutation({
         userContent,
       });
     }
-    await maybeTitleFromFirstUserMessage(ctx, sessionId, userContent);
+    await maybeTitleFileFromFirstGraphMessage(ctx, sessionId, userContent);
   },
 });
 
@@ -272,18 +263,7 @@ async function maybeTitleFromFirstUserMessage(
   sessionId: Id<"sessions">,
   userContent: string,
 ) {
-  const session = await ctx.db.get(sessionId);
-  if (
-    (session?.title === "New file" || session?.title === "New session") &&
-    userContent.trim()
-  ) {
-    const title =
-      userContent.slice(0, SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS) +
-      (userContent.length > SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS
-        ? "…"
-        : "");
-    await ctx.db.patch(sessionId, { title });
-  }
+  await maybeTitleFileFromFirstGraphMessage(ctx, sessionId, userContent);
 }
 
 async function insertChatTurn(
@@ -376,6 +356,9 @@ export const patchChatMessage = internalMutation({
     const msg = await ctx.db.get(messageId);
     if (!msg || msg.role !== "assistant") {
       throw new Error("Assistant message not found");
+    }
+    if (!msg.sessionId) {
+      throw new Error("Session not found or access denied");
     }
     const session = await ctx.db.get(msg.sessionId);
     if (!session || session.userId !== userId) {
@@ -555,7 +538,12 @@ export const getEditorFields = query({
     return {
       draftInput: session.draftInput ?? "",
       chatDraftInput: session.chatDraftInput ?? "",
-      thinkingNotes: session.thinkingNotes ?? "",
+      thinkingNotes:
+        (session.fileId
+          ? (await ctx.db.get(session.fileId))?.thinkingNotes
+          : undefined) ??
+        session.thinkingNotes ??
+        "",
     };
   },
 });
@@ -599,5 +587,8 @@ export const updateThinkingNotes = mutation({
     const session = await ctx.db.get(sessionId);
     if (!session || session.userId !== userId) return;
     await ctx.db.patch(sessionId, { thinkingNotes });
+    if (session.fileId) {
+      await ctx.db.patch(session.fileId, { thinkingNotes });
+    }
   },
 });

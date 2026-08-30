@@ -2,22 +2,39 @@ import { useCallback } from "react";
 import { useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { useAppUiActor } from "./useAppUi";
-import { setActiveProject, setActiveSession } from "@/lib/appUiCommands";
+import {
+  setActiveChatSession,
+  setActiveFile,
+  setActiveProject,
+  setActiveSession,
+} from "@/lib/appUiCommands";
+import type { Id } from "../../convex/_generated/dataModel";
 
 /**
- * First-message session creation. Default session selection and empty-workspace
+ * First-message file/session creation. Default selection and empty-workspace
  * clearing are handled by the app UI machine and session bridge.
  */
 export function useDefaultSessionSelection() {
   const actor = useAppUiActor();
-  const createSessionMutation = useMutation(api.sessions.create);
+  const createFile = useMutation(api.files.create);
+  const createChatSession = useMutation(api.chatSessions.create);
 
   const handleCreateSessionForFirstMessage = useCallback(async () => {
-    const id = await createSessionMutation({});
-    setActiveSession(actor, id);
+    const created = await createFile({});
+    setActiveFile(actor, created.fileId);
+    setActiveSession(actor, created.sessionId);
     setActiveProject(actor, null);
-    return id;
-  }, [createSessionMutation, actor]);
+    return created.sessionId;
+  }, [createFile, actor]);
 
-  return { handleCreateSessionForFirstMessage };
+  const handleCreateChatSession = useCallback(
+    async (fileId: Id<"files">) => {
+      const id = await createChatSession({ fileId });
+      setActiveChatSession(actor, id);
+      return id;
+    },
+    [createChatSession, actor],
+  );
+
+  return { handleCreateSessionForFirstMessage, handleCreateChatSession };
 }

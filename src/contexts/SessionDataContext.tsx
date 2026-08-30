@@ -77,9 +77,11 @@ function mapPageToSessionMessages(
 
 export function SessionDataProvider({
   sessionId,
+  chatSessionId,
   children,
 }: {
   sessionId: Id<"sessions"> | null;
+  chatSessionId: Id<"chatSessions"> | null;
   children: ReactNode;
 }) {
   const conceptGraph = useQuery(
@@ -100,8 +102,8 @@ export function SessionDataProvider({
     status: chatMessagesStatus,
     loadMore: loadMoreChat,
   } = usePaginatedQuery(
-    api.sessions.listChatMessagesPaginated,
-    sessionId ? { sessionId } : "skip",
+    api.chatSessions.listMessagesPaginated,
+    chatSessionId ? { chatSessionId } : "skip",
     { initialNumItems: CHAT_MESSAGES_PAGE_SIZE }
   );
 

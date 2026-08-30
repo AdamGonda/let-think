@@ -2,7 +2,7 @@ import { useCallback, useMemo } from "react";
 import { useAppUiActor, useAppUiSelector } from "../../hooks/useAppUi";
 import { useWakeUpOverlaySelectors } from "../../hooks/useAppShellMachineSelectors";
 import { selectDisplayWakeUpLayer } from "../../machines/appUiMachine";
-import { findSessionInWorkspace } from "../../lib/workspaceQueries";
+import { findFileBySessionId, findFileInWorkspace } from "../../lib/workspaceQueries";
 import {
   intentBreadcrumbProjectsRootClick,
   intentBreadcrumbSessionClick,
@@ -31,9 +31,11 @@ export function WakeUpOverlayContainer({
   const actor = useAppUiActor();
   const overlay = useWakeUpOverlaySelectors();
 
-  const activeSessionInWorkspace = useMemo(
-    () => findSessionInWorkspace(workspace, overlay.activeSessionId),
-    [workspace, overlay.activeSessionId],
+  const activeFileInWorkspace = useMemo(
+    () =>
+      findFileInWorkspace(workspace, overlay.activeFileId) ??
+      findFileBySessionId(workspace, overlay.activeSessionId),
+    [workspace, overlay.activeFileId, overlay.activeSessionId],
   );
 
   const handleWakeNotesChange = useCallback(
@@ -72,7 +74,7 @@ export function WakeUpOverlayContainer({
       onOverlayActionClick={handleOverlayActionClick}
       editorRevealReady={overlay.editorRevealReady}
       activeSessionId={overlay.activeSessionId}
-      activeSessionInWorkspace={activeSessionInWorkspace}
+      activeSessionInWorkspace={activeFileInWorkspace}
       notes={overlay.notes}
       notesSelectionRange={null}
       onNotesChange={handleWakeNotesChange}

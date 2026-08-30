@@ -16,6 +16,8 @@ export function AppUiProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const subscription = actorRef.subscribe((snapshot) => {
       setStoredAppUiSelection({
+        activeFileId: snapshot.context.activeFileId,
+        activeChatSessionId: snapshot.context.activeChatSessionId,
         activeSessionId: snapshot.context.activeSessionId,
         activeProjectId: snapshot.context.activeProjectId,
         hasEverHadSessionSelection: snapshot.context.hasEverHadSessionSelection,

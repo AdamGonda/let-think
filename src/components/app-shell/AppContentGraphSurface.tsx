@@ -3,6 +3,7 @@ import type { Id } from "../../../convex/_generated/dataModel";
 import { GraphViewHeader } from "../concept-graph-overlay/GraphViewHeader";
 import { ConceptGraphOverlay } from "../concept-graph-overlay/ConceptGraphOverlay";
 import { SessionChatThread } from "../chat/SessionChatThread";
+import { FileChatList, type FileChatListItem } from "../chat/FileChatList";
 import type { ConceptGraphData } from "@/contexts/SessionDataContext";
 import type { SessionView } from "@/machines/appUiTypes";
 
@@ -31,6 +32,10 @@ type AppContentGraphSurfaceProps = {
   onEditorOpen: () => void;
   onProjectsRootClick: () => void;
   onProjectNameClick: () => void;
+  fileChats: FileChatListItem[];
+  activeChatSessionId: Id<"chatSessions"> | null;
+  onSelectChatSession: (id: Id<"chatSessions">) => void;
+  onNewChat: () => void;
   onCardReferenceClick?: (conceptNumber: number) => void;
   onConceptCopy?: (concept: { name: string; description?: string }) => void;
 };
@@ -60,6 +65,10 @@ export function AppContentGraphSurface({
   onEditorOpen,
   onProjectsRootClick,
   onProjectNameClick,
+  fileChats,
+  activeChatSessionId,
+  onSelectChatSession,
+  onNewChat,
   onCardReferenceClick,
   onConceptCopy,
 }: AppContentGraphSurfaceProps) {
@@ -87,9 +96,20 @@ export function AppContentGraphSurface({
         />
       )}
       {chatOpen ? (
-        <div className="relative flex min-h-0 flex-1 flex-col">
-          <SessionChatThread isLoading={chatThreadLoading} />
-          {chatComposer}
+        <div className="relative flex min-h-0 flex-1">
+          <FileChatList
+            chats={fileChats}
+            activeChatSessionId={activeChatSessionId}
+            onSelect={onSelectChatSession}
+            onNewChat={onNewChat}
+          />
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+            <SessionChatThread
+              key={activeChatSessionId ?? "empty"}
+              isLoading={chatThreadLoading}
+            />
+            {chatComposer}
+          </div>
         </div>
       ) : (
         <div className="relative flex min-h-0 flex-1 flex-col">

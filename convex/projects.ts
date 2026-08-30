@@ -1,7 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { deleteSessionOwnedRows } from "./sessions";
+import { deleteFileCascade } from "./files";
 
 export const list = query({
   args: {},
@@ -54,22 +54,32 @@ export const listWithSessions = query({
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .order("desc")
       .collect();
+    const allFiles = await ctx.db
+      .query("files")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
     const allSessions = await ctx.db
       .query("sessions")
       .withIndex("by_user", (q) => q.eq("userId", userId))
       .collect();
-    const inboxSessions = allSessions
-      .filter((s) => s.projectId === undefined)
-      .sort((a, b) => b.createdAt - a.createdAt);
-    const byProject = new Map<
-      string,
-      Array<(typeof allSessions)[0]>
-    >();
+    const sessionByFileId = new Map<string, (typeof allSessions)[0]>();
     for (const s of allSessions) {
-      if (s.projectId) {
-        const key = s.projectId;
+      if (s.fileId) sessionByFileId.set(s.fileId, s);
+    }
+    const toWorkspaceFile = (file: (typeof allFiles)[0]) => ({
+      ...file,
+      sessionId: sessionByFileId.get(file._id)?._id ?? null,
+    });
+    const inboxFiles = allFiles
+      .filter((f) => f.projectId === undefined)
+      .sort((a, b) => b.createdAt - a.createdAt)
+      .map(toWorkspaceFile);
+    const byProject = new Map<string, ReturnType<typeof toWorkspaceFile>[]>();
+    for (const file of allFiles) {
+      if (file.projectId) {
+        const key = file.projectId;
         if (!byProject.has(key)) byProject.set(key, []);
-        byProject.get(key)!.push(s);
+        byProject.get(key)!.push(toWorkspaceFile(file));
       }
     }
     for (const arr of byProject.values()) {
@@ -77,13 +87,13 @@ export const listWithSessions = query({
     }
     const result: Array<{
       project: (typeof projects)[0] | null;
-      sessions: (typeof allSessions)[0][];
+      files: ReturnType<typeof toWorkspaceFile>[];
     }> = [];
-    result.push({ project: null, sessions: inboxSessions });
+    result.push({ project: null, files: inboxFiles });
     for (const project of projects) {
       result.push({
         project,
-        sessions: byProject.get(project._id) ?? [],
+        files: byProject.get(project._id) ?? [],
       });
     }
     return result;
@@ -97,13 +107,12 @@ export const remove = mutation({
     if (!userId) throw new Error("Must be signed in");
     const project = await ctx.db.get(id);
     if (!project || project.userId !== userId) throw new Error("Project not found or access denied");
-    const sessions = await ctx.db
-      .query("sessions")
+    const files = await ctx.db
+      .query("files")
       .withIndex("by_project", (q) => q.eq("projectId", id))
       .collect();
-    for (const session of sessions) {
-      await deleteSessionOwnedRows(ctx, session._id);
-      await ctx.db.delete(session._id);
+    for (const file of files) {
+      await deleteFileCascade(ctx, file._id);
     }
     await ctx.db.delete(id);
   },

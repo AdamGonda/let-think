@@ -1,18 +1,18 @@
 import type { RefObject } from "react";
 import { clsx } from "clsx";
-import type { Doc } from "../../../convex/_generated/dataModel";
+import type { WorkspaceFile } from "@/components/session-sidebar/workspaceTypes";
 import { CornerRippleBackdrop } from "@/components/ui/corner-ripple-backdrop";
 import { Input } from "@/components/ui/input";
 import { ExplorerCardActions } from "./ExplorerCardActions";
 
 type NotesListSessionCardProps = {
-  session: Doc<"sessions">;
+  session: WorkspaceFile;
   isSelected: boolean;
   isMapHighlighted?: boolean;
   isEditing?: boolean;
   confirmDelete?: boolean;
   titleInputRef?: RefObject<HTMLInputElement | null>;
-  onOpenNotesEditor: (session: Doc<"sessions">) => void;
+  onOpenNotesEditor: (session: WorkspaceFile) => void;
   onRename?: (title: string) => void;
   onCancelEdit?: () => void;
   onStartEdit?: () => void;

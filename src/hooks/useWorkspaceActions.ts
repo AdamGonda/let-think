@@ -2,50 +2,56 @@ import { useCallback, useMemo } from "react";
 import { useMutation } from "convex/react";
 import { usePostHog } from "posthog-js/react";
 import { api } from "../../convex/_generated/api";
-import type { Id, Doc } from "../../convex/_generated/dataModel";
-import type { ProjectWithSessions } from "@/components/session-sidebar/workspaceTypes";
+import type { Id } from "../../convex/_generated/dataModel";
+import type {
+  ProjectWithSessions,
+  WorkspaceFile,
+} from "@/components/session-sidebar/workspaceTypes";
 
 const FOCUS_COMPOSER_EVENT = "let-think:focus-composer";
 
 type UseWorkspaceActionsArgs = {
   workspace: ProjectWithSessions[] | undefined;
-  activeSessionId: Id<"sessions"> | null;
+  activeFileId: Id<"files"> | null;
   activeProjectId: Id<"projects"> | null;
-  onSelectSession: (id: Id<"sessions"> | null) => void;
+  onSelectFile: (
+    fileId: Id<"files"> | null,
+    sessionId: Id<"sessions"> | null,
+    projectId?: Id<"projects"> | null,
+  ) => void;
   onSelectProject: (id: Id<"projects"> | null) => void;
 };
 
 export function useWorkspaceActions({
   workspace,
-  activeSessionId,
+  activeFileId,
   activeProjectId,
-  onSelectSession,
+  onSelectFile,
   onSelectProject,
 }: UseWorkspaceActionsArgs) {
   const posthog = usePostHog();
-  const createSession = useMutation(api.sessions.create);
+  const createFile = useMutation(api.files.create);
   const createProject = useMutation(api.projects.create);
-  const removeSession = useMutation(api.sessions.remove);
-  const moveToProject = useMutation(api.sessions.moveToProject);
+  const removeFile = useMutation(api.files.remove);
+  const moveToProject = useMutation(api.files.moveToProject);
   const removeProject = useMutation(api.projects.remove);
-  const updateTitle = useMutation(api.sessions.updateTitle);
+  const updateTitle = useMutation(api.files.updateTitle);
   const updateProjectName = useMutation(api.projects.updateName);
 
-  const allSessions = useMemo(
-    () => workspace?.flatMap((g: ProjectWithSessions) => g.sessions) ?? [],
+  const allFiles = useMemo(
+    () => workspace?.flatMap((g: ProjectWithSessions) => g.files) ?? [],
     [workspace],
   );
 
   const handleNewSession = useCallback(
     async (projectId?: Id<"projects">) => {
-      const id = await createSession({ projectId: projectId ?? undefined });
+      const created = await createFile({ projectId: projectId ?? undefined });
       posthog.capture("session_created", { has_project: !!projectId });
-      onSelectSession(id);
-      onSelectProject(projectId ?? null);
+      onSelectFile(created.fileId, created.sessionId, projectId ?? null);
       window.dispatchEvent(new Event(FOCUS_COMPOSER_EVENT));
-      return id;
+      return created;
     },
-    [createSession, onSelectSession, onSelectProject, posthog],
+    [createFile, onSelectFile, posthog],
   );
 
   const handleNewProject = useCallback(async () => {
@@ -55,7 +61,7 @@ export function useWorkspaceActions({
   }, [createProject, posthog]);
 
   const handleRenameSession = useCallback(
-    async (id: Id<"sessions">, title: string) => {
+    async (id: Id<"files">, title: string) => {
       if (title?.trim()) {
         await updateTitle({ id, title: title.trim() });
         posthog.capture("session_renamed");
@@ -74,38 +80,36 @@ export function useWorkspaceActions({
   );
 
   const handleDeleteSession = useCallback(
-    async (id: Id<"sessions">) => {
-      const wasActive = activeSessionId === id;
-      await removeSession({ id });
+    async (id: Id<"files">) => {
+      const wasActive = activeFileId === id;
+      await removeFile({ id });
       posthog.capture("session_deleted", { was_active: wasActive });
       if (wasActive) {
-        onSelectSession(null);
+        onSelectFile(null, null);
       }
     },
-    [activeSessionId, removeSession, onSelectSession, posthog],
+    [activeFileId, removeFile, onSelectFile, posthog],
   );
 
   const handleMoveSession = useCallback(
     async (
-      sessionId: Id<"sessions">,
+      fileId: Id<"files">,
       targetProjectId: Id<"projects"> | null,
     ) => {
-      const session = allSessions.find(
-        (s: Doc<"sessions">) => s._id === sessionId,
-      );
-      if ((session?.projectId ?? null) === targetProjectId) return;
+      const file = allFiles.find((s: WorkspaceFile) => s._id === fileId);
+      if ((file?.projectId ?? null) === targetProjectId) return;
       await moveToProject({
-        id: sessionId,
+        id: fileId,
         projectId: targetProjectId ?? undefined,
       });
       posthog.capture("session_moved_to_project", {
         to_inbox: targetProjectId === null,
       });
-      if (activeSessionId === sessionId) {
+      if (activeFileId === fileId) {
         onSelectProject(targetProjectId);
       }
     },
-    [allSessions, moveToProject, activeSessionId, onSelectProject, posthog],
+    [allFiles, moveToProject, activeFileId, onSelectProject, posthog],
   );
 
   const handleDeleteProject = useCallback(
@@ -115,14 +119,14 @@ export function useWorkspaceActions({
       posthog.capture("project_deleted", { was_active: wasActiveProject });
       if (wasActiveProject) {
         onSelectProject(null);
-        onSelectSession(null);
+        onSelectFile(null, null);
       }
     },
-    [activeProjectId, removeProject, onSelectProject, onSelectSession, posthog],
+    [activeProjectId, removeProject, onSelectProject, onSelectFile, posthog],
   );
 
   return {
-    allSessions,
+    allSessions: allFiles,
     handleNewSession,
     handleNewProject,
     handleRenameSession,

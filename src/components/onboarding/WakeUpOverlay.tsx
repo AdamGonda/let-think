@@ -17,7 +17,7 @@ type WakeUpOverlayProps = {
   activeSessionId: Id<"sessions"> | null;
   activeSessionInWorkspace:
     | {
-        session: { title: string };
+        file: { title: string };
         projectName: string;
         projectId: Id<"projects"> | null;
       }
@@ -82,7 +82,7 @@ export function WakeUpOverlay({
               {showFileNavBreadcrumb && activeSessionInWorkspace ? (
                 <NoteBreadcrumb
                   projectName={activeSessionInWorkspace.projectName}
-                  fileName={activeSessionInWorkspace.session.title}
+                  fileName={activeSessionInWorkspace.file.title}
                   interactive={
                     editorRevealReady && !chatLoading && !isExitingOverlay
                   }

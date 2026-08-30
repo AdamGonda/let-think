@@ -6,6 +6,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useMutation, useQuery } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import { toast } from "sonner";
 import { usePostHog } from "posthog-js/react";
 import { useSessionData } from "../../contexts/SessionDataContext";
@@ -20,21 +22,26 @@ import {
   referencedConceptIdsFromDraft,
 } from "../../lib/conceptReferences";
 import { userInputForBatch } from "../../lib/batchUserInput";
-import { findSessionInWorkspace } from "../../lib/workspaceQueries";
+import { findFileInWorkspace } from "../../lib/workspaceQueries";
 import {
   intentBreadcrumbProjectsRootClick,
   intentBreadcrumbSessionClick,
   openEditor,
   openHistoryPanel,
+  setActiveChatSession,
   setGraphLoadingProgress,
   setSelectedBatchIndex,
   setSessionView,
 } from "@/lib/appUiCommands";
 import type { SessionView } from "@/machines/appUiTypes";
 import type { ProjectWithSessions } from "../session-sidebar/workspaceTypes";
+
+const FOCUS_COMPOSER_EVENT = "let-think:focus-composer";
 type GraphSurfaceContainerProps = {
   workspace: ProjectWithSessions[] | undefined;
+  activeFileId: Id<"files"> | null;
   activeSessionId: Id<"sessions"> | null;
+  activeChatSessionId: Id<"chatSessions"> | null;
   sessionPastFrame: boolean;
   graphComposer: ReactNode;
   chatComposer: ReactNode;
@@ -45,13 +52,16 @@ type GraphSurfaceContainerProps = {
  */
 export function GraphSurfaceContainer({
   workspace,
+  activeFileId,
   activeSessionId,
+  activeChatSessionId,
   sessionPastFrame,
   graphComposer,
   chatComposer,
 }: GraphSurfaceContainerProps) {
   const posthog = usePostHog();
   const actor = useAppUiActor();
+  const createChatSession = useMutation(api.chatSessions.create);
   const graph = useGraphSurfaceMachineSelectors();
   const { handleCardReferenceClick } = useGraphCardReferenceHandler({
     actor,
@@ -60,10 +70,27 @@ export function GraphSurfaceContainer({
 
   const { conceptGraph, messages, batches } = useSessionData();
 
-  const activeSessionInWorkspace = useMemo(
-    () => findSessionInWorkspace(workspace, activeSessionId),
-    [workspace, activeSessionId],
+  const activeFileInWorkspace = useMemo(
+    () => findFileInWorkspace(workspace, activeFileId),
+    [workspace, activeFileId],
   );
+  const fileChats = useQuery(
+    api.chatSessions.listByFile,
+    activeFileId ? { fileId: activeFileId } : "skip",
+  );
+
+  useEffect(() => {
+    if (!fileChats || fileChats.length === 0) return;
+    if (
+      activeChatSessionId &&
+      fileChats.some((c) => c._id === activeChatSessionId)
+    ) {
+      return;
+    }
+    const first = fileChats[0];
+    if (!first) return;
+    setActiveChatSession(actor, first._id);
+  }, [actor, fileChats, activeChatSessionId]);
 
   const numberedConcepts = useMemo(
     () =>
@@ -173,6 +200,19 @@ export function GraphSurfaceContainer({
     [actor, posthog],
   );
 
+  const handleNewChat = useCallback(async () => {
+    if (!activeFileId) return;
+    try {
+      const id = await createChatSession({ fileId: activeFileId });
+      posthog.capture("chat_session_created", { source: "chat_list" });
+      setActiveChatSession(actor, id);
+      window.dispatchEvent(new Event(FOCUS_COMPOSER_EVENT));
+    } catch (err) {
+      console.error(err);
+      toast.error("Couldn't create a new chat");
+    }
+  }, [activeFileId, actor, createChatSession, posthog]);
+
   const handleConceptCopy = useCallback(
     async (concept: { name: string; description?: string }) => {
       const text = formatConceptPlainForClipboard(concept);
@@ -191,8 +231,8 @@ export function GraphSurfaceContainer({
   return (
     <AppContentGraphSurface
       activeSessionId={activeSessionId}
-      activeSessionTitle={activeSessionInWorkspace?.session.title}
-      activeProjectName={activeSessionInWorkspace?.projectName}
+      activeSessionTitle={activeFileInWorkspace?.file.title}
+      activeProjectName={activeFileInWorkspace?.projectName}
       batchesLength={batches.length}
       selectedBatchIndex={graph.selectedBatchIndex}
       hasChatHistory={graph.hasChatHistory}
@@ -217,6 +257,12 @@ export function GraphSurfaceContainer({
       onEditorOpen={handleEditorOpen}
       onProjectsRootClick={() => intentBreadcrumbProjectsRootClick(actor)}
       onProjectNameClick={() => intentBreadcrumbSessionClick(actor)}
+      fileChats={fileChats ?? []}
+      activeChatSessionId={activeChatSessionId}
+      onSelectChatSession={(id) => setActiveChatSession(actor, id)}
+      onNewChat={() => {
+        void handleNewChat();
+      }}
       onCardReferenceClick={
         isLatestBatch ? handleCardReferenceClick : undefined
       }

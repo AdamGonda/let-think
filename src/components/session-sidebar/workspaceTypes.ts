@@ -1,8 +1,13 @@
-import type { Doc } from "../../../convex/_generated/dataModel";
+import type { Doc, Id } from "../../../convex/_generated/dataModel";
+
+/** File as listed in the workspace, with its ideation session id. */
+export type WorkspaceFile = Doc<"files"> & {
+  sessionId: Id<"sessions"> | null;
+};
 
 export type ProjectWithSessions = {
   project: Doc<"projects"> | null;
-  sessions: Doc<"sessions">[];
+  files: WorkspaceFile[];
 };
 
 /** Workspace slice where `project` is set (excludes the synthetic inbox group). */

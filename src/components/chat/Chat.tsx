@@ -16,7 +16,9 @@ import { HistoricalBatchPrompt } from "./HistoricalBatchPrompt";
 
 interface ChatProps {
   sessionId: Id<"sessions"> | null;
+  chatSessionId?: Id<"chatSessions"> | null;
   onCreateSession?: () => Promise<Id<"sessions">>;
+  onCreateChatSession?: () => Promise<Id<"chatSessions">>;
   autoCollapseSignal?: string;
   isLoading: boolean;
   setIsLoading: (loading: boolean) => void;
@@ -39,7 +41,9 @@ interface ChatProps {
 
 export function Chat({
   sessionId,
+  chatSessionId = null,
   onCreateSession,
+  onCreateChatSession,
   autoCollapseSignal = "",
   isLoading,
   setIsLoading,
@@ -74,8 +78,17 @@ export function Chat({
     if (!effectiveSessionId && onCreateSession) {
       effectiveSessionId = await onCreateSession();
     }
-    if (!effectiveSessionId) return;
-    if (!createdViaCallback && !canSend) return;
+    if (sendLane === "graph" && !effectiveSessionId) return;
+    if (sendLane === "graph" && !createdViaCallback && !canSend) return;
+
+    let effectiveChatSessionId = chatSessionId;
+    if (sendLane === "chat") {
+      if (!effectiveChatSessionId && onCreateChatSession) {
+        effectiveChatSessionId = await onCreateChatSession();
+      }
+      if (!effectiveChatSessionId) return;
+      if (effectiveSessionId && !canSend) return;
+    }
 
     const rawContent = input.trim();
     const { resolvedContent, referencedConcepts, mentions } = resolveAtReferences(
@@ -99,14 +112,27 @@ export function Chat({
         mentions: mentions.length > 0 ? mentions : undefined,
       };
       if (sendLane === "chat") {
+        if (!effectiveChatSessionId) return;
         setInput("");
-        await sendChatMessage(payload);
+        await sendChatMessage({
+          chatSessionId: effectiveChatSessionId,
+          userContent: payload.userContent,
+          selectedNodeContext: payload.selectedNodeContext,
+          mentions: payload.mentions,
+        });
       } else {
-        await sendGraphMessage(payload);
+        if (!effectiveSessionId) return;
+        await sendGraphMessage({
+          sessionId: effectiveSessionId,
+          userContent: payload.userContent,
+          selectedNodeContext: payload.selectedNodeContext,
+          mentions: payload.mentions,
+        });
         setInput("");
       }
       posthog.capture("message_sent", {
         session_id: effectiveSessionId,
+        chat_session_id: sendLane === "chat" ? effectiveChatSessionId : undefined,
         lane: sendLane,
         has_concept_references: referencedConcepts.length > 0,
         concept_reference_count: referencedConcepts.length,
@@ -120,7 +146,12 @@ export function Chat({
     }
   };
 
-  const canSubmit = sessionId ? canSend : !!onCreateSession;
+  const canSubmit =
+    sendLane === "chat"
+      ? !!chatSessionId || !!onCreateChatSession
+      : sessionId
+        ? canSend
+        : !!onCreateSession;
   const isDisabled = isLoading || !canSubmit;
 
   const placeholder =

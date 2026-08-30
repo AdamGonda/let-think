@@ -21,6 +21,8 @@ const sid = "jd7abc123" as Id<"sessions">;
 
 function baseInput(over: Partial<AppUiContext> = {}): Partial<AppUiContext> {
   return {
+    activeFileId: null,
+    activeChatSessionId: null,
     activeSessionId: sid,
     activeProjectId: null,
     notesListDrill: null,
@@ -395,6 +397,20 @@ describe("intent orchestration", () => {
     actor.stop();
   });
 
+  it("clears in-flight chat loading when switching ACTIVE_SESSION_SET", () => {
+    const other = "other_sess" as Id<"sessions">;
+    const actor = createActor(appUiMachine, { input: baseInput() });
+    actor.start();
+    actor.send({ type: "CHAT_LOADING_START" });
+    actor.send({ type: "CHAT_THREAD_LOADING_START" });
+    expect(actor.getSnapshot().context.chatLoading).toBe(true);
+    expect(actor.getSnapshot().context.chatThreadLoading).toBe(true);
+    actor.send({ type: "ACTIVE_SESSION_SET", sessionId: other });
+    expect(actor.getSnapshot().context.chatLoading).toBe(false);
+    expect(actor.getSnapshot().context.chatThreadLoading).toBe(false);
+    actor.stop();
+  });
+
   it("unblocks graph interaction as soon as first card appears", () => {
     const actor = createActor(appUiMachine, { input: baseInput() });
     actor.start();
@@ -437,5 +453,57 @@ describe("intent orchestration", () => {
     expect(selectGraphReferenceFreezeActive(actor.getSnapshot())).toBe(false);
     actor.stop();
     vi.useRealTimers();
+  });
+
+  it("WORKSPACE_SNAPSHOT auto-selects first file and session", () => {
+    const fid = "file_first" as Id<"files">;
+    const actor = createActor(appUiMachine, {
+      input: baseInput({
+        activeFileId: null,
+        activeSessionId: null,
+        hasEverHadSessionSelection: false,
+      }),
+    });
+    actor.start();
+    actor.send({
+      type: "WORKSPACE_SNAPSHOT",
+      inboxEmpty: false,
+      hasProjects: false,
+      firstFileId: fid,
+      firstSessionId: sid,
+      firstProjectId: null,
+    });
+    expect(actor.getSnapshot().context.activeFileId).toBe(fid);
+    expect(actor.getSnapshot().context.activeSessionId).toBe(sid);
+    actor.stop();
+  });
+
+  it("ACTIVE_FILE_SET to another file clears the chat session", () => {
+    const fid = "file1" as Id<"files">;
+    const fid2 = "file2" as Id<"files">;
+    const cid = "chat1" as Id<"chatSessions">;
+    const actor = createActor(appUiMachine, {
+      input: baseInput({ activeFileId: fid, activeChatSessionId: cid }),
+    });
+    actor.start();
+    actor.send({ type: "ACTIVE_FILE_SET", fileId: fid2 });
+    expect(actor.getSnapshot().context.activeFileId).toBe(fid2);
+    expect(actor.getSnapshot().context.activeChatSessionId).toBeNull();
+    actor.stop();
+  });
+
+  it("ACTIVE_FILE_SET hydrate from null keeps stored chat session", () => {
+    const fid = "file1" as Id<"files">;
+    const cid = "chat1" as Id<"chatSessions">;
+    const actor = createActor(appUiMachine, {
+      input: baseInput({
+        activeFileId: null,
+        activeChatSessionId: cid,
+      }),
+    });
+    actor.start();
+    actor.send({ type: "ACTIVE_FILE_SET", fileId: fid });
+    expect(actor.getSnapshot().context.activeChatSessionId).toBe(cid);
+    actor.stop();
   });
 });

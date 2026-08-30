@@ -12,6 +12,8 @@ const sid = "jd7abc123" as Id<"sessions">;
 
 function baseInput(over: Partial<AppUiContext> = {}): Partial<AppUiContext> {
   return {
+    activeFileId: null,
+    activeChatSessionId: null,
     activeSessionId: sid,
     activeProjectId: null,
     notesListDrill: null,

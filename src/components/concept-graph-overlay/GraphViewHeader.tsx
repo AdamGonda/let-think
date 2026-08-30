@@ -45,8 +45,7 @@ export function GraphViewHeader({
       ? sessionTitle.trim()
       : "Loading…";
   const chatOpen = sessionView === "chat";
-  const historyDisabled =
-    chatOpen || !hasChatHistory || isHistoryButtonDisabled;
+  const historyDisabled = !hasChatHistory || isHistoryButtonDisabled;
 
   return (
     <header className={layout.workspaceTopBarClass}>

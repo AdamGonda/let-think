@@ -1,5 +1,5 @@
-import { render, fireEvent } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { render, fireEvent, cleanup } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { GraphViewHeader } from "./GraphViewHeader";
 
 const base = {
@@ -16,8 +16,10 @@ const base = {
   onProjectNameClick: vi.fn(),
 };
 
+afterEach(cleanup);
+
 describe("GraphViewHeader session view toggle", () => {
-  it("presses Graph and shows history; chat hides step nav and history", () => {
+  it("presses Graph and shows history; chat hides step nav and keeps history", () => {
     const { rerender, getByLabelText, queryByLabelText } = render(
       <GraphViewHeader {...base} sessionView="graph" />,
     );
@@ -36,13 +38,20 @@ describe("GraphViewHeader session view toggle", () => {
     expect(getByLabelText("Graph view").getAttribute("aria-pressed")).toBe(
       "false",
     );
-    expect((getByLabelText("Session history") as HTMLButtonElement).disabled).toBe(
-      true,
-    );
+    expect(getByLabelText("Session history")).toBeTruthy();
+    expect(queryByLabelText("New chat")).toBeNull();
     expect(queryByLabelText("Previous step")).toBeNull();
     expect(getByLabelText("Open file")).toBeTruthy();
 
     fireEvent.click(getByLabelText("Graph view"));
     expect(base.onSessionViewChange).toHaveBeenCalledWith("graph");
+  });
+
+  it("shows the file title as a breadcrumb, not a chat switcher", () => {
+    const { getByText, queryByLabelText } = render(
+      <GraphViewHeader {...base} sessionView="chat" />,
+    );
+    expect(getByText("New session")).toBeTruthy();
+    expect(queryByLabelText("New session. Switch chat")).toBeNull();
   });
 });

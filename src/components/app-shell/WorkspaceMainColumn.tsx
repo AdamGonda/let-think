@@ -1,6 +1,6 @@
 import { useMemo, type RefObject } from "react";
 import { clsx } from "clsx";
-import type { Doc, Id } from "../../../convex/_generated/dataModel";
+import type { Id } from "../../../convex/_generated/dataModel";
 import { useSessionData } from "../../contexts/SessionDataContext";
 import type { SessionMessage } from "../../contexts/SessionDataContext";
 import { useAppUiActor } from "../../hooks/useAppUi";
@@ -24,7 +24,8 @@ import {
   setNotesListDrill,
   setSelectedBatchIndex,
 } from "@/lib/appUiCommands";
-import type { ProjectWithSessions } from "../session-sidebar/workspaceTypes";
+import type { ProjectWithSessions, WorkspaceFile } from "../session-sidebar/workspaceTypes";
+import { useDefaultSessionSelection } from "@/hooks/useDefaultSessionSelection";
 
 const FOCUS_COMPOSER_EVENT = "let-think:focus-composer";
 
@@ -39,7 +40,7 @@ type WorkspaceMainColumnProps = {
   mainContentRef: RefObject<HTMLDivElement | null>;
   onCreateSessionForFirstMessage?: () => Promise<Id<"sessions">>;
   layout: AppLayoutSelectors;
-  onSelectSessionFromNotesList: (session: Doc<"sessions">) => void;
+  onSelectSessionFromNotesList: (file: WorkspaceFile) => void;
   onRunTutorial?: () => void;
 };
 
@@ -56,6 +57,7 @@ export function WorkspaceMainColumn({
   onRunTutorial,
 }: WorkspaceMainColumnProps) {
   const actor = useAppUiActor();
+  const { handleCreateChatSession } = useDefaultSessionSelection();
   const dock = useChatDockMachineSelectors();
   const {
     conceptGraph,
@@ -67,6 +69,7 @@ export function WorkspaceMainColumn({
 
   const chatOpen = dock.sessionView === "chat";
   const latestBatchIndex = Math.max(0, batches.length - 1);
+  const activeFileId = layout.activeFileId;
 
   const graphNumberedConcepts = useMemo(
     () =>
@@ -149,7 +152,7 @@ export function WorkspaceMainColumn({
         >
           <NotesListPanel
             workspace={workspace}
-            activeSessionId={layout.activeSessionId}
+            activeFileId={layout.activeFileId}
             activeProjectId={layout.activeProjectId}
             drill={layout.notesListDrill}
             onDrillChange={(drill) => setNotesListDrill(actor, drill)}
@@ -160,7 +163,9 @@ export function WorkspaceMainColumn({
         {layout.viewMode === "graph" ? (
           <GraphSurfaceContainer
             workspace={workspace}
+            activeFileId={layout.activeFileId}
             activeSessionId={layout.activeSessionId}
+            activeChatSessionId={layout.activeChatSessionId}
             sessionPastFrame={
               !dock.chatLoadingOnGraphFrame &&
               !dock.chatLoadingOnNotesList &&
@@ -189,6 +194,7 @@ export function WorkspaceMainColumn({
             chatComposer={
               <Chat
                 sessionId={layout.activeSessionId}
+                chatSessionId={layout.activeChatSessionId}
                 sessionLoadingFrame={dock.chatThreadLoading}
                 autoCollapseSignal={dock.uiCollapseSignal}
                 isLoading={dock.chatThreadLoading}
@@ -198,11 +204,15 @@ export function WorkspaceMainColumn({
                 numberedConcepts={chatNumberedConcepts}
                 draftInput={dock.chatDraftInput}
                 setDraftInput={(v) => setChatDraftInput(actor, v)}
-                onCreateSession={onCreateSessionForFirstMessage}
+                onCreateChatSession={
+                  activeFileId
+                    ? () => handleCreateChatSession(activeFileId)
+                    : undefined
+                }
                 selectedBatchIndex={dock.selectedBatchIndex}
                 sendLane="chat"
                 autoFocus={chatOpen}
-                listenForFocusEvent={false}
+                listenForFocusEvent={chatOpen}
               />
             }
           />

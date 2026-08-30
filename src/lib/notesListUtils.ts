@@ -1,4 +1,4 @@
-import type { Doc, Id } from "../../convex/_generated/dataModel";
+import type { Id } from "../../convex/_generated/dataModel";
 import type { ProjectWithSessions } from "@/components/session-sidebar/workspaceTypes";
 
 export type NotesListDrill =
@@ -19,11 +19,11 @@ export function formatUpdatedLabel(ms: number): string {
 }
 
 export function groupActivityMs(
-  sessions: Doc<"sessions">[],
+  files: Array<{ createdAt: number }>,
   projectCreated: number,
 ): number {
-  if (sessions.length === 0) return projectCreated;
-  return Math.max(...sessions.map((s) => s.createdAt));
+  if (files.length === 0) return projectCreated;
+  return Math.max(...files.map((s) => s.createdAt));
 }
 
 export function groupDisplayName(group: ProjectWithSessions): string {
@@ -35,7 +35,7 @@ export function projectGroupMatchesQuery(
   q: string,
 ): boolean {
   if (groupDisplayName(group).toLowerCase().includes(q)) return true;
-  return group.sessions.some((s) => s.title.toLowerCase().includes(q));
+  return group.files.some((s) => s.title.toLowerCase().includes(q));
 }
 
 export function resolveDrillGroup(

@@ -599,7 +599,7 @@ const mentionSpanValidator = v.optional(
  */
 export const sendChat = action({
   args: {
-    sessionId: v.id("sessions"),
+    chatSessionId: v.id("chatSessions"),
     userContent: v.string(),
     selectedNodeContext: selectedNodeContextValidator,
     mentions: mentionSpanValidator,
@@ -607,16 +607,16 @@ export const sendChat = action({
   returns: v.object({ content: v.string() }),
   handler: async (
     ctx,
-    { sessionId, userContent, selectedNodeContext, mentions }
+    { chatSessionId, userContent, selectedNodeContext, mentions }
   ): Promise<{ content: string }> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Must be signed in");
 
     const bundle = await ctx.runQuery(
-      internal.sessions.internalLoadSessionForChatLaneSend,
-      { sessionId, userId },
+      internal.chatSessions.internalLoadForSend,
+      { chatSessionId, userId },
     );
-    if (!bundle) throw new Error("Session not found or access denied");
+    if (!bundle) throw new Error("Chat session not found or access denied");
 
     const google = createGoogleGenerativeAI({
       apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
@@ -632,8 +632,8 @@ export const sendChat = action({
     ]);
 
     const { assistantMessageId } = await ctx.runMutation(
-      internal.sessions.startChatTurn,
-      { sessionId, userId, userContent, mentions },
+      internal.chatSessions.startChatTurn,
+      { chatSessionId, userId, userContent, mentions },
     );
 
     let generationUsage: GenerationUsageMetrics = {
@@ -659,7 +659,7 @@ export const sendChat = action({
     let lastFlushAt = 0;
     const STREAM_FLUSH_MS = 50;
     const flushAssistant = async () => {
-      await ctx.runMutation(internal.sessions.patchChatMessage, {
+      await ctx.runMutation(internal.chatSessions.patchChatMessage, {
         messageId: assistantMessageId,
         userId,
         content: displayText,
@@ -682,7 +682,7 @@ export const sendChat = action({
       throw err;
     }
     const content = displayText.trim();
-    await ctx.runMutation(internal.sessions.patchChatMessage, {
+    await ctx.runMutation(internal.chatSessions.patchChatMessage, {
       messageId: assistantMessageId,
       userId,
       content,
@@ -691,13 +691,13 @@ export const sendChat = action({
     console.info(
       "[generation]",
       formatGenerationUsageLog(generationUsage, {
-        sessionId,
+        sessionId: chatSessionId,
         userId,
         model: modelConfig.mainContextGraphModel,
       }),
     );
     await capturePosthogGenerationEvent(generationUsage, {
-      sessionId,
+      sessionId: chatSessionId,
       userId,
       model: modelConfig.mainContextGraphModel,
       messageCount: modelMessages.length,

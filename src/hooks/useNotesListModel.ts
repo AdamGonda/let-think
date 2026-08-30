@@ -18,7 +18,7 @@ export function useNotesListModel(
   const [searchQuery, setSearchQuery] = useState("");
 
   const totalSessions =
-    workspace?.reduce((n, g) => n + g.sessions.length, 0) ?? 0;
+    workspace?.reduce((n, g) => n + g.files.length, 0) ?? 0;
 
   /** Inbox first, then project folders by recent activity (Files grid: one card per folder). */
   const sortedGroups = useMemo(() => {
@@ -30,8 +30,8 @@ export function useNotesListModel(
     projectGroups.sort((a, b) => {
       const createdA = a.project.createdAt;
       const createdB = b.project.createdAt;
-      const ta = groupActivityMs(a.sessions, createdA);
-      const tb = groupActivityMs(b.sessions, createdB);
+      const ta = groupActivityMs(a.files, createdA);
+      const tb = groupActivityMs(b.files, createdB);
       return tb - ta;
     });
     const out: ProjectWithSessions[] = [];
@@ -57,7 +57,7 @@ export function useNotesListModel(
   const rootFolders = useMemo(
     () =>
       filteredGroups.filter(
-        (g) => g.project != null || g.sessions.length > 0,
+        (g) => g.project != null || g.files.length > 0,
       ),
     [filteredGroups],
   );
@@ -79,14 +79,14 @@ export function useNotesListModel(
   const filteredDrillSessions = useMemo(() => {
     if (!drillGroup) return [];
     const q = searchQuery.trim().toLowerCase();
-    let sessions = [...drillGroup.sessions];
+    let files = [...drillGroup.files];
     if (q) {
-      sessions = sessions.filter((s) =>
+      files = files.filter((s) =>
         s.title.toLowerCase().includes(q),
       );
     }
-    sessions.sort((a, b) => b.createdAt - a.createdAt);
-    return sessions;
+    files.sort((a, b) => b.createdAt - a.createdAt);
+    return files;
   }, [drillGroup, searchQuery]);
 
   return {

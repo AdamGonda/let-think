@@ -8,7 +8,7 @@ import {
 } from "./appUiReducers";
 
 export function sessionSelected(c: AppUiContext): boolean {
-  return c.activeSessionId != null;
+  return c.activeFileId != null || c.activeSessionId != null;
 }
 
 /** Focus layer "demand" — editor overlay (former unlimited/work path). */
@@ -43,7 +43,8 @@ export const appUiMachine = setup({
       event.inboxEmpty,
     shouldAutoSelectFirstSession: ({ context, event }) =>
       event.type === "WORKSPACE_SNAPSHOT" &&
-      event.firstSessionId != null &&
+      event.firstFileId != null &&
+      context.activeFileId == null &&
       context.activeSessionId == null &&
       !context.hasEverHadSessionSelection,
     /** Close note overlay: from graph or from Files (notes list) surface. */
@@ -65,6 +66,8 @@ export const appUiMachine = setup({
       editorOpen: false,
     }),
     sessionCleared: assign({
+      activeFileId: null,
+      activeChatSessionId: null,
       chatLoading: false,
       chatThreadLoading: false,
       graphShowLoadingCards: false,
@@ -75,6 +78,33 @@ export const appUiMachine = setup({
       editorOpen: false,
       overlayDismissed: false,
       historyPanelOpen: false,
+    }),
+    setActiveFileId: assign({
+      activeFileId: ({ event }) => {
+        if (event.type !== "ACTIVE_FILE_SET") return null;
+        return event.fileId;
+      },
+      hasEverHadSessionSelection: ({ event, context }) => {
+        if (event.type !== "ACTIVE_FILE_SET") {
+          return context.hasEverHadSessionSelection;
+        }
+        return event.fileId != null ? true : context.hasEverHadSessionSelection;
+      },
+      // Switching files drops the chat thread; first assignment (hydrate) keeps it.
+      activeChatSessionId: ({ event, context }) => {
+        if (event.type !== "ACTIVE_FILE_SET") return context.activeChatSessionId;
+        if (event.fileId === context.activeFileId) {
+          return context.activeChatSessionId;
+        }
+        if (context.activeFileId == null) return context.activeChatSessionId;
+        return null;
+      },
+    }),
+    setActiveChatSessionId: assign({
+      activeChatSessionId: ({ event }) => {
+        if (event.type !== "ACTIVE_CHAT_SESSION_SET") return null;
+        return event.chatSessionId;
+      },
     }),
     setActiveSessionId: assign({
       activeSessionId: ({ event }) => {
@@ -97,6 +127,25 @@ export const appUiMachine = setup({
         }
         return event.sessionId != null ? true : context.hasEverHadSessionSelection;
       },
+      chatLoading: ({ event, context }) => {
+        if (event.type !== "ACTIVE_SESSION_SET") return context.chatLoading;
+        if (event.sessionId === context.activeSessionId) return context.chatLoading;
+        return false;
+      },
+      chatThreadLoading: ({ event, context }) => {
+        if (event.type !== "ACTIVE_SESSION_SET") return context.chatThreadLoading;
+        if (event.sessionId === context.activeSessionId) {
+          return context.chatThreadLoading;
+        }
+        return false;
+      },
+      activeChatSessionId: ({ event, context }) => {
+        if (event.type !== "ACTIVE_SESSION_SET") return context.activeChatSessionId;
+        if (event.sessionId === context.activeSessionId) {
+          return context.activeChatSessionId;
+        }
+        return null;
+      },
     }),
     setActiveProject: assign({
       activeProjectId: ({ event }) => {
@@ -105,6 +154,8 @@ export const appUiMachine = setup({
       },
     }),
     clearWorkspaceSelection: assign({
+      activeFileId: () => null,
+      activeChatSessionId: () => null,
       activeSessionId: () => null,
       activeProjectId: () => null,
       prevBatchesLength: () => 0,
@@ -117,6 +168,11 @@ export const appUiMachine = setup({
       graphReferenceFreezeActive: () => false,
     }),
     autoSelectFirstWorkspaceSession: assign({
+      activeFileId: ({ event }) => {
+        if (event.type !== "WORKSPACE_SNAPSHOT") return null;
+        return event.firstFileId;
+      },
+      activeChatSessionId: () => null,
       activeSessionId: ({ event }) => {
         if (event.type !== "WORKSPACE_SNAPSHOT") return null;
         return event.firstSessionId;
@@ -251,8 +307,11 @@ export const appUiMachine = setup({
     }),
     intentSelectSessionFromSidebar: enqueueActions(({ enqueue, event }) => {
       if (event.type !== "INTENT_SELECT_SESSION_FROM_SIDEBAR") return;
+      if (event.fileId !== undefined) {
+        enqueue.raise({ type: "ACTIVE_FILE_SET", fileId: event.fileId });
+      }
       enqueue.raise({ type: "ACTIVE_SESSION_SET", sessionId: event.sessionId });
-      if (event.sessionId != null) {
+      if (event.sessionId != null || event.fileId != null) {
         enqueue.raise({ type: "EDITOR_OPEN" });
       }
     }),
@@ -268,6 +327,8 @@ export const appUiMachine = setup({
   context: ({ input }) => {
     const inp = input as Partial<AppUiContext> | undefined;
     return {
+      activeFileId: inp?.activeFileId ?? null,
+      activeChatSessionId: inp?.activeChatSessionId ?? null,
       activeSessionId: inp?.activeSessionId ?? null,
       activeProjectId: inp?.activeProjectId ?? null,
       notesListDrill: inp?.notesListDrill ?? null,
@@ -297,6 +358,12 @@ export const appUiMachine = setup({
     };
   },
   on: {
+    ACTIVE_FILE_SET: {
+      actions: "setActiveFileId",
+    },
+    ACTIVE_CHAT_SESSION_SET: {
+      actions: "setActiveChatSessionId",
+    },
     ACTIVE_SESSION_SET: [
       {
         guard: "sessionBecameInactive",

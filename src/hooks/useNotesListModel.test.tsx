@@ -4,16 +4,17 @@ import type { Doc, Id } from "../../convex/_generated/dataModel";
 import type { ProjectWithSessions } from "@/components/session-sidebar/workspaceTypes";
 import { useNotesListModel } from "./useNotesListModel";
 
-function mkSession(
+function mkFile(
   id: string,
   title: string,
   createdAt: number,
-): Doc<"sessions"> {
+): ProjectWithSessions["files"][number] {
   return {
-    _id: id as Id<"sessions">,
+    _id: id as Id<"files">,
     _creationTime: createdAt,
     title,
     createdAt,
+    sessionId: `${id}-sess` as Id<"sessions">,
   };
 }
 
@@ -30,10 +31,10 @@ describe("useNotesListModel", () => {
   it("keeps Inbox first and sorts project folders by recent activity", () => {
     const p1 = "p1" as Id<"projects">;
     const workspace: ProjectWithSessions[] = [
-      { project: null, sessions: [mkSession("i1", "Inbox A", 100)] },
+      { project: null, files: [mkFile("i1", "Inbox A", 100)] },
       {
         project: mkProject(p1, "Zebra", 1),
-        sessions: [mkSession("s1", "Z1", 200)],
+        files: [mkFile("s1", "Z1", 200)],
       },
     ];
     const onDrill = vi.fn();
@@ -45,7 +46,7 @@ describe("useNotesListModel", () => {
     expect(result.current.sortedGroups[1]?.project?.name).toBe("Zebra");
     expect(result.current.rootFolders).toHaveLength(2);
     expect(result.current.rootFolders[0]?.project).toBeNull();
-    expect(result.current.rootFolders[0]?.sessions).toHaveLength(1);
+    expect(result.current.rootFolders[0]?.files).toHaveLength(1);
     expect(result.current.rootFolders[1]?.project?.name).toBe("Zebra");
   });
 
@@ -56,7 +57,7 @@ describe("useNotesListModel", () => {
       {
         initialProps: {
           ws: [
-            { project: null, sessions: [] },
+            { project: null, files: [] },
           ] as ProjectWithSessions[],
         },
       },
@@ -66,10 +67,10 @@ describe("useNotesListModel", () => {
 
     rerender({
       ws: [
-        { project: null, sessions: [] },
+        { project: null, files: [] },
         {
           project: mkProject("p1", "Solo", 1),
-          sessions: [],
+          files: [],
         },
       ],
     });
@@ -81,10 +82,10 @@ describe("useNotesListModel", () => {
 
   it("surfaces Inbox when search matches a file inside it", () => {
     const workspace: ProjectWithSessions[] = [
-      { project: null, sessions: [mkSession("i1", "Loose note", 100)] },
+      { project: null, files: [mkFile("i1", "Loose note", 100)] },
       {
         project: mkProject("p1", "Alpha", 1),
-        sessions: [mkSession("s1", "Other", 50)],
+        files: [mkFile("s1", "Other", 50)],
       },
     ];
     const onDrill = vi.fn();
@@ -101,14 +102,14 @@ describe("useNotesListModel", () => {
   it("filters groups by search query", () => {
     const p1 = "p1" as Id<"projects">;
     const workspace: ProjectWithSessions[] = [
-      { project: null, sessions: [] },
+      { project: null, files: [] },
       {
         project: mkProject(p1, "Alpha", 1),
-        sessions: [],
+        files: [],
       },
       {
         project: mkProject("p2" as Id<"projects">, "Beta", 1),
-        sessions: [],
+        files: [],
       },
     ];
     const onDrill = vi.fn();
@@ -127,7 +128,7 @@ describe("useNotesListModel", () => {
     const workspace: ProjectWithSessions[] = [
       {
         project: mkProject(p1, "P", 1),
-        sessions: [mkSession("s1", "S", 10)],
+        files: [mkFile("s1", "S", 10)],
       },
     ];
     const onDrill = vi.fn();

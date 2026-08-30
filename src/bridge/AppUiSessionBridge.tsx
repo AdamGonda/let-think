@@ -6,6 +6,7 @@ import type { Id } from "../../convex/_generated/dataModel";
 import {
   useSyncBatchesLength,
   useSyncChatHistoryMeta,
+  useSyncFileSelectionFromWorkspace,
   useSyncWorkspaceSnapshot,
 } from "./sessionBridgeHooks";
 
@@ -15,10 +16,12 @@ import {
 export function AppUiSessionBridge({
   workspace,
   activeSessionId,
+  activeFileId,
   children,
 }: {
   workspace: ProjectWithSessions[] | undefined;
   activeSessionId: Id<"sessions"> | null;
+  activeFileId: Id<"files"> | null;
   children: ReactNode;
 }) {
   const actor = useAppUiActor();
@@ -34,6 +37,12 @@ export function AppUiSessionBridge({
   useSyncChatHistoryMeta(actor, hasChatHistory, messagesLoading);
   useSyncBatchesLength(actor, activeSessionId, batches.length);
   useSyncWorkspaceSnapshot(actor, workspace);
+  useSyncFileSelectionFromWorkspace(
+    actor,
+    workspace,
+    activeFileId,
+    activeSessionId,
+  );
 
   return <>{children}</>;
 }

@@ -7,6 +7,11 @@ export type SurfaceMode = "graph" | "notesList";
 export type SessionView = "graph" | "chat";
 
 export type AppUiContext = {
+  /** Workspace file (Files list). Ideation session is derived via file.sessionId. */
+  activeFileId: Id<"files"> | null;
+  /** Chat thread for the active file (many per file). */
+  activeChatSessionId: Id<"chatSessions"> | null;
+  /** Ideation/graph session for the active file. */
   activeSessionId: Id<"sessions"> | null;
   activeProjectId: Id<"projects"> | null;
   notesListDrill: NotesListDrill;
@@ -69,12 +74,15 @@ export type AppUiEvent =
       type: "WORKSPACE_SNAPSHOT";
       inboxEmpty: boolean;
       hasProjects: boolean;
+      firstFileId: Id<"files"> | null;
       firstSessionId: Id<"sessions"> | null;
       firstProjectId: Id<"projects"> | null;
     }
   | { type: "EDITOR_OPEN" }
   | { type: "EDITOR_CLOSE" }
   | { type: "USER_EXIT_WAKE_UP" }
+  | { type: "ACTIVE_FILE_SET"; fileId: Id<"files"> | null }
+  | { type: "ACTIVE_CHAT_SESSION_SET"; chatSessionId: Id<"chatSessions"> | null }
   | { type: "ACTIVE_SESSION_SET"; sessionId: Id<"sessions"> | null }
   | { type: "ACTIVE_PROJECT_SET"; projectId: Id<"projects"> | null }
   | { type: "NOTES_LIST_DRILL_SET"; drill: NotesListDrill }
@@ -90,4 +98,8 @@ export type AppUiEvent =
   | { type: "INTENT_BREADCRUMB_FILE_CLICK" }
   | { type: "INTENT_OPEN_NOTES_LIST" }
   | { type: "INTENT_RETURN_GRAPH_FROM_EDITOR" }
-  | { type: "INTENT_SELECT_SESSION_FROM_SIDEBAR"; sessionId: Id<"sessions"> | null };
+  | {
+      type: "INTENT_SELECT_SESSION_FROM_SIDEBAR";
+      sessionId: Id<"sessions"> | null;
+      fileId?: Id<"files"> | null;
+    };

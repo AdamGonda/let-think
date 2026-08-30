@@ -7,38 +7,39 @@
  * - **User intent** — navigation and editing (`VIEW_SET`, `ACTIVE_SESSION_SET`, `EDITOR_OPEN`, …).
  *   Prefer these command functions from UI.
  */
-import type { Doc, Id } from "../../convex/_generated/dataModel";
+import type { Id } from "../../convex/_generated/dataModel";
 import type { AppUiActorRef } from "../contexts/appUiActorContext";
 import type { SessionView } from "../machines/appUiTypes";
 import type { NotesListDrill } from "./notesListUtils";
+import type { WorkspaceFile } from "@/components/session-sidebar/workspaceTypes";
 
 /**
- * Select session, project, and Files drill to match the session's project/inbox.
+ * Select file, ideation session, project, and Files drill for that file.
  */
-function setNotesListDrillForSession(
+function setNotesListDrillForFile(
   actor: AppUiActorRef,
-  session: Doc<"sessions">,
+  file: WorkspaceFile,
 ): void {
-  actor.send({ type: "ACTIVE_SESSION_SET", sessionId: session._id });
-  if (session.projectId) {
-    actor.send({ type: "ACTIVE_PROJECT_SET", projectId: session.projectId });
-  } else {
-    actor.send({ type: "ACTIVE_PROJECT_SET", projectId: null });
-  }
+  actor.send({ type: "ACTIVE_FILE_SET", fileId: file._id });
+  actor.send({ type: "ACTIVE_SESSION_SET", sessionId: file.sessionId });
+  actor.send({
+    type: "ACTIVE_PROJECT_SET",
+    projectId: file.projectId ?? null,
+  });
   actor.send({
     type: "NOTES_LIST_DRILL_SET",
-    drill: session.projectId
-      ? { type: "project", id: session.projectId }
+    drill: file.projectId
+      ? { type: "project", id: file.projectId }
       : { type: "inbox" },
   });
 }
 
-/** Open session in Files list and focus the editor (notes overlay). */
+/** Open file in Files list and focus the editor (notes overlay). */
 export function openSessionInFilesWithEditor(
   actor: AppUiActorRef,
-  session: Doc<"sessions">,
+  file: WorkspaceFile,
 ): void {
-  setNotesListDrillForSession(actor, session);
+  setNotesListDrillForFile(actor, file);
   actor.send({ type: "EDITOR_OPEN" });
 }
 
@@ -65,8 +66,13 @@ export function intentBreadcrumbSessionClick(actor: AppUiActorRef): void {
 export function intentSelectSessionFromSidebar(
   actor: AppUiActorRef,
   sessionId: Id<"sessions"> | null,
+  fileId?: Id<"files"> | null,
 ): void {
-  actor.send({ type: "INTENT_SELECT_SESSION_FROM_SIDEBAR", sessionId });
+  actor.send({
+    type: "INTENT_SELECT_SESSION_FROM_SIDEBAR",
+    sessionId,
+    fileId,
+  });
 }
 
 export function setNotesListDrill(actor: AppUiActorRef, drill: NotesListDrill): void {
@@ -124,6 +130,20 @@ export function setGraphLoadingProgress(
   latestBatchNodeCount: number,
 ): void {
   actor.send({ type: "GRAPH_LOADING_PROGRESS", latestBatchNodeCount });
+}
+
+export function setActiveFile(
+  actor: AppUiActorRef,
+  fileId: Id<"files"> | null,
+): void {
+  actor.send({ type: "ACTIVE_FILE_SET", fileId });
+}
+
+export function setActiveChatSession(
+  actor: AppUiActorRef,
+  chatSessionId: Id<"chatSessions"> | null,
+): void {
+  actor.send({ type: "ACTIVE_CHAT_SESSION_SET", chatSessionId });
 }
 
 export function setActiveSession(

@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import type { Doc, Id } from "../../../convex/_generated/dataModel";
-import type { ProjectWithSessions } from "../session-sidebar/workspaceTypes";
+import type { Id } from "../../../convex/_generated/dataModel";
+import type {
+  ProjectWithSessions,
+  WorkspaceFile,
+} from "../session-sidebar/workspaceTypes";
 import { groupDisplayName, type NotesListDrill } from "@/lib/notesListUtils";
 import { NotesListToolbar } from "./NotesListToolbar";
 import { ProjectSummaryCard } from "./ProjectSummaryCard";
@@ -17,17 +20,17 @@ import {
 
 interface NotesListPanelProps {
   workspace: ProjectWithSessions[] | undefined;
-  activeSessionId: Id<"sessions"> | null;
+  activeFileId: Id<"files"> | null;
   activeProjectId: Id<"projects"> | null;
   drill: NotesListDrill;
   onDrillChange: (drill: NotesListDrill) => void;
-  onOpenNotesEditor: (session: Doc<"sessions">) => void;
+  onOpenNotesEditor: (file: WorkspaceFile) => void;
   onRunTutorial?: () => void;
 }
 
 export function NotesListPanel({
   workspace,
-  activeSessionId,
+  activeFileId,
   activeProjectId,
   drill,
   onDrillChange,
@@ -54,18 +57,19 @@ export function NotesListPanel({
     handleDeleteProject,
   } = useWorkspaceActions({
     workspace,
-    activeSessionId,
+    activeFileId,
     activeProjectId,
-    onSelectSession: (id) => intentSelectSessionFromSidebar(actor, id),
+    onSelectFile: (fileId, sessionId) =>
+      intentSelectSessionFromSidebar(actor, sessionId, fileId),
     onSelectProject: (id) => setActiveProject(actor, id),
   });
 
   const [editingSessionId, setEditingSessionId] =
-    useState<Id<"sessions"> | null>(null);
+    useState<Id<"files"> | null>(null);
   const [editingProjectId, setEditingProjectId] =
     useState<Id<"projects"> | null>(null);
   const [confirmDeleteSessionId, setConfirmDeleteSessionId] =
-    useState<Id<"sessions"> | null>(null);
+    useState<Id<"files"> | null>(null);
   const [confirmDeleteProjectId, setConfirmDeleteProjectId] =
     useState<Id<"projects"> | null>(null);
   const [dragOverProjectId, setDragOverProjectId] = useState<
@@ -152,14 +156,14 @@ export function NotesListPanel({
                       const project = group.project;
                       const isInbox = project == null;
                       const cardKey = isInbox ? "inbox" : project._id;
-                      const folderHasActiveSession =
-                        activeSessionId != null &&
-                        group.sessions.some((s) => s._id === activeSessionId);
+                      const folderHasActiveFile =
+                        activeFileId != null &&
+                        group.files.some((s) => s._id === activeFileId);
                       return (
                         <li key={cardKey}>
                           <ProjectSummaryCard
                             group={group}
-                            isSelected={folderHasActiveSession}
+                            isSelected={folderHasActiveFile}
                             isDropTarget={
                               isInbox
                                 ? dragOverProjectId === "inbox"
@@ -226,9 +230,9 @@ export function NotesListPanel({
                               )
                             }
                             onDragLeave={() => setDragOverProjectId(null)}
-                            onDropSession={(sessionId) => {
+                            onDropSession={(fileId) => {
                               void handleMoveSession(
-                                sessionId,
+                                fileId,
                                 isInbox ? null : project._id,
                               );
                               setDragOverProjectId(null);
@@ -247,35 +251,35 @@ export function NotesListPanel({
                 {filteredDrillSessions.length === 0 ? (
                   <div className="py-12 text-center">
                     <p className="text-sm text-muted-foreground">
-                      {drillGroup.sessions.length === 0
+                      {drillGroup.files.length === 0
                         ? "No files here yet."
                         : `Nothing matches "${searchQuery}"`}
                     </p>
                   </div>
                 ) : (
                   <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {filteredDrillSessions.map((session) => (
-                      <li key={session._id}>
+                    {filteredDrillSessions.map((file) => (
+                      <li key={file._id}>
                         <NotesListSessionCard
-                          session={session}
-                          isSelected={activeSessionId === session._id}
-                          isEditing={editingSessionId === session._id}
+                          session={file}
+                          isSelected={activeFileId === file._id}
+                          isEditing={editingSessionId === file._id}
                           confirmDelete={
-                            confirmDeleteSessionId === session._id
+                            confirmDeleteSessionId === file._id
                           }
                           titleInputRef={sessionInputRef}
                           onOpenNotesEditor={onOpenNotesEditor}
                           onRename={(title) => {
-                            void handleRenameSession(session._id, title);
+                            void handleRenameSession(file._id, title);
                             setEditingSessionId(null);
                           }}
                           onCancelEdit={() => setEditingSessionId(null)}
-                          onStartEdit={() => setEditingSessionId(session._id)}
+                          onStartEdit={() => setEditingSessionId(file._id)}
                           onRequestDelete={() =>
-                            setConfirmDeleteSessionId(session._id)
+                            setConfirmDeleteSessionId(file._id)
                           }
                           onConfirmDelete={() => {
-                            void handleDeleteSession(session._id);
+                            void handleDeleteSession(file._id);
                             setConfirmDeleteSessionId(null);
                           }}
                           onCancelDelete={() =>

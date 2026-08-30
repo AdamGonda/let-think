@@ -46,20 +46,48 @@ export default defineSchema({
     createdAt: v.number(),
   }).index("by_created", ["createdAt"]).index("by_user", ["userId", "createdAt"]),
 
+  /** Workspace artifact (Files list). One ideation `sessions` row per file. */
+  files: defineTable({
+    userId: v.optional(v.id("users")),
+    projectId: v.optional(v.id("projects")),
+    title: v.string(),
+    thinkingNotes: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_created", ["createdAt"])
+    .index("by_project", ["projectId", "createdAt"])
+    .index("by_user", ["userId", "createdAt"]),
+
   sessions: defineTable({
     userId: v.optional(v.id("users")),
     projectId: v.optional(v.id("projects")),
+    fileId: v.optional(v.id("files")),
     title: v.string(),
     createdAt: v.number(),
     /** User's draft for next graph prompt, preserved across sessions */
     draftInput: v.optional(v.string()),
-    /** Independent composer draft for the chat lane */
+    /** Independent composer draft for the chat lane (legacy; chatSessions.draftInput) */
     chatDraftInput: v.optional(v.string()),
-    /** Notes written during thinking/break period, separate from chat draft */
+    /** Notes written during thinking/break period (legacy; files.thinkingNotes) */
     thinkingNotes: v.optional(v.string()),
     /** Present on some stored sessions (e.g. "open"); kept optional for backward compatibility */
     interactionRestriction: v.optional(v.string()),
-  }).index("by_created", ["createdAt"]).index("by_project", ["projectId", "createdAt"]).index("by_user", ["userId", "createdAt"]),
+  })
+    .index("by_created", ["createdAt"])
+    .index("by_project", ["projectId", "createdAt"])
+    .index("by_user", ["userId", "createdAt"])
+    .index("by_file", ["fileId"]),
+
+  /** Many chat threads per file. */
+  chatSessions: defineTable({
+    fileId: v.id("files"),
+    userId: v.id("users"),
+    title: v.string(),
+    createdAt: v.number(),
+    draftInput: v.optional(v.string()),
+  })
+    .index("by_file", ["fileId", "createdAt"])
+    .index("by_user", ["userId", "createdAt"]),
 
   /** Concept graph per session — kept separate so listing sessions stays bandwidth-light. */
   sessionConceptGraphs: defineTable({
@@ -140,7 +168,8 @@ export default defineSchema({
 
   /** Independent chat-lane messages (graph ideation stays on `messages`). */
   chatMessages: defineTable({
-    sessionId: v.id("sessions"),
+    sessionId: v.optional(v.id("sessions")),
+    chatSessionId: v.optional(v.id("chatSessions")),
     role: v.union(v.literal("user"), v.literal("assistant")),
     content: v.string(),
     createdAt: v.number(),
@@ -154,5 +183,7 @@ export default defineSchema({
         })
       )
     ),
-  }).index("by_session", ["sessionId"]),
+  })
+    .index("by_session", ["sessionId"])
+    .index("by_chat_session", ["chatSessionId"]),
 });

@@ -1,4 +1,4 @@
-import { ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const PROJECTS_ROOT_LABEL = "Projects";
@@ -8,7 +8,7 @@ const crumbButtonClass =
 
 interface NoteBreadcrumbProps {
   projectName: string;
-  /** Session note title shown as the current file (non-interactive). */
+  /** Session note title shown as the current file. */
   fileName: string;
   /** When false, crumbs are visible but not clickable (session still settling). */
   interactive?: boolean;
@@ -19,6 +19,9 @@ interface NoteBreadcrumbProps {
   isExiting?: boolean;
   onProjectsRootClick: () => void;
   onProjectNameClick: () => void;
+  /** When set, the current file crumb opens a session switcher. */
+  onFileNameClick?: () => void;
+  fileNameMenuOpen?: boolean;
   className?: string;
 }
 
@@ -38,6 +41,8 @@ export function NoteBreadcrumb({
   isExiting = false,
   onProjectsRootClick,
   onProjectNameClick,
+  onFileNameClick,
+  fileNameMenuOpen = false,
   className,
 }: NoteBreadcrumbProps) {
   const crumbInteractiveClass = interactive
@@ -86,20 +91,40 @@ export function NoteBreadcrumb({
           <ChevronRight className="size-3.5" />
         </li>
         <li className="min-w-0 shrink">
-          <span
-            className={cn(
-              fileCrumbClass,
-              !interactive &&
-                (isExiting
-                  ? "cursor-default no-underline text-muted-foreground/50 opacity-70"
-                  : "cursor-not-allowed no-underline text-muted-foreground/45 opacity-80"),
-            )}
-            title={fileName}
-            aria-current="page"
-            data-tour="session-title"
-          >
-            {fileName}
-          </span>
+          {onFileNameClick && interactive ? (
+            <button
+              type="button"
+              className={cn(
+                fileCrumbClass,
+                "inline-flex max-w-full min-w-0 cursor-pointer items-center gap-0.5 rounded hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+              )}
+              title={fileName}
+              aria-current="page"
+              aria-haspopup="dialog"
+              aria-expanded={fileNameMenuOpen}
+              aria-label={`${fileName}. Switch chat`}
+              data-tour="session-title"
+              onClick={onFileNameClick}
+            >
+              <span className="min-w-0 truncate">{fileName}</span>
+              <ChevronDown className="size-3.5 shrink-0 opacity-70" />
+            </button>
+          ) : (
+            <span
+              className={cn(
+                fileCrumbClass,
+                !interactive &&
+                  (isExiting
+                    ? "cursor-default no-underline text-muted-foreground/50 opacity-70"
+                    : "cursor-not-allowed no-underline text-muted-foreground/45 opacity-80"),
+              )}
+              title={fileName}
+              aria-current="page"
+              data-tour="session-title"
+            >
+              {fileName}
+            </span>
+          )}
         </li>
       </ol>
     </nav>
