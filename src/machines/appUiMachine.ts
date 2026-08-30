@@ -195,13 +195,6 @@ export const appUiMachine = setup({
           },
         };
       }
-      if (context.activeSessionId != null) {
-        return {
-          notesListDrill: {
-            type: "inbox" as const,
-          },
-        };
-      }
       return { notesListDrill: null };
     }),
     /** Leave note overlay for graph; clears Files drill so navigation stays predictable. */
@@ -229,7 +222,7 @@ export const appUiMachine = setup({
         enqueue.raise({ type: "ACTIVE_PROJECT_SET", projectId: null });
         enqueue.raise({
           type: "NOTES_LIST_DRILL_SET",
-          drill: { type: "inbox" },
+          drill: null,
         });
       }
       enqueue.raise({ type: "USER_EXIT_WAKE_UP" });
@@ -273,7 +266,7 @@ export const appUiMachine = setup({
       hasChatHistory: false,
       messagesLoading: false,
       hasEverHadSessionSelection: inp?.hasEverHadSessionSelection ?? false,
-      surfaceMode: inp?.surfaceMode ?? "graph",
+      surfaceMode: inp?.surfaceMode ?? "notesList",
       sidebarCollapseRequestSeq: inp?.sidebarCollapseRequestSeq ?? 0,
       sidebarCollapseImmediateSeq: inp?.sidebarCollapseImmediateSeq ?? 0,
     };
@@ -398,7 +391,7 @@ export const appUiMachine = setup({
   },
   states: {
     surface: {
-      initial: "graph",
+      initial: "notesList",
       states: {
         graph: {},
         notesList: {},
@@ -516,7 +509,7 @@ function surfaceState(snapshot: MachineSnapshot): SurfaceMode {
     const s = (v as { surface: string }).surface;
     if (s === "graph" || s === "notesList") return s;
   }
-  return "graph";
+  return "notesList";
 }
 
 /** Fullscreen focus layer (wake-up) — same as previous showOverlay. */

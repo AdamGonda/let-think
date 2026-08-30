@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { AppUiActorRef } from "@/contexts/appUiActorContext";
-import type { ProjectWithSessions } from "@/components/session-sidebar/SessionSidebar";
+import type { ProjectWithSessions } from "@/components/session-sidebar/workspaceTypes";
 import type { Id } from "../../convex/_generated/dataModel";
 import { buildWorkspaceSnapshot } from "@/lib/workspaceQueries";
 

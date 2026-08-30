@@ -22,10 +22,7 @@ import {
   setNotesListDrill,
   setSelectedBatchIndex,
 } from "@/lib/appUiCommands";
-import type {
-  ProjectWithSessions,
-  SessionSidebarHandle,
-} from "../session-sidebar/SessionSidebar";
+import type { ProjectWithSessions } from "../session-sidebar/workspaceTypes";
 
 const FOCUS_COMPOSER_EVENT = "let-think:focus-composer";
 
@@ -38,10 +35,10 @@ function requestFocusComposer() {
 type WorkspaceMainColumnProps = {
   workspace: ProjectWithSessions[] | undefined;
   mainContentRef: RefObject<HTMLDivElement | null>;
-  sessionSidebarRef: RefObject<SessionSidebarHandle | null>;
   onCreateSessionForFirstMessage?: () => Promise<Id<"sessions">>;
   layout: AppLayoutSelectors;
   onSelectSessionFromNotesList: (session: Doc<"sessions">) => void;
+  onRunTutorial?: () => void;
 };
 
 /**
@@ -51,10 +48,10 @@ type WorkspaceMainColumnProps = {
 export function WorkspaceMainColumn({
   workspace,
   mainContentRef,
-  sessionSidebarRef,
   onCreateSessionForFirstMessage,
   layout,
   onSelectSessionFromNotesList,
+  onRunTutorial,
 }: WorkspaceMainColumnProps) {
   const actor = useAppUiActor();
   const dock = useChatDockMachineSelectors();
@@ -148,15 +145,17 @@ export function WorkspaceMainColumn({
           <NotesListPanel
             workspace={workspace}
             activeSessionId={layout.activeSessionId}
+            activeProjectId={layout.activeProjectId}
             drill={layout.notesListDrill}
             onDrillChange={(drill) => setNotesListDrill(actor, drill)}
             onOpenNotesEditor={onSelectSessionFromNotesList}
+            onRunTutorial={onRunTutorial}
           />
         ) : (
           <GraphSurfaceContainer
             workspace={workspace}
-            sessionSidebarRef={sessionSidebarRef}
             activeSessionId={layout.activeSessionId}
+            onRunTutorial={onRunTutorial}
           />
         )}
       </div>

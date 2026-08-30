@@ -50,6 +50,29 @@ export function useNotesListModel(
     return inbox ? [inbox, ...rest] : rest;
   }, [sortedGroups, searchQuery]);
 
+  /** Folders at the dashboard root (projects only — inbox files sit beside them). */
+  const rootFolders = useMemo(
+    () => filteredGroups.filter((g): g is ProjectRow => g.project != null),
+    [filteredGroups],
+  );
+
+  const inboxGroup = useMemo(
+    () => sortedGroups.find((g) => g.project == null),
+    [sortedGroups],
+  );
+
+  const rootFiles = useMemo(() => {
+    const sessions = inboxGroup?.sessions ?? [];
+    const q = searchQuery.trim().toLowerCase();
+    const list = !q
+      ? sessions
+      : sessions.filter((s) => s.title.toLowerCase().includes(q));
+    return [...list].sort((a, b) => b.createdAt - a.createdAt);
+  }, [inboxGroup, searchQuery]);
+
+  const hasProjects = (workspace?.some((g) => g.project != null) ?? false);
+  const isEmpty = totalSessions === 0 && !hasProjects;
+
   const drillGroup = useMemo(
     () => (workspace && drill ? resolveDrillGroup(workspace, drill) : undefined),
     [workspace, drill],
@@ -78,8 +101,12 @@ export function useNotesListModel(
     searchQuery,
     setSearchQuery,
     totalSessions,
+    hasProjects,
+    isEmpty,
     sortedGroups,
     filteredGroups,
+    rootFolders,
+    rootFiles,
     drillGroup,
     filteredDrillSessions,
   };

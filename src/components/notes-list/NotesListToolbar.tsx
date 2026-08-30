@@ -1,5 +1,7 @@
-import { Search, ChevronLeft } from "lucide-react";
+import { Search, ChevronLeft, Plus, FolderPlus } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { UserCard } from "@/components/user/UserCard";
 import { cn } from "@/lib/utils";
 
 type NotesListToolbarProps = {
@@ -9,7 +11,9 @@ type NotesListToolbarProps = {
   searchQuery: string;
   onSearchQueryChange: (value: string) => void;
   onBackFromDrill: () => void;
-  /** Merged onto the root wrapper (e.g. split-layout padding). */
+  onNewFile: () => void;
+  onNewFolder: () => void;
+  onRunTutorial?: () => void;
   className?: string;
 };
 
@@ -20,15 +24,16 @@ export function NotesListToolbar({
   searchQuery,
   onSearchQueryChange,
   onBackFromDrill,
+  onNewFile,
+  onNewFolder,
+  onRunTutorial,
   className,
 }: NotesListToolbarProps) {
   return (
-    <div
-      className={cn("shrink-0 border-b border-border py-6", className)}
-    >
+    <div className={cn("shrink-0 border-b border-border py-6", className)}>
       <div
-        className={`mb-5 flex min-h-10 items-center ${
-          drilled && hasDrillGroup ? "gap-6" : ""
+        className={`mb-5 flex min-h-10 items-center gap-3 ${
+          drilled && hasDrillGroup ? "" : ""
         }`}
       >
         {drilled && hasDrillGroup ? (
@@ -36,7 +41,7 @@ export function NotesListToolbar({
             type="button"
             onClick={onBackFromDrill}
             className="shrink-0 cursor-pointer rounded-lg border border-border/80 bg-card p-2 text-foreground transition-colors hover:border-border hover:bg-muted/10 active:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Back to projects"
+            aria-label="Back to files"
           >
             <ChevronLeft className="size-5" />
           </button>
@@ -44,12 +49,39 @@ export function NotesListToolbar({
         <h1 className="min-w-0 flex-1 text-2xl font-semibold tracking-tight text-foreground truncate">
           {drillHeading}
         </h1>
+        <Button
+          variant="secondary"
+          className="h-9 gap-2 px-3 ring-1 ring-border/50 shadow-sm"
+          onClick={onNewFile}
+          aria-label="New file"
+          data-tour="new-session"
+        >
+          <Plus className="size-4 stroke-[1.75]" />
+          New file
+        </Button>
+        {!drilled ? (
+          <Button
+            variant="ghost"
+            className="h-9 gap-2 px-3 ring-1 ring-border/50 shadow-sm"
+            onClick={onNewFolder}
+            aria-label="New folder"
+            data-tour="new-project"
+          >
+            <FolderPlus className="size-4 stroke-[1.75]" />
+            New folder
+          </Button>
+        ) : null}
+        <div className="relative h-10 w-[13.5rem] shrink-0">
+          <div className="absolute right-0 top-0 z-20 w-[13.5rem]">
+            <UserCard onRunTutorial={onRunTutorial} />
+          </div>
+        </div>
       </div>
       <div className="relative w-full">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
         <Input
           type="search"
-          placeholder={drilled ? "Search files…" : "Search projects…"}
+          placeholder={drilled ? "Search files…" : "Search files and folders…"}
           value={searchQuery}
           onChange={(e) => onSearchQueryChange(e.target.value)}
           className="h-10 w-full pl-9 rounded-lg bg-muted/25 border-border/80 focus-visible:ring-2 focus-visible:ring-ring/40"

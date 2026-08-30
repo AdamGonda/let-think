@@ -1,6 +1,7 @@
-import { FileText, History } from "lucide-react";
+import { FileText, History, Compass } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StepNavigator } from "@/components/navigation/StepNavigator";
+import { UserCard } from "@/components/user/UserCard";
 
 type GraphViewHeaderProps = {
   sessionTitle: string | undefined;
@@ -13,7 +14,8 @@ type GraphViewHeaderProps = {
   hasChatHistory: boolean;
   onHistoryOpen: () => void;
   onEditorOpen: () => void;
-  onSessionTitleClick: () => void;
+  onOpenExplorer: () => void;
+  onRunTutorial?: () => void;
 };
 
 export function GraphViewHeader({
@@ -27,7 +29,8 @@ export function GraphViewHeader({
   hasChatHistory,
   onHistoryOpen,
   onEditorOpen,
-  onSessionTitleClick,
+  onOpenExplorer,
+  onRunTutorial,
 }: GraphViewHeaderProps) {
   const sessionLabel =
     sessionTitle != null && sessionTitle.trim() !== ""
@@ -36,19 +39,29 @@ export function GraphViewHeader({
 
   return (
     <header className="grid grid-cols-[1fr_auto_1fr] items-center gap-4 shrink-0 py-3 px-4 border-b border-border">
-      <div className="min-w-0 pr-2">
+      <div className="min-w-0 pr-2 flex items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={onOpenExplorer}
+          disabled={isSessionTitleDisabled}
+          title="Back to files"
+          aria-label="Back to files"
+        >
+          <Compass className="size-5" />
+        </Button>
         <button
           type="button"
-          onClick={onSessionTitleClick}
+          onClick={onOpenExplorer}
           disabled={isSessionTitleDisabled}
           data-tour="session-title"
-          className={`inline-block max-w-[min(32rem,62vw)] truncate text-left text-xl font-semibold tracking-tight text-foreground rounded-lg px-3.5 py-0 -mx-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+          className={`inline-block max-w-[min(28rem,50vw)] truncate text-left text-xl font-semibold tracking-tight text-foreground rounded-lg px-3.5 py-0 -mx-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
             isSessionTitleDisabled
               ? "cursor-not-allowed opacity-70"
               : "cursor-pointer hover:bg-muted/40"
           }`}
-          title="Show on sidebar"
-          aria-label={`Session: ${sessionLabel}. Click to show in sidebar.`}
+          title="Back to files"
+          aria-label={`File: ${sessionLabel}. Click to go back to files.`}
         >
           {sessionLabel}
         </button>
@@ -93,6 +106,11 @@ export function GraphViewHeader({
         >
           <FileText className="size-5" />
         </Button>
+        <div className="relative h-7 w-7 shrink-0">
+          <div className="absolute right-0 top-0 z-20 w-[13.5rem]">
+            <UserCard compact onRunTutorial={onRunTutorial} />
+          </div>
+        </div>
       </div>
     </header>
   );
