@@ -107,11 +107,13 @@ describe("intent orchestration", () => {
     actor.stop();
   });
 
-  it("INTENT_OPEN_NOTES_LIST stays at files root when active session has no project", () => {
+  it("INTENT_OPEN_NOTES_LIST drills into inbox when active session has no project", () => {
     const actor = createActor(appUiMachine, { input: baseInput() });
     actor.start();
     actor.send({ type: "INTENT_OPEN_NOTES_LIST" });
-    expect(actor.getSnapshot().context.notesListDrill).toBeNull();
+    expect(actor.getSnapshot().context.notesListDrill).toEqual({
+      type: "inbox",
+    });
     expect(selectSurface(actor.getSnapshot())).toBe("notesList");
     actor.stop();
   });
@@ -152,7 +154,7 @@ describe("intent orchestration", () => {
     vi.useRealTimers();
   });
 
-  it("INTENT_BREADCRUMB_SESSION_CLICK stays at files root when active session has no project", async () => {
+  it("INTENT_BREADCRUMB_SESSION_CLICK drills into Inbox when active session has no project", async () => {
     vi.useFakeTimers();
     const actor = createActor(appUiMachine, {
       input: baseInput({
@@ -165,7 +167,9 @@ describe("intent orchestration", () => {
     actor.start();
     actor.send({ type: "INTENT_BREADCRUMB_SESSION_CLICK" });
     expect(selectSurface(actor.getSnapshot())).toBe("notesList");
-    expect(actor.getSnapshot().context.notesListDrill).toBeNull();
+    expect(actor.getSnapshot().context.notesListDrill).toEqual({
+      type: "inbox",
+    });
     expect(actor.getSnapshot().context.activeProjectId).toBeNull();
     await vi.advanceTimersByTimeAsync(timings.wakeUpExitMs + 1);
     expect(actor.getSnapshot().context.editorOpen).toBe(false);

@@ -28,7 +28,7 @@ function setNotesListDrillForSession(
     type: "NOTES_LIST_DRILL_SET",
     drill: session.projectId
       ? { type: "project", id: session.projectId }
-      : null,
+      : { type: "inbox" },
   });
 }
 
