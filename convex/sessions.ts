@@ -65,7 +65,7 @@ export const create = mutation({
     const id = await ctx.db.insert("sessions", {
       userId,
       projectId,
-      title: "New session",
+      title: "New file",
       createdAt: now,
     });
     return id;
@@ -232,7 +232,10 @@ export const addMessages = mutation({
       });
     }
     const session = await ctx.db.get(sessionId);
-    if (session?.title === "New session" && userContent.trim()) {
+    if (
+      (session?.title === "New file" || session?.title === "New session") &&
+      userContent.trim()
+    ) {
       const title =
         userContent.slice(0, SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS) +
         (userContent.length > SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS

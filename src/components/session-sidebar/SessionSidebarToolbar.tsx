@@ -66,7 +66,7 @@ export function SessionSidebarToolbar({
             : "justify-start h-10 w-full gap-2 px-3 ring-1 ring-border/50 shadow-sm"
         }
         onClick={onNewSession}
-        aria-label="New session"
+        aria-label="New file"
         data-tour="new-session"
       >
         <span
@@ -75,7 +75,7 @@ export function SessionSidebarToolbar({
         >
           <Plus className="size-4.5 stroke-[1.75]" />
         </span>
-        {!isCollapsed && "New session"}
+        {!isCollapsed && "New file"}
       </Button>
       <Button
         variant="ghost"
