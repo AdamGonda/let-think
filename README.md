@@ -30,6 +30,10 @@ Instead of only generating chat text, it turns each exchange into an evolving co
   ```
    `npm run dev` starts both Vite and `npx convex dev` concurrently.
 
+> **Agents / headless dev:** to reach the authenticated workspace without Google OAuth, see
+> [docs/agent-local-login.md](docs/agent-local-login.md) (mints a real Convex Auth session on
+> the local anonymous backend).
+
 ## Environment Variables
 
 
