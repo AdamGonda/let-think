@@ -126,6 +126,17 @@ export function mirrorAtReferencePresence(
   return setAtReferenceInDraft(target, n, hasAtReference(source, n));
 }
 
+/** Strip `@n` tokens after those refs were consumed (e.g. sent in chat). */
+export function removeAtReferencesFromDraft(
+  draft: string | undefined,
+  numbers: number[],
+): string {
+  return numbers.reduce(
+    (d, n) => setAtReferenceInDraft(d, n, false),
+    draft ?? "",
+  );
+}
+
 /** If `@n` is already in the draft, strip it; otherwise append it (like {@link appendAtReferenceToDraft}). */
 export function toggleAtReferenceInDraft(
   draft: string | undefined,

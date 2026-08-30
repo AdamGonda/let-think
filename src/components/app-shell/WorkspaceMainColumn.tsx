@@ -15,6 +15,7 @@ import {
   buildNumberedConceptsFromGraph,
 } from "../../lib/conceptReferences";
 import { userInputForBatch, userMessageForBatch } from "../../lib/batchUserInput";
+import { clearGraphDraftReferences } from "@/hooks/useAppContentBodyHandlers";
 import {
   closeHistoryPanel,
   setChatLoading,
@@ -213,6 +214,9 @@ export function WorkspaceMainColumn({
                 sendLane="chat"
                 autoFocus={chatOpen}
                 listenForFocusEvent={chatOpen}
+                onConsumedConceptNumbers={(numbers) =>
+                  clearGraphDraftReferences(actor, numbers)
+                }
               />
             }
           />

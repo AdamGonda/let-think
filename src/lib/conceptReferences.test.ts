@@ -8,6 +8,7 @@ import {
   formatReferenceTitleBullets,
   mirrorAtReferencePresence,
   selectedConceptTitlesFromDraft,
+  removeAtReferencesFromDraft,
   setAtReferenceInDraft,
   toggleAtReferenceInDraft,
   type NumberedConcept,
@@ -52,6 +53,13 @@ describe("setAtReferenceInDraft / mirrorAtReferencePresence", () => {
       "notes here @2 ",
     );
     expect(mirrorAtReferencePresence("go", "keep @2 this", 2)).toBe("keep this");
+  });
+});
+
+describe("removeAtReferencesFromDraft", () => {
+  it("strips consumed refs so graph cards unselect after a chat send", () => {
+    expect(removeAtReferencesFromDraft("@1 @4 hello", [1, 4])).toBe("hello");
+    expect(removeAtReferencesFromDraft("@1 leftover", [])).toBe("@1 leftover");
   });
 });
 

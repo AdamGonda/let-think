@@ -37,6 +37,8 @@ interface ChatProps {
   sendLane?: "graph" | "chat";
   autoFocus?: boolean;
   listenForFocusEvent?: boolean;
+  /** Chat-lane send: graph `@n` highlights to drop after those refs were used. */
+  onConsumedConceptNumbers?: (conceptNumbers: number[]) => void;
 }
 
 export function Chat({
@@ -57,6 +59,7 @@ export function Chat({
   sendLane = "graph",
   autoFocus = true,
   listenForFocusEvent = true,
+  onConsumedConceptNumbers,
 }: ChatProps) {
   const [internalInput, setInternalInput] = useState("");
   const draft = draftInput !== undefined ? draftInput : internalInput;
@@ -114,6 +117,9 @@ export function Chat({
       if (sendLane === "chat") {
         if (!effectiveChatSessionId) return;
         setInput("");
+        onConsumedConceptNumbers?.(
+          referencedConcepts.map((c) => c.number),
+        );
         await sendChatMessage({
           chatSessionId: effectiveChatSessionId,
           userContent: payload.userContent,

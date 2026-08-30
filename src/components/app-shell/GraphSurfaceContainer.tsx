@@ -196,6 +196,11 @@ export function GraphSurfaceContainer({
     (view: SessionView) => {
       posthog.capture("session_view_changed", { view });
       setSessionView(actor, view);
+      if (view === "chat") {
+        requestAnimationFrame(() => {
+          window.dispatchEvent(new Event(FOCUS_COMPOSER_EVENT));
+        });
+      }
     },
     [actor, posthog],
   );

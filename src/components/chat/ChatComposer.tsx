@@ -67,27 +67,25 @@ export function ChatComposer({
   const pendingSelectionRef = useRef<number | null>(null);
   const pendingExternalFocusRef = useRef(false);
 
+  const tryFocusComposer = () => {
+    const textarea = textareaRef.current;
+    if (!textarea) return false;
+    const canFocus =
+      !textarea.disabled && textarea.getClientRects().length > 0;
+    if (!canFocus) return false;
+    textarea.focus();
+    const end = textarea.value.length;
+    textarea.setSelectionRange(end, end);
+    pendingExternalFocusRef.current = false;
+    return true;
+  };
+
   const focusComposerWithRetry = () => {
     let attempts = 0;
     const maxAttempts = 20;
 
     const focusWhenReady = () => {
-      const textarea = textareaRef.current;
-      if (!textarea) return;
-
-      // During view transitions / batch card motion, composer can be present but
-      // not reliably focusable yet.
-      const canFocus =
-        !textarea.disabled &&
-        textarea.offsetParent !== null &&
-        textarea.getClientRects().length > 0;
-
-      if (canFocus) {
-        textarea.focus();
-        pendingExternalFocusRef.current = false;
-        return;
-      }
-
+      if (tryFocusComposer()) return;
       attempts += 1;
       if (attempts < maxAttempts) {
         window.setTimeout(focusWhenReady, 32);
@@ -114,22 +112,25 @@ export function ChatComposer({
     pendingSelectionRef.current = null;
   }, [input]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!listenForFocusEvent) return;
     const handleFocusComposer = () => {
       pendingExternalFocusRef.current = true;
-      requestAnimationFrame(focusComposerWithRetry);
+      focusComposerWithRetry();
     };
     window.addEventListener(FOCUS_COMPOSER_EVENT, handleFocusComposer);
     return () =>
       window.removeEventListener(FOCUS_COMPOSER_EVENT, handleFocusComposer);
   }, [listenForFocusEvent]);
 
-  useEffect(() => {
-    if (!isDisabled && pendingExternalFocusRef.current) {
-      requestAnimationFrame(focusComposerWithRetry);
+  useLayoutEffect(() => {
+    if (!autoFocus && !pendingExternalFocusRef.current) return;
+    if (isDisabled) {
+      if (autoFocus) pendingExternalFocusRef.current = true;
+      return;
     }
-  }, [isDisabled]);
+    focusComposerWithRetry();
+  }, [autoFocus, isDisabled]);
 
   const handleScroll = () => {
     const ta = textareaRef.current;

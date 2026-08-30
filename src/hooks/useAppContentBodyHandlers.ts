@@ -16,6 +16,7 @@ import {
 } from "@/lib/appUiCommands";
 import {
   mirrorAtReferencePresence,
+  removeAtReferencesFromDraft,
   toggleAtReferenceInDraft,
 } from "@/lib/conceptReferences";
 
@@ -127,6 +128,17 @@ export function useGraphCardReferenceHandler({
   );
 
   return { handleCardReferenceClick };
+}
+
+/** After chat send, drop those `@n` from the graph draft so cards unselect. */
+export function clearGraphDraftReferences(
+  actor: AppUiActorRef,
+  conceptNumbers: number[],
+): void {
+  if (conceptNumbers.length === 0) return;
+  const graphDraft = actor.getSnapshot().context.draftInput;
+  const next = removeAtReferencesFromDraft(graphDraft, conceptNumbers);
+  if (next !== graphDraft) setDraftInput(actor, next);
 }
 
 /** @deprecated Prefer useAppShellIntentHandlers + useGraphCardReferenceHandler */
