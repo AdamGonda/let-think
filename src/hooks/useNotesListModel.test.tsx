@@ -43,9 +43,10 @@ describe("useNotesListModel", () => {
     expect(result.current.totalSessions).toBe(2);
     expect(result.current.sortedGroups[0]?.project).toBeNull();
     expect(result.current.sortedGroups[1]?.project?.name).toBe("Zebra");
-    expect(result.current.rootFolders).toHaveLength(1);
-    expect(result.current.rootFiles).toHaveLength(1);
-    expect(result.current.rootFiles[0]?.title).toBe("Inbox A");
+    expect(result.current.rootFolders).toHaveLength(2);
+    expect(result.current.rootFolders[0]?.project).toBeNull();
+    expect(result.current.rootFolders[0]?.sessions).toHaveLength(1);
+    expect(result.current.rootFolders[1]?.project?.name).toBe("Zebra");
   });
 
   it("treats workspace as empty only when there are no files and no folders", () => {
@@ -75,6 +76,26 @@ describe("useNotesListModel", () => {
     expect(result.current.isEmpty).toBe(false);
     expect(result.current.hasProjects).toBe(true);
     expect(result.current.rootFolders).toHaveLength(1);
+    expect(result.current.rootFolders[0]?.project?.name).toBe("Solo");
+  });
+
+  it("surfaces Inbox when search matches a file inside it", () => {
+    const workspace: ProjectWithSessions[] = [
+      { project: null, sessions: [mkSession("i1", "Loose note", 100)] },
+      {
+        project: mkProject("p1", "Alpha", 1),
+        sessions: [mkSession("s1", "Other", 50)],
+      },
+    ];
+    const onDrill = vi.fn();
+    const { result } = renderHook(() =>
+      useNotesListModel(workspace, null, onDrill),
+    );
+    act(() => {
+      result.current.setSearchQuery("loose");
+    });
+    expect(result.current.rootFolders).toHaveLength(1);
+    expect(result.current.rootFolders[0]?.project).toBeNull();
   });
 
   it("filters groups by search query", () => {

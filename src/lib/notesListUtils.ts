@@ -34,7 +34,8 @@ export function projectGroupMatchesQuery(
   group: ProjectWithSessions,
   q: string,
 ): boolean {
-  return groupDisplayName(group).toLowerCase().includes(q);
+  if (groupDisplayName(group).toLowerCase().includes(q)) return true;
+  return group.sessions.some((s) => s.title.toLowerCase().includes(q));
 }
 
 export function resolveDrillGroup(

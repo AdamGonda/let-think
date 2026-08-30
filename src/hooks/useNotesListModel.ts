@@ -50,25 +50,17 @@ export function useNotesListModel(
     return inbox ? [inbox, ...rest] : rest;
   }, [sortedGroups, searchQuery]);
 
-  /** Folders at the dashboard root (projects only — inbox files sit beside them). */
+  /**
+   * Files grid: Inbox first when it has files, then project folders.
+   * Unfiled sessions live inside Inbox, not as loose cards on the root.
+   */
   const rootFolders = useMemo(
-    () => filteredGroups.filter((g): g is ProjectRow => g.project != null),
+    () =>
+      filteredGroups.filter(
+        (g) => g.project != null || g.sessions.length > 0,
+      ),
     [filteredGroups],
   );
-
-  const inboxGroup = useMemo(
-    () => sortedGroups.find((g) => g.project == null),
-    [sortedGroups],
-  );
-
-  const rootFiles = useMemo(() => {
-    const sessions = inboxGroup?.sessions ?? [];
-    const q = searchQuery.trim().toLowerCase();
-    const list = !q
-      ? sessions
-      : sessions.filter((s) => s.title.toLowerCase().includes(q));
-    return [...list].sort((a, b) => b.createdAt - a.createdAt);
-  }, [inboxGroup, searchQuery]);
 
   const hasProjects = (workspace?.some((g) => g.project != null) ?? false);
   const isEmpty = totalSessions === 0 && !hasProjects;
@@ -106,7 +98,6 @@ export function useNotesListModel(
     sortedGroups,
     filteredGroups,
     rootFolders,
-    rootFiles,
     drillGroup,
     filteredDrillSessions,
   };

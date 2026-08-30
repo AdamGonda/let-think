@@ -195,6 +195,9 @@ export const appUiMachine = setup({
           },
         };
       }
+      if (context.activeSessionId != null) {
+        return { notesListDrill: { type: "inbox" as const } };
+      }
       return { notesListDrill: null };
     }),
     /** Leave note overlay for graph; clears Files drill so navigation stays predictable. */
@@ -222,7 +225,8 @@ export const appUiMachine = setup({
         enqueue.raise({ type: "ACTIVE_PROJECT_SET", projectId: null });
         enqueue.raise({
           type: "NOTES_LIST_DRILL_SET",
-          drill: null,
+          drill:
+            context.activeSessionId != null ? { type: "inbox" } : null,
         });
       }
       enqueue.raise({ type: "USER_EXIT_WAKE_UP" });

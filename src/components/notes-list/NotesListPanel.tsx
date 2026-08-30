@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import type { Doc, Id } from "../../../convex/_generated/dataModel";
-import type { ProjectWithSessions } from "../session-sidebar/workspaceTypes";
+import type {
+  ProjectRow,
+  ProjectWithSessions,
+} from "../session-sidebar/workspaceTypes";
 import { groupDisplayName, type NotesListDrill } from "@/lib/notesListUtils";
 import { NotesListToolbar } from "./NotesListToolbar";
 import { ProjectSummaryCard } from "./ProjectSummaryCard";
@@ -40,7 +43,6 @@ export function NotesListPanel({
     setSearchQuery,
     isEmpty,
     rootFolders,
-    rootFiles,
     drillGroup,
     filteredDrillSessions,
   } = useNotesListModel(workspace, drill, onDrillChange);
@@ -139,7 +141,7 @@ export function NotesListPanel({
 
             {!drilled && !isEmpty && (
               <>
-                {rootFolders.length === 0 && rootFiles.length === 0 ? (
+                {rootFolders.length === 0 ? (
                   <p className="text-center text-sm text-muted-foreground py-12">
                     {searchQuery.trim() ? (
                       <>Nothing matches &quot;{searchQuery}&quot;</>
@@ -151,87 +153,93 @@ export function NotesListPanel({
                   <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {rootFolders.map((group) => {
                       const project = group.project;
+                      const isInbox = project == null;
+                      const cardKey = isInbox ? "inbox" : project._id;
                       const folderHasActiveSession =
                         activeSessionId != null &&
                         group.sessions.some((s) => s._id === activeSessionId);
                       return (
-                        <li key={project._id}>
+                        <li key={cardKey}>
                           <ProjectSummaryCard
                             group={group}
                             isSelected={folderHasActiveSession}
-                            isDropTarget={dragOverProjectId === project._id}
-                            isEditing={editingProjectId === project._id}
+                            isDropTarget={
+                              isInbox
+                                ? dragOverProjectId === "inbox"
+                                : dragOverProjectId === project._id
+                            }
+                            isEditing={
+                              !isInbox && editingProjectId === project._id
+                            }
                             confirmDelete={
+                              !isInbox &&
                               confirmDeleteProjectId === project._id
                             }
                             nameInputRef={projectInputRef}
                             onDrill={() =>
-                              onDrillChange({
-                                type: "project",
-                                id: project._id,
-                              })
+                              onDrillChange(
+                                isInbox
+                                  ? { type: "inbox" }
+                                  : {
+                                      type: "project",
+                                      id: project._id,
+                                    },
+                              )
                             }
-                            onRename={(name) => {
-                              void handleRenameProject(project._id, name);
-                              setEditingProjectId(null);
-                            }}
+                            onRename={
+                              isInbox
+                                ? undefined
+                                : (name) => {
+                                    void handleRenameProject(project._id, name);
+                                    setEditingProjectId(null);
+                                  }
+                            }
                             onCancelEdit={() => setEditingProjectId(null)}
-                            onStartEdit={() => setEditingProjectId(project._id)}
-                            onRequestDelete={() =>
-                              setConfirmDeleteProjectId(project._id)
+                            onStartEdit={
+                              isInbox
+                                ? undefined
+                                : () => setEditingProjectId(project._id)
                             }
-                            onConfirmDelete={() => {
-                              void handleDeleteProject(project._id);
-                              setConfirmDeleteProjectId(null);
-                            }}
+                            onRequestDelete={
+                              isInbox
+                                ? undefined
+                                : () => setConfirmDeleteProjectId(project._id)
+                            }
+                            onConfirmDelete={
+                              isInbox
+                                ? undefined
+                                : () => {
+                                    void handleDeleteProject(project._id);
+                                    setConfirmDeleteProjectId(null);
+                                  }
+                            }
                             onCancelDelete={() =>
                               setConfirmDeleteProjectId(null)
                             }
-                            onNewFile={() => {
-                              void handleNewSession(project._id);
-                            }}
+                            onNewFile={
+                              isInbox
+                                ? undefined
+                                : () => {
+                                    void handleNewSession(project._id);
+                                  }
+                            }
                             onDragOver={() =>
-                              setDragOverProjectId(project._id)
+                              setDragOverProjectId(
+                                isInbox ? "inbox" : project._id,
+                              )
                             }
                             onDragLeave={() => setDragOverProjectId(null)}
                             onDropSession={(sessionId) => {
-                              void handleMoveSession(sessionId, project._id);
+                              void handleMoveSession(
+                                sessionId,
+                                isInbox ? null : project._id,
+                              );
                               setDragOverProjectId(null);
                             }}
                           />
                         </li>
                       );
                     })}
-                    {rootFiles.map((session) => (
-                      <li key={session._id}>
-                        <NotesListSessionCard
-                          session={session}
-                          isSelected={activeSessionId === session._id}
-                          isEditing={editingSessionId === session._id}
-                          confirmDelete={
-                            confirmDeleteSessionId === session._id
-                          }
-                          titleInputRef={sessionInputRef}
-                          onOpenNotesEditor={onOpenNotesEditor}
-                          onRename={(title) => {
-                            void handleRenameSession(session._id, title);
-                            setEditingSessionId(null);
-                          }}
-                          onCancelEdit={() => setEditingSessionId(null)}
-                          onStartEdit={() => setEditingSessionId(session._id)}
-                          onRequestDelete={() =>
-                            setConfirmDeleteSessionId(session._id)
-                          }
-                          onConfirmDelete={() => {
-                            void handleDeleteSession(session._id);
-                            setConfirmDeleteSessionId(null);
-                          }}
-                          onCancelDelete={() =>
-                            setConfirmDeleteSessionId(null)
-                          }
-                        />
-                      </li>
-                    ))}
                   </ul>
                 )}
               </>
@@ -240,34 +248,40 @@ export function NotesListPanel({
             {drilled && drillGroup && (
               <>
                 <div className="mb-4 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
-                      dragOverProjectId === "inbox"
-                        ? "border-ring bg-muted/40 text-foreground"
-                        : "border-border/80 text-muted-foreground hover:bg-muted/15"
-                    }`}
-                    onDragOver={(e) => {
-                      e.preventDefault();
-                      e.dataTransfer.dropEffect = "move";
-                      setDragOverProjectId("inbox");
-                    }}
-                    onDragLeave={() => setDragOverProjectId(null)}
-                    onDrop={(e) => {
-                      e.preventDefault();
-                      const sessionId = e.dataTransfer.getData(
-                        "text/plain",
-                      ) as Id<"sessions">;
-                      if (sessionId) {
-                        void handleMoveSession(sessionId, null);
-                      }
-                      setDragOverProjectId(null);
-                    }}
-                  >
-                    Move to Files
-                  </button>
+                  {drill?.type !== "inbox" ? (
+                    <button
+                      type="button"
+                      className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+                        dragOverProjectId === "inbox"
+                          ? "border-ring bg-muted/40 text-foreground"
+                          : "border-border/80 text-muted-foreground hover:bg-muted/15"
+                      }`}
+                      onDragOver={(e) => {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = "move";
+                        setDragOverProjectId("inbox");
+                      }}
+                      onDragLeave={() => setDragOverProjectId(null)}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        const sessionId = e.dataTransfer.getData(
+                          "text/plain",
+                        ) as Id<"sessions">;
+                        if (sessionId) {
+                          void handleMoveSession(sessionId, null);
+                        }
+                        setDragOverProjectId(null);
+                      }}
+                    >
+                      Move to Inbox
+                    </button>
+                  ) : null}
                   {rootFolders
-                    .filter((g) => g.project._id !== drillGroup.project?._id)
+                    .filter(
+                      (g): g is ProjectRow =>
+                        g.project != null &&
+                        g.project._id !== drillGroup.project?._id,
+                    )
                     .map((g) => (
                       <button
                         key={g.project._id}
