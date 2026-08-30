@@ -6,6 +6,7 @@ import type { ConceptGraphData } from "@/contexts/SessionDataContext";
 type AppContentGraphSurfaceProps = {
   activeSessionId: Id<"sessions"> | null;
   activeSessionTitle: string | undefined;
+  activeProjectName: string | undefined;
   batchesLength: number;
   selectedBatchIndex: number;
   hasChatHistory: boolean;
@@ -19,7 +20,8 @@ type AppContentGraphSurfaceProps = {
   onSelectBatch: (index: number) => void;
   onHistoryOpen: () => void;
   onEditorOpen: () => void;
-  onOpenExplorer: () => void;
+  onProjectsRootClick: () => void;
+  onProjectNameClick: () => void;
   onCardReferenceClick?: (conceptNumber: number) => void;
   onConceptCopy?: (concept: { name: string; description?: string }) => void;
 };
@@ -27,6 +29,7 @@ type AppContentGraphSurfaceProps = {
 export function AppContentGraphSurface({
   activeSessionId,
   activeSessionTitle,
+  activeProjectName,
   batchesLength,
   selectedBatchIndex,
   hasChatHistory,
@@ -40,7 +43,8 @@ export function AppContentGraphSurface({
   onSelectBatch,
   onHistoryOpen,
   onEditorOpen,
-  onOpenExplorer,
+  onProjectsRootClick,
+  onProjectNameClick,
   onCardReferenceClick,
   onConceptCopy,
 }: AppContentGraphSurfaceProps) {
@@ -48,6 +52,7 @@ export function AppContentGraphSurface({
     <>
       {activeSessionId && (
         <GraphViewHeader
+          projectName={activeProjectName}
           sessionTitle={activeSessionTitle}
           batchCount={batchesLength}
           selectedBatchIndex={selectedBatchIndex}
@@ -58,7 +63,8 @@ export function AppContentGraphSurface({
           hasChatHistory={hasChatHistory}
           onHistoryOpen={onHistoryOpen}
           onEditorOpen={onEditorOpen}
-          onOpenExplorer={onOpenExplorer}
+          onProjectsRootClick={onProjectsRootClick}
+          onProjectNameClick={onProjectNameClick}
         />
       )}
       <div

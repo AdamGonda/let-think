@@ -11,6 +11,12 @@ export const layout = {
   mainColumnWidthMaxPx: 1200,
   /** Inner session input card (composer + historical dock): matches empty single-line textarea row + padding. */
   sessionInputChromeMinClass: "min-h-[4.75rem]",
+  /**
+   * Graph + file editor top bar — same grid, height, and padding so chrome does not jump
+   * when switching.
+   */
+  workspaceTopBarClass:
+    "grid grid-cols-[1fr_auto_1fr] items-center gap-4 shrink-0 h-14 px-4",
   /** Historical prompt expanded panel: stack above graph / cards. */
   sessionInputExpandedOverlayZClass: "z-40",
   /**

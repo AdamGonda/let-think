@@ -76,35 +76,43 @@ export function WakeUpOverlay({
           isExitingOverlay ? "opacity-0" : "opacity-100"
         }`}
       >
-        {showBrainButton ? (
-          <Button
-            variant="outline"
-            size="icon-sm"
-            className="absolute top-3 right-4 z-20"
-            onClick={onOverlayActionClick}
-            aria-label={
-              overlayActionReturnsToGraph
-                ? "Return to concept graph"
-                : "Summarize and return to session"
-            }
-          >
-            <Brain className="size-5" />
-          </Button>
+        {showBrainButton || showFileNavBreadcrumb ? (
+          <header className={layout.workspaceTopBarClass}>
+            <div className="min-w-0 pr-2">
+              {showFileNavBreadcrumb && activeSessionInWorkspace ? (
+                <NoteBreadcrumb
+                  projectName={activeSessionInWorkspace.projectName}
+                  fileName={activeSessionInWorkspace.session.title}
+                  interactive={
+                    editorRevealReady && !chatLoading && !isExitingOverlay
+                  }
+                  isExiting={isExitingOverlay}
+                  onProjectsRootClick={onBreadcrumbProjectsRootClick}
+                  onProjectNameClick={onBreadcrumbProjectNameClick}
+                />
+              ) : null}
+            </div>
+            <div />
+            <div className="flex items-center justify-end gap-2">
+              {showBrainButton ? (
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  onClick={onOverlayActionClick}
+                  aria-label={
+                    overlayActionReturnsToGraph
+                      ? "Return to concept graph"
+                      : "Summarize and return to session"
+                  }
+                >
+                  <Brain className="size-5" />
+                </Button>
+              ) : null}
+            </div>
+          </header>
         ) : null}
         {activeSessionId && (
-          <div className="flex-1 min-h-0 flex flex-col items-stretch justify-start overflow-hidden px-6 pb-8 pt-2">
-            {showFileNavBreadcrumb && activeSessionInWorkspace ? (
-              <NoteBreadcrumb
-                projectName={activeSessionInWorkspace.projectName}
-                fileName={activeSessionInWorkspace.session.title}
-                interactive={
-                  editorRevealReady && !chatLoading && !isExitingOverlay
-                }
-                isExiting={isExitingOverlay}
-                onProjectsRootClick={onBreadcrumbProjectsRootClick}
-                onProjectNameClick={onBreadcrumbProjectNameClick}
-              />
-            ) : null}
+          <div className="flex-1 min-h-0 flex flex-col items-stretch justify-start overflow-hidden px-6 pb-8">
             <div
               className={`relative flex min-h-0 w-full flex-1 flex-col justify-start overflow-hidden transition-opacity duration-150 ${
                 editorRevealReady ? "opacity-100" : "opacity-0"

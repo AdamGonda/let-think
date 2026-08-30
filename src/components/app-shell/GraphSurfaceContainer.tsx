@@ -21,7 +21,8 @@ import {
 import { userInputForBatch } from "../../lib/batchUserInput";
 import { findSessionInWorkspace } from "../../lib/workspaceQueries";
 import {
-  intentOpenNotesList,
+  intentBreadcrumbProjectsRootClick,
+  intentBreadcrumbSessionClick,
   openEditor,
   openHistoryPanel,
   setGraphLoadingProgress,
@@ -174,6 +175,7 @@ export function GraphSurfaceContainer({
     <AppContentGraphSurface
       activeSessionId={activeSessionId}
       activeSessionTitle={activeSessionInWorkspace?.session.title}
+      activeProjectName={activeSessionInWorkspace?.projectName}
       batchesLength={batches.length}
       selectedBatchIndex={graph.selectedBatchIndex}
       hasChatHistory={graph.hasChatHistory}
@@ -190,7 +192,8 @@ export function GraphSurfaceContainer({
         openHistoryPanel(actor);
       }}
       onEditorOpen={handleEditorOpen}
-      onOpenExplorer={() => intentOpenNotesList(actor)}
+      onProjectsRootClick={() => intentBreadcrumbProjectsRootClick(actor)}
+      onProjectNameClick={() => intentBreadcrumbSessionClick(actor)}
       onCardReferenceClick={
         isLatestBatch ? handleCardReferenceClick : undefined
       }

@@ -19,6 +19,7 @@ interface NoteBreadcrumbProps {
   isExiting?: boolean;
   onProjectsRootClick: () => void;
   onProjectNameClick: () => void;
+  className?: string;
 }
 
 const fileCrumbClass =
@@ -37,6 +38,7 @@ export function NoteBreadcrumb({
   isExiting = false,
   onProjectsRootClick,
   onProjectNameClick,
+  className,
 }: NoteBreadcrumbProps) {
   const crumbInteractiveClass = interactive
     ? crumbButtonClass
@@ -48,11 +50,11 @@ export function NoteBreadcrumb({
   return (
     <nav
       aria-label="Breadcrumb"
-      className="mb-3 w-full shrink-0"
+      className={cn("min-w-0 w-full shrink-0", className)}
       aria-disabled={!interactive || undefined}
     >
-      <ol className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-sm text-muted-foreground">
-        <li className="min-w-0">
+      <ol className="flex min-w-0 flex-nowrap items-center gap-x-1.5 text-sm text-muted-foreground">
+        <li className="min-w-0 shrink">
           <button
             type="button"
             className={cn(
@@ -69,7 +71,7 @@ export function NoteBreadcrumb({
         <li aria-hidden className="shrink-0 text-muted-foreground/50">
           <ChevronRight className="size-3.5" />
         </li>
-        <li className="min-w-0">
+        <li className="min-w-0 shrink">
           <button
             type="button"
             className={cn("block w-full min-w-0", crumbInteractiveClass)}
@@ -83,7 +85,7 @@ export function NoteBreadcrumb({
         <li aria-hidden className="shrink-0 text-muted-foreground/50">
           <ChevronRight className="size-3.5" />
         </li>
-        <li className="min-w-0">
+        <li className="min-w-0 shrink">
           <span
             className={cn(
               fileCrumbClass,
@@ -94,6 +96,7 @@ export function NoteBreadcrumb({
             )}
             title={fileName}
             aria-current="page"
+            data-tour="session-title"
           >
             {fileName}
           </span>
