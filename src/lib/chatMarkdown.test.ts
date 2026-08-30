@@ -13,6 +13,17 @@ describe("renderChatMarkdown", () => {
     expect(html).toContain("Fish");
   });
 
+  it("renders GFM tables as HTML tables", () => {
+    const html = renderChatMarkdown(
+      "| Feature | Now | Next |\n| --- | --- | --- |\n| Device | Phone | AR |\n",
+    );
+    expect(html).toContain("<table>");
+    expect(html).toContain("<th>");
+    expect(html).toContain("Feature");
+    expect(html).toContain("Phone");
+    expect(html).toContain('class="chat-md-table-wrap"');
+  });
+
   it("drops raw HTML and javascript links", () => {
     const html = renderChatMarkdown(
       '<script>alert(1)</script>\n[x](javascript:alert(1))\n**ok**',

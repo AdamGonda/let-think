@@ -2,6 +2,9 @@ import { marked } from "marked";
 
 const renderer = new marked.Renderer();
 renderer.html = () => "";
+const defaultTable = renderer.table.bind(renderer);
+renderer.table = (token) =>
+  `<div class="chat-md-table-wrap">${defaultTable(token)}</div>`;
 
 const ALLOWED_TAGS = new Set([
   "P",
@@ -27,6 +30,7 @@ const ALLOWED_TAGS = new Set([
   "PRE",
   "A",
   "HR",
+  "DIV",
   "TABLE",
   "THEAD",
   "TBODY",

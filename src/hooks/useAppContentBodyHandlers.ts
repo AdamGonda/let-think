@@ -11,9 +11,13 @@ import {
   intentOverlayActionClick,
   openSessionInFilesWithEditor,
   setActiveProject,
+  setChatDraftInput,
   setDraftInput,
 } from "@/lib/appUiCommands";
-import { toggleAtReferenceInDraft } from "@/lib/conceptReferences";
+import {
+  mirrorAtReferencePresence,
+  toggleAtReferenceInDraft,
+} from "@/lib/conceptReferences";
 
 const FOCUS_COMPOSER_EVENT = "let-think:focus-composer";
 
@@ -91,7 +95,7 @@ type UseGraphCardReferenceHandlerArgs = {
   draftInput: string;
 };
 
-/** Graph @n reference toggles in chat draft — subscribe next to graph surface only. */
+/** Graph card @n toggle — graph draft first, then mirror that ref onto the chat draft. */
 export function useGraphCardReferenceHandler({
   actor,
   draftInput,
@@ -100,6 +104,15 @@ export function useGraphCardReferenceHandler({
     (conceptNumber: number) => {
       const nextDraft = toggleAtReferenceInDraft(draftInput, conceptNumber);
       setDraftInput(actor, nextDraft);
+      const chatDraft = actor.getSnapshot().context.chatDraftInput;
+      const nextChat = mirrorAtReferencePresence(
+        nextDraft,
+        chatDraft,
+        conceptNumber,
+      );
+      if (nextChat !== chatDraft) {
+        setChatDraftInput(actor, nextChat);
+      }
       setTimeout(() => {
         const textarea = document.querySelector<HTMLTextAreaElement>(
           "[data-session-input-textarea]",

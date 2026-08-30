@@ -6,7 +6,9 @@ import {
   formatConceptPlainForClipboard,
   formatReferenceConceptBullets,
   formatReferenceTitleBullets,
+  mirrorAtReferencePresence,
   selectedConceptTitlesFromDraft,
+  setAtReferenceInDraft,
   toggleAtReferenceInDraft,
   type NumberedConcept,
 } from "./conceptReferences";
@@ -28,6 +30,28 @@ describe("appendAtReferenceToDraft / toggleAtReferenceInDraft", () => {
 
   it("toggles off existing reference", () => {
     expect(toggleAtReferenceInDraft("x @2 y", 2)).toBe("x y");
+  });
+});
+
+describe("setAtReferenceInDraft / mirrorAtReferencePresence", () => {
+  it("appends when present is true and the ref is missing", () => {
+    expect(setAtReferenceInDraft("hi", 2, true)).toBe("hi @2 ");
+  });
+
+  it("strips when present is false and the ref is there", () => {
+    expect(setAtReferenceInDraft("x @2 y", 2, false)).toBe("x y");
+  });
+
+  it("is a no-op when presence already matches", () => {
+    expect(setAtReferenceInDraft("@2 ", 2, true)).toBe("@2 ");
+    expect(setAtReferenceInDraft("hello", 2, false)).toBe("hello");
+  });
+
+  it("mirrors source presence onto a separate chat draft", () => {
+    expect(mirrorAtReferencePresence("@2 ", "notes here", 2)).toBe(
+      "notes here @2 ",
+    );
+    expect(mirrorAtReferencePresence("go", "keep @2 this", 2)).toBe("keep this");
   });
 });
 

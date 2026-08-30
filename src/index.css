@@ -691,3 +691,26 @@ body {
   border-top: 1px solid var(--border);
   margin: 0.9em 0;
 }
+.chat-md-table-wrap {
+  overflow-x: auto;
+  margin: 0.75em 0;
+}
+.chat-md table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9em;
+  line-height: 1.4;
+}
+.chat-md th,
+.chat-md td {
+  border: 1px solid var(--border);
+  padding: 0.5em 0.7em;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+.chat-md th {
+  font-weight: 650;
+  background: var(--muted);
+}

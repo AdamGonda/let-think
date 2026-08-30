@@ -92,6 +92,10 @@ export function appendAtReferenceToDraft(
   return `${d} ${token}`;
 }
 
+function hasAtReference(draft: string, n: number): boolean {
+  return new RegExp(String.raw`@${n}\b`).test(draft);
+}
+
 /** Remove every `@n` token (same `\b` rules as {@link AT_REFERENCE_PATTERN}). */
 function removeAtReferenceTokensFromDraft(draft: string, n: number): string {
   const re = new RegExp(String.raw`@${n}\b`, "g");
@@ -100,13 +104,35 @@ function removeAtReferenceTokensFromDraft(draft: string, n: number): string {
   return s;
 }
 
+/** Ensure `@n` is present or absent in the draft (append/strip, never duplicate). */
+export function setAtReferenceInDraft(
+  draft: string | undefined,
+  n: number,
+  present: boolean,
+): string {
+  const d = draft ?? "";
+  if (present === hasAtReference(d, n)) return d;
+  return present
+    ? appendAtReferenceToDraft(d, n)
+    : removeAtReferenceTokensFromDraft(d, n);
+}
+
+/** Make `target` contain `@n` iff `source` does — keeps two composers' refs aligned. */
+export function mirrorAtReferencePresence(
+  source: string,
+  target: string | undefined,
+  n: number,
+): string {
+  return setAtReferenceInDraft(target, n, hasAtReference(source, n));
+}
+
 /** If `@n` is already in the draft, strip it; otherwise append it (like {@link appendAtReferenceToDraft}). */
 export function toggleAtReferenceInDraft(
   draft: string | undefined,
   n: number,
 ): string {
   const d = draft ?? "";
-  if (new RegExp(String.raw`@${n}\b`).test(d)) {
+  if (hasAtReference(d, n)) {
     return removeAtReferenceTokensFromDraft(d, n);
   }
   return appendAtReferenceToDraft(d, n);

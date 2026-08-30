@@ -10,7 +10,7 @@ vi.mock("@/contexts/SessionDataContext", () => ({
         _id: "a1",
         role: "assistant",
         content:
-          "### Why do they disappear?\n\n**Emergence** is the point.\n\n- Fish\n- Insects",
+          "### Why do they disappear?\n\n**Emergence** is the point.\n\n- Fish\n- Insects\n\n| Feature | Now | Next |\n| --- | --- | --- |\n| Device | Phone | AR |\n",
       },
     ],
     loadOlderChatMessages: vi.fn(),
@@ -28,5 +28,7 @@ describe("SessionChatThread markdown", () => {
     expect(screen.getByText("Emergence")).toBeTruthy();
     expect(screen.queryByText("**Emergence**")).toBeNull();
     expect(screen.getByText("Fish")).toBeTruthy();
+    expect(screen.getByRole("columnheader", { name: "Feature" })).toBeTruthy();
+    expect(screen.getByRole("cell", { name: "Phone" })).toBeTruthy();
   });
 });
