@@ -30,12 +30,8 @@ export function NotesListToolbar({
   className,
 }: NotesListToolbarProps) {
   return (
-    <div className={cn("shrink-0 border-b border-border py-6", className)}>
-      <div
-        className={`mb-5 flex min-h-10 items-center gap-3 ${
-          drilled && hasDrillGroup ? "" : ""
-        }`}
-      >
+    <div className={cn("shrink-0 py-6", className)}>
+      <div className="mb-5 flex min-h-9 items-center gap-3">
         {drilled && hasDrillGroup ? (
           <button
             type="button"
@@ -71,10 +67,8 @@ export function NotesListToolbar({
             New folder
           </Button>
         ) : null}
-        <div className="relative h-10 w-[13.5rem] shrink-0">
-          <div className="absolute right-0 top-0 z-20 w-[13.5rem]">
-            <UserCard onRunTutorial={onRunTutorial} />
-          </div>
+        <div className="relative z-20 shrink-0">
+          <UserCard onRunTutorial={onRunTutorial} />
         </div>
       </div>
       <div className="relative w-full">

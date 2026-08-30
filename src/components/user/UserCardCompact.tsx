@@ -37,7 +37,6 @@ export function UserCardCompact({
       setMenuOpen={setMenuOpen}
       signOut={signOut}
       onRunTutorial={onRunTutorial}
-      variant="compact"
     >
       {menuDisabled ? (
         onExpandSidebar ? (

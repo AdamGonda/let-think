@@ -35,11 +35,10 @@ export function UserCardExpanded({
       setMenuOpen={setMenuOpen}
       signOut={signOut}
       onRunTutorial={onRunTutorial}
-      variant="expanded"
     >
       <button
         type="button"
-        className="m-0 flex h-full w-full cursor-pointer appearance-none items-center gap-3 rounded-md border-0 bg-transparent px-2 text-left transition-colors hover:bg-muted/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+        className="m-0 flex h-9 cursor-pointer appearance-none items-center gap-2 rounded-md border-0 bg-transparent px-1.5 text-left transition-colors hover:bg-muted/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
         aria-label="Open account menu"
         aria-expanded={menuOpen}
         aria-haspopup="menu"
@@ -53,17 +52,15 @@ export function UserCardExpanded({
           size="default"
           className="after:hidden"
         />
-        <div className="min-w-0 flex-1 text-left">
-          <div className="flex min-w-0 items-center gap-2">
-            <p className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
-              {displayName}
-            </p>
-          </div>
+        <div className="min-w-0 max-w-[8.5rem] text-left leading-tight">
+          <p className="truncate text-sm font-medium text-foreground">
+            {displayName}
+          </p>
           <p className="truncate text-xs text-muted-foreground">
             Beta {__APP_VERSION__}
           </p>
         </div>
-        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground">
+        <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground">
           <MoreHorizontal className="size-4" />
         </span>
       </button>

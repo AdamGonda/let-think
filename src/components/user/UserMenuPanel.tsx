@@ -21,7 +21,7 @@ export function UserMenuPanel({
     <div
       role="menu"
       id="user-card-menu"
-      className="flex w-full flex-col gap-1 rounded-md border border-border/50 bg-muted/20 p-1.5"
+      className="flex w-full flex-col gap-1 rounded-md border border-border bg-popover p-1.5 shadow-md"
     >
       <div className="flex w-full items-center border-b border-border/40 pb-2">
         <span className="shrink-0 text-xs font-medium text-muted-foreground">

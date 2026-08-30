@@ -75,7 +75,7 @@ export function ConceptGraphBatchGrid({
   return (
     <div
       className={clsx(
-        "grid h-full min-h-full w-full grid-cols-1 grid-rows-6 gap-6 p-4 sm:grid-cols-2 sm:grid-rows-3 lg:grid-cols-3 lg:grid-rows-2",
+        "grid h-full min-h-full min-w-0 w-full grid-cols-1 grid-rows-6 gap-6 p-4 sm:grid-cols-2 sm:grid-rows-3 lg:grid-cols-3 lg:grid-rows-2",
         showSwipeAnimation &&
           (swipeDirection === "right"
             ? "animate-batch-swipe-right"

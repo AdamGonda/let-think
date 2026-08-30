@@ -292,6 +292,18 @@ describe("intent orchestration", () => {
     actor.stop();
   });
 
+  it("CHAT_LOADING_START keeps graph surface (does not bounce to explorer)", () => {
+    const actor = createActor(appUiMachine, { input: baseInput() });
+    actor.start();
+    actor.send({ type: "VIEW_SET", mode: "graph" });
+    expect(selectSurface(actor.getSnapshot())).toBe("graph");
+    actor.send({ type: "CHAT_LOADING_START" });
+    expect(selectSurface(actor.getSnapshot())).toBe("graph");
+    actor.send({ type: "CHAT_LOADING_END" });
+    expect(selectSurface(actor.getSnapshot())).toBe("graph");
+    actor.stop();
+  });
+
   it("captures graph loading baseline and blocks interaction on loading start", () => {
     const actor = createActor(appUiMachine, {
       input: baseInput({ prevBatchesLength: 3 }),

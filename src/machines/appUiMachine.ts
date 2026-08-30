@@ -314,28 +314,6 @@ export const appUiMachine = setup({
         target: ".surface.graph",
       },
     ],
-    CHAT_LOADING_START: {
-      actions: [
-        "startChatLoading",
-        "startGraphLoading",
-        "setGraphReferenceFreezeActiveTrue",
-      ],
-      target: ".graphReferenceFreeze.loading",
-    },
-    CHAT_LOADING_END: {
-      actions: ["endChatLoading", "setGraphReferenceFreezeActiveTrue"],
-      target: ".graphReferenceFreeze.stabilizing",
-    },
-    GRAPH_LOADING_PROGRESS: [
-      {
-        guard: "loadingCardsCompletedOnProgress",
-        actions: ["applyGraphLoadingProgress", "setGraphReferenceFreezeActiveTrue"],
-        target: ".graphReferenceFreeze.stabilizing",
-      },
-      {
-        actions: "applyGraphLoadingProgress",
-      },
-    ],
     CHAT_HISTORY_META: {
       actions: "syncChatHistoryMeta",
     },
@@ -416,6 +394,33 @@ export const appUiMachine = setup({
     },
     graphReferenceFreeze: {
       initial: "idle",
+      on: {
+        CHAT_LOADING_START: {
+          actions: [
+            "startChatLoading",
+            "startGraphLoading",
+            "setGraphReferenceFreezeActiveTrue",
+          ],
+          target: ".loading",
+        },
+        CHAT_LOADING_END: {
+          actions: ["endChatLoading", "setGraphReferenceFreezeActiveTrue"],
+          target: ".stabilizing",
+        },
+        GRAPH_LOADING_PROGRESS: [
+          {
+            guard: "loadingCardsCompletedOnProgress",
+            actions: [
+              "applyGraphLoadingProgress",
+              "setGraphReferenceFreezeActiveTrue",
+            ],
+            target: ".stabilizing",
+          },
+          {
+            actions: "applyGraphLoadingProgress",
+          },
+        ],
+      },
       states: {
         idle: {},
         loading: {},

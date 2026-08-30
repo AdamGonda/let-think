@@ -120,7 +120,7 @@ export function ConceptGraphOverlay({
         <>
           <div
             ref={graphViewportRef}
-            className="flex flex-1 p-1 min-h-0 min-w-0 overflow-auto relative items-start pt-4 pb-4"
+            className="relative flex min-h-0 min-w-0 flex-1 items-start overflow-x-hidden overflow-y-auto p-1 pt-4 pb-4"
           >
             <ConceptGraphBatchGrid
               showSwipeAnimation={showSwipeAnimation}

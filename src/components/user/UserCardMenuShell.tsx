@@ -2,40 +2,17 @@ import type { RefObject, ReactNode } from "react";
 import { UserMenuPanel } from "./UserMenuPanel";
 import { cn } from "@/lib/utils";
 
-const slideEase =
-  "transition-transform duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform";
-
 type UserCardMenuShellProps = {
   containerRef: RefObject<HTMLDivElement | null>;
   menuOpen: boolean;
   setMenuOpen: (open: boolean | ((o: boolean) => boolean)) => void;
   signOut: () => void | Promise<void>;
   onRunTutorial?: () => void;
-  /** Top row (avatar / expanded header) — slides up when menu opens */
   children: ReactNode;
-  variant: "compact" | "expanded";
 };
 
-const shellByVariant = {
-  compact: {
-    container: "relative w-full min-w-0 max-w-full transition-[min-height] duration-200 ease-out",
-    openMinH: "min-h-[140px] overflow-hidden",
-    closedMinH: "min-h-14 overflow-hidden",
-    headerRow:
-      "absolute inset-x-0 top-0 flex h-14 items-center justify-center",
-    menuWrap: "absolute inset-x-0 top-0 py-0.5",
-  },
-  expanded: {
-    container: "relative w-full min-w-0 overflow-hidden transition-[min-height] duration-200 ease-out",
-    openMinH: "min-h-[144px]",
-    closedMinH: "min-h-14",
-    headerRow: "absolute inset-x-0 top-0 h-14",
-    menuWrap: "absolute inset-x-0 top-0 py-1",
-  },
-} as const;
-
 /**
- * Shared slide transition for the account menu panel (SRP: layout/animation only).
+ * Header dropdown for the account menu (SRP: layout/animation only).
  */
 export function UserCardMenuShell({
   containerRef,
@@ -44,34 +21,16 @@ export function UserCardMenuShell({
   signOut,
   onRunTutorial,
   children,
-  variant,
 }: UserCardMenuShellProps) {
-  const s = shellByVariant[variant];
-
   return (
-    <div
-      ref={containerRef}
-      className={cn(
-        s.container,
-        menuOpen ? s.openMinH : s.closedMinH,
-      )}
-    >
+    <div ref={containerRef} className="relative shrink-0">
+      {children}
       <div
         className={cn(
-          s.headerRow,
-          slideEase,
-          menuOpen ? "-translate-y-full pointer-events-none" : "translate-y-0",
-        )}
-      >
-        {children}
-      </div>
-      <div
-        className={cn(
-          s.menuWrap,
-          slideEase,
+          "absolute right-0 top-full z-30 mt-1 w-56 origin-top transition-[transform,opacity] duration-200 ease-[cubic-bezier(0.32,0.72,0,1)] will-change-transform",
           menuOpen
-            ? "translate-y-0"
-            : "translate-y-full pointer-events-none opacity-0",
+            ? "translate-y-0 opacity-100"
+            : "pointer-events-none -translate-y-1 opacity-0",
         )}
       >
         <UserMenuPanel

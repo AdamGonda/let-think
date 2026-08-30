@@ -76,37 +76,13 @@ export function useWorkspaceActions({
   const handleDeleteSession = useCallback(
     async (id: Id<"sessions">) => {
       const wasActive = activeSessionId === id;
-      const deletedSession = allSessions.find(
-        (s: Doc<"sessions">) => s._id === id,
-      );
-      const projectId = deletedSession?.projectId ?? null;
       await removeSession({ id });
       posthog.capture("session_deleted", { was_active: wasActive });
       if (wasActive) {
-        const remaining = allSessions.filter(
-          (s: Doc<"sessions">) => s._id !== id,
-        );
-        const sameProject = remaining.filter(
-          (s: Doc<"sessions">) => (s.projectId ?? null) === projectId,
-        );
-        const nextSession =
-          sameProject[0] ?? (projectId != null ? remaining[0] : null) ?? null;
-        onSelectSession(nextSession?._id ?? null);
-        if (nextSession?.projectId) {
-          onSelectProject(nextSession.projectId);
-        } else if (!nextSession) {
-          onSelectProject(null);
-        }
+        onSelectSession(null);
       }
     },
-    [
-      allSessions,
-      activeSessionId,
-      removeSession,
-      onSelectSession,
-      onSelectProject,
-      posthog,
-    ],
+    [activeSessionId, removeSession, onSelectSession, posthog],
   );
 
   const handleMoveSession = useCallback(
