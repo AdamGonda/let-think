@@ -8,7 +8,6 @@ import {
   intentOpenNotesList,
   intentSelectSessionFromSidebar,
   intentOverlayActionClick,
-  openSessionGraphFromNotesListDrill,
   openSessionInFilesWithEditor,
   setActiveProject,
   setDraftInput,
@@ -61,14 +60,6 @@ export function useAppShellIntentHandlers(actor: AppUiActorRef) {
     [actor],
   );
 
-  const onGoToSessionGraphFromNotesList = useCallback(
-    (session: Doc<"sessions">) => {
-      openSessionGraphFromNotesListDrill(actor, session);
-      requestFocusComposer();
-    },
-    [actor],
-  );
-
   const onSelectSessionFromSidebar = useCallback(
     (id: Id<"sessions"> | null) => {
       intentSelectSessionFromSidebar(actor, id);
@@ -89,7 +80,6 @@ export function useAppShellIntentHandlers(actor: AppUiActorRef) {
     handleBreadcrumbSessionClick,
     handleWakeUpOverlayActionClick,
     onSelectSessionFromNotesList,
-    onGoToSessionGraphFromNotesList,
     onSelectSessionFromSidebar,
     onSelectProjectFromSidebar,
   };

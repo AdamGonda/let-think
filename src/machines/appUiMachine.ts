@@ -234,12 +234,11 @@ export const appUiMachine = setup({
       }
       enqueue.raise({ type: "USER_EXIT_WAKE_UP" });
     }),
-    intentSelectSessionFromSidebar: enqueueActions(({ enqueue, context, event }) => {
+    intentSelectSessionFromSidebar: enqueueActions(({ enqueue, event }) => {
       if (event.type !== "INTENT_SELECT_SESSION_FROM_SIDEBAR") return;
-      const wasNotesList = context.surfaceMode === "notesList";
       enqueue.raise({ type: "ACTIVE_SESSION_SET", sessionId: event.sessionId });
-      if (wasNotesList) {
-        enqueue.raise({ type: "VIEW_SET", mode: "graph" });
+      if (event.sessionId != null) {
+        enqueue.raise({ type: "EDITOR_OPEN" });
       }
     }),
     editorClose: assign({

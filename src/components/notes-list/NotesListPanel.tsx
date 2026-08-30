@@ -14,7 +14,6 @@ interface NotesListPanelProps {
   drill: NotesListDrill;
   onDrillChange: (drill: NotesListDrill) => void;
   onOpenNotesEditor: (session: Doc<"sessions">) => void;
-  onOpenSessionGraph: (session: Doc<"sessions">) => void;
 }
 
 export function NotesListPanel({
@@ -23,7 +22,6 @@ export function NotesListPanel({
   drill,
   onDrillChange,
   onOpenNotesEditor,
-  onOpenSessionGraph,
 }: NotesListPanelProps) {
   const {
     searchQuery,
@@ -73,7 +71,7 @@ export function NotesListPanel({
                       <>Nothing matches &quot;{searchQuery}&quot;</>
                     ) : (
                       <>
-                        No folders to show. Sessions without a project live in{" "}
+                        No folders to show. Files without a project live in{" "}
                         <span className="font-medium text-foreground">Inbox</span>.
                       </>
                     )}
@@ -117,7 +115,7 @@ export function NotesListPanel({
                   <div className="py-12 text-center">
                     <p className="text-sm text-muted-foreground">
                       {drillGroup.sessions.length === 0
-                        ? "No notes here yet."
+                        ? "No files here yet."
                         : `Nothing matches "${searchQuery}"`}
                     </p>
                   </div>
@@ -129,7 +127,6 @@ export function NotesListPanel({
                           session={session}
                           isSelected={activeSessionId === session._id}
                           onOpenNotesEditor={onOpenNotesEditor}
-                          onOpenSessionGraph={onOpenSessionGraph}
                         />
                       </li>
                     ))}

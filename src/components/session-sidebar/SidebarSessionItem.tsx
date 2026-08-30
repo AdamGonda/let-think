@@ -103,7 +103,7 @@ export function SidebarSessionItem({
           size="icon-xs"
           className="opacity-0 group-hover:opacity-100 group-hover:pointer-events-auto pointer-events-none hover:bg-destructive/20 hover:text-destructive h-7 shrink-0"
           onClick={onRequestDelete}
-          aria-label="Delete session"
+          aria-label="Delete file"
         >
           <Trash2 className="size-4" />
         </Button>

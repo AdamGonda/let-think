@@ -276,14 +276,15 @@ describe("intent orchestration", () => {
     vi.useRealTimers();
   });
 
-  it("INTENT_SELECT_SESSION_FROM_SIDEBAR switches to graph when on notes list", () => {
+  it("INTENT_SELECT_SESSION_FROM_SIDEBAR opens the file editor and stays on notes list", () => {
     const other = "other_sess" as Id<"sessions">;
     const actor = createActor(appUiMachine, { input: baseInput() });
     actor.start();
     actor.send({ type: "VIEW_SET", mode: "notesList" });
     actor.send({ type: "INTENT_SELECT_SESSION_FROM_SIDEBAR", sessionId: other });
     expect(actor.getSnapshot().context.activeSessionId).toBe(other);
-    expect(selectSurface(actor.getSnapshot())).toBe("graph");
+    expect(actor.getSnapshot().context.editorOpen).toBe(true);
+    expect(selectSurface(actor.getSnapshot())).toBe("notesList");
     actor.stop();
   });
 

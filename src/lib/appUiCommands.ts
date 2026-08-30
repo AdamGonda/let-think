@@ -68,23 +68,6 @@ export function intentSelectSessionFromSidebar(
   actor.send({ type: "INTENT_SELECT_SESSION_FROM_SIDEBAR", sessionId });
 }
 
-/**
- * From Files (project/inbox drill): open the session on the graph/chat surface, close the
- * notes overlay if it was open, and align the active project with the session for the sidebar.
- */
-export function openSessionGraphFromNotesListDrill(
-  actor: AppUiActorRef,
-  session: Doc<"sessions">,
-): void {
-  if (session.projectId) {
-    actor.send({ type: "ACTIVE_PROJECT_SET", projectId: session.projectId });
-  } else {
-    actor.send({ type: "ACTIVE_PROJECT_SET", projectId: null });
-  }
-  intentSelectSessionFromSidebar(actor, session._id);
-  actor.send({ type: "EDITOR_CLOSE" });
-}
-
 export function setNotesListDrill(actor: AppUiActorRef, drill: NotesListDrill): void {
   actor.send({ type: "NOTES_LIST_DRILL_SET", drill });
 }

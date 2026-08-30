@@ -188,7 +188,7 @@ export function SessionSidebarProjectsNav({
             }}
           >
             <span className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/90 py-1 px-2">
-              Sessions
+              Files
             </span>
           </div>
           {inboxSessions.map((session: Doc<"sessions">) => (

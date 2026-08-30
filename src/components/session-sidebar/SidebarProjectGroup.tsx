@@ -180,7 +180,7 @@ export function SidebarProjectGroup({
             size="icon-xs"
             className="opacity-0 group-hover/project:opacity-100 group-hover/project:pointer-events-auto pointer-events-none h-7 shrink-0"
             onClick={(e) => onNewSessionInProject(e, project._id)}
-            aria-label="New session in project"
+            aria-label="New file in project"
           >
             <Plus className="size-4" />
           </Button>

@@ -10,28 +10,28 @@ type NotesListSessionCardProps = {
   /** Session map dot is hovered for this session. */
   isMapHighlighted?: boolean;
   onOpenNotesEditor: (session: Doc<"sessions">) => void;
-  onOpenSessionGraph: (session: Doc<"sessions">) => void;
 };
 
 /**
- * Card for a session in the Files drill grid — matches project folder cards;
- * “Open file” / “Session” actions appear on hover (always visible when hover is unavailable, e.g. touch).
+ * Card for a file in the Explore drill grid — matches project folder cards;
+ * “Open” appears on hover (always visible when hover is unavailable, e.g. touch).
+ * The whole card also opens the file.
  */
 export function NotesListSessionCard({
   session,
   isSelected,
   isMapHighlighted = false,
   onOpenNotesEditor,
-  onOpenSessionGraph,
 }: NotesListSessionCardProps) {
   return (
     <div
       className={clsx(
-        "group relative overflow-hidden rounded-xl border-2 transition-[border-color,background-color] duration-150",
+        "group relative overflow-hidden rounded-xl border-2 transition-[border-color,background-color] duration-150 cursor-pointer",
         isSelected ? "border-sidebar-primary" : "border-border/90",
         // Map hover: neutral surface tint (not session accent — avoids clashing with chart dots).
         isMapHighlighted && "bg-muted/45",
       )}
+      onClick={() => onOpenNotesEditor(session)}
     >
       <CornerRippleBackdrop />
       <div className="relative z-10 flex min-h-30 w-full flex-col gap-2 p-5 text-left transition-colors group-hover:bg-muted/10">
@@ -54,22 +54,10 @@ export function NotesListSessionCard({
             className="h-7 shrink-0 px-2 font-normal text-muted-foreground/90 hover:bg-muted/50 hover:text-foreground"
             onClick={(e) => {
               e.stopPropagation();
-              onOpenSessionGraph(session);
-            }}
-          >
-            Session
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            className="h-7 shrink-0 px-2 font-normal text-muted-foreground/90 hover:bg-muted/50 hover:text-foreground"
-            onClick={(e) => {
-              e.stopPropagation();
               onOpenNotesEditor(session);
             }}
           >
-            Open file
+            Open
           </Button>
         </div>
       </div>

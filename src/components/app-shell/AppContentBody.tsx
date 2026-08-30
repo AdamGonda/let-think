@@ -95,9 +95,6 @@ export function AppContentBody({
         onSelectSessionFromNotesList={
           navigationHandlers.onSelectSessionFromNotesList
         }
-        onGoToSessionGraphFromNotesList={
-          navigationHandlers.onGoToSessionGraphFromNotesList
-        }
       />
     </AppShell>
   );
