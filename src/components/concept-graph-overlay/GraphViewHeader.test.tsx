@@ -101,6 +101,7 @@ describe("GraphViewHeader session view toggle", () => {
     const { getByText, queryByLabelText } = render(
       <GraphViewHeader {...base} sessionView="chat" />,
     );
+    expect(getByText("Folders")).toBeTruthy();
     expect(getByText("New session")).toBeTruthy();
     expect(queryByLabelText("New session. Switch chat")).toBeNull();
   });

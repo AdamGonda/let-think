@@ -292,7 +292,7 @@ export const appUiMachine = setup({
       enqueue.raise({ type: "EDITOR_CLOSE" });
       enqueue.raise({ type: "NOTES_LIST_DRILL_SET", drill: null });
     }),
-    /** Breadcrumb "Projects": Files view at root + exit overlay. */
+    /** Breadcrumb "Folders": Files view at root + exit overlay. */
     intentBreadcrumbProjectsRoot: enqueueActions(({ enqueue }) => {
       enqueue.raise({ type: "VIEW_SET", mode: "notesList" });
       enqueue.raise({ type: "NOTES_LIST_DRILL_SET", drill: null });
