@@ -16,6 +16,7 @@ import {
   hasReadyEmbedding,
   ideaEmbeddingText,
   ideaSourceKey,
+  isScheduledNoteEmbedCurrent,
   makeSnippet,
   noteSourceKey,
   removedIdeaNodeIds,
@@ -40,8 +41,10 @@ export {
   hasReadyEmbedding,
   ideaEmbeddingText,
   ideaSourceKey,
+  isScheduledNoteEmbedCurrent,
   makeSnippet,
   matchingTerms,
+  noteEmbeddingHash,
   noteSourceKey,
   queryTerms,
   removedIdeaNodeIds,
@@ -231,6 +234,23 @@ export async function enqueueNoteSearch(
   });
   if (id) await scheduleEmbed(ctx, [id]);
 }
+
+export const enqueueNoteSearchIfCurrent = internalMutation({
+  args: {
+    fileId: v.id("files"),
+    contentHash: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, { fileId, contentHash }) => {
+    const file = await ctx.db.get(fileId);
+    if (!file) return null;
+    if (!isScheduledNoteEmbedCurrent(file.thinkingNotes ?? "", contentHash)) {
+      return null;
+    }
+    await enqueueNoteSearch(ctx, fileId);
+    return null;
+  },
+});
 
 export async function enqueueChatMessageSearch(
   ctx: MutationCtx,

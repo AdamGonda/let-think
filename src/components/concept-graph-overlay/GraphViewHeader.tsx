@@ -1,5 +1,4 @@
 import {
-  Eraser,
   FileText,
   History,
   LayoutGrid,
@@ -40,8 +39,6 @@ type GraphViewHeaderProps = {
   onEditorOpen: () => void;
   onProjectsRootClick: () => void;
   onProjectNameClick: () => void;
-  eraseActive?: boolean;
-  onEraseToggle?: () => void;
 };
 
 export function GraphViewHeader({
@@ -60,8 +57,6 @@ export function GraphViewHeader({
   onEditorOpen,
   onProjectsRootClick,
   onProjectNameClick,
-  eraseActive = false,
-  onEraseToggle,
 }: GraphViewHeaderProps) {
   const sessionLabel =
     sessionTitle != null && sessionTitle.trim() !== ""
@@ -103,18 +98,7 @@ export function GraphViewHeader({
         )}
       </div>
       <div className="flex h-7 items-center justify-end gap-2 leading-none">
-        {sessionView === "canvas" ? (
-          <Button
-            variant="outline"
-            size="icon-sm"
-            aria-pressed={eraseActive}
-            aria-label="Eraser"
-            title="Eraser"
-            onClick={onEraseToggle}
-          >
-            <Eraser className={cn("size-5", eraseActive && "fill-current")} />
-          </Button>
-        ) : (
+        {sessionView === "canvas" ? null : (
           <div
             className={cn(
               "relative flex size-7 shrink-0 items-center justify-center transition-opacity duration-75 ease-out motion-reduce:transition-none",

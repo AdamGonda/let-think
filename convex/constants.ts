@@ -12,3 +12,6 @@ export const CONCEPT_GRAPH_PROMPT_BATCH_WINDOW = 3;
 
 /** Auto title from first user message when session title is still default. */
 export const SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS = 50;
+
+/** Delay note re-embed so typing pauses don't each hit Google. */
+export const NOTE_SEARCH_EMBED_DEBOUNCE_MS = 10_000;

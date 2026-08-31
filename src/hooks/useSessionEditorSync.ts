@@ -94,6 +94,7 @@ export function useSessionEditorSync(
       void updateFileNotes({
         fileId: prevFile,
         thinkingNotes: notesRef.current,
+        embedNow: true,
       });
     }
     prevFileIdRef.current = activeFileId;

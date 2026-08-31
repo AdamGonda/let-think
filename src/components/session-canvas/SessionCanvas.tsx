@@ -1,8 +1,19 @@
-import { useEffect, useRef, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
+import { CanvasToolbar, type CanvasTool } from "./CanvasToolbar";
 
-type StrokeKind = "draw" | "erase";
+type Point = { x: number; y: number };
 type StrokePoint = { x: number; y: number; width: number };
-type Stroke = { kind: StrokeKind; points: StrokePoint[] };
+type InkKind = "draw" | "erase";
+type ShapeKind = "rect" | "ellipse" | "line";
+type InkStroke = { kind: InkKind; points: StrokePoint[] };
+type ShapeStroke = { kind: ShapeKind; from: Point; to: Point; width: number };
+type TextStroke = { kind: "text"; x: number; y: number; text: string };
+type Stroke = InkStroke | ShapeStroke | TextStroke;
 
 const INK = "#ffffff";
 const MOUSE_WIDTH = 2;
@@ -13,11 +24,13 @@ const ERASE_MIN_WIDTH = 12;
 /** Pointer Events: eraser contact is button 5 / buttons bit 5 (32). */
 const ERASER_BUTTON = 5;
 const ERASER_BUTTONS_MASK = 32;
+export const CANVAS_TEXT_FONT =
+  '16px "DM Sans", ui-sans-serif, system-ui, sans-serif';
 
 export function strokeWidthForPointer(
   pointerType: string,
   pressure: number,
-  kind: StrokeKind = "draw",
+  kind: InkKind = "draw",
 ): number {
   const base =
     pointerType !== "pen"
@@ -51,6 +64,34 @@ export function isErasePointer(event: {
   );
 }
 
+export function rectFromPoints(from: Point, to: Point): {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+} {
+  return {
+    x: Math.min(from.x, to.x),
+    y: Math.min(from.y, to.y),
+    w: Math.abs(to.x - from.x),
+    h: Math.abs(to.y - from.y),
+  };
+}
+
+export function isEmptyShape(from: Point, to: Point): boolean {
+  return Math.abs(to.x - from.x) < 1 && Math.abs(to.y - from.y) < 1;
+}
+
+export function canvasTextStroke(
+  x: number,
+  y: number,
+  raw: string,
+): TextStroke | null {
+  const text = raw.replace(/\u00a0/g, " ").trim();
+  if (text === "") return null;
+  return { kind: "text", x, y, text };
+}
+
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   return (
@@ -60,7 +101,50 @@ function isTypingTarget(target: EventTarget | null): boolean {
   );
 }
 
+function isShapeTool(tool: CanvasTool): tool is ShapeKind {
+  return tool === "rect" || tool === "ellipse" || tool === "line";
+}
+
+function drawShape(ctx: CanvasRenderingContext2D, stroke: ShapeStroke): void {
+  ctx.lineWidth = stroke.width;
+  if (stroke.kind === "line") {
+    ctx.beginPath();
+    ctx.moveTo(stroke.from.x, stroke.from.y);
+    ctx.lineTo(stroke.to.x, stroke.to.y);
+    ctx.stroke();
+    return;
+  }
+  const { x, y, w, h } = rectFromPoints(stroke.from, stroke.to);
+  if (stroke.kind === "rect") {
+    ctx.strokeRect(x, y, w, h);
+    return;
+  }
+  const rx = Math.max(w / 2, 0.5);
+  const ry = Math.max(h / 2, 0.5);
+  ctx.beginPath();
+  ctx.ellipse(x + w / 2, y + h / 2, rx, ry, 0, 0, Math.PI * 2);
+  ctx.stroke();
+}
+
 function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke): void {
+  if (stroke.kind === "text") {
+    ctx.globalCompositeOperation = "source-over";
+    setupInk(ctx);
+    ctx.font = CANVAS_TEXT_FONT;
+    ctx.textBaseline = "top";
+    ctx.fillText(stroke.text, stroke.x, stroke.y);
+    return;
+  }
+  if (
+    stroke.kind === "rect" ||
+    stroke.kind === "ellipse" ||
+    stroke.kind === "line"
+  ) {
+    ctx.globalCompositeOperation = "source-over";
+    setupInk(ctx);
+    drawShape(ctx, stroke);
+    return;
+  }
   applyKind(ctx, stroke.kind);
   const points = stroke.points;
   if (points.length === 0) return;
@@ -84,15 +168,23 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke): void {
   }
 }
 
-function pointFromEvent(
-  canvas: HTMLCanvasElement,
-  event: PointerEvent,
-  kind: StrokeKind,
-): StrokePoint {
+function clientPoint(canvas: HTMLCanvasElement, event: PointerEvent): Point {
   const rect = canvas.getBoundingClientRect();
   return {
     x: event.clientX - rect.left,
     y: event.clientY - rect.top,
+  };
+}
+
+function pointFromEvent(
+  canvas: HTMLCanvasElement,
+  event: PointerEvent,
+  kind: InkKind,
+): StrokePoint {
+  const { x, y } = clientPoint(canvas, event);
+  return {
+    x,
+    y,
     width: strokeWidthForPointer(event.pointerType, event.pressure, kind),
   };
 }
@@ -104,14 +196,14 @@ function setupInk(ctx: CanvasRenderingContext2D): void {
   ctx.fillStyle = INK;
 }
 
-function applyKind(ctx: CanvasRenderingContext2D, kind: StrokeKind): void {
+function applyKind(ctx: CanvasRenderingContext2D, kind: InkKind): void {
   ctx.globalCompositeOperation = kind === "erase" ? "destination-out" : "source-over";
   setupInk(ctx);
 }
 
 function inkContext(
   canvas: HTMLCanvasElement,
-  kind: StrokeKind,
+  kind: InkKind,
 ): CanvasRenderingContext2D | null {
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
@@ -123,18 +215,19 @@ function inkContext(
 
 type SessionCanvasProps = {
   active: boolean;
-  eraseMode: boolean;
 };
 
-export function SessionCanvas({ active, eraseMode }: SessionCanvasProps) {
+export function SessionCanvas({ active }: SessionCanvasProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const textElRef = useRef<HTMLDivElement>(null);
   const strokesRef = useRef<Stroke[]>([]);
   const liveStrokeRef = useRef<Stroke | null>(null);
   const pointerIdRef = useRef<number | null>(null);
-  const eraseModeRef = useRef(eraseMode);
+  const textDraftRef = useRef<Point | null>(null);
   const redrawRef = useRef<() => void>(() => {});
-  eraseModeRef.current = eraseMode;
+  const [tool, setTool] = useState<CanvasTool>("pen");
+  const [textDraft, setTextDraft] = useState<Point | null>(null);
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -196,10 +289,37 @@ export function SessionCanvas({ active, eraseMode }: SessionCanvasProps) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [active]);
 
+  useEffect(() => {
+    if (!active) {
+      textDraftRef.current = null;
+      setTextDraft(null);
+    }
+  }, [active]);
+
+  useEffect(() => {
+    if (!textDraft) return;
+    textElRef.current?.focus();
+  }, [textDraft]);
+
+  const commitTextDraft = () => {
+    const draft = textDraftRef.current;
+    if (!draft) return;
+    const stroke = canvasTextStroke(
+      draft.x,
+      draft.y,
+      textElRef.current?.innerText ?? "",
+    );
+    textDraftRef.current = null;
+    setTextDraft(null);
+    if (!stroke) return;
+    strokesRef.current.push(stroke);
+    redrawRef.current();
+  };
+
   const paintSegment = (
     from: StrokePoint,
     to: StrokePoint,
-    kind: StrokeKind,
+    kind: InkKind,
   ) => {
     const canvas = canvasRef.current;
     const ctx = canvas ? inkContext(canvas, kind) : null;
@@ -216,15 +336,52 @@ export function SessionCanvas({ active, eraseMode }: SessionCanvasProps) {
     const canvas = canvasRef.current;
     if (!canvas) return;
     event.preventDefault();
+    const erase =
+      tool === "erase" || isErasePointer(event.nativeEvent);
+
+    if (!erase && tool === "text") {
+      if (textDraftRef.current) {
+        commitTextDraft();
+        return;
+      }
+      const point = clientPoint(canvas, event.nativeEvent);
+      textDraftRef.current = point;
+      setTextDraft(point);
+      return;
+    }
+
     canvas.setPointerCapture(event.nativeEvent.pointerId);
     pointerIdRef.current = event.nativeEvent.pointerId;
-    const kind: StrokeKind =
-      eraseModeRef.current || isErasePointer(event.nativeEvent)
-        ? "erase"
-        : "draw";
-    const point = pointFromEvent(canvas, event.nativeEvent, kind);
-    liveStrokeRef.current = { kind, points: [point] };
-    const ctx = inkContext(canvas, kind);
+
+    if (erase) {
+      const point = pointFromEvent(canvas, event.nativeEvent, "erase");
+      liveStrokeRef.current = { kind: "erase", points: [point] };
+      const ctx = inkContext(canvas, "erase");
+      if (!ctx) return;
+      ctx.beginPath();
+      ctx.arc(point.x, point.y, point.width / 2, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
+
+    if (isShapeTool(tool)) {
+      const from = clientPoint(canvas, event.nativeEvent);
+      liveStrokeRef.current = {
+        kind: tool,
+        from,
+        to: from,
+        width: strokeWidthForPointer(
+          event.nativeEvent.pointerType,
+          event.nativeEvent.pressure,
+        ),
+      };
+      redrawRef.current();
+      return;
+    }
+
+    const point = pointFromEvent(canvas, event.nativeEvent, "draw");
+    liveStrokeRef.current = { kind: "draw", points: [point] };
+    const ctx = inkContext(canvas, "draw");
     if (!ctx) return;
     ctx.beginPath();
     ctx.arc(point.x, point.y, point.width / 2, 0, Math.PI * 2);
@@ -237,6 +394,16 @@ export function SessionCanvas({ active, eraseMode }: SessionCanvasProps) {
     const stroke = liveStrokeRef.current;
     if (!canvas || !stroke) return;
     event.preventDefault();
+    if (
+      stroke.kind === "rect" ||
+      stroke.kind === "ellipse" ||
+      stroke.kind === "line"
+    ) {
+      stroke.to = clientPoint(canvas, event.nativeEvent);
+      redrawRef.current();
+      return;
+    }
+    if (stroke.kind !== "draw" && stroke.kind !== "erase") return;
     const coalesced =
       event.nativeEvent.getCoalescedEvents?.() ?? [event.nativeEvent];
     for (const raw of coalesced) {
@@ -256,16 +423,34 @@ export function SessionCanvas({ active, eraseMode }: SessionCanvasProps) {
     pointerIdRef.current = null;
     const stroke = liveStrokeRef.current;
     liveStrokeRef.current = null;
-    if (stroke && stroke.points.length > 0) {
+    if (!stroke) return;
+    if (stroke.kind === "draw" || stroke.kind === "erase") {
+      if (stroke.points.length > 0) strokesRef.current.push(stroke);
+      return;
+    }
+    if (
+      (stroke.kind === "rect" ||
+        stroke.kind === "ellipse" ||
+        stroke.kind === "line") &&
+      !isEmptyShape(stroke.from, stroke.to)
+    ) {
       strokesRef.current.push(stroke);
     }
+    redrawRef.current();
   };
+
+  const cursorClass =
+    tool === "text"
+      ? "cursor-text"
+      : tool === "erase"
+        ? "cursor-cell"
+        : "cursor-crosshair";
 
   return (
     <div ref={wrapRef} className="relative min-h-0 flex-1">
       <canvas
         ref={canvasRef}
-        className="absolute inset-0 size-full touch-none cursor-crosshair"
+        className={`absolute inset-0 size-full touch-none ${cursorClass}`}
         aria-label="Drawing canvas"
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
@@ -273,6 +458,43 @@ export function SessionCanvas({ active, eraseMode }: SessionCanvasProps) {
         onPointerCancel={endStroke}
         onContextMenu={(event) => event.preventDefault()}
       />
+      <CanvasToolbar
+        tool={tool}
+        onToolChange={(next) => {
+          if (textDraftRef.current) commitTextDraft();
+          setTool(next);
+        }}
+      />
+      {textDraft ? (
+        <div
+          ref={textElRef}
+          role="textbox"
+          aria-label="Canvas text"
+          contentEditable
+          suppressContentEditableWarning
+          className="absolute z-10 min-w-[1ch] bg-transparent text-white outline-none"
+          style={{
+            left: textDraft.x,
+            top: textDraft.y,
+            font: CANVAS_TEXT_FONT,
+            caretColor: INK,
+            whiteSpace: "pre",
+            lineHeight: 1.2,
+            minHeight: "1.2em",
+          }}
+          onBlur={commitTextDraft}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              commitTextDraft();
+            } else if (event.key === "Escape") {
+              event.preventDefault();
+              textDraftRef.current = null;
+              setTextDraft(null);
+            }
+          }}
+        />
+      ) : null}
     </div>
   );
 }

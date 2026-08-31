@@ -104,7 +104,7 @@ export function NotesListPanel({
 
   const drilled = drill != null;
   const drillTitle = drillGroup ? groupDisplayName(drillGroup) : "";
-  const drillHeading = drilled && drillGroup ? drillTitle : "Files";
+  const drillHeading = drilled && drillGroup ? drillTitle : "Folders";
 
   const createFileInCurrentFolder = () => {
     const projectId =

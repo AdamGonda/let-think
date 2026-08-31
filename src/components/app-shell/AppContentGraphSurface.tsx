@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { GraphViewHeader } from "../concept-graph-overlay/GraphViewHeader";
 import { ConceptGraphOverlay } from "../concept-graph-overlay/ConceptGraphOverlay";
@@ -77,7 +77,6 @@ export function AppContentGraphSurface({
   const chatOpen = sessionView === "chat";
   const graphOpen = sessionView === "graph";
   const canvasOpen = sessionView === "canvas";
-  const [eraseMode, setEraseMode] = useState(false);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -98,8 +97,6 @@ export function AppContentGraphSurface({
           onEditorOpen={onEditorOpen}
           onProjectsRootClick={onProjectsRootClick}
           onProjectNameClick={onProjectNameClick}
-          eraseActive={eraseMode}
-          onEraseToggle={() => setEraseMode((current) => !current)}
         />
       )}
       {chatOpen ? (
@@ -170,7 +167,6 @@ export function AppContentGraphSurface({
         <SessionCanvas
           key={activeSessionId ?? "empty"}
           active={canvasOpen}
-          eraseMode={eraseMode}
         />
       </div>
     </div>

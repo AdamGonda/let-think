@@ -7,8 +7,10 @@ import {
   hashContent,
   ideaEmbeddingText,
   ideaSourceKey,
+  isScheduledNoteEmbedCurrent,
   makeSnippet,
   matchingTerms,
+  noteEmbeddingHash,
   noteSourceKey,
   queryTerms,
   removedIdeaNodeIds,
@@ -42,6 +44,20 @@ describe("hashContent / snippet", () => {
   it("clips embedding text to the max", () => {
     const long = "x".repeat(SEARCH_EMBED_TEXT_MAX + 10);
     expect(clipEmbeddingText(long).length).toBe(SEARCH_EMBED_TEXT_MAX);
+  });
+});
+
+describe("scheduled note embed current", () => {
+  it("accepts the hash of the current notes", () => {
+    expect(
+      isScheduledNoteEmbedCurrent("hello notes", noteEmbeddingHash("hello notes")),
+    ).toBe(true);
+  });
+
+  it("rejects a superseded snapshot", () => {
+    expect(
+      isScheduledNoteEmbedCurrent("hello notes!", noteEmbeddingHash("hello notes")),
+    ).toBe(false);
   });
 });
 

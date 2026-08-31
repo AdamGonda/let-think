@@ -7,11 +7,16 @@ import {
 import type { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { deleteSessionOwnedRows } from "./lib/sessionOwned";
-import { SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS } from "./constants";
+import { internal } from "./_generated/api";
+import {
+  NOTE_SEARCH_EMBED_DEBOUNCE_MS,
+  SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS,
+} from "./constants";
 import {
   deleteSearchDocumentsByChatSession,
   deleteSearchDocumentsByFile,
   enqueueNoteSearch,
+  noteEmbeddingHash,
   patchSearchDocumentTitlesForFile,
 } from "./searchDocuments";
 
@@ -123,12 +128,21 @@ export const updateThinkingNotes = mutation({
   args: {
     fileId: v.id("files"),
     thinkingNotes: v.string(),
+    embedNow: v.optional(v.boolean()),
   },
   returns: v.null(),
-  handler: async (ctx, { fileId, thinkingNotes }) => {
+  handler: async (ctx, { fileId, thinkingNotes, embedNow }) => {
     await requireFileOwner(ctx, fileId);
     await ctx.db.patch(fileId, { thinkingNotes });
-    await enqueueNoteSearch(ctx, fileId);
+    if (embedNow) {
+      await enqueueNoteSearch(ctx, fileId);
+      return null;
+    }
+    await ctx.scheduler.runAfter(
+      NOTE_SEARCH_EMBED_DEBOUNCE_MS,
+      internal.searchDocuments.enqueueNoteSearchIfCurrent,
+      { fileId, contentHash: noteEmbeddingHash(thinkingNotes) },
+    );
     return null;
   },
 });

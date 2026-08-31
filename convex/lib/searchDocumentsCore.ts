@@ -42,6 +42,18 @@ export function clipEmbeddingText(text: string): string {
   return text.slice(0, SEARCH_EMBED_TEXT_MAX);
 }
 
+export function noteEmbeddingHash(text: string): string {
+  return hashContent(clipEmbeddingText(text));
+}
+
+/** Drop delayed embed jobs whose snapshot is no longer what's on the file. */
+export function isScheduledNoteEmbedCurrent(
+  currentNotes: string,
+  scheduledHash: string,
+): boolean {
+  return noteEmbeddingHash(currentNotes) === scheduledHash;
+}
+
 export function ideaEmbeddingText(node: {
   name: string;
   description?: string;

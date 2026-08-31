@@ -71,38 +71,10 @@ describe("GraphViewHeader session view toggle", () => {
     expect(getByLabelText("Canvas view").getAttribute("aria-checked")).toBe(
       "true",
     );
-    expect(getByLabelText("Eraser")).toBeTruthy();
+    expect(queryByLabelText("Eraser")).toBeNull();
     expect(queryByLabelText("Session history")).toBeNull();
     expect(queryByLabelText("Previous step")).toBeNull();
     expect(getByLabelText("Open file")).toBeTruthy();
-  });
-
-  it("toggles the canvas eraser", () => {
-    const onEraseToggle = vi.fn();
-    const { getByLabelText, rerender } = render(
-      <GraphViewHeader
-        {...base}
-        sessionView="canvas"
-        eraseActive={false}
-        onEraseToggle={onEraseToggle}
-      />,
-    );
-    expect(getByLabelText("Eraser").getAttribute("aria-pressed")).toBe(
-      "false",
-    );
-    fireEvent.click(getByLabelText("Eraser"));
-    expect(onEraseToggle).toHaveBeenCalledTimes(1);
-    rerender(
-      <GraphViewHeader
-        {...base}
-        sessionView="canvas"
-        eraseActive
-        onEraseToggle={onEraseToggle}
-      />,
-    );
-    expect(getByLabelText("Eraser").getAttribute("aria-pressed")).toBe(
-      "true",
-    );
   });
 
   it("shows the file title as a breadcrumb, not a chat switcher", () => {
