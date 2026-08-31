@@ -3,6 +3,7 @@ import {
   useCallback,
   useContext,
   useMemo,
+  useState,
   type ReactNode,
 } from "react";
 import { usePaginatedQuery, useQuery } from "convex/react";
@@ -43,6 +44,9 @@ type SessionDataContextValue = {
   messages: SessionMessage[];
   /** Chat-lane message history (paginated, chronological) */
   chatMessages: SessionMessage[];
+  /** Client-only user bubble until the server row lands. */
+  pendingChatUser: SessionMessage | null;
+  setPendingChatUser: (message: SessionMessage | null) => void;
   loadOlderMessages: (count?: number) => void;
   loadOlderChatMessages: (count?: number) => void;
   messagesLoading: boolean;
@@ -52,6 +56,21 @@ type SessionDataContextValue = {
   batches: NonNullable<ConceptGraphData["batches"]>;
   canSend: boolean;
 };
+
+type PendingChatUserState = {
+  message: SessionMessage;
+  afterUserId: string | undefined;
+};
+
+function lastUserMessage(
+  messages: SessionMessage[],
+): SessionMessage | undefined {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i];
+    if (msg?.role === "user") return msg;
+  }
+  return undefined;
+}
 
 const SessionDataContext = createContext<SessionDataContextValue | null>(null);
 
@@ -116,6 +135,49 @@ export function SessionDataProvider({
     [chatMessageResults],
   );
 
+  const [pendingState, setPendingState] = useState<PendingChatUserState | null>(
+    null,
+  );
+  const [pendingSessionId, setPendingSessionId] = useState(chatSessionId);
+
+  if (chatSessionId !== pendingSessionId) {
+    setPendingSessionId(chatSessionId);
+    if (pendingSessionId) {
+      setPendingState(null);
+    }
+  }
+
+  const setPendingChatUser = useCallback(
+    (message: SessionMessage | null) => {
+      if (message === null) {
+        setPendingState(null);
+        return;
+      }
+      const lastUser = lastUserMessage(chatMessages);
+      setPendingState({
+        message,
+        afterUserId: lastUser?._id,
+      });
+    },
+    [chatMessages],
+  );
+
+  const lastServerUser = lastUserMessage(chatMessages);
+  const pendingCaughtUp = Boolean(
+    pendingState &&
+      lastServerUser?._id &&
+      lastServerUser._id !== pendingState.afterUserId &&
+      lastServerUser.content === pendingState.message.content,
+  );
+  const switchedChat = Boolean(
+    chatSessionId !== pendingSessionId && pendingSessionId,
+  );
+
+  const pendingChatUser =
+    pendingCaughtUp || switchedChat
+      ? null
+      : (pendingState?.message ?? null);
+
   const loadOlderMessages = useCallback(
     (count = CHAT_MESSAGES_PAGE_SIZE) => {
       loadMore(count);
@@ -146,6 +208,8 @@ export function SessionDataProvider({
       conceptGraph: conceptGraph ?? null,
       messages,
       chatMessages,
+      pendingChatUser,
+      setPendingChatUser,
       loadOlderMessages,
       loadOlderChatMessages,
       messagesLoading,
@@ -159,6 +223,8 @@ export function SessionDataProvider({
       conceptGraph,
       messages,
       chatMessages,
+      pendingChatUser,
+      setPendingChatUser,
       loadOlderMessages,
       loadOlderChatMessages,
       messagesLoading,

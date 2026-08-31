@@ -7,6 +7,9 @@ import { renderContentWithMentions } from "@/lib/chatHistoryRender";
 import { renderChatMarkdown } from "@/lib/chatMarkdown";
 import { ConceptGraphEmptyState } from "@/components/concept-graph-overlay/ConceptGraphEmptyState";
 import { clsx } from "clsx";
+import { isNearBottom } from "./isNearBottom";
+
+const PENDING_USER_KEY = "pending-user";
 
 type SessionChatThreadProps = {
   isLoading: boolean;
@@ -20,24 +23,50 @@ function ChatMarkdown({ content }: { content: string }) {
 export function SessionChatThread({ isLoading }: SessionChatThreadProps) {
   const {
     chatMessages,
+    pendingChatUser,
     loadOlderChatMessages,
     canLoadOlderChatMessages,
     chatMessagesLoading,
   } = useSessionData();
   const scrollerRef = useRef<HTMLDivElement | null>(null);
-  const lastMessage = chatMessages.at(-1);
+  const stickToBottomRef = useRef(true);
+
+  const displayedMessages = useMemo(() => {
+    if (!pendingChatUser) return chatMessages;
+    return [...chatMessages, { ...pendingChatUser, _id: PENDING_USER_KEY }];
+  }, [chatMessages, pendingChatUser]);
+
+  const lastMessage = displayedMessages.at(-1);
   const lastMessageKey = `${lastMessage?._id ?? ""}:${lastMessage?.content ?? ""}`;
   const showThinking =
     isLoading &&
     !(lastMessage?.role === "assistant" && lastMessage.content.trim());
 
   useLayoutEffect(() => {
+    if (pendingChatUser) stickToBottomRef.current = true;
+    const el = scrollerRef.current;
+    if (!el || !stickToBottomRef.current) return;
+    el.scrollTop = el.scrollHeight;
+  }, [lastMessageKey, isLoading, pendingChatUser]);
+
+  const handleScroll = () => {
     const el = scrollerRef.current;
     if (!el) return;
-    el.scrollTop = el.scrollHeight;
-  }, [lastMessageKey, isLoading]);
+    const near = isNearBottom(el.scrollHeight, el.scrollTop, el.clientHeight);
+    if (near) {
+      if (!stickToBottomRef.current) {
+        el.scrollTop = el.scrollHeight;
+      }
+      stickToBottomRef.current = true;
+    } else {
+      stickToBottomRef.current = false;
+    }
+  };
 
-  const empty = chatMessages.length === 0 && !isLoading && !chatMessagesLoading;
+  const empty =
+    displayedMessages.length === 0 &&
+    !isLoading &&
+    !chatMessagesLoading;
 
   return (
     <div
@@ -49,6 +78,7 @@ export function SessionChatThread({ isLoading }: SessionChatThreadProps) {
       ) : (
         <div
           ref={scrollerRef}
+          onScroll={handleScroll}
           className={clsx(
             "mx-auto flex w-full flex-1 min-h-0 flex-col overflow-y-auto px-4 py-4",
             layout.mainColumnMaxWidthClass,
@@ -68,7 +98,7 @@ export function SessionChatThread({ isLoading }: SessionChatThreadProps) {
             </div>
           ) : null}
           <ul className="mt-auto flex flex-col gap-3 list-none p-0 m-0">
-            {chatMessages.map((msg, index) => {
+            {displayedMessages.map((msg, index) => {
               const key = msg._id ?? `msg-${index}`;
               const isUser = msg.role === "user";
               if (!isUser && !msg.content.trim()) return null;

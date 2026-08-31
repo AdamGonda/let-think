@@ -1,22 +1,31 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { isNearBottom } from "./isNearBottom";
 import { SessionChatThread } from "./SessionChatThread";
 
-vi.mock("@/contexts/SessionDataContext", () => ({
-  useSessionData: () => ({
+const { mockSessionData } = vi.hoisted(() => ({
+  mockSessionData: {
     chatMessages: [
-      { _id: "u1", role: "user", content: "tell me about murmurations" },
+      { _id: "u1", role: "user" as const, content: "tell me about murmurations" },
       {
         _id: "a1",
-        role: "assistant",
+        role: "assistant" as const,
         content:
           "### Why do they disappear?\n\n**Emergence** is the point.\n\n- Fish\n- Insects\n\n| Feature | Now | Next |\n| --- | --- | --- |\n| Device | Phone | AR |\n",
       },
     ],
+    pendingChatUser: null as {
+      role: "user";
+      content: string;
+    } | null,
     loadOlderChatMessages: vi.fn(),
     canLoadOlderChatMessages: false,
     chatMessagesLoading: false,
-  }),
+  },
+}));
+
+vi.mock("@/contexts/SessionDataContext", () => ({
+  useSessionData: () => mockSessionData,
 }));
 
 describe("SessionChatThread markdown", () => {
@@ -30,5 +39,22 @@ describe("SessionChatThread markdown", () => {
     expect(screen.getByText("Fish")).toBeTruthy();
     expect(screen.getByRole("columnheader", { name: "Feature" })).toBeTruthy();
     expect(screen.getByRole("cell", { name: "Phone" })).toBeTruthy();
+  });
+
+  it("renders a pending user bubble before the server row exists", () => {
+    mockSessionData.pendingChatUser = {
+      role: "user",
+      content: "send this instantly",
+    };
+    render(<SessionChatThread isLoading={true} />);
+    expect(screen.getByText("send this instantly")).toBeTruthy();
+    mockSessionData.pendingChatUser = null;
+  });
+});
+
+describe("isNearBottom", () => {
+  it("pins within the threshold and unpins above it", () => {
+    expect(isNearBottom(1000, 840, 80)).toBe(true);
+    expect(isNearBottom(1000, 839, 80)).toBe(false);
   });
 });

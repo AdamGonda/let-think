@@ -69,7 +69,6 @@ export const appUiMachine = setup({
       activeFileId: null,
       activeChatSessionId: null,
       chatLoading: false,
-      chatThreadLoading: false,
       graphShowLoadingCards: false,
       graphInteractionBlocked: false,
       graphLatestBatchNodeCount: 0,
@@ -132,13 +131,6 @@ export const appUiMachine = setup({
         if (event.sessionId === context.activeSessionId) return context.chatLoading;
         return false;
       },
-      chatThreadLoading: ({ event, context }) => {
-        if (event.type !== "ACTIVE_SESSION_SET") return context.chatThreadLoading;
-        if (event.sessionId === context.activeSessionId) {
-          return context.chatThreadLoading;
-        }
-        return false;
-      },
       activeChatSessionId: ({ event, context }) => {
         if (event.type !== "ACTIVE_SESSION_SET") return context.activeChatSessionId;
         if (event.sessionId === context.activeSessionId) {
@@ -160,7 +152,6 @@ export const appUiMachine = setup({
       activeProjectId: () => null,
       prevBatchesLength: () => 0,
       chatLoading: () => false,
-      chatThreadLoading: () => false,
       graphLoadingStartBatchLength: () => 0,
       graphShowLoadingCards: () => false,
       graphInteractionBlocked: () => false,
@@ -220,8 +211,27 @@ export const appUiMachine = setup({
       },
     }),
     startChatLoading: assign({ chatLoading: true }),
-    startChatThreadLoading: assign({ chatThreadLoading: true }),
-    endChatThreadLoading: assign({ chatThreadLoading: false }),
+    startChatThreadLoading: assign({
+      chatThreadLoadingSessionIds: ({ event, context }) => {
+        if (event.type !== "CHAT_THREAD_LOADING_START") {
+          return context.chatThreadLoadingSessionIds;
+        }
+        const id = event.chatSessionId;
+        return context.chatThreadLoadingSessionIds.includes(id)
+          ? context.chatThreadLoadingSessionIds
+          : [...context.chatThreadLoadingSessionIds, id];
+      },
+    }),
+    endChatThreadLoading: assign({
+      chatThreadLoadingSessionIds: ({ event, context }) => {
+        if (event.type !== "CHAT_THREAD_LOADING_END") {
+          return context.chatThreadLoadingSessionIds;
+        }
+        return context.chatThreadLoadingSessionIds.filter(
+          (id) => id !== event.chatSessionId,
+        );
+      },
+    }),
     startGraphLoading: assign(({ context }) => ({
       graphLoadingStartBatchLength: context.prevBatchesLength,
       graphShowLoadingCards: true,
@@ -338,7 +348,7 @@ export const appUiMachine = setup({
       chatDraftInput: inp?.chatDraftInput ?? "",
       notes: inp?.notes ?? "",
       chatLoading: false,
-      chatThreadLoading: false,
+      chatThreadLoadingSessionIds: inp?.chatThreadLoadingSessionIds ?? [],
       graphLoadingStartBatchLength: 0,
       graphLoadingCardSlots: inp?.graphLoadingCardSlots ?? 6,
       graphShowLoadingCards: false,
@@ -678,6 +688,12 @@ export function selectChatLoadingOnNotesList(
 export function selectCanExitWakeUp(snapshot: MachineSnapshot): boolean {
   const c = snapshot.context;
   return !c.chatLoading;
+}
+
+export function selectChatThreadLoading(snapshot: MachineSnapshot): boolean {
+  const id = snapshot.context.activeChatSessionId;
+  if (!id) return false;
+  return snapshot.context.chatThreadLoadingSessionIds.includes(id);
 }
 
 export function selectGraphShowLoadingCards(snapshot: MachineSnapshot): boolean {

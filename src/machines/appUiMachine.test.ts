@@ -10,6 +10,7 @@ import {
   selectGraphLoadingStartBatchLength,
   selectGraphReferenceFreezeActive,
   selectGraphShowLoadingCards,
+  selectChatThreadLoading,
   selectShowOverlayAction,
   selectShowWakeUpOverlay,
   selectOverlayActionReturnsToGraph,
@@ -32,7 +33,7 @@ function baseInput(over: Partial<AppUiContext> = {}): Partial<AppUiContext> {
     chatDraftInput: "",
     notes: "",
     chatLoading: false,
-    chatThreadLoading: false,
+    chatThreadLoadingSessionIds: [],
     graphLoadingStartBatchLength: 0,
     graphLoadingCardSlots: 6,
     graphShowLoadingCards: false,
@@ -115,14 +116,33 @@ describe("selectors from running actor", () => {
   });
 
   it("CHAT_THREAD_LOADING does not start graph card skeletons", () => {
-    const actor = createActor(appUiMachine, { input: baseInput() });
+    const chatA = "chat_a" as Id<"chatSessions">;
+    const actor = createActor(appUiMachine, {
+      input: baseInput({ activeChatSessionId: chatA }),
+    });
     actor.start();
-    actor.send({ type: "CHAT_THREAD_LOADING_START" });
-    expect(actor.getSnapshot().context.chatThreadLoading).toBe(true);
+    actor.send({ type: "CHAT_THREAD_LOADING_START", chatSessionId: chatA });
+    expect(selectChatThreadLoading(actor.getSnapshot())).toBe(true);
     expect(actor.getSnapshot().context.chatLoading).toBe(false);
     expect(selectGraphShowLoadingCards(actor.getSnapshot())).toBe(false);
-    actor.send({ type: "CHAT_THREAD_LOADING_END" });
-    expect(actor.getSnapshot().context.chatThreadLoading).toBe(false);
+    actor.send({ type: "CHAT_THREAD_LOADING_END", chatSessionId: chatA });
+    expect(selectChatThreadLoading(actor.getSnapshot())).toBe(false);
+    actor.stop();
+  });
+
+  it("chat-thread loading stays on the generating chat when switching threads", () => {
+    const chatA = "chat_a" as Id<"chatSessions">;
+    const chatB = "chat_b" as Id<"chatSessions">;
+    const actor = createActor(appUiMachine, {
+      input: baseInput({ activeChatSessionId: chatA }),
+    });
+    actor.start();
+    actor.send({ type: "CHAT_THREAD_LOADING_START", chatSessionId: chatA });
+    expect(selectChatThreadLoading(actor.getSnapshot())).toBe(true);
+    actor.send({ type: "ACTIVE_CHAT_SESSION_SET", chatSessionId: chatB });
+    expect(selectChatThreadLoading(actor.getSnapshot())).toBe(false);
+    actor.send({ type: "ACTIVE_CHAT_SESSION_SET", chatSessionId: chatA });
+    expect(selectChatThreadLoading(actor.getSnapshot())).toBe(true);
     actor.stop();
   });
 
@@ -397,17 +417,23 @@ describe("intent orchestration", () => {
     actor.stop();
   });
 
-  it("clears in-flight chat loading when switching ACTIVE_SESSION_SET", () => {
+  it("clears in-flight graph chat loading when switching ACTIVE_SESSION_SET", () => {
+    const chatA = "chat_a" as Id<"chatSessions">;
     const other = "other_sess" as Id<"sessions">;
-    const actor = createActor(appUiMachine, { input: baseInput() });
+    const actor = createActor(appUiMachine, {
+      input: baseInput({ activeChatSessionId: chatA }),
+    });
     actor.start();
     actor.send({ type: "CHAT_LOADING_START" });
-    actor.send({ type: "CHAT_THREAD_LOADING_START" });
+    actor.send({ type: "CHAT_THREAD_LOADING_START", chatSessionId: chatA });
     expect(actor.getSnapshot().context.chatLoading).toBe(true);
-    expect(actor.getSnapshot().context.chatThreadLoading).toBe(true);
+    expect(selectChatThreadLoading(actor.getSnapshot())).toBe(true);
     actor.send({ type: "ACTIVE_SESSION_SET", sessionId: other });
     expect(actor.getSnapshot().context.chatLoading).toBe(false);
-    expect(actor.getSnapshot().context.chatThreadLoading).toBe(false);
+    expect(selectChatThreadLoading(actor.getSnapshot())).toBe(false);
+    expect(actor.getSnapshot().context.chatThreadLoadingSessionIds).toEqual([
+      chatA,
+    ]);
     actor.stop();
   });
 

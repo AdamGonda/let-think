@@ -199,9 +199,10 @@ export function WorkspaceMainColumn({
                 sessionLoadingFrame={dock.chatThreadLoading}
                 autoCollapseSignal={dock.uiCollapseSignal}
                 isLoading={dock.chatThreadLoading}
-                setIsLoading={(loading) =>
-                  setChatThreadLoading(actor, loading)
-                }
+                setIsLoading={(loading, chatSessionId) => {
+                  if (!chatSessionId) return;
+                  setChatThreadLoading(actor, loading, chatSessionId);
+                }}
                 numberedConcepts={chatNumberedConcepts}
                 draftInput={dock.chatDraftInput}
                 setDraftInput={(v) => setChatDraftInput(actor, v)}

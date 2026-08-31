@@ -20,7 +20,7 @@ function ctx(partial: Partial<AppUiContext>): AppUiContext {
     chatDraftInput: "",
     notes: "",
     chatLoading: false,
-    chatThreadLoading: false,
+    chatThreadLoadingSessionIds: [],
     graphLoadingStartBatchLength: 0,
     graphLoadingCardSlots: 6,
     graphShowLoadingCards: false,

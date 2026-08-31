@@ -117,11 +117,15 @@ export function setChatLoading(actor: AppUiActorRef, loading: boolean): void {
   );
 }
 
-export function setChatThreadLoading(actor: AppUiActorRef, loading: boolean): void {
+export function setChatThreadLoading(
+  actor: AppUiActorRef,
+  loading: boolean,
+  chatSessionId: Id<"chatSessions">,
+): void {
   actor.send(
     loading
-      ? { type: "CHAT_THREAD_LOADING_START" }
-      : { type: "CHAT_THREAD_LOADING_END" },
+      ? { type: "CHAT_THREAD_LOADING_START", chatSessionId }
+      : { type: "CHAT_THREAD_LOADING_END", chatSessionId },
   );
 }
 

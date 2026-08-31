@@ -23,8 +23,8 @@ export type AppUiContext = {
   chatDraftInput: string;
   notes: string;
   chatLoading: boolean;
-  /** True while the chat-lane send is in flight (must not start graph skeletons). */
-  chatThreadLoading: boolean;
+  /** Chat-lane sends in flight, keyed so switching threads does not share loading UI. */
+  chatThreadLoadingSessionIds: Array<Id<"chatSessions">>;
   /** Batches length snapshot captured when loading starts (machine-owned loading baseline). */
   graphLoadingStartBatchLength: number;
   /** Number of cards that must exist before graph interaction unlocks. */
@@ -64,8 +64,8 @@ export type AppUiEvent =
   | { type: "SESSION_VIEW_SET"; view: SessionView }
   | { type: "CHAT_LOADING_START" }
   | { type: "CHAT_LOADING_END" }
-  | { type: "CHAT_THREAD_LOADING_START" }
-  | { type: "CHAT_THREAD_LOADING_END" }
+  | { type: "CHAT_THREAD_LOADING_START"; chatSessionId: Id<"chatSessions"> }
+  | { type: "CHAT_THREAD_LOADING_END"; chatSessionId: Id<"chatSessions"> }
   | { type: "CHAT_DRAFT_INPUT_SET"; value: string }
   | { type: "GRAPH_LOADING_PROGRESS"; latestBatchNodeCount: number }
   | { type: "CHAT_HISTORY_META"; hasChatHistory: boolean; messagesLoading: boolean }

@@ -15,6 +15,7 @@ import {
   selectSessionView,
   selectSurface,
   selectUiCollapseSignal,
+  selectChatThreadLoading,
 } from "../machines/appUiMachine";
 
 type AppSnapshot = SnapshotFrom<typeof appUiMachine>;
@@ -114,7 +115,7 @@ export type GraphSurfaceMachineSelectors = {
   graphReferenceFreezeActive: ReturnType<typeof selectGraphReferenceFreezeActive>;
   hasChatHistory: AppSnapshot["context"]["hasChatHistory"];
   sessionView: ReturnType<typeof selectSessionView>;
-  chatThreadLoading: AppSnapshot["context"]["chatThreadLoading"];
+  chatThreadLoading: ReturnType<typeof selectChatThreadLoading>;
 };
 
 function shallowEqualGraphSurface(
@@ -149,7 +150,7 @@ export function selectGraphSurfaceMachineModel(
     graphReferenceFreezeActive: selectGraphReferenceFreezeActive(s),
     hasChatHistory: s.context.hasChatHistory,
     sessionView: selectSessionView(s),
-    chatThreadLoading: s.context.chatThreadLoading,
+    chatThreadLoading: selectChatThreadLoading(s),
   };
 }
 
@@ -163,7 +164,7 @@ export type ChatDockMachineSelectors = {
   draftInput: AppSnapshot["context"]["draftInput"];
   chatDraftInput: AppSnapshot["context"]["chatDraftInput"];
   chatLoading: AppSnapshot["context"]["chatLoading"];
-  chatThreadLoading: AppSnapshot["context"]["chatThreadLoading"];
+  chatThreadLoading: ReturnType<typeof selectChatThreadLoading>;
   chatLoadingOnGraphFrame: ReturnType<typeof selectChatLoadingOnGraphFrame>;
   chatLoadingOnNotesList: ReturnType<typeof selectChatLoadingOnNotesList>;
   uiCollapseSignal: ReturnType<typeof selectUiCollapseSignal>;
@@ -194,7 +195,7 @@ export function selectChatDockMachineModel(s: AppSnapshot): ChatDockMachineSelec
     draftInput: s.context.draftInput,
     chatDraftInput: s.context.chatDraftInput,
     chatLoading: s.context.chatLoading,
-    chatThreadLoading: s.context.chatThreadLoading,
+    chatThreadLoading: selectChatThreadLoading(s),
     chatLoadingOnGraphFrame: selectChatLoadingOnGraphFrame(s),
     chatLoadingOnNotesList: selectChatLoadingOnNotesList(s),
     uiCollapseSignal: selectUiCollapseSignal(s),

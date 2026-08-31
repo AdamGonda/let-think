@@ -21,7 +21,7 @@ interface ChatProps {
   onCreateChatSession?: () => Promise<Id<"chatSessions">>;
   autoCollapseSignal?: string;
   isLoading: boolean;
-  setIsLoading: (loading: boolean) => void;
+  setIsLoading: (loading: boolean, chatSessionId?: Id<"chatSessions">) => void;
   numberedConcepts?: NumberedConcept[];
   draftInput?: string;
   setDraftInput?: (value: string) => void;
@@ -68,7 +68,7 @@ export function Chat({
   const input = draft;
   const sendGraphMessage = useAction(api.chat.send);
   const sendChatMessage = useAction(api.chat.sendChat);
-  const { canSend } = useSessionData();
+  const { canSend, setPendingChatUser } = useSessionData();
   const posthog = usePostHog();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -76,69 +76,107 @@ export function Chat({
     if (lockedHistorical) return;
     if (!input.trim()) return;
 
-    let effectiveSessionId = sessionId;
-    const createdViaCallback = !sessionId && onCreateSession;
-    if (!effectiveSessionId && onCreateSession) {
-      effectiveSessionId = await onCreateSession();
-    }
-    if (sendLane === "graph" && !effectiveSessionId) return;
-    if (sendLane === "graph" && !createdViaCallback && !canSend) return;
-
-    let effectiveChatSessionId = chatSessionId;
-    if (sendLane === "chat") {
-      if (!effectiveChatSessionId && onCreateChatSession) {
-        effectiveChatSessionId = await onCreateChatSession();
-      }
-      if (!effectiveChatSessionId) return;
-      if (effectiveSessionId && !canSend) return;
-    }
-
     const rawContent = input.trim();
     const { resolvedContent, referencedConcepts, mentions } = resolveAtReferences(
       rawContent,
       numberedConcepts,
     );
+    const mentionPayload = mentions.length > 0 ? mentions : undefined;
+    const selectedNodeContext =
+      referencedConcepts.length > 0
+        ? referencedConcepts.map(({ id, name, description }) => ({
+            id,
+            name,
+            description,
+          }))
+        : undefined;
+
+    if (sendLane === "chat") {
+      if (sessionId && !canSend) return;
+
+      setPendingChatUser({
+        role: "user",
+        content: resolvedContent,
+        mentions: mentionPayload,
+      });
+      setInput("");
+      let loadingForId = chatSessionId ?? null;
+      if (loadingForId) setIsLoading(true, loadingForId);
+      onConsumedConceptNumbers?.(
+        referencedConcepts.map((c) => c.number),
+      );
+
+      const restoreDraft = () => {
+        setPendingChatUser(null);
+        setInput(rawContent);
+        if (loadingForId) setIsLoading(false, loadingForId);
+      };
+
+      try {
+        let effectiveSessionId = sessionId;
+        const createdViaCallback = !sessionId && onCreateSession;
+        if (!effectiveSessionId && onCreateSession) {
+          effectiveSessionId = await onCreateSession();
+        }
+        let effectiveChatSessionId = chatSessionId;
+        if (!effectiveChatSessionId && onCreateChatSession) {
+          effectiveChatSessionId = await onCreateChatSession();
+        }
+        if (!effectiveChatSessionId) {
+          restoreDraft();
+          return;
+        }
+        if (loadingForId !== effectiveChatSessionId) {
+          loadingForId = effectiveChatSessionId;
+          setIsLoading(true, loadingForId);
+        }
+        if (effectiveSessionId && !canSend) {
+          restoreDraft();
+          return;
+        }
+        await sendChatMessage({
+          chatSessionId: effectiveChatSessionId,
+          userContent: resolvedContent,
+          selectedNodeContext,
+          mentions: mentionPayload,
+        });
+        posthog.capture("message_sent", {
+          session_id: effectiveSessionId,
+          chat_session_id: effectiveChatSessionId,
+          lane: sendLane,
+          has_concept_references: referencedConcepts.length > 0,
+          concept_reference_count: referencedConcepts.length,
+          is_new_session: !!createdViaCallback,
+        });
+        setIsLoading(false, effectiveChatSessionId);
+      } catch (err) {
+        console.error("Chat error:", err);
+        posthog.captureException(err);
+        restoreDraft();
+      }
+      return;
+    }
+
+    let effectiveSessionId = sessionId;
+    const createdViaCallback = !sessionId && onCreateSession;
+    if (!effectiveSessionId && onCreateSession) {
+      effectiveSessionId = await onCreateSession();
+    }
+    if (!effectiveSessionId) return;
+    if (!createdViaCallback && !canSend) return;
+
     setIsLoading(true);
 
     try {
-      const payload = {
+      await sendGraphMessage({
         sessionId: effectiveSessionId,
         userContent: resolvedContent,
-        selectedNodeContext:
-          referencedConcepts.length > 0
-            ? referencedConcepts.map(({ id, name, description }) => ({
-                id,
-                name,
-                description,
-              }))
-            : undefined,
-        mentions: mentions.length > 0 ? mentions : undefined,
-      };
-      if (sendLane === "chat") {
-        if (!effectiveChatSessionId) return;
-        setInput("");
-        onConsumedConceptNumbers?.(
-          referencedConcepts.map((c) => c.number),
-        );
-        await sendChatMessage({
-          chatSessionId: effectiveChatSessionId,
-          userContent: payload.userContent,
-          selectedNodeContext: payload.selectedNodeContext,
-          mentions: payload.mentions,
-        });
-      } else {
-        if (!effectiveSessionId) return;
-        await sendGraphMessage({
-          sessionId: effectiveSessionId,
-          userContent: payload.userContent,
-          selectedNodeContext: payload.selectedNodeContext,
-          mentions: payload.mentions,
-        });
-        setInput("");
-      }
+        selectedNodeContext,
+        mentions: mentionPayload,
+      });
+      setInput("");
       posthog.capture("message_sent", {
         session_id: effectiveSessionId,
-        chat_session_id: sendLane === "chat" ? effectiveChatSessionId : undefined,
         lane: sendLane,
         has_concept_references: referencedConcepts.length > 0,
         concept_reference_count: referencedConcepts.length,
