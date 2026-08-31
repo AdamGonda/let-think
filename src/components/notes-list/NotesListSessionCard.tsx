@@ -10,15 +10,12 @@ type NotesListSessionCardProps = {
   isSelected: boolean;
   isMapHighlighted?: boolean;
   isEditing?: boolean;
-  confirmDelete?: boolean;
   titleInputRef?: RefObject<HTMLInputElement | null>;
   onOpenNotesEditor: (session: WorkspaceFile) => void;
   onRename?: (title: string) => void;
   onCancelEdit?: () => void;
   onStartEdit?: () => void;
-  onRequestDelete?: () => void;
-  onConfirmDelete?: () => void;
-  onCancelDelete?: () => void;
+  onDelete?: () => void;
 };
 
 export function NotesListSessionCard({
@@ -26,15 +23,12 @@ export function NotesListSessionCard({
   isSelected,
   isMapHighlighted = false,
   isEditing = false,
-  confirmDelete = false,
   titleInputRef,
   onOpenNotesEditor,
   onRename,
   onCancelEdit,
   onStartEdit,
-  onRequestDelete,
-  onConfirmDelete,
-  onCancelDelete,
+  onDelete,
 }: NotesListSessionCardProps) {
   return (
     <div
@@ -85,27 +79,17 @@ export function NotesListSessionCard({
             <span className="min-w-0 flex-1 font-semibold text-foreground leading-snug line-clamp-2">
               {session.title}
             </span>
-            {onStartEdit && onRequestDelete ? (
+            {onStartEdit && onDelete ? (
               <ExplorerCardActions
-                confirmDelete={confirmDelete}
                 onRename={(e) => {
                   e.preventDefault();
                   onStartEdit();
                 }}
-                onDelete={(e) => {
-                  e.preventDefault();
-                  onRequestDelete();
-                }}
-                onConfirmDelete={(e) => {
-                  e.preventDefault();
-                  onConfirmDelete?.();
-                }}
-                onCancelDelete={(e) => {
-                  e.preventDefault();
-                  onCancelDelete?.();
-                }}
+                onDelete={onDelete}
                 renameLabel="Rename file"
                 deleteLabel="Delete file"
+                deleteTitle="Delete this file?"
+                deleteDescription={`“${session.title}” will be permanently deleted.`}
               />
             ) : null}
           </div>

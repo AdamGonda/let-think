@@ -68,10 +68,6 @@ export function NotesListPanel({
     useState<Id<"files"> | null>(null);
   const [editingProjectId, setEditingProjectId] =
     useState<Id<"projects"> | null>(null);
-  const [confirmDeleteSessionId, setConfirmDeleteSessionId] =
-    useState<Id<"files"> | null>(null);
-  const [confirmDeleteProjectId, setConfirmDeleteProjectId] =
-    useState<Id<"projects"> | null>(null);
   const [dragOverProjectId, setDragOverProjectId] = useState<
     Id<"projects"> | "inbox" | null
   >(null);
@@ -172,10 +168,6 @@ export function NotesListPanel({
                             isEditing={
                               !isInbox && editingProjectId === project._id
                             }
-                            confirmDelete={
-                              !isInbox &&
-                              confirmDeleteProjectId === project._id
-                            }
                             nameInputRef={projectInputRef}
                             onDrill={() =>
                               onDrillChange(
@@ -201,21 +193,12 @@ export function NotesListPanel({
                                 ? undefined
                                 : () => setEditingProjectId(project._id)
                             }
-                            onRequestDelete={
-                              isInbox
-                                ? undefined
-                                : () => setConfirmDeleteProjectId(project._id)
-                            }
-                            onConfirmDelete={
+                            onDelete={
                               isInbox
                                 ? undefined
                                 : () => {
                                     void handleDeleteProject(project._id);
-                                    setConfirmDeleteProjectId(null);
                                   }
-                            }
-                            onCancelDelete={() =>
-                              setConfirmDeleteProjectId(null)
                             }
                             onNewFile={
                               isInbox
@@ -264,9 +247,6 @@ export function NotesListPanel({
                           session={file}
                           isSelected={activeFileId === file._id}
                           isEditing={editingSessionId === file._id}
-                          confirmDelete={
-                            confirmDeleteSessionId === file._id
-                          }
                           titleInputRef={sessionInputRef}
                           onOpenNotesEditor={onOpenNotesEditor}
                           onRename={(title) => {
@@ -275,16 +255,9 @@ export function NotesListPanel({
                           }}
                           onCancelEdit={() => setEditingSessionId(null)}
                           onStartEdit={() => setEditingSessionId(file._id)}
-                          onRequestDelete={() =>
-                            setConfirmDeleteSessionId(file._id)
-                          }
-                          onConfirmDelete={() => {
+                          onDelete={() => {
                             void handleDeleteSession(file._id);
-                            setConfirmDeleteSessionId(null);
                           }}
-                          onCancelDelete={() =>
-                            setConfirmDeleteSessionId(null)
-                          }
                         />
                       </li>
                     ))}

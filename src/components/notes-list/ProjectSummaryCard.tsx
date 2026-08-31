@@ -13,15 +13,12 @@ type ProjectSummaryCardProps = {
   isMapHighlighted?: boolean;
   isDropTarget?: boolean;
   isEditing?: boolean;
-  confirmDelete?: boolean;
   nameInputRef?: RefObject<HTMLInputElement | null>;
   onDrill: () => void;
   onRename?: (name: string) => void;
   onCancelEdit?: () => void;
   onStartEdit?: () => void;
-  onRequestDelete?: () => void;
-  onConfirmDelete?: () => void;
-  onCancelDelete?: () => void;
+  onDelete?: () => void;
   onNewFile?: () => void;
   onDragOver?: () => void;
   onDragLeave?: () => void;
@@ -34,15 +31,12 @@ export function ProjectSummaryCard({
   isMapHighlighted = false,
   isDropTarget = false,
   isEditing = false,
-  confirmDelete = false,
   nameInputRef,
   onDrill,
   onRename,
   onCancelEdit,
   onStartEdit,
-  onRequestDelete,
-  onConfirmDelete,
-  onCancelDelete,
+  onDelete,
   onNewFile,
   onDragOver,
   onDragLeave,
@@ -129,25 +123,13 @@ export function ProjectSummaryCard({
             <span className="min-w-0 flex-1 text-base font-semibold leading-[1.25] text-foreground line-clamp-2">
               {title}
             </span>
-            {canManage && onStartEdit && onRequestDelete ? (
+            {canManage && onStartEdit && onDelete ? (
               <ExplorerCardActions
-                confirmDelete={confirmDelete}
                 onRename={(e) => {
                   e.preventDefault();
                   onStartEdit();
                 }}
-                onDelete={(e) => {
-                  e.preventDefault();
-                  onRequestDelete();
-                }}
-                onConfirmDelete={(e) => {
-                  e.preventDefault();
-                  onConfirmDelete?.();
-                }}
-                onCancelDelete={(e) => {
-                  e.preventDefault();
-                  onCancelDelete?.();
-                }}
+                onDelete={onDelete}
                 onNewFile={
                   onNewFile
                     ? (e) => {
@@ -158,6 +140,8 @@ export function ProjectSummaryCard({
                 }
                 renameLabel="Rename folder"
                 deleteLabel="Delete folder"
+                deleteTitle="Delete this folder?"
+                deleteDescription={`“${title}” and all files in it will be permanently deleted.`}
               />
             ) : null}
           </div>

@@ -1,39 +1,37 @@
-import type { MouseEvent } from "react";
+import { useState, type MouseEvent } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { DeleteConfirmInline } from "@/components/session-sidebar/DeleteConfirmInline";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 type ExplorerCardActionsProps = {
-  confirmDelete: boolean;
   onRename: (e: MouseEvent) => void;
-  onDelete: (e: MouseEvent) => void;
-  onConfirmDelete: (e: MouseEvent) => void;
-  onCancelDelete: (e: MouseEvent) => void;
+  onDelete: () => void;
   onNewFile?: (e: MouseEvent) => void;
   renameLabel: string;
   deleteLabel: string;
+  deleteTitle: string;
+  deleteDescription: string;
 };
 
 export function ExplorerCardActions({
-  confirmDelete,
   onRename,
   onDelete,
-  onConfirmDelete,
-  onCancelDelete,
   onNewFile,
   renameLabel,
   deleteLabel,
+  deleteTitle,
+  deleteDescription,
 }: ExplorerCardActionsProps) {
-  if (confirmDelete) {
-    return (
-      <div onClick={(e) => e.stopPropagation()}>
-        <DeleteConfirmInline
-          onConfirm={onConfirmDelete}
-          onCancel={onCancelDelete}
-        />
-      </div>
-    );
-  }
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   return (
     <div
@@ -67,11 +65,26 @@ export function ExplorerCardActions({
         variant="ghost"
         size="icon-xs"
         className="h-7 w-7 hover:bg-destructive/20 hover:text-destructive"
-        onClick={onDelete}
+        onClick={(e) => {
+          e.preventDefault();
+          setConfirmOpen(true);
+        }}
         aria-label={deleteLabel}
       >
         <Trash2 className="size-4" />
       </Button>
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{deleteTitle}</AlertDialogTitle>
+            <AlertDialogDescription>{deleteDescription}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={onDelete}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
