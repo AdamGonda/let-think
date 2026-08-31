@@ -251,6 +251,8 @@ export type PipelineContext = {
   conceptGraph?: ConceptGraph | null;
   /** User-selected nodes to add as context to the prompt */
   selectedNodes?: Array<{ id: string; name: string; description?: string }>;
+  /** Current writing when the user referenced @writing (undefined = not referenced) */
+  writingNotes?: string | null;
   /** Any metadata you want to pass through */
   meta?: Record<string, unknown>;
 };
@@ -273,6 +275,9 @@ export async function preProcess(
     ctx?.selectedNodes && ctx.selectedNodes.length > 0
       ? `\n\nWEIGHTED BRANCH DIRECTION - USER-SELECTED ANCHORS:\nThe user has selected the following concepts as the new branch direction. Treat these as the WEIGHTED FOCUS: expand, deepen, and build from these concepts. Your response should primarily branch from and connect to these ideas. Do not ignore them.\n${ctx.selectedNodes.map((node) => `- ${node.name}: ${node.description ?? node.id}`).join("\n")}`
       : "";
+
+  const writingNote = buildReferencedWritingSystemNote(ctx?.writingNotes, ctx?.writingNotes !== undefined);
+  const writingContext = writingNote ? `\n\n${writingNote}` : "";
 
   const prompt = `
 USER-FACING RULES (apply to all conversational text you write before the machine appendix at the end):
@@ -307,6 +312,7 @@ Put this EXACTLY at the very end of your reply (after all other text):
 \`\`\`
 ${graphContext}
 ${selectedContext}
+${writingContext}
 `;
 
   return [
@@ -345,4 +351,49 @@ export function buildReferencedConceptsSystemNote(
     n.description ? `- ${n.name}: ${n.description}` : `- ${n.name}`,
   );
   return `The user referenced these concepts:\n${lines.join("\n")}`;
+}
+
+export const WRITING_REF_ID = "__writing__";
+export const GRAPH_REF_ID = "__graph__";
+
+/** ponytail: cap writing in the prompt; raise or chunk if notes routinely exceed this. */
+export const WRITING_PROMPT_MAX_CHARS = 20_000;
+
+export function mentionsIncludeWriting(
+  mentions: Array<{ conceptId: string }> | undefined,
+): boolean {
+  return !!mentions?.some((m) => m.conceptId === WRITING_REF_ID);
+}
+
+export function mentionsIncludeGraph(
+  mentions: Array<{ conceptId: string }> | undefined,
+): boolean {
+  return !!mentions?.some((m) => m.conceptId === GRAPH_REF_ID);
+}
+
+export function buildReferencedWritingSystemNote(
+  notes: string | null | undefined,
+  referenced: boolean,
+): string | null {
+  if (!referenced) return null;
+  const trimmed = notes?.trim() ?? "";
+  if (!trimmed) {
+    return "The user referenced their current writing. It is empty.";
+  }
+  if (trimmed.length > WRITING_PROMPT_MAX_CHARS) {
+    return `The user referenced their current writing (truncated):\n${trimmed.slice(0, WRITING_PROMPT_MAX_CHARS)}`;
+  }
+  return `The user referenced their current writing:\n${trimmed}`;
+}
+
+export function buildReferencedGraphSystemNote(
+  graph: ConceptGraph | null | undefined,
+  referenced: boolean,
+): string | null {
+  if (!referenced) return null;
+  if (!graph || graph.nodes.length === 0) {
+    return "The user referenced the current concept graph. It has no concepts yet.";
+  }
+  // ponytail: full graph; if this blows the context window, reuse buildConceptGraphPromptWindow
+  return `The user referenced the current concept graph:\n${JSON.stringify(graph)}`;
 }

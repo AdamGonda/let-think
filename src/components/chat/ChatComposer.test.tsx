@@ -1,4 +1,4 @@
-import { render } from "@testing-library/react";
+import { fireEvent, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ChatComposer } from "./ChatComposer";
 
@@ -83,5 +83,39 @@ describe("ChatComposer chrome", () => {
     expect(field!.className).not.toContain("max-h-[450px]");
     expect(ta!.className).toContain("max-h-[450px]");
     expect(mirror!.textContent).toMatch(/hello\n$/);
+  });
+});
+
+describe("ChatComposer @ picker", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("shows Writing on @ and Graph only when allowed", () => {
+    const { rerender, getByRole, queryByRole } = render(
+      <ChatComposer {...base} input="@" />,
+    );
+    expect(getByRole("option", { name: /Writing/ })).toBeTruthy();
+    expect(queryByRole("option", { name: /Graph/ })).toBeNull();
+
+    rerender(<ChatComposer {...base} input="@" allowGraphRef />);
+    expect(getByRole("option", { name: /Graph/ })).toBeTruthy();
+  });
+
+  it("Enter inserts the highlighted token instead of submitting", () => {
+    const setInput = vi.fn();
+    const onSubmit = vi.fn((e: React.FormEvent) => e.preventDefault());
+    const { container } = render(
+      <ChatComposer
+        {...base}
+        input="@"
+        setInput={setInput}
+        onSubmit={onSubmit}
+      />,
+    );
+    const ta = container.querySelector("textarea")!;
+    fireEvent.keyDown(ta, { key: "Enter" });
+    expect(onSubmit).not.toHaveBeenCalled();
+    expect(setInput).toHaveBeenCalledWith("@writing ");
   });
 });

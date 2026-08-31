@@ -20,12 +20,12 @@ const MOUSE_WIDTH = 2;
 const PEN_MIN_WIDTH = 1.25;
 const PEN_PRESSURE_RANGE = 5;
 const ERASE_WIDTH_MULTIPLIER = 6;
-const ERASE_MIN_WIDTH = 12;
+const ERASE_MIN_WIDTH = 40;
 /** Pointer Events: eraser contact is button 5 / buttons bit 5 (32). */
 const ERASER_BUTTON = 5;
 const ERASER_BUTTONS_MASK = 32;
 export const CANVAS_TEXT_FONT =
-  '16px "DM Sans", ui-sans-serif, system-ui, sans-serif';
+  '48px "DM Sans", ui-sans-serif, system-ui, sans-serif';
 
 export function strokeWidthForPointer(
   pointerType: string,
@@ -228,6 +228,7 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
   const redrawRef = useRef<() => void>(() => {});
   const [tool, setTool] = useState<CanvasTool>("pen");
   const [textDraft, setTextDraft] = useState<Point | null>(null);
+  const [eraseCursor, setEraseCursor] = useState<Point | null>(null);
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -354,6 +355,7 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
     pointerIdRef.current = event.nativeEvent.pointerId;
 
     if (erase) {
+      trackEraseCursor(event.nativeEvent);
       const point = pointFromEvent(canvas, event.nativeEvent, "erase");
       liveStrokeRef.current = { kind: "erase", points: [point] };
       const ctx = inkContext(canvas, "erase");
@@ -388,7 +390,14 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
     ctx.fill();
   };
 
+  const trackEraseCursor = (event: PointerEvent) => {
+    const canvas = canvasRef.current;
+    if (!canvas || tool !== "erase") return;
+    setEraseCursor(clientPoint(canvas, event));
+  };
+
   const onPointerMove = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    trackEraseCursor(event.nativeEvent);
     if (pointerIdRef.current !== event.nativeEvent.pointerId) return;
     const canvas = canvasRef.current;
     const stroke = liveStrokeRef.current;
@@ -443,8 +452,9 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
     tool === "text"
       ? "cursor-text"
       : tool === "erase"
-        ? "cursor-cell"
+        ? "cursor-none"
         : "cursor-crosshair";
+  const eraseSize = strokeWidthForPointer("mouse", 0.5, "erase");
 
   return (
     <div ref={wrapRef} className="relative min-h-0 flex-1">
@@ -456,12 +466,31 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
         onPointerMove={onPointerMove}
         onPointerUp={endStroke}
         onPointerCancel={endStroke}
+        onPointerEnter={(event) => trackEraseCursor(event.nativeEvent)}
+        onPointerLeave={() => {
+          if (pointerIdRef.current == null) setEraseCursor(null);
+        }}
         onContextMenu={(event) => event.preventDefault()}
       />
+      {tool === "erase" && eraseCursor ? (
+        <div
+          data-testid="erase-radius"
+          aria-hidden
+          className="pointer-events-none absolute z-10 rounded-full border border-white/70"
+          style={{
+            width: eraseSize,
+            height: eraseSize,
+            left: eraseCursor.x,
+            top: eraseCursor.y,
+            transform: "translate(-50%, -50%)",
+          }}
+        />
+      ) : null}
       <CanvasToolbar
         tool={tool}
         onToolChange={(next) => {
           if (textDraftRef.current) commitTextDraft();
+          setEraseCursor(null);
           setTool(next);
         }}
       />

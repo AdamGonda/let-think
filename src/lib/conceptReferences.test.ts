@@ -2,10 +2,13 @@ import { describe, expect, it } from "vitest";
 import {
   appendAtReferenceToDraft,
   AT_REFERENCE_PATTERN,
+  atMentionOptions,
+  atQueryAtCaret,
   ensureSpaceAfterValidAtReferences,
   formatConceptPlainForClipboard,
   formatReferenceConceptBullets,
   formatReferenceTitleBullets,
+  insertAtMentionToken,
   mirrorAtReferencePresence,
   selectedConceptTitlesFromDraft,
   removeAtReferencesFromDraft,
@@ -21,6 +24,59 @@ describe("AT_REFERENCE_PATTERN", () => {
   it("matches @n at word boundary", () => {
     expect("@1 ".match(new RegExp(AT_REFERENCE_PATTERN))).toBeTruthy();
     expect("@12 ".match(new RegExp(AT_REFERENCE_PATTERN))?.[1]).toBe("12");
+  });
+
+  it("matches @writing and @graph", () => {
+    expect("@writing ".match(new RegExp(AT_REFERENCE_PATTERN))?.[1]).toBe(
+      "writing",
+    );
+    expect("@graph ".match(new RegExp(AT_REFERENCE_PATTERN))?.[1]).toBe("graph");
+    expect("@foo ".match(new RegExp(AT_REFERENCE_PATTERN))).toBeNull();
+  });
+});
+
+describe("atQueryAtCaret / atMentionOptions / insertAtMentionToken", () => {
+  it("reads the open @ query at the caret", () => {
+    expect(atQueryAtCaret("see @w", 6)).toEqual({ start: 4, query: "w" });
+    expect(atQueryAtCaret("see @w ", 7)).toBeNull();
+    expect(atQueryAtCaret("a@b", 3)).toBeNull();
+  });
+
+  it("lists Writing always and Graph only when allowed", () => {
+    expect(
+      atMentionOptions({ query: "", numberedConcepts: [c1], allowGraphRef: false }).map(
+        (o) => o.token,
+      ),
+    ).toEqual(["writing", "1"]);
+    expect(
+      atMentionOptions({ query: "", numberedConcepts: [], allowGraphRef: true }).map(
+        (o) => o.token,
+      ),
+    ).toEqual(["writing", "graph"]);
+  });
+
+  it("filters by token prefix or label", () => {
+    expect(
+      atMentionOptions({
+        query: "w",
+        numberedConcepts: [c1],
+        allowGraphRef: true,
+      }).map((o) => o.token),
+    ).toEqual(["writing"]);
+    expect(
+      atMentionOptions({
+        query: "one",
+        numberedConcepts: [c1, c2],
+        allowGraphRef: true,
+      }).map((o) => o.token),
+    ).toEqual(["1"]);
+  });
+
+  it("replaces the open query with the chosen token", () => {
+    expect(insertAtMentionToken("see @w", 4, 6, "writing")).toEqual({
+      value: "see @writing ",
+      caret: 13,
+    });
   });
 });
 
@@ -70,6 +126,11 @@ describe("ensureSpaceAfterValidAtReferences", () => {
 
   it("does not duplicate space", () => {
     expect(ensureSpaceAfterValidAtReferences("@1 x", [c1])).toBe("@1 x");
+  });
+
+  it("inserts space after @writing and @graph without numbered concepts", () => {
+    expect(ensureSpaceAfterValidAtReferences("@writing", [])).toBe("@writing ");
+    expect(ensureSpaceAfterValidAtReferences("@graph", [])).toBe("@graph ");
   });
 });
 

@@ -612,11 +612,12 @@ body {
   border-color: var(--popover) !important;
 }
 
-/* Assistant chat replies — compact markdown that matches bubble type */
+/* Assistant chat replies — inherit thread type so markdown is not nested-smaller */
 .chat-md {
-  font-size: 0.95rem;
+  font-size: 1em;
   line-height: 1.625;
   overflow-wrap: anywhere;
+  color: var(--color-text);
 }
 .chat-md > :first-child {
   margin-top: 0;
@@ -683,7 +684,7 @@ body {
 .chat-md blockquote {
   border-left: 2px solid var(--border);
   padding-left: 0.8em;
-  color: var(--muted-foreground);
+  color: inherit;
   margin: 0.55em 0;
 }
 .chat-md hr {

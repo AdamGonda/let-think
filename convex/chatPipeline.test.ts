@@ -6,6 +6,9 @@ import {
   stripConceptGraphBlock,
   conversationTableForSend,
   buildReferencedConceptsSystemNote,
+  buildReferencedWritingSystemNote,
+  buildReferencedGraphSystemNote,
+  WRITING_PROMPT_MAX_CHARS,
 } from "./chatPipeline";
 import { CONCEPT_GRAPH_PROMPT_BATCH_WINDOW } from "./constants";
 
@@ -166,5 +169,76 @@ describe("buildReferencedConceptsSystemNote", () => {
     ).toBe(
       "The user referenced these concepts:\n- Murmuration: Flock motion\n- Boids",
     );
+  });
+});
+
+describe("buildReferencedWritingSystemNote", () => {
+  it("returns null when not referenced", () => {
+    expect(buildReferencedWritingSystemNote("notes", false)).toBeNull();
+  });
+
+  it("says empty when referenced with no notes", () => {
+    expect(buildReferencedWritingSystemNote("", true)).toBe(
+      "The user referenced their current writing. It is empty.",
+    );
+    expect(buildReferencedWritingSystemNote(null, true)).toBe(
+      "The user referenced their current writing. It is empty.",
+    );
+  });
+
+  it("includes the writing body when referenced", () => {
+    expect(buildReferencedWritingSystemNote("hello notes", true)).toBe(
+      "The user referenced their current writing:\nhello notes",
+    );
+  });
+
+  it("truncates long writing", () => {
+    const long = "x".repeat(WRITING_PROMPT_MAX_CHARS + 10);
+    const note = buildReferencedWritingSystemNote(long, true);
+    expect(note).toContain("(truncated)");
+    expect(note).toHaveLength(
+      "The user referenced their current writing (truncated):\n".length +
+        WRITING_PROMPT_MAX_CHARS,
+    );
+  });
+});
+
+describe("buildReferencedGraphSystemNote", () => {
+  it("returns null when not referenced", () => {
+    expect(
+      buildReferencedGraphSystemNote({ nodes: [], edges: [] }, false),
+    ).toBeNull();
+  });
+
+  it("says empty when the graph has no nodes", () => {
+    expect(buildReferencedGraphSystemNote(null, true)).toBe(
+      "The user referenced the current concept graph. It has no concepts yet.",
+    );
+  });
+
+  it("serializes the full graph when referenced", () => {
+    const graph = {
+      nodes: [{ id: "a", name: "Alpha" }],
+      edges: [],
+    };
+    expect(buildReferencedGraphSystemNote(graph, true)).toBe(
+      `The user referenced the current concept graph:\n${JSON.stringify(graph)}`,
+    );
+  });
+});
+
+describe("preProcess writing context", () => {
+  it("embeds writing when writingNotes is passed", async () => {
+    const out = await preProcess([{ role: "user", content: "hi" }], {
+      writingNotes: "my draft",
+    });
+    const content = out[0]?.content ?? "";
+    expect(content).toContain("The user referenced their current writing:\nmy draft");
+  });
+
+  it("omits writing when writingNotes is omitted", async () => {
+    const out = await preProcess([{ role: "user", content: "hi" }], {});
+    const content = out[0]?.content ?? "";
+    expect(content).not.toContain("current writing");
   });
 });

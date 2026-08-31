@@ -1,13 +1,16 @@
-import { useRef, useLayoutEffect } from "react";
+import { useRef, useLayoutEffect, useState } from "react";
 import { clsx } from "clsx";
 import { layout } from "@/config";
 import { ArrowUp, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { parseInputTokens } from "@/lib/chatMentions";
 import {
+  atMentionOptions,
+  atQueryAtCaret,
   backspaceRemoveAtReferenceRange,
   deleteForwardRemoveAtReferenceRange,
   ensureSpaceAfterValidAtReferences,
+  insertAtMentionToken,
   type NumberedConcept,
 } from "@/lib/conceptReferences";
 
@@ -15,7 +18,7 @@ const FOCUS_COMPOSER_EVENT = "let-think:focus-composer";
 
 /** Shared so the caret (textarea) and glyphs (mirror) wrap on the same metrics. */
 const COMPOSER_TEXT_LAYOUT =
-  "min-w-0 w-full whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-[0.95rem] leading-[1.5] tracking-[0.01em] font-[inherit]";
+  "min-w-0 w-full whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-[1.125rem] leading-[1.5] tracking-[0.01em] font-[inherit]";
 
 /** When false, skip {@link ensureSpaceAfterValidAtReferences} so backspace/delete does not re-add the space. */
 function shouldApplyAutoSpaceAfterRefs(
@@ -47,6 +50,8 @@ type ChatComposerProps = {
   listenForFocusEvent?: boolean;
   /** Island is the graph dock; dock is a flush bar for the chat panel. */
   chrome?: "island" | "dock";
+  /** Chat lane can attach the whole concept graph; graph lane already has it. */
+  allowGraphRef?: boolean;
 };
 
 export function ChatComposer({
@@ -62,6 +67,7 @@ export function ChatComposer({
   autoFocus = true,
   listenForFocusEvent = true,
   chrome = "island",
+  allowGraphRef = false,
 }: ChatComposerProps) {
   const canSubmit = !isDisabled && input.trim().length > 0;
   const compact = chrome === "dock";
@@ -69,6 +75,30 @@ export function ChatComposer({
   const mirrorRef = useRef<HTMLDivElement>(null);
   const pendingSelectionRef = useRef<number | null>(null);
   const pendingExternalFocusRef = useRef(false);
+  const [caret, setCaret] = useState(input.length);
+  const [highlight, setHighlight] = useState(0);
+  const [pickerDismissed, setPickerDismissed] = useState(false);
+
+  const atQuery = isDisabled ? null : atQueryAtCaret(input, caret);
+  const mentionOptions =
+    atQuery && !pickerDismissed
+      ? atMentionOptions({
+          query: atQuery.query,
+          numberedConcepts,
+          allowGraphRef,
+        })
+      : [];
+  const pickerOpen = mentionOptions.length > 0;
+  const highlightIndex = pickerOpen
+    ? Math.min(highlight, mentionOptions.length - 1)
+    : 0;
+
+  const applyMention = (token: string, queryStart: number, caretNow: number, value: string) => {
+    const next = insertAtMentionToken(value, queryStart, caretNow, token);
+    pendingSelectionRef.current = next.caret;
+    setCaret(next.caret);
+    setInput(next.value);
+  };
 
   const tryFocusComposer = () => {
     const textarea = textareaRef.current;
@@ -109,6 +139,11 @@ export function ChatComposer({
     if (ta && mirror) mirror.scrollTop = ta.scrollTop;
   }, [input]);
 
+  const hasAtQuery = atQuery != null;
+  useLayoutEffect(() => {
+    if (!hasAtQuery) setPickerDismissed(false);
+  }, [hasAtQuery]);
+
   useLayoutEffect(() => {
     if (!listenForFocusEvent) return;
     const handleFocusComposer = () => {
@@ -136,6 +171,45 @@ export function ChatComposer({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const ta = e.currentTarget;
+    const caretNow = ta.selectionStart ?? 0;
+    const liveQuery = atQueryAtCaret(ta.value, caretNow);
+    const liveOptions =
+      liveQuery && !pickerDismissed
+        ? atMentionOptions({
+            query: liveQuery.query,
+            numberedConcepts,
+            allowGraphRef,
+          })
+        : [];
+
+    if (liveOptions.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setHighlight((h) => (h + 1) % liveOptions.length);
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setHighlight((h) => (h - 1 + liveOptions.length) % liveOptions.length);
+        return;
+      }
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setPickerDismissed(true);
+        setHighlight(0);
+        return;
+      }
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        const option = liveOptions[Math.min(highlight, liveOptions.length - 1)];
+        if (option) {
+          applyMention(option.token, liveQuery!.start, caretNow, ta.value);
+        }
+        return;
+      }
+    }
+
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       (e.target as HTMLTextAreaElement).form?.requestSubmit();
@@ -146,7 +220,6 @@ export function ChatComposer({
       return;
     }
 
-    const ta = e.currentTarget;
     const start = ta.selectionStart ?? 0;
     const end = ta.selectionEnd ?? 0;
     if (start !== end) return;
@@ -159,6 +232,7 @@ export function ChatComposer({
         e.preventDefault();
         const newValue = value.slice(0, range.start) + value.slice(range.end);
         pendingSelectionRef.current = range.start;
+        setCaret(range.start);
         setInput(newValue);
       }
       return;
@@ -170,6 +244,7 @@ export function ChatComposer({
         e.preventDefault();
         const newValue = value.slice(0, range.start) + value.slice(range.end);
         pendingSelectionRef.current = range.start;
+        setCaret(range.start);
         setInput(newValue);
       }
     }
@@ -181,17 +256,21 @@ export function ChatComposer({
     const sel = el.selectionStart ?? v.length;
 
     if (!shouldApplyAutoSpaceAfterRefs(e, input.length)) {
+      setCaret(sel);
       setInput(v);
       return;
     }
 
     const next = ensureSpaceAfterValidAtReferences(v, numberedConcepts);
     if (next === v) {
+      setCaret(sel);
       setInput(v);
       return;
     }
     const delta = next.length - v.length;
-    pendingSelectionRef.current = Math.min(sel + delta, next.length);
+    const nextCaret = Math.min(sel + delta, next.length);
+    pendingSelectionRef.current = nextCaret;
+    setCaret(nextCaret);
     setInput(next);
   };
 
@@ -207,7 +286,38 @@ export function ChatComposer({
       onSubmit={onSubmit}
       aria-busy={isLoading}
     >
-      <div className="flex gap-2 items-end">
+      <div className="flex gap-2 items-end relative">
+        {pickerOpen ? (
+          <ul
+            role="listbox"
+            data-testid="at-mention-picker"
+            className="absolute bottom-full left-0 right-12 z-30 mb-1 max-h-48 overflow-y-auto rounded-lg border border-border bg-background py-1 shadow-md"
+          >
+            {mentionOptions.map((opt, i) => (
+              <li key={`${opt.kind}-${opt.token}`} role="none">
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={i === highlightIndex}
+                  className={clsx(
+                    "flex w-full items-center gap-2 px-3 py-1.5 text-left text-sm",
+                    i === highlightIndex
+                      ? "bg-zinc-200 dark:bg-zinc-700"
+                      : "hover:bg-zinc-100 dark:hover:bg-zinc-800",
+                  )}
+                  onMouseDown={(ev) => {
+                    ev.preventDefault();
+                    if (!atQuery) return;
+                    applyMention(opt.token, atQuery.start, caret, input);
+                  }}
+                >
+                  <span className="font-medium">{opt.label}</span>
+                  <span className="text-muted-foreground">@{opt.token}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
         <div
           className={clsx(
             "flex-1 flex min-w-0 relative overflow-hidden border border-input bg-background",
@@ -262,6 +372,8 @@ export function ChatComposer({
             onChange={handleChange}
             onScroll={handleScroll}
             onKeyDown={handleKeyDown}
+            onClick={(e) => setCaret(e.currentTarget.selectionStart ?? 0)}
+            onSelect={(e) => setCaret(e.currentTarget.selectionStart ?? 0)}
             placeholder={placeholder}
             disabled={isDisabled}
           />

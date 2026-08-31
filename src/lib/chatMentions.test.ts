@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import type { NumberedConcept } from "./conceptReferences";
+import {
+  GRAPH_REF_ID,
+  WRITING_REF_ID,
+  type NumberedConcept,
+} from "./conceptReferences";
 import { parseInputTokens, resolveAtReferences } from "./chatMentions";
 
 const concepts: NumberedConcept[] = [
@@ -33,5 +37,35 @@ describe("resolveAtReferences", () => {
   it("leaves unknown @n in place", () => {
     const { resolvedContent } = resolveAtReferences("see @9", concepts);
     expect(resolvedContent).toBe("see @9");
+  });
+
+  it("resolves @writing and @graph to display names", () => {
+    const { resolvedContent, mentions, includeWriting, includeGraph } =
+      resolveAtReferences("use @writing and @graph", concepts);
+    expect(resolvedContent).toBe("use Writing and Graph");
+    expect(includeWriting).toBe(true);
+    expect(includeGraph).toBe(true);
+    expect(mentions.map((m) => m.conceptId)).toEqual([
+      WRITING_REF_ID,
+      GRAPH_REF_ID,
+    ]);
+  });
+
+  it("leaves unknown named @ tokens in place", () => {
+    const { resolvedContent, includeWriting } = resolveAtReferences(
+      "see @foo",
+      concepts,
+    );
+    expect(resolvedContent).toBe("see @foo");
+    expect(includeWriting).toBe(false);
+  });
+});
+
+describe("parseInputTokens named refs", () => {
+  it("styles @writing even with no numbered concepts", () => {
+    expect(parseInputTokens("hi @writing", [])).toEqual([
+      { type: "text", content: "hi " },
+      { type: "token", content: "@writing", name: "Writing" },
+    ]);
   });
 });

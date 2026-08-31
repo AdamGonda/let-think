@@ -15,6 +15,10 @@ import {
   flushConceptStreamParseState,
   parseConceptStreamChunk,
   buildReferencedConceptsSystemNote,
+  buildReferencedWritingSystemNote,
+  buildReferencedGraphSystemNote,
+  mentionsIncludeWriting,
+  mentionsIncludeGraph,
   type ConceptGraph,
   type ConceptStreamEvent,
 } from "./chatPipeline";
@@ -369,13 +373,15 @@ export const send = action({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Must be signed in");
 
+    const includeWriting = mentionsIncludeWriting(mentions);
     const bundle = await ctx.runQuery(internal.sessions.internalLoadSessionForChatSend, {
       sessionId,
       userId,
+      includeWriting,
     });
     if (!bundle) throw new Error("Session not found or access denied");
 
-    const { existingGraph: loadedGraph, messages: storedMessages } = bundle;
+    const { existingGraph: loadedGraph, messages: storedMessages, thinkingNotes } = bundle;
     const existingGraph: ConceptGraph | null = loadedGraph;
 
     const google = createGoogleGenerativeAI({
@@ -395,6 +401,7 @@ export const send = action({
       sessionId,
       conceptGraph: promptConceptGraph,
       selectedNodes: selectedNodeContext,
+      writingNotes: includeWriting ? thinkingNotes : undefined,
       meta: {},
     });
 
@@ -612,9 +619,11 @@ export const sendChat = action({
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Must be signed in");
 
+    const includeWriting = mentionsIncludeWriting(mentions);
+    const includeGraph = mentionsIncludeGraph(mentions);
     const bundle = await ctx.runQuery(
       internal.chatSessions.internalLoadForSend,
-      { chatSessionId, userId },
+      { chatSessionId, userId, includeWriting, includeGraph },
     );
     if (!bundle) throw new Error("Chat session not found or access denied");
 
@@ -622,10 +631,21 @@ export const sendChat = action({
       apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
     });
 
+    const writingNote = buildReferencedWritingSystemNote(
+      bundle.thinkingNotes,
+      includeWriting,
+    );
+    const graphNote = buildReferencedGraphSystemNote(
+      bundle.conceptGraph,
+      includeGraph,
+    );
     const conceptNote = buildReferencedConceptsSystemNote(selectedNodeContext);
+    const extraNote = [writingNote, graphNote, conceptNote]
+      .filter((n): n is string => !!n)
+      .join("\n\n");
     const modelMessages = toModelMessages([
-      ...(conceptNote
-        ? [{ role: "system" as const, content: conceptNote }]
+      ...(extraNote
+        ? [{ role: "system" as const, content: extraNote }]
         : []),
       ...bundle.messages,
       { role: "user" as const, content: userContent },

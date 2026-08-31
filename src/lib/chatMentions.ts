@@ -1,5 +1,6 @@
 import {
   conceptByNumberMap,
+  namedAtRef,
   type NumberedConcept,
   AT_REFERENCE_PATTERN,
 } from "./conceptReferences";
@@ -26,15 +27,19 @@ export function parseInputTokens(
   let lastIndex = 0;
   let m: RegExpExecArray | null;
   while ((m = refRegex.exec(raw)) !== null) {
-    const num = parseInt(m[1]!, 10);
-    const concept = conceptByNumber.get(num);
+    const capture = m[1]!;
+    const named = namedAtRef(capture);
+    const concept = named
+      ? null
+      : conceptByNumber.get(parseInt(capture, 10));
+    const name = named?.name ?? concept?.name;
     if (lastIndex < m.index) {
       segments.push({ type: "text", content: raw.slice(lastIndex, m.index) });
     }
     segments.push({
       type: "token",
       content: m[0]!,
-      name: concept?.name,
+      name,
     });
     lastIndex = m.index + m[0]!.length;
   }
@@ -52,22 +57,31 @@ export function resolveAtReferences(
   resolvedContent: string;
   referencedConcepts: NumberedConcept[];
   mentions: Mention[];
+  includeWriting: boolean;
+  includeGraph: boolean;
 } {
   const conceptByNumber = conceptByNumberMap(numberedConcepts);
   const refRegex = new RegExp(AT_REFERENCE_PATTERN, "g");
   let resolvedContent = "";
   const mentions: Mention[] = [];
+  let includeWriting = false;
+  let includeGraph = false;
   let lastIndex = 0;
   let m: RegExpExecArray | null;
 
   while ((m = refRegex.exec(rawContent)) !== null) {
-    const num = parseInt(m[1]!, 10);
-    const concept = conceptByNumber.get(num);
+    const capture = m[1]!;
+    const named = namedAtRef(capture);
+    const concept = named
+      ? { id: named.id, name: named.name }
+      : conceptByNumber.get(parseInt(capture, 10));
     if (!concept) {
       resolvedContent += rawContent.slice(lastIndex, m.index + m[0]!.length);
       lastIndex = m.index + m[0]!.length;
       continue;
     }
+    if (named?.token === "writing") includeWriting = true;
+    if (named?.token === "graph") includeGraph = true;
     resolvedContent += rawContent.slice(lastIndex, m.index);
     const start = resolvedContent.length;
     resolvedContent += concept.name;
@@ -85,5 +99,11 @@ export function resolveAtReferences(
   const referencedConcepts = numberedConcepts.filter((c) =>
     referencedIds.has(c.id),
   );
-  return { resolvedContent, referencedConcepts, mentions };
+  return {
+    resolvedContent,
+    referencedConcepts,
+    mentions,
+    includeWriting,
+    includeGraph,
+  };
 }

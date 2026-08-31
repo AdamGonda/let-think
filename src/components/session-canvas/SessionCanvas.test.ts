@@ -17,7 +17,7 @@ describe("strokeWidthForPointer", () => {
   });
 
   it("uses a thicker stroke for the eraser", () => {
-    expect(strokeWidthForPointer("mouse", 0.5, "erase")).toBe(12);
+    expect(strokeWidthForPointer("mouse", 0.5, "erase")).toBe(40);
     expect(strokeWidthForPointer("pen", 1, "erase")).toBeGreaterThan(
       strokeWidthForPointer("pen", 1, "draw"),
     );

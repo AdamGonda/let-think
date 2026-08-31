@@ -185,10 +185,11 @@ export const internalLoadSessionForChatSend = internalQuery({
   args: {
     sessionId: v.id("sessions"),
     userId: v.id("users"),
+    includeWriting: v.optional(v.boolean()),
   },
   handler: async (
     ctx,
-    { sessionId, userId }
+    { sessionId, userId, includeWriting }
   ): Promise<{
     existingGraph: {
       nodes: Array<{ id: string; name: string; description?: string }>;
@@ -200,6 +201,7 @@ export const internalLoadSessionForChatSend = internalQuery({
         description?: string;
       }>;
     } | null;
+    thinkingNotes: string | null;
     messages: Array<{
       _id: Id<"messages">;
       _creationTime: number;
@@ -228,7 +230,16 @@ export const internalLoadSessionForChatSend = internalQuery({
       .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
       .order("asc")
       .collect();
-    return { existingGraph, messages };
+    let thinkingNotes: string | null = null;
+    if (includeWriting) {
+      if (session.fileId) {
+        const file = await ctx.db.get(session.fileId);
+        thinkingNotes = file?.thinkingNotes ?? session.thinkingNotes ?? "";
+      } else {
+        thinkingNotes = session.thinkingNotes ?? "";
+      }
+    }
+    return { existingGraph, thinkingNotes, messages };
   },
 });
 

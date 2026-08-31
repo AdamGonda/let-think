@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAction } from "convex/react";
+import { useAction, useMutation } from "convex/react";
 import { usePostHog } from "posthog-js/react";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -11,6 +11,7 @@ import {
   resolveAtReferences,
 } from "../../lib/chatMentions";
 import type { NumberedConcept } from "../../lib/conceptReferences";
+import { useAppUiSelector } from "../../hooks/useAppUi";
 import { ChatComposer } from "./ChatComposer";
 import { HistoricalBatchPrompt } from "./HistoricalBatchPrompt";
 
@@ -39,6 +40,7 @@ interface ChatProps {
   listenForFocusEvent?: boolean;
   /** Chat-lane send: graph `@n` highlights to drop after those refs were used. */
   onConsumedConceptNumbers?: (conceptNumbers: number[]) => void;
+  fileId?: Id<"files"> | null;
 }
 
 export function Chat({
@@ -60,6 +62,7 @@ export function Chat({
   autoFocus = true,
   listenForFocusEvent = true,
   onConsumedConceptNumbers,
+  fileId = null,
 }: ChatProps) {
   const [internalInput, setInternalInput] = useState("");
   const draft = draftInput !== undefined ? draftInput : internalInput;
@@ -68,6 +71,8 @@ export function Chat({
   const input = draft;
   const sendGraphMessage = useAction(api.chat.send);
   const sendChatMessage = useAction(api.chat.sendChat);
+  const updateFileNotes = useMutation(api.files.updateThinkingNotes);
+  const notes = useAppUiSelector((s) => s.context.notes);
   const { canSend, setPendingChatUser } = useSessionData();
   const posthog = usePostHog();
 
@@ -77,11 +82,16 @@ export function Chat({
     if (!input.trim()) return;
 
     const rawContent = input.trim();
-    const { resolvedContent, referencedConcepts, mentions } = resolveAtReferences(
-      rawContent,
-      numberedConcepts,
-    );
+    const {
+      resolvedContent,
+      referencedConcepts,
+      mentions,
+      includeWriting,
+    } = resolveAtReferences(rawContent, numberedConcepts);
     const mentionPayload = mentions.length > 0 ? mentions : undefined;
+    if (includeWriting && fileId) {
+      await updateFileNotes({ fileId, thinkingNotes: notes });
+    }
     const selectedNodeContext =
       referencedConcepts.length > 0
         ? referencedConcepts.map(({ id, name, description }) => ({
@@ -198,12 +208,19 @@ export function Chat({
         : !!onCreateSession;
   const isDisabled = isLoading || !canSubmit;
 
-  const placeholder =
-    sessionId || onCreateSession
+  const canCompose =
+    sendLane === "chat"
+      ? !!chatSessionId || !!onCreateChatSession
+      : !!sessionId || !!onCreateSession;
+  const placeholder = !canCompose
+    ? "Select a session to start"
+    : sendLane === "chat"
       ? numberedConcepts.length > 0
-        ? "Type, @ ref concepts"
-        : "Type..."
-      : "Select a session to start";
+        ? "Type, @ ref writing, graph, concepts"
+        : "Type, @ ref writing, graph"
+      : numberedConcepts.length > 0
+        ? "Type, @ ref writing, concepts"
+        : "Type, @ ref writing";
 
   if (lockedHistorical) {
     return (
@@ -231,6 +248,7 @@ export function Chat({
       onSubmit={handleSubmit}
       autoFocus={autoFocus}
       listenForFocusEvent={listenForFocusEvent}
+      allowGraphRef={sendLane === "chat"}
     />
   );
 }

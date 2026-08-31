@@ -1,5 +1,90 @@
-/** Match @1, @2, … word boundaries (same semantics as chat input parsing). */
-export const AT_REFERENCE_PATTERN = String.raw`@(\d+)\b`;
+/** Match @1, @writing, @graph at word boundaries (same semantics as chat input parsing). */
+export const AT_REFERENCE_PATTERN = String.raw`@(\d+|writing|graph)\b`;
+
+export const WRITING_REF_TOKEN = "writing";
+export const GRAPH_REF_TOKEN = "graph";
+export const WRITING_REF_ID = "__writing__";
+export const GRAPH_REF_ID = "__graph__";
+export const WRITING_REF_NAME = "Writing";
+export const GRAPH_REF_NAME = "Graph";
+
+export type NamedAtRef = {
+  token: typeof WRITING_REF_TOKEN | typeof GRAPH_REF_TOKEN;
+  id: string;
+  name: string;
+};
+
+export function namedAtRef(capture: string): NamedAtRef | null {
+  if (capture === WRITING_REF_TOKEN) {
+    return { token: WRITING_REF_TOKEN, id: WRITING_REF_ID, name: WRITING_REF_NAME };
+  }
+  if (capture === GRAPH_REF_TOKEN) {
+    return { token: GRAPH_REF_TOKEN, id: GRAPH_REF_ID, name: GRAPH_REF_NAME };
+  }
+  return null;
+}
+
+export type AtMentionOption = {
+  token: string;
+  label: string;
+  kind: "writing" | "graph" | "concept";
+};
+
+/** Open `@query` at the caret, or null if not in a mention. */
+export function atQueryAtCaret(
+  value: string,
+  caret: number,
+): { start: number; query: string } | null {
+  const before = value.slice(0, caret);
+  const at = before.lastIndexOf("@");
+  if (at < 0) return null;
+  if (at > 0 && /[A-Za-z0-9_]/.test(before[at - 1]!)) return null;
+  const query = before.slice(at + 1);
+  if (/\s/.test(query)) return null;
+  return { start: at, query };
+}
+
+export function insertAtMentionToken(
+  value: string,
+  queryStart: number,
+  caret: number,
+  token: string,
+): { value: string; caret: number } {
+  const inserted = `@${token} `;
+  const next = value.slice(0, queryStart) + inserted + value.slice(caret);
+  return { value: next, caret: queryStart + inserted.length };
+}
+
+export function atMentionOptions(args: {
+  query: string;
+  numberedConcepts: NumberedConcept[];
+  allowGraphRef: boolean;
+}): AtMentionOption[] {
+  const q = args.query.toLowerCase();
+  const items: AtMentionOption[] = [
+    { token: WRITING_REF_TOKEN, label: WRITING_REF_NAME, kind: "writing" },
+  ];
+  if (args.allowGraphRef) {
+    items.push({
+      token: GRAPH_REF_TOKEN,
+      label: GRAPH_REF_NAME,
+      kind: "graph",
+    });
+  }
+  for (const c of args.numberedConcepts) {
+    items.push({
+      token: String(c.number),
+      label: c.name,
+      kind: "concept",
+    });
+  }
+  if (!q) return items;
+  return items.filter(
+    (item) =>
+      item.token.toLowerCase().startsWith(q) ||
+      item.label.toLowerCase().includes(q),
+  );
+}
 
 /**
  * When Backspace removes the character before `cursor`, if that would delete part of an
@@ -171,7 +256,6 @@ export function ensureSpaceAfterValidAtReferences(
   value: string,
   numberedConcepts: NumberedConcept[],
 ): string {
-  if (numberedConcepts.length === 0) return value;
   const conceptByNumber = conceptByNumberMap(numberedConcepts);
   const conceptNumbers = [...conceptByNumber.keys()];
   const refRegex = new RegExp(AT_REFERENCE_PATTERN, "g");
@@ -179,10 +263,19 @@ export function ensureSpaceAfterValidAtReferences(
   let lastIndex = 0;
   let m: RegExpExecArray | null;
   while ((m = refRegex.exec(value)) !== null) {
-    const num = parseInt(m[1]!, 10);
+    const capture = m[1]!;
     const end = m.index + m[0]!.length;
     out += value.slice(lastIndex, end);
     lastIndex = end;
+    const named = namedAtRef(capture);
+    if (named) {
+      const after = value[end];
+      if (after === undefined || !/\s/.test(after)) {
+        out += " ";
+      }
+      continue;
+    }
+    const num = parseInt(capture, 10);
     if (conceptByNumber.has(num)) {
       if (couldBePrefixOfLongerConceptNumber(num, conceptNumbers)) {
         continue;
@@ -206,6 +299,7 @@ export function referencedConceptIdsFromDraft(
   const refRegex = new RegExp(AT_REFERENCE_PATTERN, "g");
   let m: RegExpExecArray | null;
   while ((m = refRegex.exec(draftInput ?? "")) !== null) {
+    if (namedAtRef(m[1]!)) continue;
     const concept = conceptByNumber.get(parseInt(m[1]!, 10));
     if (concept) ids.add(concept.id);
   }

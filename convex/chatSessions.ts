@@ -257,12 +257,25 @@ export const internalLoadForSend = internalQuery({
   args: {
     chatSessionId: v.id("chatSessions"),
     userId: v.id("users"),
+    includeWriting: v.optional(v.boolean()),
+    includeGraph: v.optional(v.boolean()),
   },
   handler: async (
     ctx,
-    { chatSessionId, userId },
+    { chatSessionId, userId, includeWriting, includeGraph },
   ): Promise<{
     messages: Array<{ role: "user" | "assistant"; content: string }>;
+    thinkingNotes: string | null;
+    conceptGraph: {
+      nodes: Array<{ id: string; name: string; description?: string }>;
+      edges: Array<{ source: string; target: string }>;
+      batches?: Array<{
+        id: string;
+        nodeIds: string[];
+        promptSummary?: string;
+        description?: string;
+      }>;
+    } | null;
   } | null> => {
     const chatSession = await ctx.db.get(chatSessionId);
     if (!chatSession || chatSession.userId !== userId) return null;
@@ -271,8 +284,38 @@ export const internalLoadForSend = internalQuery({
       .withIndex("by_chat_session", (q) => q.eq("chatSessionId", chatSessionId))
       .order("asc")
       .collect();
+    let thinkingNotes: string | null = null;
+    if (includeWriting) {
+      const file = await ctx.db.get(chatSession.fileId);
+      thinkingNotes = file?.thinkingNotes ?? "";
+    }
+    let conceptGraph: {
+      nodes: Array<{ id: string; name: string; description?: string }>;
+      edges: Array<{ source: string; target: string }>;
+      batches?: Array<{
+        id: string;
+        nodeIds: string[];
+        promptSummary?: string;
+        description?: string;
+      }>;
+    } | null = null;
+    if (includeGraph) {
+      const session = await ctx.db
+        .query("sessions")
+        .withIndex("by_file", (q) => q.eq("fileId", chatSession.fileId))
+        .first();
+      if (session) {
+        const row = await ctx.db
+          .query("sessionConceptGraphs")
+          .withIndex("by_session", (q) => q.eq("sessionId", session._id))
+          .first();
+        conceptGraph = row?.graph ?? null;
+      }
+    }
     return {
       messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      thinkingNotes,
+      conceptGraph,
     };
   },
 });

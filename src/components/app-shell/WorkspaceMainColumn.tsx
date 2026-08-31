@@ -190,6 +190,7 @@ export function WorkspaceMainColumn({
                   selectedBatchIndex={dock.selectedBatchIndex}
                   sendLane="graph"
                   autoFocus={graphOpen}
+                  fileId={layout.activeFileId}
                 />
               ) : null
             }
@@ -215,6 +216,7 @@ export function WorkspaceMainColumn({
                 selectedBatchIndex={dock.selectedBatchIndex}
                 sendLane="chat"
                 autoFocus={chatOpen}
+                fileId={layout.activeFileId}
                 listenForFocusEvent={chatOpen}
                 onConsumedConceptNumbers={(numbers) =>
                   clearGraphDraftReferences(actor, numbers)

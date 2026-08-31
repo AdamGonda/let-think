@@ -112,7 +112,7 @@ export function SessionChatThread({ isLoading }: SessionChatThreadProps) {
                 >
                   <div
                     className={clsx(
-                      "px-4 py-3 text-[0.95rem] leading-relaxed break-words",
+                      "px-4 py-3 text-[1.125rem] leading-relaxed break-words",
                       isUser
                         ? "rounded-2xl rounded-tr-md bg-muted text-foreground border border-border whitespace-pre-wrap"
                         : "text-foreground",
@@ -135,7 +135,7 @@ export function SessionChatThread({ isLoading }: SessionChatThreadProps) {
                   aria-label="Assistant is thinking"
                 >
                   <Loader2 className="size-4 animate-spin" />
-                  <span className="text-sm">Thinking…</span>
+                  <span className="text-[1.125rem]">Thinking…</span>
                 </div>
               </li>
             ) : null}
