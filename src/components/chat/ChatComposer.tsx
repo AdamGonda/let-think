@@ -1,4 +1,4 @@
-import { useRef, useEffect, useLayoutEffect } from "react";
+import { useRef, useLayoutEffect } from "react";
 import { clsx } from "clsx";
 import { layout } from "@/config";
 import { ArrowUp, Loader2 } from "lucide-react";
@@ -12,6 +12,10 @@ import {
 } from "@/lib/conceptReferences";
 
 const FOCUS_COMPOSER_EVENT = "let-think:focus-composer";
+
+/** Shared so the caret (textarea) and glyphs (mirror) wrap on the same metrics. */
+const COMPOSER_TEXT_LAYOUT =
+  "min-w-0 w-full whitespace-pre-wrap break-words [overflow-wrap:anywhere] text-[0.95rem] leading-[1.5] tracking-[0.01em] font-[inherit]";
 
 /** When false, skip {@link ensureSpaceAfterValidAtReferences} so backspace/delete does not re-add the space. */
 function shouldApplyAutoSpaceAfterRefs(
@@ -61,7 +65,6 @@ export function ChatComposer({
 }: ChatComposerProps) {
   const canSubmit = !isDisabled && input.trim().length > 0;
   const compact = chrome === "dock";
-  const growMaxPx = compact ? 192 : 450;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const mirrorRef = useRef<HTMLDivElement>(null);
   const pendingSelectionRef = useRef<number | null>(null);
@@ -95,21 +98,15 @@ export function ChatComposer({
     focusWhenReady();
   };
 
-  useEffect(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, growMaxPx)}px`;
-  }, [input, growMaxPx]);
-
   useLayoutEffect(() => {
     const pos = pendingSelectionRef.current;
-    if (pos == null) return;
     const ta = textareaRef.current;
-    if (ta) {
+    const mirror = mirrorRef.current;
+    if (pos != null && ta) {
       ta.setSelectionRange(pos, pos);
     }
     pendingSelectionRef.current = null;
+    if (ta && mirror) mirror.scrollTop = ta.scrollTop;
   }, [input]);
 
   useLayoutEffect(() => {
@@ -200,7 +197,9 @@ export function ChatComposer({
 
   const fieldMinH = compact ? "min-h-10" : "min-h-[48px]";
   const fieldMaxH = compact ? "max-h-48" : "max-h-[450px]";
-  const fieldPad = compact ? "py-2 px-3 pr-12" : "py-3 px-4 pr-14";
+  const fieldPad = compact
+    ? "pt-2 pb-2.5 px-3 pr-12 scroll-pb-2.5"
+    : "pt-3 pb-2.5 px-4 pr-14 scroll-pb-2.5";
 
   const form = (
     <form
@@ -211,34 +210,37 @@ export function ChatComposer({
       <div className="flex gap-2 items-end">
         <div
           className={clsx(
-            "flex-1 flex relative overflow-hidden border border-input bg-background",
+            "flex-1 flex min-w-0 relative overflow-hidden border border-input bg-background",
             compact ? "rounded-lg" : "rounded-xl",
             fieldMinH,
-            fieldMaxH,
           )}
         >
           <div
             ref={mirrorRef}
             className={clsx(
-              "absolute inset-0 z-0 overflow-y-auto pointer-events-none whitespace-pre-wrap break-words text-[0.95rem] leading-[1.5] text-zinc-950 dark:text-zinc-100",
+              "absolute inset-0 z-0 overflow-y-auto pointer-events-none text-zinc-950 dark:text-zinc-100",
+              COMPOSER_TEXT_LAYOUT,
               fieldPad,
             )}
             aria-hidden
           >
             {input ? (
-              parseInputTokens(input, numberedConcepts).map((seg, i) =>
-                seg.type === "token" && seg.name ? (
-                  <span
-                    key={i}
-                    className="rounded-sm bg-zinc-300/70 dark:bg-zinc-600/70 text-inherit"
-                    title={seg.name}
-                  >
-                    {seg.content}
-                  </span>
-                ) : (
-                  seg.content
-                ),
-              )
+              <>
+                {parseInputTokens(input, numberedConcepts).map((seg, i) =>
+                  seg.type === "token" && seg.name ? (
+                    <span
+                      key={i}
+                      className="rounded-sm bg-zinc-300/70 dark:bg-zinc-600/70 text-inherit"
+                      title={seg.name}
+                    >
+                      {seg.content}
+                    </span>
+                  ) : (
+                    seg.content
+                  ),
+                )}
+                {"\n"}
+              </>
             ) : (
               <span className="text-muted-foreground">{placeholder}</span>
             )}
@@ -249,7 +251,8 @@ export function ChatComposer({
             autoFocus={autoFocus}
             rows={1}
             className={clsx(
-              "relative z-10 w-full bg-transparent text-transparent caret-foreground font-inherit text-[0.95rem] leading-[1.5] placeholder:transparent focus:outline-none focus:ring-0 disabled:opacity-60 disabled:cursor-not-allowed resize-none overflow-y-auto",
+              "relative z-10 field-sizing-content bg-transparent text-transparent caret-foreground placeholder:transparent focus:outline-none focus:ring-0 disabled:opacity-60 disabled:cursor-not-allowed resize-none overflow-y-auto",
+              COMPOSER_TEXT_LAYOUT,
               fieldMinH,
               fieldMaxH,
               fieldPad,

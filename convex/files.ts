@@ -142,7 +142,7 @@ export const getEditorFields = query({
       .first();
     return {
       draftInput: session?.draftInput ?? "",
-      thinkingNotes: file.thinkingNotes ?? "",
+      thinkingNotes: file.thinkingNotes ?? session?.thinkingNotes ?? "",
     };
   },
 });

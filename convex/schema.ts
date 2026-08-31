@@ -66,6 +66,10 @@ export default defineSchema({
     createdAt: v.number(),
     /** Graph composer draft */
     draftInput: v.optional(v.string()),
+    // ponytail: leftover on pre-files session rows; do not write. Strip then drop.
+    chatDraftInput: v.optional(v.string()),
+    thinkingNotes: v.optional(v.string()),
+    interactionRestriction: v.optional(v.string()),
   })
     .index("by_created", ["createdAt"])
     .index("by_project", ["projectId", "createdAt"])

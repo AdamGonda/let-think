@@ -57,4 +57,31 @@ describe("ChatComposer chrome", () => {
     expect(ta!.selectionStart).toBe(3);
     expect(ta!.selectionEnd).toBe(3);
   });
+
+  it("shares wrap metrics between textarea and highlight mirror", () => {
+    const { container } = render(<ChatComposer {...base} input="hello" />);
+    const ta = container.querySelector("[data-session-input-textarea]");
+    expect(ta).toBeTruthy();
+    const field = ta!.parentElement;
+    const mirror = field?.querySelector("div[aria-hidden]");
+    expect(mirror).toBeTruthy();
+
+    const shared = [
+      "break-words",
+      "whitespace-pre-wrap",
+      "tracking-[0.01em]",
+    ];
+    for (const token of shared) {
+      expect(ta!.className).toContain(token);
+      expect(mirror!.className).toContain(token);
+    }
+    expect(ta!.className).toContain("field-sizing-content");
+    expect(ta!.className).toContain("pb-2.5");
+    expect(ta!.className).toContain("scroll-pb-2.5");
+    expect(mirror!.className).toContain("pb-2.5");
+    expect(field!.className).toContain("min-w-0");
+    expect(field!.className).not.toContain("max-h-[450px]");
+    expect(ta!.className).toContain("max-h-[450px]");
+    expect(mirror!.textContent).toMatch(/hello\n$/);
+  });
 });
