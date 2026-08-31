@@ -7,9 +7,12 @@ afterEach(cleanup);
 describe("SessionViewSwitcher", () => {
   it("selects a specific view and does not fire when clicking the active segment", () => {
     const onChange = vi.fn();
-    const { rerender, getByLabelText } = render(
+    const { rerender, getByLabelText, getAllByRole } = render(
       <SessionViewSwitcher selected="graph" onChange={onChange} />,
     );
+    expect(
+      getAllByRole("radio").map((button) => button.getAttribute("aria-label")),
+    ).toEqual(["Canvas view", "Chat view", "Graph view", "File view"]);
     expect(getByLabelText("Graph view").getAttribute("aria-checked")).toBe(
       "true",
     );

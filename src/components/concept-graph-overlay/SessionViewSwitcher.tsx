@@ -16,9 +16,9 @@ const VIEW_OPTIONS: ReadonlyArray<{
   Icon: LucideIcon;
   tour?: string;
 }> = [
-  { view: "graph", label: "Graph view", Icon: LayoutGrid },
-  { view: "chat", label: "Chat view", Icon: MessageSquare },
   { view: "canvas", label: "Canvas view", Icon: Pencil },
+  { view: "chat", label: "Chat view", Icon: MessageSquare },
+  { view: "graph", label: "Graph view", Icon: LayoutGrid },
   { view: "file", label: "File view", Icon: FileText, tour: "notes-btn" },
 ];
 
