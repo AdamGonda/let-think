@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { isNearBottom } from "./isNearBottom";
 import { SessionChatThread } from "./SessionChatThread";
 
@@ -28,6 +28,8 @@ vi.mock("@/contexts/SessionDataContext", () => ({
   useSessionData: () => mockSessionData,
 }));
 
+afterEach(cleanup);
+
 describe("SessionChatThread markdown", () => {
   it("renders assistant replies as markdown instead of raw syntax", () => {
     render(<SessionChatThread isLoading={false} />);
@@ -39,6 +41,15 @@ describe("SessionChatThread markdown", () => {
     expect(screen.getByText("Fish")).toBeTruthy();
     expect(screen.getByRole("columnheader", { name: "Feature" })).toBeTruthy();
     expect(screen.getByRole("cell", { name: "Phone" })).toBeTruthy();
+  });
+
+  it("uses the file-view overlay scrollbar and full-column assistant replies", () => {
+    const { container } = render(<SessionChatThread isLoading={false} />);
+    expect(container.querySelector(".editor-scroll-thumb")).toBeTruthy();
+    expect(container.querySelector(".overlay-scroll")).toBeTruthy();
+    const assistant = container.querySelector(".chat-md")?.closest("li");
+    expect(assistant?.className).toContain("w-full");
+    expect(assistant?.className).not.toContain("36rem");
   });
 
   it("renders a pending user bubble before the server row exists", () => {

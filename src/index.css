@@ -442,6 +442,15 @@ body {
   display: none;
 }
 
+/* Pair with .editor-scroll-thumb: hide the native bar so only the overlay thumb shows. */
+.overlay-scroll {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.overlay-scroll::-webkit-scrollbar {
+  display: none;
+}
+
 /* Overlay position thumb — shown while scrolling, fades after idle */
 .editor-scroll-thumb {
   position: absolute;
