@@ -135,6 +135,30 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke): void {
     ctx.fillText(stroke.text, stroke.x, stroke.y);
     return;
   }
+  if (stroke.kind === "draw" || stroke.kind === "erase") {
+    applyKind(ctx, stroke.kind);
+    const points = stroke.points;
+    if (points.length === 0) return;
+    if (points.length === 1) {
+      const p = points[0];
+      if (!p) return;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.width / 2, 0, Math.PI * 2);
+      ctx.fill();
+      return;
+    }
+    for (let i = 1; i < points.length; i++) {
+      const from = points[i - 1];
+      const to = points[i];
+      if (!from || !to) continue;
+      ctx.beginPath();
+      ctx.moveTo(from.x, from.y);
+      ctx.lineTo(to.x, to.y);
+      ctx.lineWidth = to.width;
+      ctx.stroke();
+    }
+    return;
+  }
   if (
     stroke.kind === "rect" ||
     stroke.kind === "ellipse" ||
@@ -143,28 +167,6 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke): void {
     ctx.globalCompositeOperation = "source-over";
     setupInk(ctx);
     drawShape(ctx, stroke);
-    return;
-  }
-  applyKind(ctx, stroke.kind);
-  const points = stroke.points;
-  if (points.length === 0) return;
-  if (points.length === 1) {
-    const p = points[0];
-    if (!p) return;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.width / 2, 0, Math.PI * 2);
-    ctx.fill();
-    return;
-  }
-  for (let i = 1; i < points.length; i++) {
-    const from = points[i - 1];
-    const to = points[i];
-    if (!from || !to) continue;
-    ctx.beginPath();
-    ctx.moveTo(from.x, from.y);
-    ctx.lineTo(to.x, to.y);
-    ctx.lineWidth = to.width;
-    ctx.stroke();
   }
 }
 
