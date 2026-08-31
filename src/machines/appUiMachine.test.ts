@@ -97,13 +97,16 @@ describe("selectors from running actor", () => {
     expect(actor.getSnapshot().context.sessionView).toBe("chat");
     expect(selectSurface(actor.getSnapshot())).toBe("graph");
     expect(actor.getSnapshot().context.surfaceMode).toBe("graph");
+    actor.send({ type: "SESSION_VIEW_SET", view: "canvas" });
+    expect(actor.getSnapshot().context.sessionView).toBe("canvas");
+    expect(selectSurface(actor.getSnapshot())).toBe("graph");
     actor.send({ type: "SESSION_VIEW_SET", view: "graph" });
     expect(actor.getSnapshot().context.sessionView).toBe("graph");
     expect(selectSurface(actor.getSnapshot())).toBe("graph");
     actor.stop();
   });
 
-  it("SESSION_VIEW_SET to chat closes the history panel", () => {
+  it("SESSION_VIEW_SET to chat or canvas closes the history panel", () => {
     const actor = createActor(appUiMachine, {
       input: baseInput({ historyPanelOpen: true }),
     });
@@ -111,6 +114,10 @@ describe("selectors from running actor", () => {
     actor.send({ type: "HISTORY_OPEN" });
     expect(actor.getSnapshot().context.historyPanelOpen).toBe(true);
     actor.send({ type: "SESSION_VIEW_SET", view: "chat" });
+    expect(actor.getSnapshot().context.historyPanelOpen).toBe(false);
+    actor.send({ type: "HISTORY_OPEN" });
+    expect(actor.getSnapshot().context.historyPanelOpen).toBe(true);
+    actor.send({ type: "SESSION_VIEW_SET", view: "canvas" });
     expect(actor.getSnapshot().context.historyPanelOpen).toBe(false);
     actor.stop();
   });

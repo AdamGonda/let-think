@@ -1,9 +1,11 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { GraphViewHeader } from "../concept-graph-overlay/GraphViewHeader";
 import { ConceptGraphOverlay } from "../concept-graph-overlay/ConceptGraphOverlay";
 import { SessionChatThread } from "../chat/SessionChatThread";
 import { FileChatList, type FileChatListItem } from "../chat/FileChatList";
+import { SessionCanvas } from "../session-canvas/SessionCanvas";
+import { cn } from "@/lib/utils";
 import type { ConceptGraphData } from "@/contexts/SessionDataContext";
 import type { SessionView } from "@/machines/appUiTypes";
 
@@ -73,6 +75,9 @@ export function AppContentGraphSurface({
   onConceptCopy,
 }: AppContentGraphSurfaceProps) {
   const chatOpen = sessionView === "chat";
+  const graphOpen = sessionView === "graph";
+  const canvasOpen = sessionView === "canvas";
+  const [eraseMode, setEraseMode] = useState(false);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -93,6 +98,8 @@ export function AppContentGraphSurface({
           onEditorOpen={onEditorOpen}
           onProjectsRootClick={onProjectsRootClick}
           onProjectNameClick={onProjectNameClick}
+          eraseActive={eraseMode}
+          onEraseToggle={() => setEraseMode((current) => !current)}
         />
       )}
       {chatOpen ? (
@@ -111,43 +118,61 @@ export function AppContentGraphSurface({
             {chatComposer}
           </div>
         </div>
-      ) : (
-        <div className="relative flex min-h-0 flex-1 flex-col">
-          {sessionPastFrame ? (
-            <div
-              className="pointer-events-none absolute inset-0 z-20 rounded-md session-past-frame-overlay"
-              aria-hidden
-            />
-          ) : null}
-          {sessionPastFrame ? (
-            <div
-              className="pointer-events-none absolute bottom-0 left-1/2 z-30 h-[2px] w-[min(calc(100%-2rem),720px)] -translate-x-1/2 bg-background"
-              aria-hidden
-            />
-          ) : null}
+      ) : null}
+      <div
+        className={cn(
+          "relative min-h-0 flex-1 flex-col",
+          graphOpen ? "flex" : "hidden",
+        )}
+        inert={!graphOpen ? true : undefined}
+      >
+        {sessionPastFrame ? (
           <div
-            className={`flex w-full flex-1 min-h-0 items-stretch justify-stretch ${
-              !chatVisible ? "max-h-[calc(100dvh-13rem)]" : ""
-            }`}
-            data-tour="graph-area"
-          >
-            <ConceptGraphOverlay
-              key={activeSessionId ?? "empty"}
-              graph={conceptGraph ?? null}
-              isLoading={chatLoading}
-              showLoadingCards={graphShowLoadingCards}
-              interactionBlocked={graphInteractionBlocked}
-              loadingStartBatchLength={graphLoadingStartBatchLength}
-              selectedBatchIndex={selectedBatchIndex}
-              onSelectedBatchIndexChange={onSelectBatch}
-              referencedConceptIds={referencedConceptIds}
-              onCardReferenceClick={chatVisible ? onCardReferenceClick : undefined}
-              onConceptCopy={chatVisible ? onConceptCopy : undefined}
-            />
-          </div>
-          {graphComposer}
+            className="pointer-events-none absolute inset-0 z-20 rounded-md session-past-frame-overlay"
+            aria-hidden
+          />
+        ) : null}
+        {sessionPastFrame ? (
+          <div
+            className="pointer-events-none absolute bottom-0 left-1/2 z-30 h-[2px] w-[min(calc(100%-2rem),720px)] -translate-x-1/2 bg-background"
+            aria-hidden
+          />
+        ) : null}
+        <div
+          className={`flex w-full flex-1 min-h-0 items-stretch justify-stretch ${
+            !chatVisible ? "max-h-[calc(100dvh-13rem)]" : ""
+          }`}
+          data-tour="graph-area"
+        >
+          <ConceptGraphOverlay
+            key={activeSessionId ?? "empty"}
+            graph={conceptGraph ?? null}
+            isLoading={chatLoading}
+            showLoadingCards={graphShowLoadingCards}
+            interactionBlocked={graphInteractionBlocked}
+            loadingStartBatchLength={graphLoadingStartBatchLength}
+            selectedBatchIndex={selectedBatchIndex}
+            onSelectedBatchIndexChange={onSelectBatch}
+            referencedConceptIds={referencedConceptIds}
+            onCardReferenceClick={chatVisible ? onCardReferenceClick : undefined}
+            onConceptCopy={chatVisible ? onConceptCopy : undefined}
+          />
         </div>
-      )}
+        {graphComposer}
+      </div>
+      <div
+        className={cn(
+          "relative min-h-0 flex-1 flex-col",
+          canvasOpen ? "flex" : "hidden",
+        )}
+        inert={!canvasOpen ? true : undefined}
+      >
+        <SessionCanvas
+          key={activeSessionId ?? "empty"}
+          active={canvasOpen}
+          eraseMode={eraseMode}
+        />
+      </div>
     </div>
   );
 }

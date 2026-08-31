@@ -1,5 +1,6 @@
 import type { MutationCtx } from "../_generated/server";
 import type { Id } from "../_generated/dataModel";
+import { deleteSearchDocumentsBySession } from "../searchDocuments";
 
 async function deleteRowsBySession(
   ctx: MutationCtx,
@@ -23,4 +24,5 @@ export async function deleteSessionOwnedRows(
   await deleteRowsBySession(ctx, "messages", sessionId);
   await deleteRowsBySession(ctx, "chatMessages", sessionId);
   await deleteRowsBySession(ctx, "sessionConceptGraphs", sessionId);
+  await deleteSearchDocumentsBySession(ctx, sessionId);
 }

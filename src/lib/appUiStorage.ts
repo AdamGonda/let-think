@@ -19,7 +19,8 @@ type StoredAppUiSelection = Pick<
 >;
 
 function parseSessionView(value: string | null): SessionView {
-  return value === "chat" ? "chat" : "graph";
+  if (value === "chat" || value === "canvas") return value;
+  return "graph";
 }
 
 function getStoredId(key: string): string | null {

@@ -10,13 +10,23 @@ import { ProjectSummaryCard } from "./ProjectSummaryCard";
 import { NotesListLoading } from "./NotesListLoading";
 import { NotesListEmptyState } from "./NotesListEmptyState";
 import { NotesListSessionCard } from "./NotesListSessionCard";
+import { SearchResultCard } from "./SearchResultCard";
 import { useNotesListModel } from "@/hooks/useNotesListModel";
+import {
+  useWorkspaceSearch,
+  type WorkspaceSearchStatus,
+} from "@/hooks/useWorkspaceSearch";
 import { useWorkspaceActions } from "@/hooks/useWorkspaceActions";
 import { useAppUiActor } from "@/hooks/useAppUi";
 import {
   intentSelectSessionFromSidebar,
+  openSearchHit,
   setActiveProject,
 } from "@/lib/appUiCommands";
+import {
+  WORKSPACE_SEARCH_MIN_QUERY_LENGTH,
+  type WorkspaceSearchHit,
+} from "@/lib/searchHits";
 
 interface NotesListPanelProps {
   workspace: ProjectWithSessions[] | undefined;
@@ -46,6 +56,10 @@ export function NotesListPanel({
     drillGroup,
     filteredDrillSessions,
   } = useNotesListModel(workspace, drill, onDrillChange);
+  const searchActive = searchQuery.trim().length > 0;
+  const { hits, status, errorMessage } = useWorkspaceSearch(
+    searchActive ? searchQuery : "",
+  );
 
   const {
     handleNewSession,
@@ -129,14 +143,24 @@ export function NotesListPanel({
           />
 
           <div className="min-h-0 flex-1 overflow-y-auto pb-8">
-            {isEmpty ? (
+            {isEmpty && !searchActive ? (
               <NotesListEmptyState
                 onNewFile={createFileInCurrentFolder}
                 onNewFolder={createFolder}
               />
             ) : null}
 
-            {!drilled && !isEmpty && (
+            {searchActive ? (
+              <SearchResultsBody
+                query={searchQuery.trim()}
+                hits={hits}
+                status={status}
+                errorMessage={errorMessage}
+                onOpen={(hit) => openSearchHit(actor, hit)}
+              />
+            ) : null}
+
+            {!searchActive && !drilled && !isEmpty && (
               <>
                 {rootFolders.length === 0 ? (
                   <p className="text-center text-sm text-muted-foreground py-12">
@@ -229,7 +253,7 @@ export function NotesListPanel({
               </>
             )}
 
-            {drilled && drillGroup && (
+            {!searchActive && drilled && drillGroup && (
               <>
                 {filteredDrillSessions.length === 0 ? (
                   <div className="py-12 text-center">
@@ -269,5 +293,64 @@ export function NotesListPanel({
         </div>
       </div>
     </div>
+  );
+}
+
+function SearchResultsBody({
+  query,
+  hits,
+  status,
+  errorMessage,
+  onOpen,
+}: {
+  query: string;
+  hits: WorkspaceSearchHit[];
+  status: WorkspaceSearchStatus;
+  errorMessage: string | null;
+  onOpen: (hit: WorkspaceSearchHit) => void;
+}) {
+  if (query.length < WORKSPACE_SEARCH_MIN_QUERY_LENGTH) {
+    return (
+      <p className="py-12 text-center text-sm text-muted-foreground">
+        Type at least {WORKSPACE_SEARCH_MIN_QUERY_LENGTH} characters to search.
+      </p>
+    );
+  }
+  if (status === "loading" || status === "idle") {
+    return (
+      <p className="py-12 text-center text-sm text-muted-foreground">
+        Searching…
+      </p>
+    );
+  }
+  if (status === "error") {
+    return (
+      <p className="py-12 text-center text-sm text-muted-foreground">
+        {errorMessage ?? "Search failed. Try again."}
+      </p>
+    );
+  }
+  if (status === "indexing" && hits.length === 0) {
+    return (
+      <p className="py-12 text-center text-sm text-muted-foreground">
+        Indexing your workspace. Search again in a moment.
+      </p>
+    );
+  }
+  if (hits.length === 0) {
+    return (
+      <p className="py-12 text-center text-sm text-muted-foreground">
+        Nothing matches &quot;{query}&quot;
+      </p>
+    );
+  }
+  return (
+    <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      {hits.map((hit, i) => (
+        <li key={`${hit.kind}-${hit.fileId}-${hit.chatSessionId ?? ""}-${hit.nodeId ?? ""}-${i}`}>
+          <SearchResultCard hit={hit} onOpen={onOpen} />
+        </li>
+      ))}
+    </ul>
   );
 }

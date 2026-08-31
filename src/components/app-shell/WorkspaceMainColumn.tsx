@@ -69,6 +69,7 @@ export function WorkspaceMainColumn({
   } = useSessionData();
 
   const chatOpen = dock.sessionView === "chat";
+  const graphOpen = dock.sessionView === "graph";
   const latestBatchIndex = Math.max(0, batches.length - 1);
   const activeFileId = layout.activeFileId;
 
@@ -128,7 +129,7 @@ export function WorkspaceMainColumn({
         !dock.chatLoadingOnGraphFrame &&
           !dock.chatLoadingOnNotesList &&
           isPastBatchSelected &&
-          !chatOpen &&
+          graphOpen &&
           "rounded-md",
       )}
       data-tour="main-content"
@@ -188,7 +189,7 @@ export function WorkspaceMainColumn({
                   lockedHistorical={lockedHistorical}
                   selectedBatchIndex={dock.selectedBatchIndex}
                   sendLane="graph"
-                  autoFocus={!chatOpen}
+                  autoFocus={graphOpen}
                 />
               ) : null
             }

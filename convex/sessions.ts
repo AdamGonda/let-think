@@ -12,6 +12,7 @@ import type { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
 import { maybeTitleFileFromFirstGraphMessage } from "./files";
+import { syncIdeasForSession } from "./searchDocuments";
 
 async function requireSessionOwner(ctx: MutationCtx, sessionId: Id<"sessions">) {
   const userId = await getAuthUserId(ctx);
@@ -149,6 +150,7 @@ export const updateConceptGraph = mutation({
         graph: conceptGraph,
       });
     }
+    await syncIdeasForSession(ctx, sessionId);
   },
 });
 

@@ -19,28 +19,90 @@ const base = {
 afterEach(cleanup);
 
 describe("GraphViewHeader session view toggle", () => {
-  it("toggles session view; chat hides step nav and keeps history in layout", () => {
+  it("selects a specific view and does not flip when clicking the active segment", () => {
+    const onSessionViewChange = vi.fn();
     const { rerender, getByLabelText, queryByLabelText } = render(
-      <GraphViewHeader {...base} sessionView="graph" />,
+      <GraphViewHeader
+        {...base}
+        sessionView="graph"
+        onSessionViewChange={onSessionViewChange}
+      />,
     );
-    expect(getByLabelText("Switch to chat view")).toBeTruthy();
+    expect(getByLabelText("Graph view").getAttribute("aria-checked")).toBe("true");
+    expect(getByLabelText("Chat view").getAttribute("aria-checked")).toBe("false");
+    expect(getByLabelText("Canvas view").getAttribute("aria-checked")).toBe(
+      "false",
+    );
     const history = getByLabelText("Session history");
     expect((history as HTMLButtonElement).disabled).toBe(false);
     expect(history.closest(".opacity-0")).toBeNull();
     expect(queryByLabelText("Previous step")).toBeTruthy();
 
-    fireEvent.click(getByLabelText("Switch to chat view"));
-    expect(base.onSessionViewChange).toHaveBeenCalledWith("chat");
+    fireEvent.click(getByLabelText("Graph view"));
+    expect(onSessionViewChange).not.toHaveBeenCalled();
 
-    rerender(<GraphViewHeader {...base} sessionView="chat" />);
-    expect(getByLabelText("Switch to graph view")).toBeTruthy();
+    fireEvent.click(getByLabelText("Chat view"));
+    expect(onSessionViewChange).toHaveBeenCalledWith("chat");
+
+    fireEvent.click(getByLabelText("Canvas view"));
+    expect(onSessionViewChange).toHaveBeenCalledWith("canvas");
+
+    rerender(
+      <GraphViewHeader
+        {...base}
+        sessionView="chat"
+        onSessionViewChange={onSessionViewChange}
+      />,
+    );
+    expect(getByLabelText("Chat view").getAttribute("aria-checked")).toBe(
+      "true",
+    );
     expect(getByLabelText("Session history").closest(".opacity-0")).toBeTruthy();
-    expect(queryByLabelText("New chat")).toBeNull();
     expect(queryByLabelText("Previous step")).toBeNull();
     expect(getByLabelText("Open file")).toBeTruthy();
 
-    fireEvent.click(getByLabelText("Switch to graph view"));
-    expect(base.onSessionViewChange).toHaveBeenCalledWith("graph");
+    rerender(
+      <GraphViewHeader
+        {...base}
+        sessionView="canvas"
+        onSessionViewChange={onSessionViewChange}
+      />,
+    );
+    expect(getByLabelText("Canvas view").getAttribute("aria-checked")).toBe(
+      "true",
+    );
+    expect(getByLabelText("Eraser")).toBeTruthy();
+    expect(queryByLabelText("Session history")).toBeNull();
+    expect(queryByLabelText("Previous step")).toBeNull();
+    expect(getByLabelText("Open file")).toBeTruthy();
+  });
+
+  it("toggles the canvas eraser", () => {
+    const onEraseToggle = vi.fn();
+    const { getByLabelText, rerender } = render(
+      <GraphViewHeader
+        {...base}
+        sessionView="canvas"
+        eraseActive={false}
+        onEraseToggle={onEraseToggle}
+      />,
+    );
+    expect(getByLabelText("Eraser").getAttribute("aria-pressed")).toBe(
+      "false",
+    );
+    fireEvent.click(getByLabelText("Eraser"));
+    expect(onEraseToggle).toHaveBeenCalledTimes(1);
+    rerender(
+      <GraphViewHeader
+        {...base}
+        sessionView="canvas"
+        eraseActive
+        onEraseToggle={onEraseToggle}
+      />,
+    );
+    expect(getByLabelText("Eraser").getAttribute("aria-pressed")).toBe(
+      "true",
+    );
   });
 
   it("shows the file title as a breadcrumb, not a chat switcher", () => {

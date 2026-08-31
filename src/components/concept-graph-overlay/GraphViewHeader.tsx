@@ -1,10 +1,28 @@
-import { FileText, History, LayoutGrid, MessageSquare } from "lucide-react";
+import {
+  Eraser,
+  FileText,
+  History,
+  LayoutGrid,
+  MessageSquare,
+  Pencil,
+  type LucideIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { layout } from "@/config";
 import { NoteBreadcrumb } from "@/components/navigation/NoteBreadcrumb";
 import { StepNavigator } from "@/components/navigation/StepNavigator";
 import { cn } from "@/lib/utils";
 import type { SessionView } from "@/machines/appUiTypes";
+
+const SESSION_VIEW_OPTIONS: ReadonlyArray<{
+  view: SessionView;
+  label: string;
+  Icon: LucideIcon;
+}> = [
+  { view: "graph", label: "Graph view", Icon: LayoutGrid },
+  { view: "chat", label: "Chat view", Icon: MessageSquare },
+  { view: "canvas", label: "Canvas view", Icon: Pencil },
+];
 
 type GraphViewHeaderProps = {
   projectName: string | undefined;
@@ -22,6 +40,8 @@ type GraphViewHeaderProps = {
   onEditorOpen: () => void;
   onProjectsRootClick: () => void;
   onProjectNameClick: () => void;
+  eraseActive?: boolean;
+  onEraseToggle?: () => void;
 };
 
 export function GraphViewHeader({
@@ -40,13 +60,24 @@ export function GraphViewHeader({
   onEditorOpen,
   onProjectsRootClick,
   onProjectNameClick,
+  eraseActive = false,
+  onEraseToggle,
 }: GraphViewHeaderProps) {
   const sessionLabel =
     sessionTitle != null && sessionTitle.trim() !== ""
       ? sessionTitle.trim()
       : "Loading…";
-  const chatOpen = sessionView === "chat";
+  const graphChromeHidden = sessionView !== "graph";
   const historyDisabled = !hasChatHistory || isHistoryButtonDisabled;
+  const selectedIndex = SESSION_VIEW_OPTIONS.findIndex(
+    (option) => option.view === sessionView,
+  );
+  const highlightTranslate =
+    selectedIndex === 1
+      ? "translate-x-full"
+      : selectedIndex === 2
+        ? "translate-x-[200%]"
+        : "translate-x-0";
 
   return (
     <header className={layout.workspaceTopBarClass}>
@@ -62,7 +93,7 @@ export function GraphViewHeader({
         ) : null}
       </div>
       <div className="flex justify-center">
-        {chatOpen ? null : (
+        {graphChromeHidden ? null : (
           <StepNavigator
             totalSteps={batchCount}
             selectedIndex={selectedBatchIndex}
@@ -72,68 +103,81 @@ export function GraphViewHeader({
         )}
       </div>
       <div className="flex h-7 items-center justify-end gap-2 leading-none">
-        <div
-          className={cn(
-            "relative flex size-7 shrink-0 items-center justify-center transition-opacity duration-75 ease-out motion-reduce:transition-none",
-            chatOpen && "pointer-events-none opacity-0",
-          )}
-          aria-hidden={chatOpen || undefined}
-        >
+        {sessionView === "canvas" ? (
           <Button
             variant="outline"
             size="icon-sm"
-            onClick={onHistoryOpen}
-            disabled={historyDisabled}
-            title="Session history"
-            aria-label="Session history"
-            data-tour="history-btn"
+            aria-pressed={eraseActive}
+            aria-label="Eraser"
+            title="Eraser"
+            onClick={onEraseToggle}
           >
-            <History className="size-5" />
+            <Eraser className={cn("size-5", eraseActive && "fill-current")} />
           </Button>
-          {historyDisabled ? (
-            <div
-              className="absolute inset-0 z-10 cursor-not-allowed rounded-[min(var(--radius-md),12px)]"
-              aria-hidden
-            />
-          ) : null}
-        </div>
-        <Button
-          variant="outline"
-          className="relative h-7 w-14 overflow-hidden rounded-[min(var(--radius-md),12px)] p-0 active:translate-y-0"
-          onClick={() => onSessionViewChange(chatOpen ? "graph" : "chat")}
-          title={chatOpen ? "Switch to graph view" : "Switch to chat view"}
-          aria-label={chatOpen ? "Switch to graph view" : "Switch to chat view"}
+        ) : (
+          <div
+            className={cn(
+              "relative flex size-7 shrink-0 items-center justify-center transition-opacity duration-75 ease-out motion-reduce:transition-none",
+              graphChromeHidden && "pointer-events-none opacity-0",
+            )}
+            aria-hidden={graphChromeHidden || undefined}
+          >
+            <Button
+              variant="outline"
+              size="icon-sm"
+              onClick={onHistoryOpen}
+              disabled={historyDisabled}
+              title="Session history"
+              aria-label="Session history"
+              data-tour="history-btn"
+            >
+              <History className="size-5" />
+            </Button>
+            {historyDisabled ? (
+              <div
+                className="absolute inset-0 z-10 cursor-not-allowed rounded-[min(var(--radius-md),12px)]"
+                aria-hidden
+              />
+            ) : null}
+          </div>
+        )}
+        <div
+          role="radiogroup"
+          aria-label="Session view"
+          className="relative flex h-7 w-[5.25rem] shrink-0 overflow-hidden rounded-[min(var(--radius-md),12px)] border border-border bg-background dark:border-input dark:bg-input/30"
         >
           <span
             aria-hidden
             className={cn(
-              "pointer-events-none absolute inset-0 w-1/2 rounded-[inherit] bg-foreground/15 shadow-[inset_0_0_0_1px] shadow-foreground/40 transition-transform duration-75 ease-out motion-reduce:transition-none",
-              chatOpen ? "translate-x-full" : "translate-x-0",
+              "pointer-events-none absolute inset-0 w-1/3 rounded-[inherit] bg-foreground/15 shadow-[inset_0_0_0_1px] shadow-foreground/40 transition-transform duration-75 ease-out motion-reduce:transition-none",
+              highlightTranslate,
             )}
           />
-          <span aria-hidden className="relative z-10 flex">
-            <span
-              className={cn(
-                "flex size-7 items-center justify-center transition-colors duration-75",
-                chatOpen ? "text-muted-foreground/55" : "text-foreground",
-              )}
-            >
-              <LayoutGrid
-                className={cn("size-4", !chatOpen && "fill-current")}
-              />
-            </span>
-            <span
-              className={cn(
-                "flex size-7 items-center justify-center transition-colors duration-75",
-                chatOpen ? "text-foreground" : "text-muted-foreground/55",
-              )}
-            >
-              <MessageSquare
-                className={cn("size-4", chatOpen && "fill-current")}
-              />
-            </span>
-          </span>
-        </Button>
+          {SESSION_VIEW_OPTIONS.map(({ view, label, Icon }) => {
+            const selected = sessionView === view;
+            return (
+              <button
+                key={view}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                aria-label={label}
+                title={label}
+                className={cn(
+                  "relative z-10 flex size-7 appearance-none cursor-pointer items-center justify-center border-0 bg-transparent p-0 transition-colors duration-75 outline-none select-none focus-visible:ring-2 focus-visible:ring-ring/50",
+                  selected
+                    ? "text-foreground"
+                    : "text-muted-foreground/55",
+                )}
+                onClick={() => {
+                  if (view !== sessionView) onSessionViewChange(view);
+                }}
+              >
+                <Icon className={cn("size-4", selected && "fill-current")} />
+              </button>
+            );
+          })}
+        </div>
         <Button
           variant="outline"
           size="icon-sm"

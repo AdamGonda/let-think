@@ -686,6 +686,7 @@ export const sendChat = action({
       messageId: assistantMessageId,
       userId,
       content,
+      indexForSearch: true,
     });
 
     console.info(

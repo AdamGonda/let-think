@@ -266,7 +266,9 @@ export const appUiMachine = setup({
       return {
         sessionView: event.view,
         historyPanelOpen:
-          event.view === "chat" ? false : context.historyPanelOpen,
+          event.view === "chat" || event.view === "canvas"
+            ? false
+            : context.historyPanelOpen,
       };
     }),
     raiseExitWakeUp: raise({ type: "USER_EXIT_WAKE_UP" }),

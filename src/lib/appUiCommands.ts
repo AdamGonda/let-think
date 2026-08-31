@@ -12,6 +12,7 @@ import type { AppUiActorRef } from "../contexts/appUiActorContext";
 import type { SessionView } from "../machines/appUiTypes";
 import type { NotesListDrill } from "./notesListUtils";
 import type { WorkspaceFile } from "@/components/session-sidebar/workspaceTypes";
+import type { WorkspaceSearchHit } from "./searchHits";
 
 /**
  * Select file, ideation session, project, and Files drill for that file.
@@ -41,6 +42,50 @@ export function openSessionInFilesWithEditor(
 ): void {
   setNotesListDrillForFile(actor, file);
   actor.send({ type: "EDITOR_OPEN" });
+}
+
+function selectFileFromSearchHit(
+  actor: AppUiActorRef,
+  hit: WorkspaceSearchHit,
+): void {
+  actor.send({ type: "ACTIVE_FILE_SET", fileId: hit.fileId });
+  actor.send({ type: "ACTIVE_SESSION_SET", sessionId: hit.sessionId });
+  actor.send({
+    type: "ACTIVE_PROJECT_SET",
+    projectId: hit.projectId,
+  });
+  actor.send({
+    type: "NOTES_LIST_DRILL_SET",
+    drill: hit.projectId
+      ? { type: "project", id: hit.projectId }
+      : { type: "inbox" },
+  });
+}
+
+/** Jump from a Files search card to the note, chat thread, or ideation step. */
+export function openSearchHit(
+  actor: AppUiActorRef,
+  hit: WorkspaceSearchHit,
+): void {
+  selectFileFromSearchHit(actor, hit);
+  if (hit.kind === "note") {
+    actor.send({ type: "EDITOR_OPEN" });
+    return;
+  }
+  actor.send({ type: "VIEW_SET", mode: "graph" });
+  actor.send({ type: "EDITOR_CLOSE" });
+  if (hit.kind === "chat") {
+    actor.send({ type: "SESSION_VIEW_SET", view: "chat" });
+    actor.send({
+      type: "ACTIVE_CHAT_SESSION_SET",
+      chatSessionId: hit.chatSessionId,
+    });
+    return;
+  }
+  actor.send({ type: "SESSION_VIEW_SET", view: "graph" });
+  if (hit.batchIndex != null) {
+    actor.send({ type: "SELECTED_BATCH_INDEX_SET", index: hit.batchIndex });
+  }
 }
 
 // --- User intent commands (UI entry points) ---

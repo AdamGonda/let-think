@@ -3,8 +3,8 @@ import type { NotesListDrill } from "../lib/notesListUtils";
 
 export type SurfaceMode = "graph" | "notesList";
 
-/** Concept cards vs classic chat thread, while the session surface is open. */
-export type SessionView = "graph" | "chat";
+/** Concept cards, classic chat thread, or drawing canvas, while the session surface is open. */
+export type SessionView = "graph" | "chat" | "canvas";
 
 export type AppUiContext = {
   /** Workspace file (Files list). Ideation session is derived via file.sessionId. */
@@ -51,7 +51,7 @@ export type AppUiContext = {
   hasEverHadSessionSelection: boolean;
   /** Mirrors `surface` parallel state for guards that only receive `context`. */
   surfaceMode: SurfaceMode;
-  /** Graph cards vs chat thread (orthogonal to Files). */
+  /** Graph cards, chat thread, or canvas (orthogonal to Files). */
   sessionView: SessionView;
   /** Monotonic token for sidebar collapse (legacy; no longer incremented on editor open). */
   sidebarCollapseRequestSeq: number;

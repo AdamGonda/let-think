@@ -184,4 +184,37 @@ export default defineSchema({
   })
     .index("by_session", ["sessionId"])
     .index("by_chat_session", ["chatSessionId"]),
+
+  /**
+   * Derived workspace search corpus. Vectors live here (Convex vectorIndex),
+   * not Weaviate. Rows are upserted/deleted with the source note, chat, or idea.
+   */
+  searchDocuments: defineTable({
+    userId: v.id("users"),
+    kind: v.union(v.literal("note"), v.literal("chat"), v.literal("idea")),
+    sourceKey: v.string(),
+    fileId: v.id("files"),
+    sessionId: v.optional(v.id("sessions")),
+    chatSessionId: v.optional(v.id("chatSessions")),
+    chatMessageId: v.optional(v.id("chatMessages")),
+    nodeId: v.optional(v.string()),
+    batchId: v.optional(v.string()),
+    title: v.string(),
+    snippet: v.string(),
+    embeddingText: v.string(),
+    contentHash: v.string(),
+    /** Omitted until the embed worker succeeds so pending rows cannot match. */
+    embedding: v.optional(v.array(v.float64())),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  })
+    .index("by_user_source", ["userId", "sourceKey"])
+    .index("by_file", ["fileId"])
+    .index("by_chat_session", ["chatSessionId"])
+    .index("by_session", ["sessionId"])
+    .vectorIndex("by_embedding", {
+      vectorField: "embedding",
+      dimensions: 768,
+      filterFields: ["userId"],
+    }),
 });

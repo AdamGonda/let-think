@@ -10,6 +10,10 @@ import {
 import type { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { requireFileOwner, titleFromFirstMessage } from "./files";
+import {
+  deleteSearchDocumentsByChatSession,
+  enqueueChatMessageSearch,
+} from "./searchDocuments";
 
 async function requireChatSessionOwner(
   ctx: MutationCtx,
@@ -70,6 +74,7 @@ export const remove = mutation({
   returns: v.null(),
   handler: async (ctx, { id }) => {
     await requireChatSessionOwner(ctx, id);
+    await deleteSearchDocumentsByChatSession(ctx, id);
     const msgs = await ctx.db
       .query("chatMessages")
       .withIndex("by_chat_session", (q) => q.eq("chatSessionId", id))
@@ -172,9 +177,12 @@ async function insertChatTurn(
       name: string;
     }>;
   },
-): Promise<Id<"chatMessages">> {
+): Promise<{
+  userMessageId: Id<"chatMessages">;
+  assistantMessageId: Id<"chatMessages">;
+}> {
   const now = Date.now();
-  await ctx.db.insert("chatMessages", {
+  const userMessageId = await ctx.db.insert("chatMessages", {
     chatSessionId: args.chatSessionId,
     role: "user",
     content: args.userContent,
@@ -190,7 +198,7 @@ async function insertChatTurn(
     createdAt: now + 1,
   });
   await maybeTitleChatSession(ctx, args.chatSessionId, args.userContent);
-  return assistantMessageId;
+  return { userMessageId, assistantMessageId };
 }
 
 export const startChatTurn = internalMutation({
@@ -206,12 +214,13 @@ export const startChatTurn = internalMutation({
     if (!chatSession || chatSession.userId !== userId) {
       throw new Error("Chat session not found or access denied");
     }
-    const assistantMessageId = await insertChatTurn(ctx, {
+    const { userMessageId, assistantMessageId } = await insertChatTurn(ctx, {
       chatSessionId,
       userContent,
       assistantContent: "",
       mentions,
     });
+    await enqueueChatMessageSearch(ctx, { userId, messageId: userMessageId });
     return { assistantMessageId };
   },
 });
@@ -221,9 +230,10 @@ export const patchChatMessage = internalMutation({
     messageId: v.id("chatMessages"),
     userId: v.id("users"),
     content: v.string(),
+    indexForSearch: v.optional(v.boolean()),
   },
   returns: v.null(),
-  handler: async (ctx, { messageId, userId, content }) => {
+  handler: async (ctx, { messageId, userId, content, indexForSearch }) => {
     const msg = await ctx.db.get(messageId);
     if (!msg || msg.role !== "assistant") {
       throw new Error("Assistant message not found");
@@ -236,6 +246,9 @@ export const patchChatMessage = internalMutation({
       throw new Error("Chat session not found or access denied");
     }
     await ctx.db.patch(messageId, { content });
+    if (indexForSearch) {
+      await enqueueChatMessageSearch(ctx, { userId, messageId });
+    }
     return null;
   },
 });
