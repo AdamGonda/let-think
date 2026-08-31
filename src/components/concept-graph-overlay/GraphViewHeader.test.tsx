@@ -33,6 +33,9 @@ describe("GraphViewHeader session view toggle", () => {
     expect(getByLabelText("Canvas view").getAttribute("aria-checked")).toBe(
       "false",
     );
+    expect(getByLabelText("File view").getAttribute("aria-checked")).toBe(
+      "false",
+    );
     const history = getByLabelText("Session history");
     expect((history as HTMLButtonElement).disabled).toBe(false);
     expect(history.closest(".opacity-0")).toBeNull();
@@ -47,6 +50,19 @@ describe("GraphViewHeader session view toggle", () => {
     fireEvent.click(getByLabelText("Canvas view"));
     expect(onSessionViewChange).toHaveBeenCalledWith("canvas");
 
+    const onEditorOpen = vi.fn();
+    rerender(
+      <GraphViewHeader
+        {...base}
+        sessionView="graph"
+        onSessionViewChange={onSessionViewChange}
+        onEditorOpen={onEditorOpen}
+      />,
+    );
+    fireEvent.click(getByLabelText("File view"));
+    expect(onEditorOpen).toHaveBeenCalled();
+    expect(onSessionViewChange).toHaveBeenCalledTimes(2);
+
     rerender(
       <GraphViewHeader
         {...base}
@@ -59,7 +75,9 @@ describe("GraphViewHeader session view toggle", () => {
     );
     expect(getByLabelText("Session history").closest(".opacity-0")).toBeTruthy();
     expect(queryByLabelText("Previous step")).toBeNull();
-    expect(getByLabelText("Open file")).toBeTruthy();
+    expect(getByLabelText("File view").getAttribute("aria-checked")).toBe(
+      "false",
+    );
 
     rerender(
       <GraphViewHeader
@@ -74,7 +92,9 @@ describe("GraphViewHeader session view toggle", () => {
     expect(queryByLabelText("Eraser")).toBeNull();
     expect(queryByLabelText("Session history")).toBeNull();
     expect(queryByLabelText("Previous step")).toBeNull();
-    expect(getByLabelText("Open file")).toBeTruthy();
+    expect(getByLabelText("File view").getAttribute("aria-checked")).toBe(
+      "false",
+    );
   });
 
   it("shows the file title as a breadcrumb, not a chat switcher", () => {

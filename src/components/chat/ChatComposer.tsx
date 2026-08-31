@@ -86,6 +86,8 @@ export function ChatComposer({
           query: atQuery.query,
           numberedConcepts,
           allowGraphRef,
+          value: input,
+          queryStart: atQuery.start,
         })
       : [];
   const pickerOpen = mentionOptions.length > 0;
@@ -180,6 +182,8 @@ export function ChatComposer({
             query: liveQuery.query,
             numberedConcepts,
             allowGraphRef,
+            value: ta.value,
+            queryStart: liveQuery.start,
           })
         : [];
 

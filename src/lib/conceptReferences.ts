@@ -55,12 +55,33 @@ export function insertAtMentionToken(
   return { value: next, caret: queryStart + inserted.length };
 }
 
+/** Complete `@writing` / `@graph` / `@n` tokens in `value`, skipping the open mention at `excludeStart`. */
+function usedAtReferenceTokens(
+  value: string,
+  excludeStart?: number,
+): Set<string> {
+  const tokens = new Set<string>();
+  const refRegex = new RegExp(AT_REFERENCE_PATTERN, "g");
+  let m: RegExpExecArray | null;
+  while ((m = refRegex.exec(value)) !== null) {
+    if (m.index === excludeStart) continue;
+    tokens.add(m[1]!);
+  }
+  return tokens;
+}
+
 export function atMentionOptions(args: {
   query: string;
   numberedConcepts: NumberedConcept[];
   allowGraphRef: boolean;
+  value?: string;
+  queryStart?: number;
 }): AtMentionOption[] {
   const q = args.query.toLowerCase();
+  const used =
+    args.value === undefined
+      ? new Set<string>()
+      : usedAtReferenceTokens(args.value, args.queryStart);
   const items: AtMentionOption[] = [
     { token: WRITING_REF_TOKEN, label: WRITING_REF_NAME, kind: "writing" },
   ];
@@ -78,8 +99,10 @@ export function atMentionOptions(args: {
       kind: "concept",
     });
   }
-  if (!q) return items;
-  return items.filter(
+  const unused =
+    used.size === 0 ? items : items.filter((item) => !used.has(item.token));
+  if (!q) return unused;
+  return unused.filter(
     (item) =>
       item.token.toLowerCase().startsWith(q) ||
       item.label.toLowerCase().includes(q),

@@ -1,4 +1,4 @@
-import { fireEvent, render } from "@testing-library/react";
+import { cleanup, fireEvent, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ChatComposer } from "./ChatComposer";
 
@@ -32,6 +32,7 @@ function mockComposerLayout() {
 
 describe("ChatComposer chrome", () => {
   afterEach(() => {
+    cleanup();
     vi.restoreAllMocks();
   });
 
@@ -88,6 +89,7 @@ describe("ChatComposer chrome", () => {
 
 describe("ChatComposer @ picker", () => {
   afterEach(() => {
+    cleanup();
     vi.restoreAllMocks();
   });
 
@@ -117,5 +119,17 @@ describe("ChatComposer @ picker", () => {
     fireEvent.keyDown(ta, { key: "Enter" });
     expect(onSubmit).not.toHaveBeenCalled();
     expect(setInput).toHaveBeenCalledWith("@writing ");
+  });
+
+  it("omits Writing from the picker when @writing is already in the draft", () => {
+    const { queryByRole, getByRole } = render(
+      <ChatComposer
+        {...base}
+        input="@writing @"
+        numberedConcepts={[{ id: "n1", name: "One", number: 1 }]}
+      />,
+    );
+    expect(queryByRole("option", { name: /Writing/ })).toBeNull();
+    expect(getByRole("option", { name: /One/ })).toBeTruthy();
   });
 });

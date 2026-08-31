@@ -72,6 +72,27 @@ describe("atQueryAtCaret / atMentionOptions / insertAtMentionToken", () => {
     ).toEqual(["1"]);
   });
 
+  it("hides refs already in the draft, not the open mention at the caret", () => {
+    expect(
+      atMentionOptions({
+        query: "",
+        numberedConcepts: [c1, c2],
+        allowGraphRef: true,
+        value: "@writing @1 @",
+        queryStart: 12,
+      }).map((o) => o.token),
+    ).toEqual(["graph", "2"]);
+    expect(
+      atMentionOptions({
+        query: "writing",
+        numberedConcepts: [],
+        allowGraphRef: false,
+        value: "@writing",
+        queryStart: 0,
+      }).map((o) => o.token),
+    ).toEqual(["writing"]);
+  });
+
   it("replaces the open query with the chosen token", () => {
     expect(insertAtMentionToken("see @w", 4, 6, "writing")).toEqual({
       value: "see @writing ",

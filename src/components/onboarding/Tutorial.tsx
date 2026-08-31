@@ -161,7 +161,7 @@ export function Tutorial({ autoStart = false, onComplete }: TutorialProps) {
         }
 
         const overlayAction = document.querySelector<HTMLButtonElement>(
-          'button[aria-label="Return to concept graph"], button[aria-label="Summarize and return to session"]',
+          '[class*="z-[9999]"] button[aria-label="Graph view"]',
         );
         if (overlayAction) {
           overlayAction.click();

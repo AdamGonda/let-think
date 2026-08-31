@@ -1,18 +1,18 @@
 import { useCallback } from "react";
 import { layout } from "@/config";
-import { Brain } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { MarkdownEditor } from "@/components/editor/MarkdownEditor";
 import { MainColumnWidthHandle } from "@/components/editor/MainColumnWidthHandle";
 import { NoteBreadcrumb } from "@/components/navigation/NoteBreadcrumb";
+import {
+  SessionViewSwitcher,
+  type WorkspaceChromeView,
+} from "@/components/concept-graph-overlay/SessionViewSwitcher";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 type WakeUpOverlayProps = {
   chatLoading: boolean;
   isExitingOverlay: boolean;
   editorOpen: boolean;
-  overlayActionReturnsToGraph: boolean;
-  onOverlayActionClick: () => void;
   editorRevealReady: boolean;
   activeSessionId: Id<"sessions"> | null;
   activeSessionInWorkspace:
@@ -27,6 +27,7 @@ type WakeUpOverlayProps = {
   onNotesChange: (value: string) => void;
   onBreadcrumbProjectsRootClick: () => void;
   onBreadcrumbProjectNameClick: () => void;
+  onChromeViewChange: (view: WorkspaceChromeView) => void;
   mainColumnWidth: number;
   mainColumnWidthMin: number;
   mainColumnWidthMax: number;
@@ -37,8 +38,6 @@ export function WakeUpOverlay({
   chatLoading,
   isExitingOverlay,
   editorOpen,
-  overlayActionReturnsToGraph,
-  onOverlayActionClick,
   editorRevealReady,
   activeSessionId,
   activeSessionInWorkspace,
@@ -47,6 +46,7 @@ export function WakeUpOverlay({
   onNotesChange,
   onBreadcrumbProjectsRootClick,
   onBreadcrumbProjectNameClick,
+  onChromeViewChange,
   mainColumnWidth,
   mainColumnWidthMin,
   mainColumnWidthMax,
@@ -54,8 +54,7 @@ export function WakeUpOverlay({
 }: WakeUpOverlayProps) {
   const showFileNavBreadcrumb =
     editorOpen && !!activeSessionInWorkspace;
-  /** Visible whenever the note overlay is active (breadcrumb loading state is separate). */
-  const showBrainButton = editorOpen && !!activeSessionId;
+  const showViewSwitcher = editorOpen && !!activeSessionId;
   const handleEditorChange = useCallback(
     (value: string | undefined) => {
       onNotesChange(value ?? "");
@@ -76,7 +75,7 @@ export function WakeUpOverlay({
           isExitingOverlay ? "opacity-0" : "opacity-100"
         }`}
       >
-        {showBrainButton || showFileNavBreadcrumb ? (
+        {showViewSwitcher || showFileNavBreadcrumb ? (
           <header className={layout.workspaceTopBarClass}>
             <div className="min-w-0 pr-2">
               {showFileNavBreadcrumb && activeSessionInWorkspace ? (
@@ -93,20 +92,12 @@ export function WakeUpOverlay({
               ) : null}
             </div>
             <div />
-            <div className="flex items-center justify-end gap-2">
-              {showBrainButton ? (
-                <Button
-                  variant="outline"
-                  size="icon-sm"
-                  onClick={onOverlayActionClick}
-                  aria-label={
-                    overlayActionReturnsToGraph
-                      ? "Return to concept graph"
-                      : "Summarize and return to session"
-                  }
-                >
-                  <Brain className="size-5" />
-                </Button>
+            <div className="flex h-7 items-center justify-end">
+              {showViewSwitcher ? (
+                <SessionViewSwitcher
+                  selected="file"
+                  onChange={onChromeViewChange}
+                />
               ) : null}
             </div>
           </header>

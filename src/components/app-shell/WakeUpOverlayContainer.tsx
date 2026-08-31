@@ -7,10 +7,12 @@ import {
   intentBreadcrumbProjectsRootClick,
   intentBreadcrumbSessionClick,
   intentOverlayActionClick,
+  setSessionView,
   setWakeNotes,
 } from "@/lib/appUiCommands";
 import type { MainColumnWidthControls } from "@/hooks/useMainColumnWidth";
 import { WakeUpOverlay } from "../onboarding/WakeUpOverlay";
+import type { WorkspaceChromeView } from "../concept-graph-overlay/SessionViewSwitcher";
 import type { ProjectWithSessions } from "../session-sidebar/workspaceTypes";
 
 const FOCUS_COMPOSER_EVENT = "let-think:focus-composer";
@@ -45,15 +47,21 @@ export function WakeUpOverlayContainer({
     [actor],
   );
 
-  const handleOverlayActionClick = useCallback(() => {
-    const shouldFocusComposer = overlay.overlayActionReturnsToGraph;
-    intentOverlayActionClick(actor);
-    if (shouldFocusComposer) {
-      requestAnimationFrame(() => {
-        window.dispatchEvent(new Event(FOCUS_COMPOSER_EVENT));
-      });
-    }
-  }, [actor, overlay.overlayActionReturnsToGraph]);
+  const handleChromeViewChange = useCallback(
+    (view: WorkspaceChromeView) => {
+      if (view === "file") return;
+      setSessionView(actor, view);
+      const shouldFocusComposer =
+        overlay.overlayActionReturnsToGraph && view !== "canvas";
+      intentOverlayActionClick(actor);
+      if (shouldFocusComposer) {
+        requestAnimationFrame(() => {
+          window.dispatchEvent(new Event(FOCUS_COMPOSER_EVENT));
+        });
+      }
+    },
+    [actor, overlay.overlayActionReturnsToGraph],
+  );
 
   const handleBreadcrumbProjectsRootClick = useCallback(() => {
     intentBreadcrumbProjectsRootClick(actor);
@@ -70,9 +78,8 @@ export function WakeUpOverlayContainer({
       chatLoading={overlay.chatLoading}
       isExitingOverlay={overlay.isExitingOverlay}
       editorOpen={overlay.editorOpen}
-      overlayActionReturnsToGraph={overlay.overlayActionReturnsToGraph}
-      onOverlayActionClick={handleOverlayActionClick}
       editorRevealReady={overlay.editorRevealReady}
+      onChromeViewChange={handleChromeViewChange}
       activeSessionId={overlay.activeSessionId}
       activeSessionInWorkspace={activeFileInWorkspace}
       notes={overlay.notes}
