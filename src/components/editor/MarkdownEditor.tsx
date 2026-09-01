@@ -1,55 +1,15 @@
-import { memo, useRef, useEffect } from "react";
-import MDEditor from "@uiw/react-md-editor";
-import "@uiw/react-md-editor/markdown-editor.css";
+import { memo, useEffect, useRef } from "react";
+import {
+  EditorSelection,
+  EditorState,
+  Compartment,
+  Transaction,
+} from "@codemirror/state";
+import { EditorView, placeholder as cmPlaceholder } from "@codemirror/view";
 import { timings } from "@/config";
+import { scrollViewCaretToEyeLevel } from "./editorCaretScroll";
 import { editorScrollThumbLayout } from "./editorScrollThumbLayout";
-
-/** Pixel offset of caret from top of content (for scroll-into-view) */
-function getCaretOffset(textarea: HTMLTextAreaElement): number {
-  const style = getComputedStyle(textarea);
-  const mirror = document.createElement("div");
-  Object.assign(mirror.style, {
-    position: "absolute",
-    left: "-9999px",
-    top: "0",
-    width: `${textarea.offsetWidth}px`,
-    padding: style.padding,
-    font: style.font,
-    fontSize: style.fontSize,
-    lineHeight: style.lineHeight,
-    fontFamily: style.fontFamily,
-    whiteSpace: style.whiteSpace,
-    wordWrap: style.wordWrap,
-    overflowWrap: style.overflowWrap,
-    wordBreak: style.wordBreak,
-    boxSizing: style.boxSizing,
-  });
-  const text = textarea.value.substring(0, textarea.selectionStart);
-  const span = document.createElement("span");
-  span.innerHTML = "&#8203;"; /* zero-width space */
-  mirror.textContent = text;
-  mirror.appendChild(span);
-  document.body.appendChild(mirror);
-  const offset = span.offsetTop;
-  document.body.removeChild(mirror);
-  return offset;
-}
-
-function scrollCaretToEyeLevel(
-  textarea: HTMLTextAreaElement,
-  scrollArea: HTMLElement
-) {
-  const caretOffset = getCaretOffset(textarea);
-  const visibleHeight = scrollArea.clientHeight;
-  const scrollHeight = scrollArea.scrollHeight;
-  /* Keep caret at ~1/3 from top (eye level) */
-  const targetScrollTop = caretOffset - visibleHeight / 3;
-  const clamped = Math.max(
-    0,
-    Math.min(targetScrollTop, scrollHeight - visibleHeight)
-  );
-  scrollArea.scrollTop = clamped;
-}
+import { markdownEditorExtensions } from "./markdownEditorExtensions";
 
 interface MarkdownEditorProps {
   value: string;
@@ -91,138 +51,54 @@ function MarkdownEditorComponent({
 }: MarkdownEditorProps) {
   const isFocused = variant === "focused";
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const parentRef = useRef<HTMLDivElement>(null);
   const scrollThumbRef = useRef<HTMLDivElement>(null);
+  const viewRef = useRef<EditorView | null>(null);
+  const onChangeRef = useRef(onChange);
+  onChangeRef.current = onChange;
+  const initialDocRef = useRef(value);
+  const placeholderCompartmentRef = useRef(new Compartment());
   const endCursorAppliedRef = useRef(false);
   /** Last programmatic range we applied — keyed by start/end only (not value length). */
   const appliedSelectionRangeKeyRef = useRef<string | null>(null);
 
-  /* Replace @uiw autoFocusEnd (broken with large bottom padding) for non-empty notes */
   useEffect(() => {
-    if (!isFocused || !autoFocusEnd) return;
-    if (selectionRange) return;
-    if (value.length === 0) {
-      endCursorAppliedRef.current = false;
-      return;
-    }
-    if (endCursorAppliedRef.current) return;
+    const parent = parentRef.current;
+    if (!parent) return;
 
-    const tryApply = () => {
-      const input = wrapperRef.current?.querySelector(
-        ".w-md-editor-text-input",
-      ) as HTMLTextAreaElement | null;
-      const scrollArea = wrapperRef.current?.querySelector(
-        ".w-md-editor-area",
-      ) as HTMLElement | null;
-      if (!input || !scrollArea || input.value.length === 0) return false;
-      endCursorAppliedRef.current = true;
-      const len = input.value.length;
-      input.focus();
-      input.setSelectionRange(len, len);
-      scrollCaretToEyeLevel(input, scrollArea);
-      return true;
-    };
-
-    const id = requestAnimationFrame(() => {
-      if (tryApply()) return;
-      requestAnimationFrame(() => {
-        tryApply();
-      });
+    const placeholderCompartment = placeholderCompartmentRef.current;
+    const view = new EditorView({
+      parent,
+      state: EditorState.create({
+        doc: initialDocRef.current,
+        extensions: [
+          ...markdownEditorExtensions(
+            placeholderCompartment.of(cmPlaceholder(placeholder)),
+          ),
+          EditorView.updateListener.of((update) => {
+            if (update.docChanged) {
+              onChangeRef.current(update.state.doc.toString());
+            }
+          }),
+        ],
+      }),
     });
-    return () => cancelAnimationFrame(id);
-  }, [isFocused, autoFocusEnd, value, selectionRange]);
-
-  useEffect(() => {
-    if (!selectionRange) {
-      appliedSelectionRangeKeyRef.current = null;
-      return;
-    }
-    const rangeKey = `${selectionRange.start}:${selectionRange.end}`;
-    if (appliedSelectionRangeKeyRef.current === rangeKey) return;
-
-    const applySelection = () => {
-      const textarea = wrapperRef.current?.querySelector(
-        ".w-md-editor-text-input",
-      ) as HTMLTextAreaElement | null;
-      const scrollArea = wrapperRef.current?.querySelector(
-        ".w-md-editor-area",
-      ) as HTMLElement | null;
-      if (!textarea) return false;
-      const start = Math.max(0, Math.min(selectionRange.start, textarea.value.length));
-      const end = Math.max(start, Math.min(selectionRange.end, textarea.value.length));
-      textarea.focus();
-      textarea.setSelectionRange(start, end);
-      if (scrollArea) {
-        scrollCaretToEyeLevel(textarea, scrollArea);
-      }
-      appliedSelectionRangeKeyRef.current = rangeKey;
-      return true;
-    };
-    const first = requestAnimationFrame(() => {
-      if (applySelection()) return;
-      requestAnimationFrame(() => {
-        applySelection();
-      });
-    });
-    return () => cancelAnimationFrame(first);
-  }, [selectionRange]);
-
-  useEffect(() => {
-    if (!autoFocus) return;
-    const focusInput = () => {
-      const input = wrapperRef.current?.querySelector(
-        "textarea, .w-md-editor-text-input"
-      ) as HTMLTextAreaElement | null;
-      input?.focus();
-    };
-    focusInput();
-    // MDEditor may render its textarea asynchronously
-    const id = requestAnimationFrame(() => focusInput());
-    return () => cancelAnimationFrame(id);
-  }, [autoFocus]);
-
-  /* Auto-scroll to keep cursor at eye level when content changes (e.g. Enter, typing) */
-  useEffect(() => {
-    if (!isFocused) return;
-    const id = requestAnimationFrame(() => {
-      const textarea = wrapperRef.current?.querySelector(
-        ".w-md-editor-text-input"
-      ) as HTMLTextAreaElement | null;
-      const scrollArea = wrapperRef.current?.querySelector(
-        ".w-md-editor-area"
-      ) as HTMLElement | null;
-      if (!textarea || !scrollArea) return;
-      /* Empty / whitespace-only: stay pinned to top. @uiw/react-md-editor's autoFocusEnd
-         sets scrollTop = scrollHeight, which with our large "scroll past end" padding
-         jumps the viewport into blank space — avoid that and reset here too. */
-      if (value.trim() === "") {
-        scrollArea.scrollTop = 0;
-        return;
-      }
-      if (document.activeElement === textarea) {
-        scrollCaretToEyeLevel(textarea, scrollArea);
-      }
-    });
-    return () => cancelAnimationFrame(id);
-  }, [value, isFocused]);
-
-  /* Overlay thumb: native bars stay hidden; this fades in on scroll and out after idle. */
-  useEffect(() => {
-    if (!isFocused) return;
-    const wrapper = wrapperRef.current;
-    const thumb = scrollThumbRef.current;
-    if (!wrapper || !thumb) return;
+    viewRef.current = view;
 
     let hideTimer = 0;
+    const thumb = scrollThumbRef.current;
+    const scroller = view.scrollDOM;
     const hide = () => {
+      if (!thumb) return;
       thumb.style.transition = "opacity 0.5s ease";
       thumb.style.opacity = "0";
     };
-    const onScroll = (event: Event) => {
-      const el = event.currentTarget as HTMLElement;
+    const onScroll = () => {
+      if (!thumb) return;
       const layout = editorScrollThumbLayout(
-        el.clientHeight,
-        el.scrollHeight,
-        el.scrollTop,
+        scroller.clientHeight,
+        scroller.scrollHeight,
+        scroller.scrollTop,
       );
       if (!layout) {
         hide();
@@ -235,40 +111,97 @@ function MarkdownEditorComponent({
       window.clearTimeout(hideTimer);
       hideTimer = window.setTimeout(hide, timings.editorScrollbarIdleMs);
     };
+    if (isFocused && thumb) {
+      scroller.addEventListener("scroll", onScroll, { passive: true });
+    }
+    if (autoFocus) view.focus();
 
-    const scrollers: HTMLElement[] = [];
-    const bind = () => {
-      const area = wrapper.querySelector(".w-md-editor-area");
-      const content = wrapper.querySelector(".w-md-editor-content");
-      for (const node of [area, content]) {
-        if (!(node instanceof HTMLElement)) continue;
-        if (scrollers.includes(node)) continue;
-        node.addEventListener("scroll", onScroll, { passive: true });
-        scrollers.push(node);
-      }
-      return scrollers.length > 0;
-    };
-
-    const first = requestAnimationFrame(() => {
-      if (bind()) return;
-      requestAnimationFrame(() => {
-        bind();
-      });
-    });
     return () => {
-      cancelAnimationFrame(first);
       window.clearTimeout(hideTimer);
-      for (const el of scrollers) {
-        el.removeEventListener("scroll", onScroll);
-      }
+      scroller.removeEventListener("scroll", onScroll);
+      view.destroy();
+      viewRef.current = null;
     };
-  }, [isFocused]);
+    // ponytail: EditorView is created once; placeholder updates via compartment.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only
+  }, []);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    view.dispatch({
+      effects: placeholderCompartmentRef.current.reconfigure(
+        cmPlaceholder(placeholder),
+      ),
+    });
+  }, [placeholder]);
+
+  useEffect(() => {
+    const view = viewRef.current;
+    if (!view) return;
+    const current = view.state.doc.toString();
+    if (current === value) return;
+    view.dispatch({
+      changes: { from: 0, to: current.length, insert: value },
+      annotations: [Transaction.addToHistory.of(false)],
+    });
+  }, [value]);
+
+  useEffect(() => {
+    if (!autoFocusEnd) return;
+    if (selectionRange) return;
+    if (value.length === 0) {
+      endCursorAppliedRef.current = false;
+      return;
+    }
+    if (endCursorAppliedRef.current) return;
+    const view = viewRef.current;
+    if (!view || view.state.doc.length === 0) return;
+    endCursorAppliedRef.current = true;
+    const len = view.state.doc.length;
+    view.focus();
+    view.dispatch({ selection: EditorSelection.cursor(len) });
+    if (isFocused) scrollViewCaretToEyeLevel(view);
+  }, [isFocused, autoFocusEnd, value, selectionRange]);
+
+  useEffect(() => {
+    if (!selectionRange) {
+      appliedSelectionRangeKeyRef.current = null;
+      return;
+    }
+    const rangeKey = `${selectionRange.start}:${selectionRange.end}`;
+    if (appliedSelectionRangeKeyRef.current === rangeKey) return;
+    const view = viewRef.current;
+    if (!view) return;
+    const len = view.state.doc.length;
+    const start = Math.max(0, Math.min(selectionRange.start, len));
+    const end = Math.max(start, Math.min(selectionRange.end, len));
+    view.focus();
+    view.dispatch({
+      selection:
+        start === end
+          ? EditorSelection.cursor(start)
+          : EditorSelection.range(start, end),
+    });
+    if (isFocused) scrollViewCaretToEyeLevel(view);
+    appliedSelectionRangeKeyRef.current = rangeKey;
+  }, [selectionRange, isFocused]);
+
+  useEffect(() => {
+    if (!isFocused) return;
+    const view = viewRef.current;
+    if (!view) return;
+    if (value.trim() === "") {
+      view.scrollDOM.scrollTop = 0;
+      return;
+    }
+    if (view.hasFocus) {
+      scrollViewCaretToEyeLevel(view);
+    }
+  }, [value, isFocused]);
 
   const handleWrapperClick = () => {
-    const input = wrapperRef.current?.querySelector(
-      "textarea, .w-md-editor-text-input"
-    ) as HTMLTextAreaElement | null;
-    input?.focus();
+    viewRef.current?.focus();
   };
 
   return (
@@ -281,20 +214,10 @@ function MarkdownEditorComponent({
           : "rounded-lg border border-zinc-300 dark:border-zinc-700 focus-within:border-white dark:focus-within:border-zinc-800 transition-colors"
       } ${className}`}
     >
-      <MDEditor
-        value={value}
-        onChange={onChange}
-        preview="edit"
-        hideToolbar={true}
-        visibleDragbar={false}
-        height={isFocused ? "100%" : minHeight}
-        data-color-mode={dark ? "dark" : "light"}
-        /* Library sets textareaWarp.scrollTop = scrollHeight — breaks with our huge
-           bottom padding (scroll past end). We handle caret + scroll in effects above. */
-        autoFocusEnd={false}
-        textareaProps={{
-          placeholder,
-        }}
+      <div
+        ref={parentRef}
+        className={isFocused ? "flex-1 min-h-0 flex flex-col" : undefined}
+        style={isFocused ? undefined : { minHeight, height: minHeight }}
       />
       {isFocused ? (
         <div
