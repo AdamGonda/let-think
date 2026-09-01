@@ -12,9 +12,10 @@ afterEach(cleanup);
 
 describe("CanvasToolbar", () => {
   it("defaults to pen and selects other tools", () => {
-    const { getByLabelText } = render(<Harness />);
+    const { getByLabelText, queryByLabelText } = render(<Harness />);
     expect(getByLabelText("Pen").getAttribute("aria-checked")).toBe("true");
     expect(getByLabelText("Eraser").getAttribute("aria-checked")).toBe("false");
+    expect(queryByLabelText("Line")).toBeNull();
 
     fireEvent.click(getByLabelText("Eraser"));
     expect(getByLabelText("Eraser").getAttribute("aria-checked")).toBe("true");
@@ -30,9 +31,6 @@ describe("CanvasToolbar", () => {
 
     fireEvent.click(getByLabelText("Ellipse"));
     expect(getByLabelText("Ellipse").getAttribute("aria-checked")).toBe("true");
-
-    fireEvent.click(getByLabelText("Line"));
-    expect(getByLabelText("Line").getAttribute("aria-checked")).toBe("true");
     expect(getByLabelText("Pen").getAttribute("aria-checked")).toBe("false");
   });
 });
