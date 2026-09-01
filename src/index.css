@@ -412,7 +412,7 @@ body {
 .md-editor-focused .cm-scroller {
   font-size: 22px;
   line-height: 1.6;
-  font-family: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  font-family: var(--font-sans);
   -ms-overflow-style: none;
   scrollbar-width: none;
   /* Soften clipped lines at the viewport edges instead of hard cutoffs. */
@@ -444,26 +444,88 @@ body {
   background-color: transparent;
   border: none;
   padding-left: 0.75rem;
+  font-size: 22px;
+  line-height: 1.6;
 }
 .md-editor-focused .cm-foldGutter {
-  width: 1.1rem;
+  width: 1.35em;
 }
-.md-editor-focused .cm-foldMarker-open,
-.md-editor-focused .cm-foldMarker-closed {
-  display: inline-block;
-  cursor: pointer;
-  color: #a1a1aa;
-  font-size: 14px;
+.md-editor-focused .cm-foldGutter .cm-gutterElement:has(.cm-foldMarker) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  box-sizing: border-box;
+}
+.md-editor-focused .cm-foldMarker {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: inherit;
   line-height: 1;
+  width: 1.15em;
+  height: 1.15em;
+  flex-shrink: 0;
+  padding: 0;
+  margin: 0;
+  border: 1.5px solid rgb(161 161 170 / 0.4);
+  border-radius: 0.375rem;
+  background: transparent;
+  color: #a1a1aa;
+  cursor: pointer;
+  appearance: none;
+  box-sizing: border-box;
+  transform: translateY(-0.08em);
+}
+.md-editor-focused .cm-foldMarker::before,
+.md-editor-focused .cm-foldMarker::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: currentColor;
+  border-radius: 1px;
+}
+.md-editor-focused .cm-foldMarker::before {
+  width: 0.55em;
+  height: 2.5px;
+}
+.md-editor-focused .cm-foldMarker::after {
+  width: 2.5px;
+  height: 0.55em;
+}
+.md-editor-focused .cm-foldMarker-open::after {
+  content: none;
 }
 .md-editor-focused .cm-foldMarker-open {
   opacity: 0;
+  border-color: transparent;
 }
-.md-editor-focused .cm-gutters:hover .cm-foldMarker-open {
-  opacity: 0.75;
+.md-editor-focused .cm-gutters:hover .cm-foldMarker-open,
+.md-editor-focused .cm-activeLineGutter .cm-foldMarker-open {
+  opacity: 0.9;
+  border-color: rgb(161 161 170 / 0.45);
 }
 .md-editor-focused .cm-foldMarker-closed {
-  opacity: 0.85;
+  opacity: 1;
+  background: #a1a1aa;
+  border-color: #a1a1aa;
+  color: #18181b;
+}
+.md-editor-focused .cm-foldMarker-closed:hover {
+  background: #d4d4d8;
+  border-color: #d4d4d8;
+}
+.md-editor-focused:not(.md-editor-dark) .cm-foldMarker-closed {
+  background: #d4d4d8;
+  border-color: #a1a1aa;
+  color: #18181b;
+}
+.md-editor-focused:not(.md-editor-dark) .cm-foldMarker-closed:hover {
+  background: #e4e4e7;
+  border-color: #a1a1aa;
 }
 .md-editor-focused .cm-foldPlaceholder {
   background: transparent;
