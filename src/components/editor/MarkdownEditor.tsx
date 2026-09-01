@@ -9,6 +9,12 @@ import { EditorView, placeholder as cmPlaceholder } from "@codemirror/view";
 import { timings } from "@/config";
 import { scrollViewCaretToEyeLevel } from "./editorCaretScroll";
 import { editorScrollThumbLayout } from "./editorScrollThumbLayout";
+import {
+  EDITOR_FOLD_ALL_HEADINGS_EVENT,
+  EDITOR_UNFOLD_ALL_EVENT,
+  foldAllHeadingSections,
+  unfoldAllSections,
+} from "./headingFold";
 import { markdownEditorExtensions } from "./markdownEditorExtensions";
 
 interface MarkdownEditorProps {
@@ -124,6 +130,23 @@ function MarkdownEditorComponent({
     };
     // ponytail: EditorView is created once; placeholder updates via compartment.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only
+  }, []);
+
+  useEffect(() => {
+    const onFoldAll = () => {
+      const view = viewRef.current;
+      if (view) foldAllHeadingSections(view);
+    };
+    const onUnfoldAll = () => {
+      const view = viewRef.current;
+      if (view) unfoldAllSections(view);
+    };
+    window.addEventListener(EDITOR_FOLD_ALL_HEADINGS_EVENT, onFoldAll);
+    window.addEventListener(EDITOR_UNFOLD_ALL_EVENT, onUnfoldAll);
+    return () => {
+      window.removeEventListener(EDITOR_FOLD_ALL_HEADINGS_EVENT, onFoldAll);
+      window.removeEventListener(EDITOR_UNFOLD_ALL_EVENT, onUnfoldAll);
+    };
   }, []);
 
   useEffect(() => {

@@ -12,6 +12,7 @@ import { getTutorialCompleted } from "@/lib/tutorialStorage";
 import { Toaster } from "../ui/sonner";
 import { WakeUpOverlayContainer } from "./WakeUpOverlayContainer";
 import { WorkspaceMainColumn } from "./WorkspaceMainColumn";
+import { CommandPalette } from "../command-palette/CommandPalette";
 import { AppShell } from "./AppShell";
 
 type AppContentBodyProps = {
@@ -43,6 +44,7 @@ export function AppContentBody({
       tutorial={<Tutorial autoStart={!getTutorialCompleted()} />}
       mainInert={!!displayWakeUpLayer}
       toaster={<Toaster theme="dark" />}
+      commandPalette={<CommandPalette />}
     >
       <WorkspaceMainColumn
         workspace={workspace}

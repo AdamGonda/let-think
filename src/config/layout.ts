@@ -3,6 +3,8 @@
  */
 export const layout = {
   wakeUpOverlayZIndexClass: "z-[9999]",
+  /** Above the note overlay so Cmd+Shift+P still reaches the palette. */
+  commandPaletteZIndexClass: "z-[10050]",
   /** Backed by a CSS var (set by useMainColumnWidth) so the writing column stays user-adjustable. */
   mainColumnMaxWidthClass: "max-w-[var(--main-column-width)]",
   mainColumnWidthCssVar: "--main-column-width",

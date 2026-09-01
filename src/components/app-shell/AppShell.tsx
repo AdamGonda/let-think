@@ -7,6 +7,7 @@ type AppShellProps = {
   mainInert: boolean;
   children: ReactNode;
   toaster: ReactNode;
+  commandPalette: ReactNode;
 };
 
 export function AppShell({
@@ -15,6 +16,7 @@ export function AppShell({
   mainInert,
   children,
   toaster,
+  commandPalette,
 }: AppShellProps) {
   return (
     <div className="flex h-screen bg-background">
@@ -24,6 +26,7 @@ export function AppShell({
         {children}
       </div>
       {toaster}
+      {commandPalette}
     </div>
   );
 }
