@@ -400,26 +400,19 @@ body {
   outline: none !important;
   box-shadow: none !important;
 }
-.md-editor-focused .w-md-editor {
+.md-editor-focused .cm-editor {
   flex: 1;
   min-height: 0;
+  height: 100%;
   background-color: transparent !important;
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
 }
-.md-editor-focused .w-md-editor-content {
-  flex: 1;
-  min-height: 0;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.md-editor-focused .w-md-editor-content::-webkit-scrollbar {
-  display: none;
-}
-.md-editor-focused .w-md-editor-area {
-  flex: 1;
-  min-height: 0;
+.md-editor-focused .cm-scroller {
+  font-size: 22px;
+  line-height: 1.6;
+  font-family: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
   -ms-overflow-style: none;
   scrollbar-width: none;
   /* Soften clipped lines at the viewport edges instead of hard cutoffs. */
@@ -438,8 +431,46 @@ body {
     transparent 100%
   );
 }
-.md-editor-focused .w-md-editor-area::-webkit-scrollbar {
+.md-editor-focused .cm-scroller::-webkit-scrollbar {
   display: none;
+}
+.md-editor-focused .cm-content {
+  padding-top: 1.5rem;
+  padding-right: 2rem;
+  padding-bottom: calc(1.5rem + 25em);
+  padding-left: 0.5rem;
+}
+.md-editor-focused .cm-gutters {
+  background-color: transparent;
+  border: none;
+  padding-left: 0.75rem;
+}
+.md-editor-focused .cm-foldGutter {
+  width: 1.1rem;
+}
+.md-editor-focused .cm-foldMarker-open,
+.md-editor-focused .cm-foldMarker-closed {
+  display: inline-block;
+  cursor: pointer;
+  color: #a1a1aa;
+  font-size: 14px;
+  line-height: 1;
+}
+.md-editor-focused .cm-foldMarker-open {
+  opacity: 0;
+}
+.md-editor-focused .cm-gutters:hover .cm-foldMarker-open {
+  opacity: 0.75;
+}
+.md-editor-focused .cm-foldMarker-closed {
+  opacity: 0.85;
+}
+.md-editor-focused .cm-foldPlaceholder {
+  background: transparent;
+  border: none;
+  color: #71717a;
+  margin-left: 0.35rem;
+  padding: 0 0.2rem;
 }
 
 /* Pair with .editor-scroll-thumb: hide the native bar so only the overlay thumb shows. */
@@ -463,60 +494,41 @@ body {
   pointer-events: none;
   z-index: 6;
 }
-/* Padding only on container; text-input uses padding:inherit so cursor aligns with text */
-/* Extra bottom padding = scroll past end (like VS Code) so cursor isn't stuck at viewport bottom */
-.md-editor-focused .w-md-editor-text {
-  font-size: 22px !important;
-  line-height: 1.6 !important;
-  padding: 1.5rem 2rem !important;
-  padding-bottom: calc(1.5rem + 25em) !important; /* scroll past end */
-  font-family: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
-}
-.md-editor-focused .w-md-editor-text-pre > code {
-  font-size: 22px !important;
-  line-height: 1.6 !important;
-  font-family: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
-}
-.md-editor-focused .w-md-editor-text-input {
-  font-size: 22px !important;
-  line-height: 1.6 !important;
-  font-family: ui-monospace, "SF Mono", "Cascadia Mono", "JetBrains Mono", Menlo, Consolas, monospace;
-  /* Do NOT override padding - keep inherit so cursor aligns with visible text */
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-.md-editor-focused .w-md-editor-text-input:focus,
-.md-editor-focused .w-md-editor-text-input:focus-visible {
-  border: none !important;
-  outline: none !important;
-  box-shadow: none !important;
-}
-.md-editor-focused .w-md-editor-area,
-.md-editor-focused .w-md-editor-content {
+.md-editor-focused .cm-editor,
+.md-editor-focused .cm-scroller,
+.md-editor-focused .cm-content {
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
 }
 /* Light theme for focused editor */
-.md-editor-focused:not(.md-editor-dark) .w-md-editor {
+.md-editor-focused:not(.md-editor-dark) .cm-editor {
   background-color: #fafafa !important;
 }
-.md-editor-focused:not(.md-editor-dark) .w-md-editor-text,
-.md-editor-focused:not(.md-editor-dark) .w-md-editor-text-input {
-  color: #333 !important;
+.md-editor-focused:not(.md-editor-dark) .cm-content {
+  color: #333;
+  caret-color: #333;
 }
 /* Dark theme for focused editor - matches overlay bg */
-.md-editor-focused.md-editor-dark .w-md-editor {
+.md-editor-focused.md-editor-dark .cm-editor {
   background-color: transparent !important;
 }
-.md-editor-focused.md-editor-dark .w-md-editor-text,
-.md-editor-focused.md-editor-dark .w-md-editor-text-input {
-  color: #d4d4d4 !important;
+.md-editor-focused.md-editor-dark .cm-content {
+  color: #d4d4d4;
+  caret-color: #d4d4d4;
 }
-.md-editor-focused.md-editor-dark .w-md-editor-text-input::placeholder {
-  color: #9ca3af !important;
-  opacity: 0.9 !important;
+.md-editor-focused.md-editor-dark .cm-cursor,
+.md-editor-focused.md-editor-dark .cm-dropCursor {
+  border-left-color: #d4d4d4;
+}
+.md-editor-focused.md-editor-dark .cm-placeholder {
+  color: #9ca3af;
+  opacity: 0.9;
+}
+.md-editor-focused.md-editor-dark .cm-editor.cm-focused .cm-selectionBackground,
+.md-editor-focused.md-editor-dark .cm-selectionBackground,
+.md-editor-focused.md-editor-dark .cm-content ::selection {
+  background: rgb(255 255 255 / 0.15) !important;
 }
 
 @theme inline {
