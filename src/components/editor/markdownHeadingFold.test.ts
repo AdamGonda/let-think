@@ -52,4 +52,16 @@ describe("markdown heading fold", () => {
     const state = stateFor("# Empty\n# Next\nbody");
     expect(foldOnLine(state, 1)).toBeNull();
   });
+
+  it("does not fold ordinary paragraph lines under a heading", () => {
+    const doc = [
+      "# Foundations",
+      "Architecture sits on Convex.",
+      "Infrastructure is boring on purpose.",
+    ].join("\n");
+    const state = stateFor(doc);
+    expect(foldOnLine(state, 2)).toBeNull();
+    expect(foldOnLine(state, 3)).toBeNull();
+    expect(foldOnLine(state, 1)).not.toBeNull();
+  });
 });

@@ -4,7 +4,7 @@ import {
   historyKeymap,
 } from "@codemirror/commands";
 import { markdown } from "@codemirror/lang-markdown";
-import { foldGutter, foldKeymap } from "@codemirror/language";
+import { foldGutter, foldKeymap, foldNodeProp } from "@codemirror/language";
 import type { Extension } from "@codemirror/state";
 import {
   EditorView,
@@ -16,6 +16,17 @@ export const markdownEditorLanguage = markdown({
   addKeymap: false,
   completeHTMLTags: false,
   pasteURLAsLink: false,
+  // ponytail: lang-markdown also folds multi-line Paragraph nodes; writers
+  // treat those as body text. Heading (and code/quote) folds stay.
+  extensions: [
+    {
+      props: [
+        foldNodeProp.add({
+          Paragraph: () => null,
+        }),
+      ],
+    },
+  ],
 });
 
 function foldGutterExtension(): Extension {
