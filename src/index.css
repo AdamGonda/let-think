@@ -588,9 +588,12 @@ body {
   opacity: 0.9;
 }
 .md-editor-focused.md-editor-dark .cm-editor.cm-focused .cm-selectionBackground,
-.md-editor-focused.md-editor-dark .cm-selectionBackground,
-.md-editor-focused.md-editor-dark .cm-content ::selection {
+.md-editor-focused.md-editor-dark .cm-selectionBackground {
   background: rgb(255 255 255 / 0.15) !important;
+}
+.md-editor-focused .cm-line::selection,
+.md-editor-focused .cm-line ::selection {
+  background: transparent !important;
 }
 
 @theme inline {
