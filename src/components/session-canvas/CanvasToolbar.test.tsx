@@ -16,6 +16,8 @@ describe("CanvasToolbar", () => {
     expect(getByLabelText("Pen").getAttribute("aria-checked")).toBe("true");
     expect(getByLabelText("Eraser").getAttribute("aria-checked")).toBe("false");
     expect(queryByLabelText("Line")).toBeNull();
+    expect(queryByLabelText("Rectangle")).toBeNull();
+    expect(queryByLabelText("Ellipse")).toBeNull();
 
     fireEvent.click(getByLabelText("Eraser"));
     expect(getByLabelText("Eraser").getAttribute("aria-checked")).toBe("true");
@@ -23,14 +25,23 @@ describe("CanvasToolbar", () => {
 
     fireEvent.click(getByLabelText("Text"));
     expect(getByLabelText("Text").getAttribute("aria-checked")).toBe("true");
-
-    fireEvent.click(getByLabelText("Rectangle"));
-    expect(getByLabelText("Rectangle").getAttribute("aria-checked")).toBe(
-      "true",
-    );
-
-    fireEvent.click(getByLabelText("Ellipse"));
-    expect(getByLabelText("Ellipse").getAttribute("aria-checked")).toBe("true");
     expect(getByLabelText("Pen").getAttribute("aria-checked")).toBe("false");
+  });
+
+  it("keeps each hover label on its own button", () => {
+    const { getByLabelText } = render(<Harness />);
+    const pen = getByLabelText("Pen");
+    fireEvent.mouseEnter(pen);
+    expect(pen.querySelector("[role='tooltip']")?.textContent).toBe("Pen");
+    expect(pen.querySelector("[role='tooltip']")?.className).toContain(
+      "block",
+    );
+    const text = getByLabelText("Text");
+    fireEvent.mouseEnter(text);
+    expect(text.querySelector("[role='tooltip']")?.textContent).toBe("Text");
+    expect(pen.querySelector("[role='tooltip']")?.className).toContain(
+      "hidden",
+    );
+    expect(pen.contains(text.querySelector("[role='tooltip']"))).toBe(false);
   });
 });

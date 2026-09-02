@@ -13,6 +13,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
 import { maybeTitleFileFromFirstGraphMessage } from "./files";
 import { syncIdeasForSession } from "./searchDocuments";
+import { canvasStrokeValue, canvasViewportValue } from "./schema";
 import { imageUrlsForIds } from "./fileStorage";
 import { IMAGE_PROMPT_MAX } from "./constants";
 
@@ -190,6 +191,54 @@ export const getConceptGraph = query({
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
     return loadConceptGraphForSession(ctx, sessionId, userId);
+  },
+});
+
+const canvasDocument = v.object({
+  strokes: v.array(canvasStrokeValue),
+  viewport: canvasViewportValue,
+});
+
+export const getCanvas = query({
+  args: { sessionId: v.id("sessions") },
+  returns: v.union(canvasDocument, v.null()),
+  handler: async (ctx, { sessionId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    const session = await ctx.db.get(sessionId);
+    if (!session || session.userId !== userId) return null;
+    const row = await ctx.db
+      .query("sessionCanvases")
+      .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+      .first();
+    if (!row) return null;
+    return { strokes: row.strokes, viewport: row.viewport };
+  },
+});
+
+export const updateCanvas = mutation({
+  args: {
+    sessionId: v.id("sessions"),
+    strokes: v.array(canvasStrokeValue),
+    viewport: canvasViewportValue,
+  },
+  returns: v.null(),
+  handler: async (ctx, { sessionId, strokes, viewport }) => {
+    await requireSessionOwner(ctx, sessionId);
+    const existing = await ctx.db
+      .query("sessionCanvases")
+      .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+      .first();
+    if (existing) {
+      await ctx.db.patch(existing._id, { strokes, viewport });
+    } else {
+      await ctx.db.insert("sessionCanvases", {
+        sessionId,
+        strokes,
+        viewport,
+      });
+    }
+    return null;
   },
 });
 

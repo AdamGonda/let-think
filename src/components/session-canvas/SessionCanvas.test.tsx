@@ -1,8 +1,20 @@
 import { render, fireEvent, cleanup } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { SessionCanvas } from "./SessionCanvas";
+import type { Id } from "../../../convex/_generated/dataModel";
 
-afterEach(cleanup);
+const updateCanvas = vi.fn();
+
+vi.mock("convex/react", () => ({
+  useQuery: () => null,
+  useMutation: () => updateCanvas,
+}));
+
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+  updateCanvas.mockClear();
+});
 
 describe("SessionCanvas toolbar", () => {
   it("hosts the canvas tools overlay with pen selected", () => {
@@ -14,10 +26,20 @@ describe("SessionCanvas toolbar", () => {
     expect(getByLabelText("Pen").getAttribute("aria-checked")).toBe("true");
     expect(getByLabelText("Eraser").getAttribute("aria-checked")).toBe("false");
     expect(getByLabelText("Text")).toBeTruthy();
-    expect(getByLabelText("Rectangle")).toBeTruthy();
-    expect(getByLabelText("Ellipse")).toBeTruthy();
+    expect(getByLabelText("Pen size")).toBeTruthy();
     expect(queryByLabelText("Line")).toBeNull();
+    expect(queryByLabelText("Rectangle")).toBeNull();
+    expect(queryByLabelText("Ellipse")).toBeNull();
     expect(queryByTestId("erase-radius")).toBeNull();
+  });
+
+  it("hides the ink size slider while the text tool is selected", () => {
+    const { getByLabelText, queryByLabelText } = render(<SessionCanvas active />);
+    fireEvent.click(getByLabelText("Text"));
+    expect(queryByLabelText("Pen size")).toBeNull();
+    expect(queryByLabelText("Eraser size")).toBeNull();
+    expect(queryByLabelText("Text size")).toBeNull();
+    expect(getByLabelText("Ink color")).toBeTruthy();
   });
 
   it("shows a 40px radius ring while the eraser is selected", () => {
@@ -30,6 +52,19 @@ describe("SessionCanvas toolbar", () => {
     const ring = getByTestId("erase-radius");
     expect(ring.style.width).toBe("40px");
     expect(ring.style.height).toBe("40px");
+  });
+
+  it("updates the erase ring from the size slider", () => {
+    const { getByLabelText, getByTestId } = render(<SessionCanvas active />);
+    fireEvent.click(getByLabelText("Eraser"));
+    fireEvent.change(getByLabelText("Eraser size"), { target: { value: "80" } });
+    fireEvent.pointerMove(getByLabelText("Drawing canvas"), {
+      clientX: 80,
+      clientY: 40,
+    });
+    const ring = getByTestId("erase-radius");
+    expect(ring.style.width).toBe("80px");
+    expect(ring.style.height).toBe("80px");
   });
 
   it("pinch-zooms the camera so the eraser ring scales", () => {
@@ -63,6 +98,99 @@ describe("SessionCanvas toolbar", () => {
     });
     expect(canvas.getAttribute("data-viewport-x")).toBe("20");
   });
+
+  it("reopens committed text for editing", () => {
+    const { getByLabelText, getByTestId, queryByLabelText } = render(
+      <SessionCanvas active />,
+    );
+    fireEvent.click(getByLabelText("Text"));
+    const canvas = getByLabelText("Drawing canvas");
+    fireEvent.pointerDown(canvas, {
+      pointerId: 1,
+      clientX: 20,
+      clientY: 20,
+    });
+    fireEvent.pointerUp(canvas, { pointerId: 1, clientX: 20, clientY: 20 });
+    const box = getByLabelText("Canvas text");
+    expect(getByTestId("canvas-text-frame")).toBeTruthy();
+    box.textContent = "hello";
+    const handle = getByLabelText("Resize text bottom-right");
+    fireEvent.pointerDown(handle, { pointerId: 9, clientX: 40, clientY: 40 });
+    fireEvent.pointerMove(handle, { pointerId: 9, clientX: 80, clientY: 80 });
+    fireEvent.pointerUp(handle, { pointerId: 9, clientX: 80, clientY: 80 });
+    expect(box.style.fontSize).toBe("96px");
+    fireEvent.blur(box);
+    expect(queryByLabelText("Canvas text")).toBeNull();
+    doubleClickCanvas(canvas, 24, 24);
+    expect(getByLabelText("Canvas text").textContent).toBe("hello");
+  });
+
+  it("drags selected text from the text box after a short drag", () => {
+    const { getByLabelText, getByTestId } = render(<SessionCanvas active />);
+    fireEvent.click(getByLabelText("Text"));
+    const canvas = getByLabelText("Drawing canvas");
+    fireEvent.pointerDown(canvas, {
+      pointerId: 1,
+      clientX: 20,
+      clientY: 20,
+    });
+    fireEvent.pointerUp(canvas, { pointerId: 1, clientX: 20, clientY: 20 });
+    const frame = getByTestId("canvas-text-frame");
+    const box = getByLabelText("Canvas text");
+    fireEvent.pointerDown(box, { pointerId: 8, clientX: 20, clientY: 20 });
+    fireEvent.pointerMove(box, { pointerId: 8, clientX: 50, clientY: 30 });
+    fireEvent.pointerUp(box, { pointerId: 8, clientX: 50, clientY: 30 });
+    expect(frame.style.left).toBe("50px");
+    expect(frame.style.top).toBe("30px");
+  });
+
+  it("drags selected text from the move ring", () => {
+    const { getByLabelText, getByTestId } = render(<SessionCanvas active />);
+    fireEvent.click(getByLabelText("Text"));
+    const canvas = getByLabelText("Drawing canvas");
+    fireEvent.pointerDown(canvas, {
+      pointerId: 1,
+      clientX: 20,
+      clientY: 20,
+    });
+    fireEvent.pointerUp(canvas, { pointerId: 1, clientX: 20, clientY: 20 });
+    const frame = getByTestId("canvas-text-frame");
+    expect(frame.style.left).toBe("20px");
+    expect(frame.style.top).toBe("20px");
+    const handle = getByLabelText("Move text");
+    fireEvent.pointerDown(handle, { pointerId: 8, clientX: 20, clientY: 20 });
+    fireEvent.pointerMove(handle, { pointerId: 8, clientX: 50, clientY: 30 });
+    fireEvent.pointerUp(handle, { pointerId: 8, clientX: 50, clientY: 30 });
+    expect(frame.style.left).toBe("50px");
+    expect(frame.style.top).toBe("30px");
+  });
+
+  it("marks the slider and toolbar as canvas chrome", () => {
+    const { getByLabelText, getByTestId } = render(<SessionCanvas active />);
+    expect(getByLabelText("Canvas tools").hasAttribute("data-canvas-chrome")).toBe(
+      true,
+    );
+    expect(getByLabelText("Pen size").closest("[data-canvas-chrome]")).toBeTruthy();
+    const palette = getByLabelText("Ink color");
+    expect(palette.hasAttribute("data-canvas-chrome")).toBe(true);
+    expect(palette.className).not.toContain("right-3");
+    const stack = palette.parentElement;
+    expect(stack?.className).toContain("left-3");
+    expect(stack?.className).not.toContain("right-3");
+    expect(stack?.contains(getByLabelText("Pen size"))).toBe(true);
+    const paletteIndex = [...(stack?.children ?? [])].indexOf(palette);
+    const sliderIndex = [...(stack?.children ?? [])].indexOf(
+      getByLabelText("Pen size").closest("[data-canvas-chrome]") as HTMLElement,
+    );
+    expect(paletteIndex).toBeLessThan(sliderIndex);
+    expect(getByLabelText("White").getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(getByLabelText("Blue"));
+    expect(getByLabelText("Blue").getAttribute("aria-checked")).toBe("true");
+    expect(getByLabelText("White").getAttribute("aria-checked")).toBe("false");
+    const thumb = getByTestId("size-slider-thumb");
+    expect(thumb.className).toContain("left-1/2");
+    expect(thumb.className).toContain("-translate-x-1/2");
+  });
 });
 
 function doubleClickCanvas(
@@ -94,6 +222,62 @@ function placeHello(
   expect(queryByLabelText("Canvas text")).toBeNull();
   return canvas;
 }
+
+describe("SessionCanvas persist", () => {
+  it("saves a committed stroke to the session", () => {
+    vi.useFakeTimers();
+    const sessionId = "jd7sessioncanvas" as Id<"sessions">;
+    const { getByLabelText } = render(
+      <SessionCanvas active sessionId={sessionId} />,
+    );
+    const canvas = getByLabelText("Drawing canvas");
+    fireEvent.pointerDown(canvas, {
+      pointerId: 1,
+      clientX: 10,
+      clientY: 10,
+    });
+    fireEvent.pointerMove(canvas, {
+      pointerId: 1,
+      clientX: 24,
+      clientY: 18,
+    });
+    fireEvent.pointerUp(canvas, {
+      pointerId: 1,
+      clientX: 24,
+      clientY: 18,
+    });
+    expect(updateCanvas).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(400);
+    expect(updateCanvas).toHaveBeenCalledTimes(1);
+    expect(updateCanvas).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sessionId,
+        strokes: expect.arrayContaining([
+          expect.objectContaining({ kind: "draw" }),
+        ]),
+      }),
+    );
+  });
+
+  it("saves committed text to the session", () => {
+    vi.useFakeTimers();
+    const sessionId = "jd7sessioncanvas" as Id<"sessions">;
+    const { getByLabelText, queryByLabelText } = render(
+      <SessionCanvas active sessionId={sessionId} />,
+    );
+    placeHello(getByLabelText, queryByLabelText);
+    expect(updateCanvas).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(400);
+    expect(updateCanvas).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sessionId,
+        strokes: expect.arrayContaining([
+          expect.objectContaining({ kind: "text", text: "hello" }),
+        ]),
+      }),
+    );
+  });
+});
 
 describe("SessionCanvas committed text", () => {
   it("reopens committed text for editing on double-click", () => {
@@ -134,7 +318,7 @@ describe("SessionCanvas committed text", () => {
   });
 
   it("drags committed text then opens the editor at the new location", () => {
-    const { getByLabelText, queryByLabelText } = render(
+    const { getByLabelText, getByTestId, queryByLabelText } = render(
       <SessionCanvas active />,
     );
     const canvas = placeHello(getByLabelText, queryByLabelText);
@@ -152,9 +336,10 @@ describe("SessionCanvas committed text", () => {
     expect(queryByLabelText("Canvas text")).toBeNull();
     doubleClickCanvas(canvas, 54, 34);
     const box = getByLabelText("Canvas text");
+    const frame = getByTestId("canvas-text-frame");
     expect(box.textContent).toBe("hello");
-    expect(box.style.left).toBe("50px");
-    expect(box.style.top).toBe("30px");
+    expect(frame.style.left).toBe("50px");
+    expect(frame.style.top).toBe("30px");
   });
 
   it("uses the move cursor over committed text and the text cursor on empty canvas", () => {

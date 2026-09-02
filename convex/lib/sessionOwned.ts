@@ -4,7 +4,11 @@ import { deleteSearchDocumentsBySession } from "../searchDocuments";
 
 async function deleteRowsBySession(
   ctx: MutationCtx,
-  table: "messages" | "chatMessages" | "sessionConceptGraphs",
+  table:
+    | "messages"
+    | "chatMessages"
+    | "sessionConceptGraphs"
+    | "sessionCanvases",
   sessionId: Id<"sessions">,
 ) {
   const rows = await ctx.db
@@ -16,7 +20,7 @@ async function deleteRowsBySession(
   }
 }
 
-/** Graph-lane rows keyed by ideation session id. */
+/** Rows keyed by ideation session id. */
 export async function deleteSessionOwnedRows(
   ctx: MutationCtx,
   sessionId: Id<"sessions">,
@@ -24,5 +28,6 @@ export async function deleteSessionOwnedRows(
   await deleteRowsBySession(ctx, "messages", sessionId);
   await deleteRowsBySession(ctx, "chatMessages", sessionId);
   await deleteRowsBySession(ctx, "sessionConceptGraphs", sessionId);
+  await deleteRowsBySession(ctx, "sessionCanvases", sessionId);
   await deleteSearchDocumentsBySession(ctx, sessionId);
 }

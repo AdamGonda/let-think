@@ -19,7 +19,7 @@ export function AppShell({
   commandPalette,
 }: AppShellProps) {
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen overflow-hidden bg-background">
       {wakeUpOverlay}
       {tutorial}
       <div className="flex flex-1 min-w-0" inert={mainInert}>
