@@ -7,15 +7,21 @@ import {
   canvasTextStroke,
   CANVAS_MAX_SCALE,
   CANVAS_MIN_SCALE,
+  clearStrokeHistory,
+  cloneStrokes,
   findTextStrokeAt,
   identityViewport,
   inkOverChrome,
   isErasePointer,
+  isRedoHotkey,
   isSmoothedPointer,
+  isTypingTarget,
   isUndoHotkey,
   moveWorldByScreenDelta,
   PEN_POS_SMOOTH,
   PEN_WIDTH_SMOOTH,
+  pushStrokeHistory,
+  redoStrokeHistory,
   screenToWorld,
   smoothInkPoint,
   strokeBounds,
@@ -25,21 +31,23 @@ import {
   textStrokeHits,
   scaleFontSize,
   estimatedTextWidth,
+  undoStrokeHistory,
   worldToScreen,
+  type Stroke,
 } from "./SessionCanvas";
 
 describe("strokeWidthForPointer", () => {
   it("uses the slider size for mouse and touch", () => {
-    expect(strokeWidthForPointer("mouse", 0.5)).toBe(2);
-    expect(strokeWidthForPointer("touch", 1)).toBe(2);
+    expect(strokeWidthForPointer("mouse", 0.5)).toBe(4);
+    expect(strokeWidthForPointer("touch", 1)).toBe(4);
     expect(strokeWidthForPointer("mouse", 0.5, "draw", 10)).toBe(10);
   });
 
   it("maps light pen pressure to a hairline and firm press to the slider", () => {
     expect(strokeWidthForPointer("pen", 0)).toBe(0.5);
     expect(strokeWidthForPointer("pen", 0.04, "draw", 10)).toBe(1.2);
-    expect(strokeWidthForPointer("pen", 0)).toBeLessThan(2);
-    expect(strokeWidthForPointer("pen", 0.75)).toBe(2);
+    expect(strokeWidthForPointer("pen", 0)).toBeLessThan(4);
+    expect(strokeWidthForPointer("pen", 0.75)).toBe(4);
     expect(strokeWidthForPointer("pen", 1, "draw", 10)).toBe(10);
     expect(strokeWidthForPointer("pen", 1, "draw", 10)).not.toBe(15);
   });
@@ -124,6 +132,155 @@ describe("isUndoHotkey", () => {
         altKey: false,
       }),
     ).toBe(false);
+  });
+});
+
+describe("isRedoHotkey", () => {
+  it("matches ctrl/cmd+shift+z and ctrl+y", () => {
+    expect(
+      isRedoHotkey({
+        key: "z",
+        ctrlKey: true,
+        metaKey: false,
+        shiftKey: true,
+        altKey: false,
+      }),
+    ).toBe(true);
+    expect(
+      isRedoHotkey({
+        key: "z",
+        ctrlKey: false,
+        metaKey: true,
+        shiftKey: true,
+        altKey: false,
+      }),
+    ).toBe(true);
+    expect(
+      isRedoHotkey({
+        key: "y",
+        ctrlKey: true,
+        metaKey: false,
+        shiftKey: false,
+        altKey: false,
+      }),
+    ).toBe(true);
+    expect(
+      isRedoHotkey({
+        key: "z",
+        ctrlKey: true,
+        metaKey: false,
+        shiftKey: false,
+        altKey: false,
+      }),
+    ).toBe(false);
+    expect(
+      isRedoHotkey({
+        key: "y",
+        ctrlKey: false,
+        metaKey: true,
+        shiftKey: false,
+        altKey: false,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("isTypingTarget", () => {
+  it("blocks text entry but allows the size slider", () => {
+    const range = document.createElement("input");
+    range.type = "range";
+    expect(isTypingTarget(range)).toBe(false);
+
+    const text = document.createElement("input");
+    text.type = "text";
+    expect(isTypingTarget(text)).toBe(true);
+
+    const textarea = document.createElement("textarea");
+    expect(isTypingTarget(textarea)).toBe(true);
+
+    const editable = document.createElement("div");
+    editable.contentEditable = "true";
+    expect(isTypingTarget(editable)).toBe(true);
+
+    expect(isTypingTarget(document.createElement("button"))).toBe(false);
+    expect(isTypingTarget(null)).toBe(false);
+  });
+});
+
+describe("stroke history", () => {
+  const ink = (n: number): Stroke => ({
+    kind: "draw",
+    points: [{ x: n, y: n, width: 2 }],
+    color: "#fff",
+  });
+  const label = (x: number, y: number): Stroke => ({
+    kind: "text",
+    x,
+    y,
+    text: "hi",
+    fontSize: 24,
+    color: "#fff",
+  });
+
+  it("undo restores the prior snapshot and redo re-applies", () => {
+    const past: Stroke[][] = [];
+    const future: Stroke[][] = [];
+    let strokes: Stroke[] = [ink(1)];
+
+    pushStrokeHistory(past, future, strokes);
+    strokes = [...strokes, ink(2)];
+    expect(strokes).toHaveLength(2);
+
+    const undone = undoStrokeHistory(past, future, strokes);
+    expect(undone).toEqual([ink(1)]);
+    strokes = undone!;
+
+    const redone = redoStrokeHistory(past, future, strokes);
+    expect(redone).toEqual([ink(1), ink(2)]);
+  });
+
+  it("a new action clears the redo stack", () => {
+    const past: Stroke[][] = [];
+    const future: Stroke[][] = [];
+    let strokes: Stroke[] = [ink(1)];
+
+    pushStrokeHistory(past, future, strokes);
+    strokes = [...strokes, ink(2)];
+    strokes = undoStrokeHistory(past, future, strokes)!;
+    expect(future).toHaveLength(1);
+
+    pushStrokeHistory(past, future, strokes);
+    strokes = [...strokes, ink(3)];
+    expect(future).toHaveLength(0);
+    expect(redoStrokeHistory(past, future, strokes)).toBeNull();
+  });
+
+  it("treats an in-place text move as one undo step", () => {
+    const past: Stroke[][] = [];
+    const future: Stroke[][] = [];
+    let strokes: Stroke[] = [label(10, 10)];
+
+    pushStrokeHistory(past, future, strokes);
+    strokes = [{ ...strokes[0]!, x: 40, y: 50 } as Stroke];
+    strokes = [{ ...strokes[0]!, x: 80, y: 90 } as Stroke];
+
+    const restored = undoStrokeHistory(past, future, strokes);
+    expect(restored).toEqual([label(10, 10)]);
+  });
+
+  it("cloneStrokes deep-copies so later mutations do not rewrite history", () => {
+    const original: Stroke[] = [ink(1)];
+    const cloned = cloneStrokes(original);
+    if (cloned[0]?.kind === "draw") cloned[0].points[0]!.x = 99;
+    expect(original[0]).toEqual(ink(1));
+  });
+
+  it("clearStrokeHistory empties both stacks", () => {
+    const past: Stroke[][] = [[ink(1)]];
+    const future: Stroke[][] = [[ink(2)]];
+    clearStrokeHistory(past, future);
+    expect(past).toEqual([]);
+    expect(future).toEqual([]);
   });
 });
 

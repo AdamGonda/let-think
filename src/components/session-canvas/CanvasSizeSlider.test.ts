@@ -28,8 +28,8 @@ describe("sizeTaperPolygon", () => {
 
 describe("sizeSliderThumbTop", () => {
   it("puts max at the top and min at the bottom", () => {
-    expect(sizeSliderThumbTop(40, 1, 40)).toBe("0%");
-    expect(sizeSliderThumbTop(1, 1, 40)).toBe("100%");
-    expect(sizeSliderThumbTop(20.5, 1, 40)).toBe("50%");
+    expect(sizeSliderThumbTop(13, 4, 13)).toBe("0%");
+    expect(sizeSliderThumbTop(4, 4, 13)).toBe("100%");
+    expect(sizeSliderThumbTop(8.5, 4, 13)).toBe("50%");
   });
 });

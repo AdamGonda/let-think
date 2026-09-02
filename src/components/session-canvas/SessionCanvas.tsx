@@ -59,11 +59,11 @@ const TEXT_DBLCLICK_PX = 8;
 
 export const CANVAS_MIN_SCALE = 0.25;
 export const CANVAS_MAX_SCALE = 8;
-export const DEFAULT_PEN_SIZE = 2;
+export const DEFAULT_PEN_SIZE = 4;
 export const DEFAULT_ERASE_SIZE = 40;
 export const DEFAULT_TEXT_SIZE = 48;
-export const PEN_SIZE_MIN = 1;
-export const PEN_SIZE_MAX = 40;
+export const PEN_SIZE_MIN = 4;
+export const PEN_SIZE_MAX = 13;
 export const ERASE_SIZE_MIN = 8;
 export const ERASE_SIZE_MAX = 120;
 export const TEXT_SIZE_MIN = 12;
@@ -161,6 +161,101 @@ export function isUndoHotkey(event: {
   if (event.altKey || event.shiftKey) return false;
   if (!event.ctrlKey && !event.metaKey) return false;
   return event.key === "z" || event.key === "Z";
+}
+
+export function isRedoHotkey(event: {
+  key: string;
+  ctrlKey: boolean;
+  metaKey: boolean;
+  shiftKey: boolean;
+  altKey: boolean;
+}): boolean {
+  if (event.altKey) return false;
+  if (!event.ctrlKey && !event.metaKey) return false;
+  if (
+    (event.key === "y" || event.key === "Y") &&
+    event.ctrlKey &&
+    !event.metaKey &&
+    !event.shiftKey
+  ) {
+    return true;
+  }
+  if (!event.shiftKey) return false;
+  return event.key === "z" || event.key === "Z";
+}
+
+/** Text-like inputs block canvas undo so native editing still works. */
+const TEXT_INPUT_TYPES = new Set([
+  "",
+  "text",
+  "search",
+  "email",
+  "url",
+  "tel",
+  "password",
+  "number",
+  "date",
+  "datetime-local",
+  "month",
+  "week",
+  "time",
+]);
+
+export function isTypingTarget(target: EventTarget | null): boolean {
+  if (!(target instanceof HTMLElement)) return false;
+  if (
+    target.isContentEditable ||
+    target.contentEditable === "true" ||
+    target.contentEditable === "plaintext-only"
+  ) {
+    return true;
+  }
+  if (target.tagName === "TEXTAREA") return true;
+  if (target.tagName !== "INPUT") return false;
+  const type = (target as HTMLInputElement).type.toLowerCase();
+  return TEXT_INPUT_TYPES.has(type);
+}
+
+// ponytail: full stroke-array clones per action. Ceiling is memory on huge
+// canvases; upgrade to command objects if that shows up.
+export function cloneStrokes(strokes: ReadonlyArray<Stroke>): Stroke[] {
+  return structuredClone(strokes as Stroke[]);
+}
+
+export function pushStrokeHistory(
+  past: Stroke[][],
+  future: Stroke[][],
+  strokes: ReadonlyArray<Stroke>,
+): void {
+  past.push(cloneStrokes(strokes));
+  future.length = 0;
+}
+
+export function undoStrokeHistory(
+  past: Stroke[][],
+  future: Stroke[][],
+  strokes: ReadonlyArray<Stroke>,
+): Stroke[] | null {
+  const prev = past.pop();
+  if (!prev) return null;
+  future.push(cloneStrokes(strokes));
+  return prev;
+}
+
+export function redoStrokeHistory(
+  past: Stroke[][],
+  future: Stroke[][],
+  strokes: ReadonlyArray<Stroke>,
+): Stroke[] | null {
+  const next = future.pop();
+  if (!next) return null;
+  past.push(cloneStrokes(strokes));
+  return next;
+}
+
+export function clearStrokeHistory(past: Stroke[][], future: Stroke[][]): void {
+  past.length = 0;
+  future.length = 0;
 }
 
 export function isErasePointer(event: {
@@ -287,15 +382,6 @@ function capturePointer(target: EventTarget, pointerId: number): void {
   } catch {
     // No active pointer (jsdom / synthetic events).
   }
-}
-
-function isTypingTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  return (
-    target.tagName === "INPUT" ||
-    target.tagName === "TEXTAREA" ||
-    target.isContentEditable
-  );
 }
 
 function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke): void {
@@ -638,6 +724,8 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textElRef = useRef<HTMLDivElement>(null);
   const strokesRef = useRef<Stroke[]>([]);
+  const historyPastRef = useRef<Stroke[][]>([]);
+  const historyFutureRef = useRef<Stroke[][]>([]);
   const liveStrokeRef = useRef<Stroke | null>(null);
   const pointersRef = useRef(new Map<number, Point>());
   const drawingPointerIdRef = useRef<number | null>(null);
@@ -771,6 +859,7 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
     strokesRef.current = storedCanvas.strokes
       .map((stroke) => normalizeStoredStroke(stroke as Stroke))
       .filter((stroke): stroke is Stroke => stroke != null);
+    clearStrokeHistory(historyPastRef.current, historyFutureRef.current);
     viewportRef.current = storedCanvas.viewport;
     setCanvasHasInk(strokesHaveInk(strokesRef.current));
     redrawRef.current();
@@ -826,7 +915,9 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
           gesturingRef.current = true;
         }
       }
-      if (!isUndoHotkey(event) || isTypingTarget(event.target)) return;
+      const undo = isUndoHotkey(event);
+      const redo = isRedoHotkey(event);
+      if ((!undo && !redo) || isTypingTarget(event.target)) return;
       event.preventDefault();
       const canvas = canvasRef.current;
       const drawingId = drawingPointerIdRef.current;
@@ -834,11 +925,28 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
         canvas.releasePointerCapture(drawingId);
       }
       drawingPointerIdRef.current = null;
-      if (liveStrokeRef.current) {
+      if (undo && liveStrokeRef.current) {
         liveStrokeRef.current = null;
-      } else if (strokesRef.current.length > 0) {
-        strokesRef.current = strokesRef.current.slice(0, -1);
-        markDirty();
+      } else if (undo) {
+        const restored = undoStrokeHistory(
+          historyPastRef.current,
+          historyFutureRef.current,
+          strokesRef.current,
+        );
+        if (restored) {
+          strokesRef.current = restored;
+          markDirty();
+        }
+      } else {
+        const restored = redoStrokeHistory(
+          historyPastRef.current,
+          historyFutureRef.current,
+          strokesRef.current,
+        );
+        if (restored) {
+          strokesRef.current = restored;
+          markDirty();
+        }
       }
       setCanvasHasInk(strokesHaveInk(strokesRef.current));
       redrawRef.current();
@@ -911,6 +1019,11 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
     textDraftRef.current = null;
     setTextDraft(null);
     if (editIndex != null) {
+      pushStrokeHistory(
+        historyPastRef.current,
+        historyFutureRef.current,
+        strokesRef.current,
+      );
       if (!stroke) {
         strokesRef.current = strokesRef.current.filter((_, i) => i !== editIndex);
       } else {
@@ -919,6 +1032,11 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
         );
       }
     } else if (stroke) {
+      pushStrokeHistory(
+        historyPastRef.current,
+        historyFutureRef.current,
+        strokesRef.current,
+      );
       strokesRef.current.push(stroke);
     }
     if (editIndex != null || stroke) markDirty();
@@ -1232,6 +1350,11 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
         event.clientY - pending.start.y,
       );
       if (dist < TEXT_MOVE_THRESHOLD) return true;
+      pushStrokeHistory(
+        historyPastRef.current,
+        historyFutureRef.current,
+        strokesRef.current,
+      );
       textMoveRef.current = pending;
     }
     const move = textMoveRef.current;
@@ -1373,6 +1496,11 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
         }
       }
       if (stroke.points.length > 0) {
+        pushStrokeHistory(
+          historyPastRef.current,
+          historyFutureRef.current,
+          strokesRef.current,
+        );
         strokesRef.current.push(stroke);
         markDirty();
         setCanvasHasInk(strokesHaveInk(strokesRef.current));
