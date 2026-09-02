@@ -190,10 +190,6 @@ export function ChatComposer({
     focusComposerWithRetry();
   }, [autoFocus, isDisabled]);
 
-  if (atQuery == null && pickerDismissed) {
-    setPickerDismissed(false);
-  }
-
   const handleScroll = () => {
     const ta = textareaRef.current;
     const mirror = mirrorRef.current;
