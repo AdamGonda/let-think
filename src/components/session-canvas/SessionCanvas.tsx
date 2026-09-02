@@ -578,12 +578,22 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
     if (!el) return;
     if (textDraft.initialText) el.innerText = textDraft.initialText;
     el.focus();
-    const selection = window.getSelection();
-    const range = document.createRange();
-    range.selectNodeContents(el);
-    range.collapse(false);
-    selection?.removeAllRanges();
-    selection?.addRange(range);
+    const placeCaretAtEnd = () => {
+      const selection = window.getSelection();
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(false);
+      selection?.removeAllRanges();
+      selection?.addRange(range);
+    };
+    placeCaretAtEnd();
+    // Native dblclick selects the word after we open the overlay; pin caret after that.
+    const frame = window.requestAnimationFrame(placeCaretAtEnd);
+    const timer = window.setTimeout(placeCaretAtEnd, 0);
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(timer);
+    };
   }, [textDraft]);
 
   const commitViewport = (next: CanvasViewport) => {
@@ -1015,6 +1025,7 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
             minHeight: `${TEXT_LINE_HEIGHT}em`,
           }}
           onBlur={commitTextDraft}
+          onDoubleClick={(event) => event.preventDefault()}
           onKeyDown={(event) => {
             if (event.key === "Enter") {
               event.preventDefault();
