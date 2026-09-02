@@ -9,8 +9,10 @@ import {
   CANVAS_MIN_SCALE,
   findTextStrokeAt,
   identityViewport,
+  inkOverChrome,
   isErasePointer,
   isUndoHotkey,
+  moveWorldByScreenDelta,
   screenToWorld,
   strokeWidthForPointer,
   textStrokeHits,
@@ -19,13 +21,19 @@ import {
 } from "./SessionCanvas";
 
 describe("strokeWidthForPointer", () => {
-  it("uses the slider size for mouse and touch, and scales pen pressure around it", () => {
+  it("uses the slider size for mouse and touch", () => {
     expect(strokeWidthForPointer("mouse", 0.5)).toBe(2);
     expect(strokeWidthForPointer("touch", 1)).toBe(2);
-    expect(strokeWidthForPointer("pen", 0)).toBe(2);
-    expect(strokeWidthForPointer("pen", 1)).toBe(3);
     expect(strokeWidthForPointer("mouse", 0.5, "draw", 10)).toBe(10);
-    expect(strokeWidthForPointer("pen", 1, "draw", 10)).toBe(15);
+  });
+
+  it("maps light pen pressure to a hairline and firm press to the slider", () => {
+    expect(strokeWidthForPointer("pen", 0)).toBe(0.5);
+    expect(strokeWidthForPointer("pen", 0.04, "draw", 10)).toBe(1.2);
+    expect(strokeWidthForPointer("pen", 0)).toBeLessThan(2);
+    expect(strokeWidthForPointer("pen", 0.75)).toBe(2);
+    expect(strokeWidthForPointer("pen", 1, "draw", 10)).toBe(10);
+    expect(strokeWidthForPointer("pen", 1, "draw", 10)).not.toBe(15);
   });
 
   it("uses a thicker stroke for the eraser", () => {
@@ -131,6 +139,28 @@ describe("scaleFontSize", () => {
     expect(scaleFontSize(48, 10, 2)).toBe(12);
     expect(scaleFontSize(48, 10, 100)).toBe(128);
     expect(scaleFontSize(48, 0, 20)).toBe(48);
+  });
+});
+
+describe("moveWorldByScreenDelta", () => {
+  it("divides screen delta by scale", () => {
+    expect(moveWorldByScreenDelta({ x: 10, y: 20 }, 8, -4, 2)).toEqual({
+      x: 14,
+      y: 18,
+    });
+    expect(moveWorldByScreenDelta({ x: 0, y: 0 }, 10, 5, 1)).toEqual({
+      x: 10,
+      y: 5,
+    });
+  });
+});
+
+describe("inkOverChrome", () => {
+  it("rejects points over chrome and reconnects after a gap", () => {
+    expect(inkOverChrome(true, false)).toEqual({ accept: false, broken: true });
+    expect(inkOverChrome(true, true)).toEqual({ accept: false, broken: true });
+    expect(inkOverChrome(false, true)).toEqual({ accept: true, broken: false });
+    expect(inkOverChrome(false, false)).toEqual({ accept: true, broken: false });
   });
 });
 

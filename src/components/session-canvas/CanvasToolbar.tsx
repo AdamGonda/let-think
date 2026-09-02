@@ -36,7 +36,8 @@ export function CanvasToolbar({ tool, onToolChange }: CanvasToolbarProps) {
     <div
       role="radiogroup"
       aria-label="Canvas tools"
-      className="absolute top-3 left-1/2 z-10 flex h-7 w-[5.25rem] -translate-x-1/2 overflow-visible rounded-[min(var(--radius-md),12px)] border border-border bg-background dark:border-input dark:bg-input/30"
+      data-canvas-chrome
+      className="absolute top-3 left-1/2 z-10 flex h-7 w-[5.25rem] -translate-x-1/2 overflow-visible rounded-[min(var(--radius-md),12px)] border border-border bg-background dark:border-input"
     >
       <span
         aria-hidden

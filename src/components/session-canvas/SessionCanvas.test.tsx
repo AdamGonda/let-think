@@ -116,4 +116,55 @@ describe("SessionCanvas toolbar", () => {
     fireEvent.pointerUp(canvas, { pointerId: 2, clientX: 24, clientY: 24 });
     expect(getByLabelText("Canvas text").textContent).toBe("hello");
   });
+
+  it("drags selected text from the text box after a short drag", () => {
+    const { getByLabelText, getByTestId } = render(<SessionCanvas active />);
+    fireEvent.click(getByLabelText("Text"));
+    const canvas = getByLabelText("Drawing canvas");
+    fireEvent.pointerDown(canvas, {
+      pointerId: 1,
+      clientX: 20,
+      clientY: 20,
+    });
+    fireEvent.pointerUp(canvas, { pointerId: 1, clientX: 20, clientY: 20 });
+    const frame = getByTestId("canvas-text-frame");
+    const box = getByLabelText("Canvas text");
+    fireEvent.pointerDown(box, { pointerId: 8, clientX: 20, clientY: 20 });
+    fireEvent.pointerMove(box, { pointerId: 8, clientX: 50, clientY: 30 });
+    fireEvent.pointerUp(box, { pointerId: 8, clientX: 50, clientY: 30 });
+    expect(frame.style.left).toBe("50px");
+    expect(frame.style.top).toBe("30px");
+  });
+
+  it("drags selected text from the move ring", () => {
+    const { getByLabelText, getByTestId } = render(<SessionCanvas active />);
+    fireEvent.click(getByLabelText("Text"));
+    const canvas = getByLabelText("Drawing canvas");
+    fireEvent.pointerDown(canvas, {
+      pointerId: 1,
+      clientX: 20,
+      clientY: 20,
+    });
+    fireEvent.pointerUp(canvas, { pointerId: 1, clientX: 20, clientY: 20 });
+    const frame = getByTestId("canvas-text-frame");
+    expect(frame.style.left).toBe("20px");
+    expect(frame.style.top).toBe("20px");
+    const handle = getByLabelText("Move text");
+    fireEvent.pointerDown(handle, { pointerId: 8, clientX: 20, clientY: 20 });
+    fireEvent.pointerMove(handle, { pointerId: 8, clientX: 50, clientY: 30 });
+    fireEvent.pointerUp(handle, { pointerId: 8, clientX: 50, clientY: 30 });
+    expect(frame.style.left).toBe("50px");
+    expect(frame.style.top).toBe("30px");
+  });
+
+  it("marks the slider and toolbar as canvas chrome", () => {
+    const { getByLabelText, getByTestId } = render(<SessionCanvas active />);
+    expect(getByLabelText("Canvas tools").hasAttribute("data-canvas-chrome")).toBe(
+      true,
+    );
+    expect(getByLabelText("Pen size").closest("[data-canvas-chrome]")).toBeTruthy();
+    const thumb = getByTestId("size-slider-thumb");
+    expect(thumb.className).toContain("left-1/2");
+    expect(thumb.className).toContain("-translate-x-1/2");
+  });
 });
