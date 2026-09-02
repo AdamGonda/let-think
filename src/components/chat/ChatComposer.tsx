@@ -91,7 +91,9 @@ export function ChatComposer({
   const pendingExternalFocusRef = useRef(false);
   const [caret, setCaret] = useState(input.length);
   const [highlight, setHighlight] = useState(0);
-  const [pickerDismissed, setPickerDismissed] = useState(false);
+  const [dismissedQueryStart, setDismissedQueryStart] = useState<number | null>(
+    null,
+  );
   const [canvasHasInk, setCanvasHasInk] = useState(getCanvasHasInk);
 
   useEffect(() => subscribeCanvasHasInk(() => setCanvasHasInk(getCanvasHasInk())), []);
@@ -103,6 +105,11 @@ export function ChatComposer({
   };
 
   const atQuery = isDisabled ? null : atQueryAtCaret(input, caret);
+  if (atQuery == null && dismissedQueryStart != null) {
+    setDismissedQueryStart(null);
+  }
+  const pickerDismissed =
+    atQuery != null && dismissedQueryStart === atQuery.start;
   const mentionOptions =
     atQuery && !pickerDismissed
       ? atMentionOptions({
@@ -163,11 +170,6 @@ export function ChatComposer({
     if (ta && mirror) mirror.scrollTop = ta.scrollTop;
   }, [input]);
 
-  const hasAtQuery = atQuery != null;
-  useLayoutEffect(() => {
-    if (!hasAtQuery) setPickerDismissed(false);
-  }, [hasAtQuery]);
-
   useLayoutEffect(() => {
     if (!listenForFocusEvent) return;
     const handleFocusComposer = () => {
@@ -221,7 +223,7 @@ export function ChatComposer({
       }
       if (e.key === "Escape") {
         e.preventDefault();
-        setPickerDismissed(true);
+        setDismissedQueryStart(liveQuery!.start);
         setHighlight(0);
         return;
       }

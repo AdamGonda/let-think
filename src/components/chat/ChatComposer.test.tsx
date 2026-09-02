@@ -146,6 +146,18 @@ describe("ChatComposer @ picker", () => {
     rerender(<ChatComposer {...base} input="@" />);
     expect(queryByRole("option", { name: /Canvas/ })).toBeNull();
   });
+
+  it("Escape dismisses the picker until the @ mention ends", () => {
+    const { container, getByRole, queryByRole, rerender } = render(
+      <ChatComposer {...base} input="@" />,
+    );
+    expect(getByRole("option", { name: /Writing/ })).toBeTruthy();
+    fireEvent.keyDown(container.querySelector("textarea")!, { key: "Escape" });
+    expect(queryByRole("option", { name: /Writing/ })).toBeNull();
+    rerender(<ChatComposer {...base} input="hello" />);
+    rerender(<ChatComposer {...base} input="@" />);
+    expect(getByRole("option", { name: /Writing/ })).toBeTruthy();
+  });
 });
 
 describe("ChatComposer images", () => {

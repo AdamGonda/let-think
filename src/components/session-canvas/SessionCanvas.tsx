@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
@@ -478,6 +479,14 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
   const [eraseCursor, setEraseCursor] = useState<Point | null>(null);
   const [viewport, setViewport] = useState<CanvasViewport>(identityViewport);
 
+  if (!active && textDraft != null) {
+    setTextDraft(null);
+  }
+
+  useLayoutEffect(() => {
+    if (!active) textDraftRef.current = null;
+  }, [active]);
+
   useEffect(() => {
     const wrap = wrapRef.current;
     const canvas = canvasRef.current;
@@ -594,13 +603,6 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("blur", onBlur);
     };
-  }, [active]);
-
-  useEffect(() => {
-    if (!active) {
-      textDraftRef.current = null;
-      setTextDraft(null);
-    }
   }, [active]);
 
   useEffect(() => {

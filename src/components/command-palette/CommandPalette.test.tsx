@@ -58,4 +58,36 @@ describe("CommandPalettePanel", () => {
     expect(screen.getByRole("option", { name: "Fold all headings" })).toBeTruthy();
     expect(screen.queryByRole("option", { name: "Clear canvas" })).toBeNull();
   });
+
+  it("unmounts on close so the next open starts with an empty query", () => {
+    const { rerender } = render(
+      <CommandPalettePanel
+        open
+        onOpenChange={vi.fn()}
+        commands={[{ id: "fold", label: "Fold all headings", run: vi.fn() }]}
+        context={ctx}
+      />,
+    );
+    fireEvent.change(screen.getByRole("combobox"), {
+      target: { value: "zzz" },
+    });
+    rerender(
+      <CommandPalettePanel
+        open={false}
+        onOpenChange={vi.fn()}
+        commands={[{ id: "fold", label: "Fold all headings", run: vi.fn() }]}
+        context={ctx}
+      />,
+    );
+    rerender(
+      <CommandPalettePanel
+        open
+        onOpenChange={vi.fn()}
+        commands={[{ id: "fold", label: "Fold all headings", run: vi.fn() }]}
+        context={ctx}
+      />,
+    );
+    expect(screen.getByRole("combobox")).toHaveProperty("value", "");
+    expect(screen.getByRole("option", { name: "Fold all headings" })).toBeTruthy();
+  });
 });
