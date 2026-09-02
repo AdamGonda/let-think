@@ -145,6 +145,7 @@ describe("canvasTextStroke", () => {
       y: 24,
       text: "hello",
       fontSize: 32,
+      color: "#ffffff",
     });
     expect(canvasTextStroke(0, 0, "   ", 48)).toBeNull();
   });

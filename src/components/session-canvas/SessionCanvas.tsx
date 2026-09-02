@@ -4,19 +4,24 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+import {
+  CanvasColorPalette,
+  DEFAULT_INK_COLOR,
+} from "./CanvasColorPalette";
 import { CanvasSizeSlider } from "./CanvasSizeSlider";
 import { CanvasToolbar, type CanvasTool } from "./CanvasToolbar";
 
 type Point = { x: number; y: number };
 type StrokePoint = { x: number; y: number; width: number; gap?: boolean };
 type InkKind = "draw" | "erase";
-type InkStroke = { kind: InkKind; points: StrokePoint[] };
+type InkStroke = { kind: InkKind; points: StrokePoint[]; color?: string };
 export type TextStroke = {
   kind: "text";
   x: number;
   y: number;
   text: string;
   fontSize: number;
+  color: string;
 };
 type Stroke = InkStroke | TextStroke;
 type TextDraft = {
@@ -28,7 +33,7 @@ type TextDraft = {
 
 export type CanvasViewport = { x: number; y: number; scale: number };
 
-const INK = "#ffffff";
+const INK = DEFAULT_INK_COLOR;
 /** Pointer Events: eraser contact is button 5 / buttons bit 5 (32). */
 const ERASER_BUTTON = 5;
 const ERASER_BUTTONS_MASK = 32;
@@ -160,10 +165,11 @@ export function canvasTextStroke(
   y: number,
   raw: string,
   fontSize: number = DEFAULT_TEXT_SIZE,
+  color: string = INK,
 ): TextStroke | null {
   const text = raw.replace(/\u00a0/g, " ").trim();
   if (text === "") return null;
-  return { kind: "text", x, y, text, fontSize };
+  return { kind: "text", x, y, text, fontSize, color };
 }
 
 export function estimatedTextWidth(text: string, fontSize: number): number {
@@ -276,13 +282,13 @@ function isTypingTarget(target: EventTarget | null): boolean {
 function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke): void {
   if (stroke.kind === "text") {
     ctx.globalCompositeOperation = "source-over";
-    setupInk(ctx);
+    setupInk(ctx, stroke.color);
     ctx.font = canvasTextFont(stroke.fontSize);
     ctx.textBaseline = "top";
     ctx.fillText(stroke.text, stroke.x, stroke.y);
     return;
   }
-  applyKind(ctx, stroke.kind);
+  applyKind(ctx, stroke.kind, stroke.color);
   const points = stroke.points;
   if (points.length === 0) return;
   if (points.length === 1) {
@@ -339,16 +345,20 @@ function pointFromEvent(
   };
 }
 
-function setupInk(ctx: CanvasRenderingContext2D): void {
+function setupInk(ctx: CanvasRenderingContext2D, color = INK): void {
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
-  ctx.strokeStyle = INK;
-  ctx.fillStyle = INK;
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
 }
 
-function applyKind(ctx: CanvasRenderingContext2D, kind: InkKind): void {
+function applyKind(
+  ctx: CanvasRenderingContext2D,
+  kind: InkKind,
+  color = INK,
+): void {
   ctx.globalCompositeOperation = kind === "erase" ? "destination-out" : "source-over";
-  setupInk(ctx);
+  setupInk(ctx, kind === "erase" ? INK : color);
 }
 
 function applyCamera(
@@ -370,11 +380,12 @@ function inkContext(
   canvas: HTMLCanvasElement,
   kind: InkKind,
   vp: CanvasViewport,
+  color = INK,
 ): CanvasRenderingContext2D | null {
   const ctx = canvas.getContext("2d");
   if (!ctx) return null;
   applyCamera(ctx, vp);
-  applyKind(ctx, kind);
+  applyKind(ctx, kind, color);
   return ctx;
 }
 
@@ -508,6 +519,7 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
   } | null>(null);
   const inkBrokenRef = useRef(false);
   const redrawRef = useRef<() => void>(() => {});
+  const inkColorRef = useRef(DEFAULT_INK_COLOR);
   const [tool, setTool] = useState<CanvasTool>("pen");
   const [textDraft, setTextDraft] = useState<TextDraft | null>(null);
   const [eraseCursor, setEraseCursor] = useState<Point | null>(null);
@@ -515,8 +527,10 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
   const [penSize, setPenSize] = useState(DEFAULT_PEN_SIZE);
   const [eraseSize, setEraseSize] = useState(DEFAULT_ERASE_SIZE);
   const [textSize, setTextSize] = useState(DEFAULT_TEXT_SIZE);
+  const [inkColor, setInkColor] = useState<string>(DEFAULT_INK_COLOR);
 
   textSizeRef.current = textSize;
+  inkColorRef.current = inkColor;
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -671,6 +685,7 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
       draft.y,
       raw,
       textSizeRef.current,
+      inkColorRef.current,
     );
     const editIndex = draft.editIndex;
     textDraftRef.current = null;
@@ -807,9 +822,12 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
     from: StrokePoint,
     to: StrokePoint,
     kind: InkKind,
+    color = INK,
   ) => {
     const canvas = canvasRef.current;
-    const ctx = canvas ? inkContext(canvas, kind, viewportRef.current) : null;
+    const ctx = canvas
+      ? inkContext(canvas, kind, viewportRef.current, color)
+      : null;
     if (!ctx) return;
     ctx.beginPath();
     ctx.moveTo(from.x, from.y);
@@ -852,6 +870,8 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
         if (existing?.kind === "text") {
           setTextSize(existing.fontSize);
           textSizeRef.current = existing.fontSize;
+          setInkColor(existing.color);
+          inkColorRef.current = existing.color;
           openTextDraft({
             x: existing.x,
             y: existing.y,
@@ -900,8 +920,13 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
       viewportRef.current,
       userSize,
     );
-    liveStrokeRef.current = { kind: "draw", points: [point] };
-    const ctx = inkContext(canvas, "draw", viewportRef.current);
+    liveStrokeRef.current = { kind: "draw", points: [point], color: inkColorRef.current };
+    const ctx = inkContext(
+      canvas,
+      "draw",
+      viewportRef.current,
+      inkColorRef.current,
+    );
     if (!ctx) return;
     ctx.beginPath();
     ctx.arc(point.x, point.y, point.width / 2, 0, Math.PI * 2);
@@ -974,7 +999,9 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
         ? smoothInkPoint(prevPoint, rawPoint)
         : rawPoint;
       stroke.points.push(point);
-      if (prevPoint && !point.gap) paintSegment(prevPoint, point, stroke.kind);
+      if (prevPoint && !point.gap) {
+        paintSegment(prevPoint, point, stroke.kind, stroke.color);
+      }
     }
   };
 
@@ -1015,7 +1042,7 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
             rawPoint.width !== last.width)
         ) {
           stroke.points.push(rawPoint);
-          paintSegment(last, rawPoint, stroke.kind);
+          paintSegment(last, rawPoint, stroke.kind, stroke.color);
         }
       }
       if (stroke.points.length > 0) strokesRef.current.push(stroke);
@@ -1081,15 +1108,27 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
           }}
         />
       ) : null}
-      {tool !== "text" ? (
-        <CanvasSizeSlider
-          value={inkSlider.value}
-          min={inkSlider.min}
-          max={inkSlider.max}
-          label={inkSlider.label}
-          onChange={inkSlider.onChange}
+      <div
+        data-canvas-chrome
+        className="absolute top-1/2 left-3 z-10 flex -translate-y-1/2 flex-col items-center gap-2"
+      >
+        <CanvasColorPalette
+          color={inkColor}
+          onColorChange={(next) => {
+            inkColorRef.current = next;
+            setInkColor(next);
+          }}
         />
-      ) : null}
+        {tool !== "text" ? (
+          <CanvasSizeSlider
+            value={inkSlider.value}
+            min={inkSlider.min}
+            max={inkSlider.max}
+            label={inkSlider.label}
+            onChange={inkSlider.onChange}
+          />
+        ) : null}
+      </div>
       <CanvasToolbar
         tool={tool}
         onToolChange={(next) => {
@@ -1121,11 +1160,12 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
               aria-label="Canvas text"
               contentEditable
               suppressContentEditableWarning
-              className="relative z-[1] min-w-[1ch] bg-transparent text-white outline-none"
+              className="relative z-[1] min-w-[1ch] bg-transparent outline-none"
               style={{
                 fontSize: `${textSize * viewport.scale}px`,
                 fontFamily: '"DM Sans", ui-sans-serif, system-ui, sans-serif',
-                caretColor: INK,
+                color: inkColor,
+                caretColor: inkColor,
                 whiteSpace: "pre",
                 lineHeight: TEXT_LINE_HEIGHT,
                 minHeight: `${TEXT_LINE_HEIGHT}em`,

@@ -27,6 +27,7 @@ describe("SessionCanvas toolbar", () => {
     expect(queryByLabelText("Pen size")).toBeNull();
     expect(queryByLabelText("Eraser size")).toBeNull();
     expect(queryByLabelText("Text size")).toBeNull();
+    expect(getByLabelText("Ink color")).toBeTruthy();
   });
 
   it("shows a 40px radius ring while the eraser is selected", () => {
@@ -163,6 +164,22 @@ describe("SessionCanvas toolbar", () => {
       true,
     );
     expect(getByLabelText("Pen size").closest("[data-canvas-chrome]")).toBeTruthy();
+    const palette = getByLabelText("Ink color");
+    expect(palette.hasAttribute("data-canvas-chrome")).toBe(true);
+    expect(palette.className).not.toContain("right-3");
+    const stack = palette.parentElement;
+    expect(stack?.className).toContain("left-3");
+    expect(stack?.className).not.toContain("right-3");
+    expect(stack?.contains(getByLabelText("Pen size"))).toBe(true);
+    const paletteIndex = [...(stack?.children ?? [])].indexOf(palette);
+    const sliderIndex = [...(stack?.children ?? [])].indexOf(
+      getByLabelText("Pen size").closest("[data-canvas-chrome]") as HTMLElement,
+    );
+    expect(paletteIndex).toBeLessThan(sliderIndex);
+    expect(getByLabelText("White").getAttribute("aria-checked")).toBe("true");
+    fireEvent.click(getByLabelText("Blue"));
+    expect(getByLabelText("Blue").getAttribute("aria-checked")).toBe("true");
+    expect(getByLabelText("White").getAttribute("aria-checked")).toBe("false");
     const thumb = getByTestId("size-slider-thumb");
     expect(thumb.className).toContain("left-1/2");
     expect(thumb.className).toContain("-translate-x-1/2");

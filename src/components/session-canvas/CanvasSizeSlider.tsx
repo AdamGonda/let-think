@@ -50,7 +50,7 @@ export function CanvasSizeSlider({
     <div
       data-canvas-chrome
       className={cn(
-        "absolute top-1/2 left-3 z-10 flex h-36 w-7 -translate-y-1/2 items-center justify-center",
+        "flex h-36 w-7 items-center justify-center",
         "rounded-[min(var(--radius-md),12px)] border border-border bg-background",
         "dark:border-input",
       )}
