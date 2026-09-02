@@ -24,7 +24,6 @@ import {
 import { userInputForBatch } from "../../lib/batchUserInput";
 import { findFileInWorkspace } from "../../lib/workspaceQueries";
 import {
-  intentBreadcrumbProjectsRootClick,
   intentBreadcrumbSessionClick,
   openEditor,
   openHistoryPanel,
@@ -260,7 +259,6 @@ export function GraphSurfaceContainer({
         openHistoryPanel(actor);
       }}
       onEditorOpen={handleEditorOpen}
-      onProjectsRootClick={() => intentBreadcrumbProjectsRootClick(actor)}
       onProjectNameClick={() => intentBreadcrumbSessionClick(actor)}
       fileChats={fileChats ?? []}
       activeChatSessionId={activeChatSessionId}

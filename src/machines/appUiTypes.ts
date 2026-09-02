@@ -93,7 +93,6 @@ export type AppUiEvent =
   | { type: "HISTORY_CLOSE" }
   /** User intents — orchestration owned by the machine (see appUiCommands). */
   | { type: "INTENT_OVERLAY_ACTION_CLICK" }
-  | { type: "INTENT_BREADCRUMB_PROJECTS_ROOT_CLICK" }
   | { type: "INTENT_BREADCRUMB_SESSION_CLICK" }
   | { type: "INTENT_BREADCRUMB_FILE_CLICK" }
   | { type: "INTENT_OPEN_NOTES_LIST" }

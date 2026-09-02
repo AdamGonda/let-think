@@ -4,7 +4,6 @@ import type { Id } from "../../convex/_generated/dataModel";
 import type { WorkspaceFile } from "@/components/session-sidebar/workspaceTypes";
 import type { AppUiActorRef } from "@/contexts/appUiActorContext";
 import {
-  intentBreadcrumbProjectsRootClick,
   intentBreadcrumbSessionClick,
   intentOpenNotesList,
   intentSelectSessionFromSidebar,
@@ -47,10 +46,6 @@ export function useAppShellIntentHandlers(actor: AppUiActorRef) {
     [actor, posthog],
   );
 
-  const handleBreadcrumbProjectsRootClick = useCallback(() => {
-    intentBreadcrumbProjectsRootClick(actor);
-  }, [actor]);
-
   const handleBreadcrumbSessionClick = useCallback(() => {
     intentBreadcrumbSessionClick(actor);
   }, [actor]);
@@ -82,7 +77,6 @@ export function useAppShellIntentHandlers(actor: AppUiActorRef) {
 
   return {
     setViewMode,
-    handleBreadcrumbProjectsRootClick,
     handleBreadcrumbSessionClick,
     handleWakeUpOverlayActionClick,
     onSelectSessionFromNotesList,

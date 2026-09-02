@@ -13,7 +13,6 @@ type WakeUpOverlayProps = {
   chatLoading: boolean;
   isExitingOverlay: boolean;
   editorOpen: boolean;
-  editorRevealReady: boolean;
   activeSessionId: Id<"sessions"> | null;
   activeSessionInWorkspace:
     | {
@@ -25,7 +24,6 @@ type WakeUpOverlayProps = {
   notes: string;
   notesSelectionRange: { start: number; end: number } | null;
   onNotesChange: (value: string) => void;
-  onBreadcrumbProjectsRootClick: () => void;
   onBreadcrumbProjectNameClick: () => void;
   onChromeViewChange: (view: WorkspaceChromeView) => void;
   mainColumnWidth: number;
@@ -38,13 +36,11 @@ export function WakeUpOverlay({
   chatLoading,
   isExitingOverlay,
   editorOpen,
-  editorRevealReady,
   activeSessionId,
   activeSessionInWorkspace,
   notes,
   notesSelectionRange,
   onNotesChange,
-  onBreadcrumbProjectsRootClick,
   onBreadcrumbProjectNameClick,
   onChromeViewChange,
   mainColumnWidth,
@@ -82,11 +78,8 @@ export function WakeUpOverlay({
                 <NoteBreadcrumb
                   projectName={activeSessionInWorkspace.projectName}
                   fileName={activeSessionInWorkspace.file.title}
-                  interactive={
-                    editorRevealReady && !chatLoading && !isExitingOverlay
-                  }
+                  interactive={!chatLoading && !isExitingOverlay}
                   isExiting={isExitingOverlay}
-                  onProjectsRootClick={onBreadcrumbProjectsRootClick}
                   onProjectNameClick={onBreadcrumbProjectNameClick}
                 />
               ) : null}

@@ -4,7 +4,6 @@ import { useWakeUpOverlaySelectors } from "../../hooks/useAppShellMachineSelecto
 import { selectDisplayWakeUpLayer } from "../../machines/appUiMachine";
 import { findFileBySessionId, findFileInWorkspace } from "../../lib/workspaceQueries";
 import {
-  intentBreadcrumbProjectsRootClick,
   intentBreadcrumbSessionClick,
   intentOverlayActionClick,
   setSessionView,
@@ -63,10 +62,6 @@ export function WakeUpOverlayContainer({
     [actor, overlay.overlayActionReturnsToGraph],
   );
 
-  const handleBreadcrumbProjectsRootClick = useCallback(() => {
-    intentBreadcrumbProjectsRootClick(actor);
-  }, [actor]);
-
   const handleBreadcrumbSessionClick = useCallback(() => {
     intentBreadcrumbSessionClick(actor);
   }, [actor]);
@@ -78,14 +73,12 @@ export function WakeUpOverlayContainer({
       chatLoading={overlay.chatLoading}
       isExitingOverlay={overlay.isExitingOverlay}
       editorOpen={overlay.editorOpen}
-      editorRevealReady={overlay.editorRevealReady}
       onChromeViewChange={handleChromeViewChange}
       activeSessionId={overlay.activeSessionId}
       activeSessionInWorkspace={activeFileInWorkspace}
       notes={overlay.notes}
       notesSelectionRange={null}
       onNotesChange={handleWakeNotesChange}
-      onBreadcrumbProjectsRootClick={handleBreadcrumbProjectsRootClick}
       onBreadcrumbProjectNameClick={handleBreadcrumbSessionClick}
       mainColumnWidth={mainColumnWidth.width}
       mainColumnWidthMin={mainColumnWidth.min}

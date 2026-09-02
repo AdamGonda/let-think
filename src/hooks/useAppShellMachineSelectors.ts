@@ -5,7 +5,6 @@ import {
   appUiMachine,
   selectChatLoadingOnGraphFrame,
   selectChatLoadingOnNotesList,
-  selectEditorRevealReady,
   selectGraphInteractionBlocked,
   selectGraphLoadingStartBatchLength,
   selectGraphReferenceFreezeActive,
@@ -66,7 +65,6 @@ export type WakeUpOverlaySelectors = {
   isExitingOverlay: ReturnType<typeof selectIsExitingWakeUp>;
   editorOpen: AppSnapshot["context"]["editorOpen"];
   overlayActionReturnsToGraph: ReturnType<typeof selectOverlayActionReturnsToGraph>;
-  editorRevealReady: ReturnType<typeof selectEditorRevealReady>;
   notes: AppSnapshot["context"]["notes"];
   activeFileId: AppSnapshot["context"]["activeFileId"];
   activeSessionId: AppSnapshot["context"]["activeSessionId"];
@@ -78,7 +76,6 @@ function shallowEqualWakeUp(a: WakeUpOverlaySelectors, b: WakeUpOverlaySelectors
     a.isExitingOverlay === b.isExitingOverlay &&
     a.editorOpen === b.editorOpen &&
     a.overlayActionReturnsToGraph === b.overlayActionReturnsToGraph &&
-    a.editorRevealReady === b.editorRevealReady &&
     a.notes === b.notes &&
     a.activeFileId === b.activeFileId &&
     a.activeSessionId === b.activeSessionId
@@ -92,7 +89,6 @@ export function selectWakeUpOverlayModel(s: AppSnapshot): WakeUpOverlaySelectors
     isExitingOverlay: selectIsExitingWakeUp(s),
     editorOpen: s.context.editorOpen,
     overlayActionReturnsToGraph: selectOverlayActionReturnsToGraph(s),
-    editorRevealReady: selectEditorRevealReady(s),
     notes: s.context.notes,
     activeFileId: s.context.activeFileId,
     activeSessionId: s.context.activeSessionId,

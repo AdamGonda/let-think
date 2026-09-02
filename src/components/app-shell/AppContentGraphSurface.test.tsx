@@ -38,7 +38,6 @@ const base = {
   onSessionViewChange: vi.fn(),
   onHistoryOpen: vi.fn(),
   onEditorOpen: vi.fn(),
-  onProjectsRootClick: vi.fn(),
   onProjectNameClick: vi.fn(),
   fileChats: [],
   activeChatSessionId: null,

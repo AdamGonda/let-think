@@ -32,7 +32,6 @@ type AppContentGraphSurfaceProps = {
   onSessionViewChange: (view: SessionView) => void;
   onHistoryOpen: () => void;
   onEditorOpen: () => void;
-  onProjectsRootClick: () => void;
   onProjectNameClick: () => void;
   fileChats: FileChatListItem[];
   activeChatSessionId: Id<"chatSessions"> | null;
@@ -65,7 +64,6 @@ export function AppContentGraphSurface({
   onSessionViewChange,
   onHistoryOpen,
   onEditorOpen,
-  onProjectsRootClick,
   onProjectNameClick,
   fileChats,
   activeChatSessionId,
@@ -95,7 +93,6 @@ export function AppContentGraphSurface({
           onSessionViewChange={onSessionViewChange}
           onHistoryOpen={onHistoryOpen}
           onEditorOpen={onEditorOpen}
-          onProjectsRootClick={onProjectsRootClick}
           onProjectNameClick={onProjectNameClick}
         />
       )}

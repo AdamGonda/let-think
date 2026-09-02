@@ -12,7 +12,6 @@ const base = {
   onSessionViewChange: vi.fn(),
   onHistoryOpen: vi.fn(),
   onEditorOpen: vi.fn(),
-  onProjectsRootClick: vi.fn(),
   onProjectNameClick: vi.fn(),
 };
 
@@ -101,7 +100,7 @@ describe("GraphViewHeader session view toggle", () => {
     const { getByText, queryByLabelText } = render(
       <GraphViewHeader {...base} sessionView="chat" />,
     );
-    expect(getByText("Folders")).toBeTruthy();
+    expect(getByText("YouTube")).toBeTruthy();
     expect(getByText("New session")).toBeTruthy();
     expect(queryByLabelText("New session. Switch chat")).toBeNull();
   });

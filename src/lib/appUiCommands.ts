@@ -54,11 +54,6 @@ export function intentOverlayActionClick(actor: AppUiActorRef): void {
   actor.send({ type: "INTENT_OVERLAY_ACTION_CLICK" });
 }
 
-/** Open Files at the Projects root (all projects), then exit the notes overlay. */
-export function intentBreadcrumbProjectsRootClick(actor: AppUiActorRef): void {
-  actor.send({ type: "INTENT_BREADCRUMB_PROJECTS_ROOT_CLICK" });
-}
-
 export function intentBreadcrumbSessionClick(actor: AppUiActorRef): void {
   actor.send({ type: "INTENT_BREADCRUMB_SESSION_CLICK" });
 }

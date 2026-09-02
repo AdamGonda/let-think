@@ -261,26 +261,6 @@ describe("intent orchestration", () => {
     vi.useRealTimers();
   });
 
-  it("INTENT_BREADCRUMB_PROJECTS_ROOT_CLICK exits overlay and clears drill when user has no projects", async () => {
-    vi.useFakeTimers();
-    const actor = createActor(appUiMachine, {
-      input: baseInput({
-        surfaceMode: "graph",
-        editorOpen: true,
-        activeProjectId: null,
-        chatLoading: false,
-      }),
-    });
-    actor.start();
-    actor.send({ type: "INTENT_BREADCRUMB_PROJECTS_ROOT_CLICK" });
-    expect(selectSurface(actor.getSnapshot())).toBe("notesList");
-    expect(actor.getSnapshot().context.notesListDrill).toBeNull();
-    await vi.advanceTimersByTimeAsync(timings.wakeUpExitMs + 1);
-    expect(actor.getSnapshot().context.editorOpen).toBe(false);
-    actor.stop();
-    vi.useRealTimers();
-  });
-
   it("INTENT_OVERLAY_ACTION_CLICK closes editor without collapsing sidebar", () => {
     const actor = createActor(appUiMachine, {
       input: baseInput({

@@ -1,8 +1,6 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const PROJECTS_ROOT_LABEL = "Folders";
-
 const crumbButtonClass =
   "max-w-full cursor-pointer truncate rounded px-1 py-0.5 text-left font-medium text-foreground/90 transition-colors hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background";
 
@@ -12,12 +10,8 @@ interface NoteBreadcrumbProps {
   fileName: string;
   /** When false, crumbs are visible but not clickable (session still settling). */
   interactive?: boolean;
-  /**
-   * Wake-up overlay exit animation: non-interactive but avoid "disabled" cursor —
-   * `editorRevealReady` is false in that machine state while the editor is still "open".
-   */
+  /** Wake-up overlay exit animation: non-interactive, muted look, default cursor. */
   isExiting?: boolean;
-  onProjectsRootClick: () => void;
   onProjectNameClick: () => void;
   /** When set, the current file crumb opens a session switcher. */
   onFileNameClick?: () => void;
@@ -39,7 +33,6 @@ export function NoteBreadcrumb({
   fileName,
   interactive = true,
   isExiting = false,
-  onProjectsRootClick,
   onProjectNameClick,
   onFileNameClick,
   fileNameMenuOpen = false,
@@ -59,23 +52,6 @@ export function NoteBreadcrumb({
       aria-disabled={!interactive || undefined}
     >
       <ol className="flex min-w-0 flex-nowrap items-center gap-x-1.5 text-sm text-muted-foreground">
-        <li className="min-w-0 shrink">
-          <button
-            type="button"
-            className={cn(
-              "inline-block max-w-full min-w-0",
-              crumbInteractiveClass,
-            )}
-            title={PROJECTS_ROOT_LABEL}
-            disabled={!interactive}
-            onClick={interactive ? onProjectsRootClick : undefined}
-          >
-            {PROJECTS_ROOT_LABEL}
-          </button>
-        </li>
-        <li aria-hidden className="shrink-0 text-muted-foreground/50">
-          <ChevronRight className="size-3.5" />
-        </li>
         <li className="min-w-0 shrink">
           <button
             type="button"

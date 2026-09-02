@@ -21,7 +21,6 @@ type GraphViewHeaderProps = {
   onSessionViewChange: (view: SessionView) => void;
   onHistoryOpen: () => void;
   onEditorOpen: () => void;
-  onProjectsRootClick: () => void;
   onProjectNameClick: () => void;
 };
 
@@ -39,7 +38,6 @@ export function GraphViewHeader({
   onSessionViewChange,
   onHistoryOpen,
   onEditorOpen,
-  onProjectsRootClick,
   onProjectNameClick,
 }: GraphViewHeaderProps) {
   const sessionLabel =
@@ -57,7 +55,6 @@ export function GraphViewHeader({
             projectName={projectName}
             fileName={sessionLabel}
             interactive={!isSessionTitleDisabled}
-            onProjectsRootClick={onProjectsRootClick}
             onProjectNameClick={onProjectNameClick}
           />
         ) : null}

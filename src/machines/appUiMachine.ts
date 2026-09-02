@@ -292,12 +292,6 @@ export const appUiMachine = setup({
       enqueue.raise({ type: "EDITOR_CLOSE" });
       enqueue.raise({ type: "NOTES_LIST_DRILL_SET", drill: null });
     }),
-    /** Breadcrumb "Folders": Files view at root + exit overlay. */
-    intentBreadcrumbProjectsRoot: enqueueActions(({ enqueue }) => {
-      enqueue.raise({ type: "VIEW_SET", mode: "notesList" });
-      enqueue.raise({ type: "NOTES_LIST_DRILL_SET", drill: null });
-      enqueue.raise({ type: "USER_EXIT_WAKE_UP" });
-    }),
     intentBreadcrumbSession: enqueueActions(({ enqueue, context }) => {
       enqueue.raise({ type: "VIEW_SET", mode: "notesList" });
       const pid = context.activeProjectId;
@@ -455,10 +449,6 @@ export const appUiMachine = setup({
         actions: "raiseExitWakeUp",
       },
     ],
-    INTENT_BREADCRUMB_PROJECTS_ROOT_CLICK: {
-      guard: "canExitWakeUp",
-      actions: "intentBreadcrumbProjectsRoot",
-    },
     INTENT_BREADCRUMB_SESSION_CLICK: {
       guard: "canExitWakeUp",
       actions: "intentBreadcrumbSession",
@@ -556,7 +546,6 @@ export const appUiMachine = setup({
           },
         },
         visible: {
-          initial: "revealing",
           on: {
             USER_EXIT_WAKE_UP: {
               target: "#appUi.wakeUp.exiting",
@@ -567,16 +556,6 @@ export const appUiMachine = setup({
             guard: "demandEnded",
             target: "off",
             actions: "clearOnDemandEnd",
-          },
-          states: {
-            revealing: {
-              after: {
-                [timings.wakeUpEditorRevealMs]: {
-                  target: "ready",
-                },
-              },
-            },
-            ready: {},
           },
         },
         exiting: {
@@ -615,11 +594,9 @@ function wakeUpBranch(
   if (typeof v === "object" && v !== null && "wakeUp" in v) {
     const w = (v as { wakeUp: unknown }).wakeUp;
     if (w === "off") return "off";
+    if (w === "visible") return "visible";
     if (w === "exiting") return "exiting";
     if (w === "dismissedLatch") return "dismissedLatch";
-    if (typeof w === "object" && w !== null && "visible" in w) {
-      return "visible";
-    }
   }
   return null;
 }
@@ -651,17 +628,6 @@ export function selectDisplayWakeUpLayer(snapshot: MachineSnapshot): boolean {
 
 export function selectIsExitingWakeUp(snapshot: MachineSnapshot): boolean {
   return wakeUpBranch(snapshot) === "exiting";
-}
-
-export function selectEditorRevealReady(snapshot: MachineSnapshot): boolean {
-  const v = snapshot.value;
-  if (typeof v === "object" && v !== null && "wakeUp" in v) {
-    const w = (v as { wakeUp: unknown }).wakeUp;
-    if (typeof w === "object" && w !== null && "visible" in w) {
-      return (w as { visible: string }).visible === "ready";
-    }
-  }
-  return false;
 }
 
 export function selectChatLoadingOnGraphFrame(
