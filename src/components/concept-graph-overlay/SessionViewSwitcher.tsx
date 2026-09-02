@@ -7,6 +7,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { SessionView } from "@/machines/appUiTypes";
+import { useState } from "react";
 
 export type WorkspaceChromeView = SessionView | "file";
 
@@ -42,6 +43,7 @@ export function SessionViewSwitcher({
     0,
     VIEW_OPTIONS.findIndex((option) => option.view === selected),
   );
+  const [hovered, setHovered] = useState<WorkspaceChromeView | null>(null);
 
   return (
     <div
@@ -71,9 +73,13 @@ export function SessionViewSwitcher({
             aria-label={label}
             data-tour={tour}
             className={cn(
-              "group relative z-10 flex size-7 appearance-none cursor-pointer items-center justify-center border-0 bg-transparent p-0 transition-colors duration-75 outline-none select-none focus-visible:ring-2 focus-visible:ring-ring/50",
+              "relative z-10 flex size-7 appearance-none cursor-pointer items-center justify-center border-0 bg-transparent p-0 transition-colors duration-75 outline-none select-none focus-visible:ring-2 focus-visible:ring-ring/50",
               isSelected ? "text-foreground" : "text-muted-foreground/55",
             )}
+            onMouseEnter={() => setHovered(view)}
+            onMouseLeave={() => setHovered(null)}
+            onFocus={() => setHovered(view)}
+            onBlur={() => setHovered(null)}
             onClick={() => {
               if (view !== selected) onChange(view);
             }}
@@ -81,7 +87,10 @@ export function SessionViewSwitcher({
             <Icon className={cn("size-4", isSelected && "fill-current")} />
             <span
               role="tooltip"
-              className="pointer-events-none absolute top-full left-1/2 z-20 mt-1 -translate-x-1/2 rounded-md border border-border bg-background px-1.5 py-0.5 text-[10px] leading-none whitespace-nowrap text-foreground opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100"
+              className={cn(
+                "pointer-events-none absolute top-full left-1/2 z-50 mt-1.5 -translate-x-1/2 rounded-md border border-border bg-background px-2 py-1 text-xs leading-none whitespace-nowrap text-foreground shadow-sm",
+                hovered === view ? "opacity-100" : "opacity-0",
+              )}
             >
               {label}
             </span>

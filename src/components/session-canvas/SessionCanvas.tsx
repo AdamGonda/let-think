@@ -964,11 +964,7 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
             {TEXT_HANDLES.map(({ corner, label, className }) => (
               <div
                 key={corner}
-                role="slider"
                 aria-label={label}
-                aria-valuemin={TEXT_SIZE_MIN}
-                aria-valuemax={TEXT_SIZE_MAX}
-                aria-valuenow={textSize}
                 className={`absolute z-10 size-[6px] border border-[#3b82f6] bg-background ${className}`}
                 onPointerDown={(event) => onTextHandleDown(corner, event)}
                 onPointerMove={onTextHandleMove}

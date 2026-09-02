@@ -31,9 +31,17 @@ describe("CanvasToolbar", () => {
   it("keeps each hover label on its own button", () => {
     const { getByLabelText } = render(<Harness />);
     const pen = getByLabelText("Pen");
-    const text = getByLabelText("Text");
+    fireEvent.mouseEnter(pen);
     expect(pen.querySelector("[role='tooltip']")?.textContent).toBe("Pen");
+    expect(pen.querySelector("[role='tooltip']")?.className).toContain(
+      "opacity-100",
+    );
+    const text = getByLabelText("Text");
+    fireEvent.mouseEnter(text);
     expect(text.querySelector("[role='tooltip']")?.textContent).toBe("Text");
+    expect(pen.querySelector("[role='tooltip']")?.className).toContain(
+      "opacity-0",
+    );
     expect(pen.contains(text.querySelector("[role='tooltip']"))).toBe(false);
   });
 });
