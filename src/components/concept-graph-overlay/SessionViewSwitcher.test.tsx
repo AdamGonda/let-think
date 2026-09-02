@@ -12,42 +12,42 @@ describe("SessionViewSwitcher", () => {
     );
     expect(
       getAllByRole("radio").map((button) => button.getAttribute("aria-label")),
-    ).toEqual(["Canvas view", "Chat view", "Graph view", "File view"]);
-    expect(getByLabelText("Graph view").getAttribute("aria-checked")).toBe(
+    ).toEqual(["Canvas", "Chat", "Graph", "Words"]);
+    expect(getByLabelText("Graph").getAttribute("aria-checked")).toBe(
       "true",
     );
-    expect(getByLabelText("Chat view").getAttribute("aria-checked")).toBe(
+    expect(getByLabelText("Chat").getAttribute("aria-checked")).toBe(
       "false",
     );
-    expect(getByLabelText("Canvas view").getAttribute("aria-checked")).toBe(
+    expect(getByLabelText("Canvas").getAttribute("aria-checked")).toBe(
       "false",
     );
-    expect(getByLabelText("File view").getAttribute("aria-checked")).toBe(
+    expect(getByLabelText("Words").getAttribute("aria-checked")).toBe(
       "false",
     );
 
-    fireEvent.click(getByLabelText("Graph view"));
+    fireEvent.click(getByLabelText("Graph"));
     expect(onChange).not.toHaveBeenCalled();
 
-    fireEvent.click(getByLabelText("Chat view"));
+    fireEvent.click(getByLabelText("Chat"));
     expect(onChange).toHaveBeenCalledWith("chat");
-    fireEvent.click(getByLabelText("Canvas view"));
+    fireEvent.click(getByLabelText("Canvas"));
     expect(onChange).toHaveBeenCalledWith("canvas");
-    fireEvent.click(getByLabelText("File view"));
+    fireEvent.click(getByLabelText("Words"));
     expect(onChange).toHaveBeenCalledWith("file");
 
     rerender(<SessionViewSwitcher selected="file" onChange={onChange} />);
-    expect(getByLabelText("File view").getAttribute("aria-checked")).toBe(
+    expect(getByLabelText("Words").getAttribute("aria-checked")).toBe(
       "true",
     );
-    expect(getByLabelText("Graph view").getAttribute("aria-checked")).toBe(
+    expect(getByLabelText("Graph").getAttribute("aria-checked")).toBe(
       "false",
     );
 
     onChange.mockClear();
-    fireEvent.click(getByLabelText("File view"));
+    fireEvent.click(getByLabelText("Words"));
     expect(onChange).not.toHaveBeenCalled();
-    fireEvent.click(getByLabelText("Graph view"));
+    fireEvent.click(getByLabelText("Graph"));
     expect(onChange).toHaveBeenCalledWith("graph");
   });
 
@@ -55,18 +55,18 @@ describe("SessionViewSwitcher", () => {
     const { getByLabelText } = render(
       <SessionViewSwitcher selected="canvas" onChange={() => {}} />,
     );
-    const canvas = getByLabelText("Canvas view");
+    const canvas = getByLabelText("Canvas");
     fireEvent.mouseEnter(canvas);
     expect(canvas.querySelector("[role='tooltip']")?.textContent).toBe(
-      "Canvas view",
+      "Canvas",
     );
     expect(canvas.querySelector("[role='tooltip']")?.className).toContain(
       "block",
     );
-    const file = getByLabelText("File view");
+    const file = getByLabelText("Words");
     fireEvent.mouseEnter(file);
     expect(file.querySelector("[role='tooltip']")?.textContent).toBe(
-      "File view",
+      "Words",
     );
     expect(canvas.querySelector("[role='tooltip']")?.className).toContain(
       "hidden",

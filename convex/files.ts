@@ -14,7 +14,7 @@ export async function requireFileOwner(ctx: MutationCtx, fileId: Id<"files">) {
   if (!userId) throw new Error("Must be signed in");
   const file = await ctx.db.get(fileId);
   if (!file || file.userId !== userId) {
-    throw new Error("File not found or access denied");
+    throw new Error("Idea not found or access denied");
   }
   return { userId, file };
 }
@@ -40,7 +40,7 @@ export async function createFileWithSession(
   },
 ): Promise<{ fileId: Id<"files">; sessionId: Id<"sessions"> }> {
   const now = args.createdAt ?? Date.now();
-  const title = args.title ?? "New file";
+  const title = args.title ?? "New idea";
   const fileId = await ctx.db.insert("files", {
     userId: args.userId,
     projectId: args.projectId,
@@ -66,7 +66,7 @@ export const create = mutation({
   }),
   handler: async (ctx, { projectId }) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Must be signed in to create a file");
+    if (!userId) throw new Error("Must be signed in to create an idea");
     if (projectId) {
       const project = await ctx.db.get(projectId);
       if (!project || project.userId !== userId) {
@@ -205,7 +205,12 @@ export async function maybeTitleFileFromFirstGraphMessage(
   const session = await ctx.db.get(sessionId);
   if (!session?.fileId || !userContent.trim()) return;
   const file = await ctx.db.get(session.fileId);
-  if (file && (file.title === "New file" || file.title === "New session")) {
+  if (
+    file &&
+    (file.title === "New idea" ||
+      file.title === "New file" ||
+      file.title === "New session")
+  ) {
     const title = titleFromFirstMessage(userContent);
     await ctx.db.patch(session.fileId, { title });
   }

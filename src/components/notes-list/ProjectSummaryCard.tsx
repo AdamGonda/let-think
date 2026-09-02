@@ -47,10 +47,10 @@ export function ProjectSummaryCard({
   const count = files.length;
   const fileCountLabel =
     count === 0
-      ? "No files yet"
+      ? "No ideas yet"
       : count === 1
-        ? "1 file"
-        : `${count} files`;
+        ? "1 idea"
+        : `${count} ideas`;
   const isInbox = group.project == null;
   const canManage = !isInbox && !!group.project;
 
@@ -141,7 +141,7 @@ export function ProjectSummaryCard({
                 renameLabel="Rename space"
                 deleteLabel="Delete space"
                 deleteTitle="Delete this space?"
-                deleteDescription={`“${title}” and all files in it will be permanently deleted.`}
+                deleteDescription={`“${title}” and all ideas in it will be permanently deleted.`}
               />
             ) : null}
           </div>

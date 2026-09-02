@@ -37,7 +37,7 @@ export function NotesListToolbar({
             type="button"
             onClick={onBackFromDrill}
             className="flex size-9 shrink-0 items-center justify-center cursor-pointer rounded-lg border border-border/80 bg-card text-foreground transition-colors hover:border-border hover:bg-muted/10 active:bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            aria-label="Back to files"
+            aria-label="Back to ideas"
           >
             <ChevronLeft className="size-5" />
           </button>
@@ -49,11 +49,11 @@ export function NotesListToolbar({
           variant="secondary"
           className="h-9 gap-2 px-3 ring-1 ring-border/50 shadow-sm"
           onClick={onNewFile}
-          aria-label="New file"
+          aria-label="New idea"
           data-tour="new-session"
         >
           <Plus className="size-4 stroke-[1.75]" />
-          New file
+          New idea
         </Button>
         {!drilled ? (
           <Button

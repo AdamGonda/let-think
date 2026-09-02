@@ -173,7 +173,7 @@ export function NotesListPanel({
               <>
                 {rootFolders.length === 0 ? (
                   <p className="text-center text-sm text-muted-foreground py-12">
-                    No spaces or files to show.
+                    No spaces or ideas to show.
                   </p>
                 ) : (
                   <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -264,7 +264,7 @@ export function NotesListPanel({
                   <div className="py-12 text-center">
                     <p className="text-sm text-muted-foreground">
                       {(drillGroup.files ?? []).length === 0
-                        ? "No files here yet."
+                        ? "No ideas here yet."
                         : `Nothing matches "${searchQuery}"`}
                     </p>
                   </div>

@@ -86,9 +86,9 @@ export function NotesListSessionCard({
                   onStartEdit();
                 }}
                 onDelete={onDelete}
-                renameLabel="Rename file"
-                deleteLabel="Delete file"
-                deleteTitle="Delete this file?"
+                renameLabel="Rename idea"
+                deleteLabel="Delete idea"
+                deleteTitle="Delete this idea?"
                 deleteDescription={`“${session.title}” will be permanently deleted.`}
               />
             ) : null}

@@ -161,7 +161,7 @@ export function Tutorial({ autoStart = false, onComplete }: TutorialProps) {
         }
 
         const overlayAction = document.querySelector<HTMLButtonElement>(
-          '[class*="z-[9999]"] button[aria-label="Graph view"]',
+          '[class*="z-[9999]"] button[aria-label="Graph"]',
         );
         if (overlayAction) {
           overlayAction.click();

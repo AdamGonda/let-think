@@ -27,12 +27,12 @@ describe("GraphViewHeader session view toggle", () => {
         onSessionViewChange={onSessionViewChange}
       />,
     );
-    expect(getByLabelText("Graph view").getAttribute("aria-checked")).toBe("true");
-    expect(getByLabelText("Chat view").getAttribute("aria-checked")).toBe("false");
-    expect(getByLabelText("Canvas view").getAttribute("aria-checked")).toBe(
+    expect(getByLabelText("Graph").getAttribute("aria-checked")).toBe("true");
+    expect(getByLabelText("Chat").getAttribute("aria-checked")).toBe("false");
+    expect(getByLabelText("Canvas").getAttribute("aria-checked")).toBe(
       "false",
     );
-    expect(getByLabelText("File view").getAttribute("aria-checked")).toBe(
+    expect(getByLabelText("Words").getAttribute("aria-checked")).toBe(
       "false",
     );
     const history = getByLabelText("Session history");
@@ -40,13 +40,13 @@ describe("GraphViewHeader session view toggle", () => {
     expect(history.closest(".opacity-0")).toBeNull();
     expect(queryByLabelText("Previous step")).toBeTruthy();
 
-    fireEvent.click(getByLabelText("Graph view"));
+    fireEvent.click(getByLabelText("Graph"));
     expect(onSessionViewChange).not.toHaveBeenCalled();
 
-    fireEvent.click(getByLabelText("Chat view"));
+    fireEvent.click(getByLabelText("Chat"));
     expect(onSessionViewChange).toHaveBeenCalledWith("chat");
 
-    fireEvent.click(getByLabelText("Canvas view"));
+    fireEvent.click(getByLabelText("Canvas"));
     expect(onSessionViewChange).toHaveBeenCalledWith("canvas");
 
     const onEditorOpen = vi.fn();
@@ -58,7 +58,7 @@ describe("GraphViewHeader session view toggle", () => {
         onEditorOpen={onEditorOpen}
       />,
     );
-    fireEvent.click(getByLabelText("File view"));
+    fireEvent.click(getByLabelText("Words"));
     expect(onEditorOpen).toHaveBeenCalled();
     expect(onSessionViewChange).toHaveBeenCalledTimes(2);
 
@@ -69,12 +69,12 @@ describe("GraphViewHeader session view toggle", () => {
         onSessionViewChange={onSessionViewChange}
       />,
     );
-    expect(getByLabelText("Chat view").getAttribute("aria-checked")).toBe(
+    expect(getByLabelText("Chat").getAttribute("aria-checked")).toBe(
       "true",
     );
     expect(getByLabelText("Session history").closest(".opacity-0")).toBeTruthy();
     expect(queryByLabelText("Previous step")).toBeNull();
-    expect(getByLabelText("File view").getAttribute("aria-checked")).toBe(
+    expect(getByLabelText("Words").getAttribute("aria-checked")).toBe(
       "false",
     );
 
@@ -85,13 +85,13 @@ describe("GraphViewHeader session view toggle", () => {
         onSessionViewChange={onSessionViewChange}
       />,
     );
-    expect(getByLabelText("Canvas view").getAttribute("aria-checked")).toBe(
+    expect(getByLabelText("Canvas").getAttribute("aria-checked")).toBe(
       "true",
     );
     expect(queryByLabelText("Eraser")).toBeNull();
     expect(queryByLabelText("Session history")).toBeNull();
     expect(queryByLabelText("Previous step")).toBeNull();
-    expect(getByLabelText("File view").getAttribute("aria-checked")).toBe(
+    expect(getByLabelText("Words").getAttribute("aria-checked")).toBe(
       "false",
     );
   });

@@ -15,9 +15,9 @@ export function NotesListEmptyState({
       <div className="rounded-full bg-muted/50 p-4">
         <FileText className="size-8 text-muted-foreground/60" />
       </div>
-      <p className="font-medium text-foreground">No files yet</p>
+      <p className="font-medium text-foreground">No ideas yet</p>
       <p className="text-sm max-w-[280px]">
-        Create a file to start thinking, or a space to group related files.
+        Create an idea to start thinking, or a space to group related ideas.
       </p>
       {onNewFile || onNewFolder ? (
         <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
@@ -28,7 +28,7 @@ export function NotesListEmptyState({
               onClick={onNewFile}
             >
               <Plus className="size-4" />
-              New file
+              New idea
             </Button>
           ) : null}
           {onNewFolder ? (
