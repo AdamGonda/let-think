@@ -1277,6 +1277,7 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
     const coalesced =
       event.nativeEvent.getCoalescedEvents?.() ?? [event.nativeEvent];
     for (const raw of coalesced) {
+      const wasBroken = inkBrokenRef.current;
       const action = inkOverChrome(
         isOverCanvasChrome(raw.clientX, raw.clientY),
       );
