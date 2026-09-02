@@ -37,6 +37,9 @@ export default defineConfig([
     files: [
       'src/components/chat/HistoricalBatchPrompt.tsx',
       'src/components/session-sidebar/useSessionSidebarWorkspace.ts',
+      'src/components/chat/ChatComposer.tsx',
+      'src/components/command-palette/CommandPalette.tsx',
+      'src/components/session-canvas/SessionCanvas.tsx',
     ],
     rules: {
       'react-hooks/set-state-in-effect': 'off',

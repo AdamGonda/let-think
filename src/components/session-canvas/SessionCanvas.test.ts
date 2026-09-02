@@ -7,15 +7,19 @@ import {
   canvasTextStroke,
   CANVAS_MAX_SCALE,
   CANVAS_MIN_SCALE,
+  estimatedTextWidth,
+  findTextStrokeAt,
   identityViewport,
   isEmptyShape,
   isErasePointer,
   isUndoHotkey,
+  moveWorldByScreenDelta,
   rectFromPoints,
   screenToWorld,
   strokeBounds,
   strokesHaveInk,
   strokeWidthForPointer,
+  textStrokeHits,
   worldToScreen,
 } from "./SessionCanvas";
 
@@ -117,6 +121,41 @@ describe("canvasTextStroke", () => {
       text: "hello",
     });
     expect(canvasTextStroke(0, 0, "   ")).toBeNull();
+  });
+});
+
+describe("text stroke hit testing", () => {
+  const hello = { kind: "text" as const, x: 12, y: 24, text: "hello" };
+
+  it("hits inside the estimated glyph box and misses outside", () => {
+    const width = estimatedTextWidth("hello");
+    expect(textStrokeHits(hello, { x: 12, y: 24 })).toBe(true);
+    expect(textStrokeHits(hello, { x: 12 + width, y: 24 })).toBe(true);
+    expect(textStrokeHits(hello, { x: 11, y: 24 })).toBe(false);
+    expect(textStrokeHits(hello, { x: 12, y: 23 })).toBe(false);
+  });
+
+  it("prefers later text strokes and skips ink", () => {
+    const strokes = [
+      { kind: "draw" as const, points: [{ x: 12, y: 24, width: 2 }] },
+      hello,
+      { kind: "text" as const, x: 12, y: 24, text: "on top" },
+    ];
+    expect(findTextStrokeAt(strokes, { x: 13, y: 25 })).toBe(2);
+    expect(findTextStrokeAt(strokes, { x: 0, y: 0 })).toBeNull();
+  });
+});
+
+describe("moveWorldByScreenDelta", () => {
+  it("converts a screen drag into world space", () => {
+    expect(moveWorldByScreenDelta({ x: 20, y: 20 }, 30, 10, 1)).toEqual({
+      x: 50,
+      y: 30,
+    });
+    expect(moveWorldByScreenDelta({ x: 20, y: 20 }, 30, 10, 2)).toEqual({
+      x: 35,
+      y: 25,
+    });
   });
 });
 
