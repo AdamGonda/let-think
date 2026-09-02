@@ -935,7 +935,8 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
               suppressContentEditableWarning
               className="min-w-[1ch] bg-transparent text-white outline-none"
               style={{
-                font: `${textSize * viewport.scale}px "DM Sans", ui-sans-serif, system-ui, sans-serif`,
+                fontSize: `${textSize * viewport.scale}px`,
+                fontFamily: '"DM Sans", ui-sans-serif, system-ui, sans-serif',
                 caretColor: INK,
                 whiteSpace: "pre",
                 lineHeight: TEXT_LINE_HEIGHT,
@@ -965,7 +966,7 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
               <div
                 key={corner}
                 aria-label={label}
-                className={`absolute z-10 size-[6px] border border-[#3b82f6] bg-background ${className}`}
+                className={`absolute z-10 size-2 border border-[#3b82f6] bg-background ${className}`}
                 onPointerDown={(event) => onTextHandleDown(corner, event)}
                 onPointerMove={onTextHandleMove}
                 onPointerUp={onTextHandleUp}

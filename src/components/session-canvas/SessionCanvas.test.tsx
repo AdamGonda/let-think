@@ -105,7 +105,7 @@ describe("SessionCanvas toolbar", () => {
     fireEvent.pointerDown(handle, { pointerId: 9, clientX: 40, clientY: 40 });
     fireEvent.pointerMove(handle, { pointerId: 9, clientX: 80, clientY: 80 });
     fireEvent.pointerUp(handle, { pointerId: 9, clientX: 80, clientY: 80 });
-    expect(box.style.font).toMatch(/^96px /);
+    expect(box.style.fontSize).toBe("96px");
     fireEvent.blur(box);
     expect(queryByLabelText("Canvas text")).toBeNull();
     fireEvent.pointerDown(canvas, {

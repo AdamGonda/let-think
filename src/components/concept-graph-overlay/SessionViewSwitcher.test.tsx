@@ -50,4 +50,29 @@ describe("SessionViewSwitcher", () => {
     fireEvent.click(getByLabelText("Graph view"));
     expect(onChange).toHaveBeenCalledWith("graph");
   });
+
+  it("keeps each hover label on its own button", () => {
+    const { getByLabelText } = render(
+      <SessionViewSwitcher selected="canvas" onChange={() => {}} />,
+    );
+    const canvas = getByLabelText("Canvas view");
+    fireEvent.mouseEnter(canvas);
+    expect(canvas.querySelector("[role='tooltip']")?.textContent).toBe(
+      "Canvas view",
+    );
+    expect(canvas.querySelector("[role='tooltip']")?.className).toContain(
+      "opacity-100",
+    );
+    const file = getByLabelText("File view");
+    fireEvent.mouseEnter(file);
+    expect(file.querySelector("[role='tooltip']")?.textContent).toBe(
+      "File view",
+    );
+    expect(canvas.querySelector("[role='tooltip']")?.className).toContain(
+      "opacity-0",
+    );
+    expect(canvas.contains(file.querySelector("[role='tooltip']"))).toBe(
+      false,
+    );
+  });
 });
