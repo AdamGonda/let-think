@@ -166,6 +166,7 @@ export function AppContentGraphSurface({
       >
         <SessionCanvas
           key={activeSessionId ?? "empty"}
+          sessionId={activeSessionId}
           active={canvasOpen}
         />
       </div>
