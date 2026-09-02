@@ -13,6 +13,13 @@ export function AppUiProvider({ children }: { children: ReactNode }) {
     input: initialSelection,
   });
 
+  // Parallel `surface` always starts at notesList; sync once from stored mode.
+  useEffect(() => {
+    if (initialSelection.surfaceMode === "graph") {
+      actorRef.send({ type: "VIEW_SET", mode: "graph" });
+    }
+  }, [actorRef, initialSelection.surfaceMode]);
+
   useEffect(() => {
     const subscription = actorRef.subscribe((snapshot) => {
       setStoredAppUiSelection({
@@ -22,6 +29,11 @@ export function AppUiProvider({ children }: { children: ReactNode }) {
         activeProjectId: snapshot.context.activeProjectId,
         hasEverHadSessionSelection: snapshot.context.hasEverHadSessionSelection,
         sessionView: snapshot.context.sessionView,
+        surfaceMode: snapshot.context.surfaceMode,
+        notesListDrill: snapshot.context.notesListDrill,
+        editorOpen: snapshot.context.editorOpen,
+        selectedBatchIndex: snapshot.context.selectedBatchIndex,
+        prevBatchesLength: snapshot.context.prevBatchesLength,
       });
     });
     return () => subscription.unsubscribe();

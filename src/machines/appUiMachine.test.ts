@@ -539,4 +539,44 @@ describe("intent orchestration", () => {
     expect(actor.getSnapshot().context.activeChatSessionId).toBe(cid);
     actor.stop();
   });
+
+  it("hydrate contract: surfaceMode graph input + VIEW_SET restores graph surface", () => {
+    const actor = createActor(appUiMachine, {
+      input: baseInput({ surfaceMode: "graph", sessionView: "canvas" }),
+    });
+    actor.start();
+    expect(selectSurface(actor.getSnapshot())).toBe("notesList");
+    actor.send({ type: "VIEW_SET", mode: "graph" });
+    expect(selectSurface(actor.getSnapshot())).toBe("graph");
+    expect(actor.getSnapshot().context.sessionView).toBe("canvas");
+    actor.stop();
+  });
+
+  it("restored batch index survives first BATCHES_LENGTH_CHANGED at same length", () => {
+    const actor = createActor(appUiMachine, {
+      input: baseInput({
+        selectedBatchIndex: 2,
+        prevBatchesLength: 5,
+      }),
+    });
+    actor.start();
+    expect(actor.getSnapshot().context.selectedBatchIndex).toBe(2);
+    actor.send({ type: "BATCHES_LENGTH_CHANGED", length: 5 });
+    expect(actor.getSnapshot().context.selectedBatchIndex).toBe(2);
+    expect(actor.getSnapshot().context.prevBatchesLength).toBe(5);
+    actor.stop();
+  });
+
+  it("restored batch index without prevBatchesLength jumps to latest on first sync", () => {
+    const actor = createActor(appUiMachine, {
+      input: baseInput({
+        selectedBatchIndex: 2,
+        prevBatchesLength: 0,
+      }),
+    });
+    actor.start();
+    actor.send({ type: "BATCHES_LENGTH_CHANGED", length: 5 });
+    expect(actor.getSnapshot().context.selectedBatchIndex).toBe(4);
+    actor.stop();
+  });
 });
