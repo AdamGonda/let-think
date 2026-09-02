@@ -448,9 +448,9 @@ describe("canvas viewport", () => {
       [2, { x: 200, y: 0 }],
     ]);
     const vp = applyPointerGesture(identityViewport(), prev, next, "pinch");
-    expect(vp.scale).toBe(2);
-    expect(worldToScreen(vp, { x: 50, y: 0 }).x).toBeCloseTo(100);
-    expect(worldToScreen(vp, { x: 50, y: 0 }).y).toBeCloseTo(0);
+    expect(vp.scale).toBe(8);
+    expect(worldToScreen(vp, { x: 12.5, y: 0 }).x).toBeCloseTo(100);
+    expect(worldToScreen(vp, { x: 12.5, y: 0 }).y).toBeCloseTo(0);
   });
 
   it("classifies pinch on two fingers and pan while cmd is held", () => {
@@ -467,7 +467,7 @@ describe("canvas viewport", () => {
     expect(applyPointerGesture(identityViewport(), prev, next, "pan")).toEqual({
       x: 12,
       y: -4,
-      scale: 1,
+      scale: 4,
     });
   });
 
@@ -487,11 +487,11 @@ describe("canvas viewport", () => {
     ).toEqual({
       x: 10,
       y: 0,
-      scale: 1,
+      scale: 4,
     });
     expect(
       applyPointerGesture(identityViewport(), prev, next, "pinch").scale,
-    ).toBe(1);
+    ).toBe(4);
   });
 });
 

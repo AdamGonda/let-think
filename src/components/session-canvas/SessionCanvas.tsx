@@ -59,11 +59,10 @@ const TEXT_DBLCLICK_PX = 8;
 
 export const CANVAS_MIN_SCALE = 0.25;
 export const CANVAS_MAX_SCALE = 8;
+export const DEFAULT_CANVAS_SCALE = 4;
 export const DEFAULT_PEN_SIZE = 4;
 export const DEFAULT_ERASE_SIZE = 40;
 export const DEFAULT_TEXT_SIZE = 48;
-export const PEN_SIZE_MIN = 4;
-export const PEN_SIZE_MAX = 13;
 export const ERASE_SIZE_MIN = 8;
 export const ERASE_SIZE_MAX = 120;
 export const TEXT_SIZE_MIN = 12;
@@ -72,7 +71,7 @@ const SNAPSHOT_PAD = 32;
 const DEFAULT_SNAPSHOT_BG = "#18181b";
 
 export function identityViewport(): CanvasViewport {
-  return { x: 0, y: 0, scale: 1 };
+  return { x: 0, y: 0, scale: DEFAULT_CANVAS_SCALE };
 }
 
 export function screenToWorld(vp: CanvasViewport, screen: Point): Point {
@@ -760,7 +759,6 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
   const [eraseCursor, setEraseCursor] = useState<Point | null>(null);
   const [viewportOverride, setViewport] = useState<CanvasViewport | null>(null);
   const [revision, setRevision] = useState(0);
-  const [penSize, setPenSize] = useState(DEFAULT_PEN_SIZE);
   const [eraseSize, setEraseSize] = useState(DEFAULT_ERASE_SIZE);
   const [textSize, setTextSize] = useState(DEFAULT_TEXT_SIZE);
   const [inkColor, setInkColor] = useState<string>(DEFAULT_INK_COLOR);
@@ -1276,7 +1274,7 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
 
     drawingPointerIdRef.current = event.nativeEvent.pointerId;
     inkBrokenRef.current = false;
-    const userSize = erase ? eraseSize : penSize;
+    const userSize = erase ? eraseSize : DEFAULT_PEN_SIZE;
 
     if (erase) {
       trackEraseCursor(event.nativeEvent);
@@ -1318,7 +1316,7 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
 
   const trackEraseCursor = (event: PointerEvent) => {
     const canvas = canvasRef.current;
-    if (!canvas || tool !== "erase") return;
+    if (!canvas || (tool !== "pen" && tool !== "erase")) return;
     setEraseCursor(worldPoint(canvas, event, viewportRef.current));
   };
 
@@ -1414,7 +1412,7 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
     if (!stroke) return;
     event.preventDefault();
     if (stroke.kind !== "draw" && stroke.kind !== "erase") return;
-    const userSize = stroke.kind === "erase" ? eraseSize : penSize;
+    const userSize = stroke.kind === "erase" ? eraseSize : DEFAULT_PEN_SIZE;
     const coalesced =
       event.nativeEvent.getCoalescedEvents?.() ?? [event.nativeEvent];
     for (const raw of coalesced) {
@@ -1476,7 +1474,7 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
         !wasBroken &&
         isSmoothedPointer(event.nativeEvent.pointerType)
       ) {
-        const userSize = stroke.kind === "erase" ? eraseSize : penSize;
+        const userSize = stroke.kind === "erase" ? eraseSize : DEFAULT_PEN_SIZE;
         const rawPoint = pointFromEvent(
           canvas,
           event.nativeEvent,
@@ -1516,29 +1514,16 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
       ? textHoverMove
         ? "cursor-move"
         : "cursor-text"
-      : tool === "erase"
-        ? "cursor-none"
-        : "cursor-crosshair";
-  const eraseRingSize =
-    strokeWidthForPointer("mouse", 0.5, "erase", eraseSize) * viewport.scale;
+      : "cursor-none";
+  const inkRingSize =
+    strokeWidthForPointer(
+      "mouse",
+      0.5,
+      tool === "erase" ? "erase" : "draw",
+      tool === "erase" ? eraseSize : DEFAULT_PEN_SIZE,
+    ) * viewport.scale;
   const eraseScreen = eraseCursor ? worldToScreen(viewport, eraseCursor) : null;
   const textScreen = textDraft ? worldToScreen(viewport, textDraft) : null;
-  const inkSlider =
-    tool === "erase"
-      ? {
-          value: eraseSize,
-          min: ERASE_SIZE_MIN,
-          max: ERASE_SIZE_MAX,
-          label: "Eraser size",
-          onChange: setEraseSize,
-        }
-      : {
-          value: penSize,
-          min: PEN_SIZE_MIN,
-          max: PEN_SIZE_MAX,
-          label: "Pen size",
-          onChange: setPenSize,
-        };
 
   return (
     <div ref={wrapRef} className="relative min-h-0 flex-1">
@@ -1558,14 +1543,14 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
         }}
         onContextMenu={(event) => event.preventDefault()}
       />
-      {tool === "erase" && eraseScreen ? (
+      {(tool === "pen" || tool === "erase") && eraseScreen ? (
         <div
           data-testid="erase-radius"
           aria-hidden
           className="pointer-events-none absolute z-10 rounded-full border border-white/70"
           style={{
-            width: eraseRingSize,
-            height: eraseRingSize,
+            width: inkRingSize,
+            height: inkRingSize,
             left: eraseScreen.x,
             top: eraseScreen.y,
             transform: "translate(-50%, -50%)",
@@ -1583,13 +1568,13 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
             setInkColor(next);
           }}
         />
-        {tool !== "text" ? (
+        {tool === "erase" ? (
           <CanvasSizeSlider
-            value={inkSlider.value}
-            min={inkSlider.min}
-            max={inkSlider.max}
-            label={inkSlider.label}
-            onChange={inkSlider.onChange}
+            value={eraseSize}
+            min={ERASE_SIZE_MIN}
+            max={ERASE_SIZE_MAX}
+            label="Eraser size"
+            onChange={setEraseSize}
           />
         ) : null}
       </div>
