@@ -34,15 +34,19 @@ export function CanvasToolbar({ tool, onToolChange }: CanvasToolbarProps) {
     <div
       role="radiogroup"
       aria-label="Canvas tools"
-      className="absolute top-3 left-1/2 z-10 flex h-7 w-[5.25rem] -translate-x-1/2 overflow-hidden rounded-[min(var(--radius-md),12px)] border border-border bg-background dark:border-input dark:bg-input/30"
+      className="absolute top-3 left-1/2 z-10 flex h-7 w-[5.25rem] -translate-x-1/2 overflow-visible rounded-[min(var(--radius-md),12px)] border border-border bg-background dark:border-input dark:bg-input/30"
     >
       <span
         aria-hidden
-        className={cn(
-          "pointer-events-none absolute inset-0 w-1/3 rounded-[inherit] bg-foreground/15 shadow-[inset_0_0_0_1px] shadow-foreground/40 transition-transform duration-75 ease-out motion-reduce:transition-none",
-          highlightTranslate,
-        )}
-      />
+        className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]"
+      >
+        <span
+          className={cn(
+            "absolute inset-0 w-1/3 rounded-[inherit] bg-foreground/15 shadow-[inset_0_0_0_1px] shadow-foreground/40 transition-transform duration-75 ease-out motion-reduce:transition-none",
+            highlightTranslate,
+          )}
+        />
+      </span>
       {CANVAS_TOOL_OPTIONS.map(({ tool: option, label, Icon }) => {
         const selected = option === tool;
         return (
@@ -52,9 +56,8 @@ export function CanvasToolbar({ tool, onToolChange }: CanvasToolbarProps) {
             role="radio"
             aria-checked={selected}
             aria-label={label}
-            title={label}
             className={cn(
-              "relative z-10 flex size-7 appearance-none cursor-pointer items-center justify-center border-0 bg-transparent p-0 transition-colors duration-75 outline-none select-none focus-visible:ring-2 focus-visible:ring-ring/50",
+              "group relative z-10 flex size-7 appearance-none cursor-pointer items-center justify-center border-0 bg-transparent p-0 transition-colors duration-75 outline-none select-none focus-visible:ring-2 focus-visible:ring-ring/50",
               selected ? "text-foreground" : "text-muted-foreground/55",
             )}
             onClick={() => {
@@ -62,6 +65,12 @@ export function CanvasToolbar({ tool, onToolChange }: CanvasToolbarProps) {
             }}
           >
             <Icon className={cn("size-4", selected && "fill-current")} />
+            <span
+              role="tooltip"
+              className="pointer-events-none absolute top-full left-1/2 z-20 mt-1 -translate-x-1/2 rounded-md border border-border bg-background px-1.5 py-0.5 text-[10px] leading-none whitespace-nowrap text-foreground opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100"
+            >
+              {label}
+            </span>
           </button>
         );
       })}

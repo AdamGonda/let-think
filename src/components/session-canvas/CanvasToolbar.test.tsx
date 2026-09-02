@@ -27,4 +27,13 @@ describe("CanvasToolbar", () => {
     expect(getByLabelText("Text").getAttribute("aria-checked")).toBe("true");
     expect(getByLabelText("Pen").getAttribute("aria-checked")).toBe("false");
   });
+
+  it("keeps each hover label on its own button", () => {
+    const { getByLabelText } = render(<Harness />);
+    const pen = getByLabelText("Pen");
+    const text = getByLabelText("Text");
+    expect(pen.querySelector("[role='tooltip']")?.textContent).toBe("Pen");
+    expect(text.querySelector("[role='tooltip']")?.textContent).toBe("Text");
+    expect(pen.contains(text.querySelector("[role='tooltip']"))).toBe(false);
+  });
 });
