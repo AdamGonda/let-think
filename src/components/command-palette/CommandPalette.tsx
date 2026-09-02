@@ -72,15 +72,7 @@ export function CommandPalettePanel({
   const active = items[safeIndex];
 
   useEffect(() => {
-    setSelectedIndex(0);
-  }, [query]);
-
-  useEffect(() => {
-    if (!open) {
-      setQuery("");
-      setSelectedIndex(0);
-      return;
-    }
+    if (!open) return;
     inputRef.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
@@ -91,6 +83,13 @@ export function CommandPalettePanel({
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
   }, [open, onOpenChange]);
+
+  if (!open && query !== "") {
+    setQuery("");
+  }
+  if (!open && selectedIndex !== 0) {
+    setSelectedIndex(0);
+  }
 
   const runSelected = (command: AppCommand | undefined) => {
     if (!command) return;
@@ -129,7 +128,10 @@ export function CommandPalettePanel({
           }
           placeholder="Type a command…"
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            setQuery(event.target.value);
+            setSelectedIndex(0);
+          }}
           onKeyDown={(event) => {
             if (event.key === "ArrowDown") {
               event.preventDefault();

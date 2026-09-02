@@ -141,11 +141,6 @@ export function ChatComposer({
     if (ta && mirror) mirror.scrollTop = ta.scrollTop;
   }, [input]);
 
-  const hasAtQuery = atQuery != null;
-  useLayoutEffect(() => {
-    if (!hasAtQuery) setPickerDismissed(false);
-  }, [hasAtQuery]);
-
   useLayoutEffect(() => {
     if (!listenForFocusEvent) return;
     const handleFocusComposer = () => {
@@ -165,6 +160,10 @@ export function ChatComposer({
     }
     focusComposerWithRetry();
   }, [autoFocus, isDisabled]);
+
+  if (atQuery == null && pickerDismissed) {
+    setPickerDismissed(false);
+  }
 
   const handleScroll = () => {
     const ta = textareaRef.current;

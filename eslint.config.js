@@ -26,6 +26,7 @@ export default defineConfig([
       'src/components/Tutorial.tsx',
       'src/components/ui/button.tsx',
       'src/contexts/SessionDataContext.tsx',
+      'src/components/session-canvas/SessionCanvas.tsx',
     ],
     rules: {
       'react-refresh/only-export-components': 'off',

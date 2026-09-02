@@ -543,16 +543,17 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
   }, [active, markDirty]);
 
   useEffect(() => {
-    if (!active) {
-      textDraftRef.current = null;
-      setTextDraft(null);
-    }
+    if (!active) textDraftRef.current = null;
   }, [active]);
 
   useEffect(() => {
     if (!textDraft) return;
     textElRef.current?.focus();
   }, [textDraft]);
+
+  if (!active && textDraft !== null) {
+    setTextDraft(null);
+  }
 
   const commitViewport = (next: CanvasViewport) => {
     viewportRef.current = next;
@@ -836,7 +837,10 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
             lineHeight: 1.2,
             minHeight: "1.2em",
           }}
-          onBlur={commitTextDraft}
+          onBlur={() => {
+            if (!active) return;
+            commitTextDraft();
+          }}
           onKeyDown={(event) => {
             if (event.key === "Enter") {
               event.preventDefault();
