@@ -61,7 +61,7 @@ describe("SessionViewSwitcher", () => {
       "Canvas view",
     );
     expect(canvas.querySelector("[role='tooltip']")?.className).toContain(
-      "opacity-100",
+      "block",
     );
     const file = getByLabelText("File view");
     fireEvent.mouseEnter(file);
@@ -69,7 +69,7 @@ describe("SessionViewSwitcher", () => {
       "File view",
     );
     expect(canvas.querySelector("[role='tooltip']")?.className).toContain(
-      "opacity-0",
+      "hidden",
     );
     expect(canvas.contains(file.querySelector("[role='tooltip']"))).toBe(
       false,

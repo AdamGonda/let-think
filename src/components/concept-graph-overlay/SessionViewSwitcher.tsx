@@ -78,8 +78,6 @@ export function SessionViewSwitcher({
             )}
             onMouseEnter={() => setHovered(view)}
             onMouseLeave={() => setHovered(null)}
-            onFocus={() => setHovered(view)}
-            onBlur={() => setHovered(null)}
             onClick={() => {
               if (view !== selected) onChange(view);
             }}
@@ -89,7 +87,7 @@ export function SessionViewSwitcher({
               role="tooltip"
               className={cn(
                 "pointer-events-none absolute top-full left-1/2 z-50 mt-2 -translate-x-1/2 rounded-md bg-foreground px-2 py-1 text-xs font-medium leading-none whitespace-nowrap text-background shadow-md",
-                hovered === view ? "opacity-100" : "opacity-0",
+                hovered === view ? "block" : "hidden",
               )}
             >
               {label}

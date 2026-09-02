@@ -34,13 +34,13 @@ describe("CanvasToolbar", () => {
     fireEvent.mouseEnter(pen);
     expect(pen.querySelector("[role='tooltip']")?.textContent).toBe("Pen");
     expect(pen.querySelector("[role='tooltip']")?.className).toContain(
-      "opacity-100",
+      "block",
     );
     const text = getByLabelText("Text");
     fireEvent.mouseEnter(text);
     expect(text.querySelector("[role='tooltip']")?.textContent).toBe("Text");
     expect(pen.querySelector("[role='tooltip']")?.className).toContain(
-      "opacity-0",
+      "hidden",
     );
     expect(pen.contains(text.querySelector("[role='tooltip']"))).toBe(false);
   });

@@ -65,8 +65,6 @@ export function CanvasToolbar({ tool, onToolChange }: CanvasToolbarProps) {
             )}
             onMouseEnter={() => setHovered(option)}
             onMouseLeave={() => setHovered(null)}
-            onFocus={() => setHovered(option)}
-            onBlur={() => setHovered(null)}
             onClick={() => {
               if (option !== tool) onToolChange(option);
             }}
@@ -76,7 +74,7 @@ export function CanvasToolbar({ tool, onToolChange }: CanvasToolbarProps) {
               role="tooltip"
               className={cn(
                 "pointer-events-none absolute top-full left-1/2 z-50 mt-2 -translate-x-1/2 rounded-md bg-foreground px-2 py-1 text-xs font-medium leading-none whitespace-nowrap text-background shadow-md",
-                hovered === option ? "opacity-100" : "opacity-0",
+                hovered === option ? "block" : "hidden",
               )}
             >
               {label}

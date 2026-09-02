@@ -304,8 +304,8 @@ export function ChatComposer({
   const fieldMinH = compact ? "min-h-10" : "min-h-[48px]";
   const fieldMaxH = compact ? "max-h-48" : "max-h-[450px]";
   const fieldPad = compact
-    ? "pt-2 pb-2.5 px-3 pr-[4.75rem] scroll-pb-2.5"
-    : "pt-3 pb-2.5 px-4 pr-[5.25rem] scroll-pb-2.5";
+    ? "pt-2 pb-2.5 pl-[2.625rem] pr-[2.75rem] scroll-pb-2.5"
+    : "pt-3 pb-2.5 pl-[2.625rem] pr-[2.75rem] scroll-pb-2.5";
   const canAttach =
     !isDisabled &&
     pendingImages.length < IMAGE_PROMPT_MAX &&
@@ -343,7 +343,7 @@ export function ChatComposer({
           <ul
             role="listbox"
             data-testid="at-mention-picker"
-            className="absolute bottom-full left-0 right-12 z-30 mb-1 max-h-48 overflow-y-auto rounded-lg border border-border bg-background py-1 shadow-md"
+            className="absolute bottom-full left-0 right-10 z-30 mb-1 max-h-48 overflow-y-auto rounded-lg border border-border bg-background py-1 shadow-md"
           >
             {mentionOptions.map((opt, i) => (
               <li key={`${opt.kind}-${opt.token}`} role="none">
@@ -430,19 +430,19 @@ export function ChatComposer({
             placeholder={placeholder}
             disabled={isDisabled}
           />
-          <div className="absolute right-1.5 top-1/2 -translate-y-1/2 z-20 flex items-center">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp,image/gif"
-              multiple
-              className="hidden"
-              onChange={(e) => {
-                const files = [...(e.target.files ?? [])];
-                e.target.value = "";
-                if (files.length > 0) onAddImageFiles?.(files);
-              }}
-            />
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            multiple
+            className="hidden"
+            onChange={(e) => {
+              const files = [...(e.target.files ?? [])];
+              e.target.value = "";
+              if (files.length > 0) onAddImageFiles?.(files);
+            }}
+          />
+          <div className="absolute left-1.5 top-1/2 -translate-y-1/2 z-20">
             <Button
               type="button"
               size="icon"
@@ -456,6 +456,8 @@ export function ChatComposer({
             >
               <Paperclip size={16} strokeWidth={2} aria-hidden />
             </Button>
+          </div>
+          <div className="absolute right-1.5 top-1/2 -translate-y-1/2 z-20">
             <Button
               type="submit"
               size="icon"
