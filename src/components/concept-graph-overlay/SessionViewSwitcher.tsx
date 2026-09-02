@@ -2,7 +2,7 @@ import {
   FileText,
   LayoutGrid,
   MessageSquare,
-  Pencil,
+  Paintbrush,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -16,7 +16,7 @@ const VIEW_OPTIONS: ReadonlyArray<{
   Icon: LucideIcon;
   tour?: string;
 }> = [
-  { view: "canvas", label: "Canvas view", Icon: Pencil },
+  { view: "canvas", label: "Canvas view", Icon: Paintbrush },
   { view: "chat", label: "Chat view", Icon: MessageSquare },
   { view: "graph", label: "Graph view", Icon: LayoutGrid },
   { view: "file", label: "File view", Icon: FileText, tour: "notes-btn" },
