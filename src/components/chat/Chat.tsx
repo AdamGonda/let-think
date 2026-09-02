@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAction, useMutation } from "convex/react";
 import { usePostHog } from "posthog-js/react";
+import { toast } from "sonner";
 import { api } from "../../../convex/_generated/api";
 import type { Id } from "../../../convex/_generated/dataModel";
 import {
@@ -14,6 +15,17 @@ import type { NumberedConcept } from "../../lib/conceptReferences";
 import { useAppUiSelector } from "../../hooks/useAppUi";
 import { ChatComposer } from "./ChatComposer";
 import { HistoricalBatchPrompt } from "./HistoricalBatchPrompt";
+import { snapshotCanvasJpeg } from "../../lib/canvasSnapshot";
+import {
+  EMPTY_IMAGE_USER_CONTENT,
+  IMAGE_PROMPT_MAX,
+  imageFilesToAdd,
+  isAcceptedImageType,
+  prepareImageBlob,
+  uploadJpegToConvex,
+} from "../../lib/imageAttach";
+
+type PendingImage = { id: string; blob: Blob; previewUrl: string };
 
 interface ChatProps {
   sessionId: Id<"sessions"> | null;
@@ -65,6 +77,11 @@ export function Chat({
   fileId = null,
 }: ChatProps) {
   const [internalInput, setInternalInput] = useState("");
+  const [pendingImages, setPendingImages] = useState<PendingImage[]>([]);
+  const pendingImagesRef = useRef(pendingImages);
+  useEffect(() => {
+    pendingImagesRef.current = pendingImages;
+  });
   const draft = draftInput !== undefined ? draftInput : internalInput;
   const setInput =
     setDraftInput !== undefined ? setDraftInput : setInternalInput;
@@ -72,14 +89,80 @@ export function Chat({
   const sendGraphMessage = useAction(api.chat.send);
   const sendChatMessage = useAction(api.chat.sendChat);
   const updateFileNotes = useMutation(api.files.updateThinkingNotes);
+  const generateUploadUrl = useMutation(api.fileStorage.generateUploadUrl);
   const notes = useAppUiSelector((s) => s.context.notes);
   const { canSend, setPendingChatUser } = useSessionData();
   const posthog = usePostHog();
 
+  useEffect(() => {
+    return () => {
+      for (const img of pendingImagesRef.current) {
+        URL.revokeObjectURL(img.previewUrl);
+      }
+    };
+  }, []);
+
+  const addImageFiles = async (files: File[]) => {
+    const accepted = files.filter((file) => isAcceptedImageType(file.type));
+    if (accepted.length === 0) {
+      toast.error("Use JPEG, PNG, WebP, or GIF");
+      return;
+    }
+    const selected = imageFilesToAdd(accepted, pendingImages.length);
+    if (selected.length === 0) {
+      toast.error("You can attach up to 4 images");
+      return;
+    }
+    if (selected.length < accepted.length) {
+      toast.error("You can attach up to 4 images");
+    }
+    const next: PendingImage[] = [];
+    for (const file of selected) {
+      try {
+        const blob = await prepareImageBlob(file);
+        next.push({
+          id: crypto.randomUUID(),
+          blob,
+          previewUrl: URL.createObjectURL(blob),
+        });
+      } catch {
+        toast.error("Couldn't attach that image");
+      }
+    }
+    if (next.length === 0) return;
+    setPendingImages((prev) => [...prev, ...next].slice(0, IMAGE_PROMPT_MAX));
+  };
+
+  const removeImage = (id: string) => {
+    setPendingImages((prev) => {
+      const found = prev.find((img) => img.id === id);
+      if (found) URL.revokeObjectURL(found.previewUrl);
+      return prev.filter((img) => img.id !== id);
+    });
+  };
+
+  const collectImageStorageIds = async (
+    extraBlob: Blob | null,
+  ): Promise<Id<"_storage">[]> => {
+    const blobs = [
+      ...pendingImages.map((img) => img.blob),
+      ...(extraBlob ? [extraBlob] : []),
+    ];
+    if (blobs.length > IMAGE_PROMPT_MAX) {
+      throw new Error("You can attach up to 4 images");
+    }
+    const ids: Id<"_storage">[] = [];
+    for (const blob of blobs) {
+      const postUrl = await generateUploadUrl();
+      ids.push(await uploadJpegToConvex(postUrl, blob));
+    }
+    return ids;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (lockedHistorical) return;
-    if (!input.trim()) return;
+    if (!input.trim() && pendingImages.length === 0) return;
 
     const rawContent = input.trim();
     const {
@@ -87,8 +170,21 @@ export function Chat({
       referencedConcepts,
       mentions,
       includeWriting,
+      includeCanvas,
     } = resolveAtReferences(rawContent, numberedConcepts);
     const mentionPayload = mentions.length > 0 ? mentions : undefined;
+    if (includeCanvas && pendingImages.length >= IMAGE_PROMPT_MAX) {
+      toast.error("You can attach up to 4 images");
+      return;
+    }
+    let canvasBlob: Blob | null = null;
+    if (includeCanvas) {
+      canvasBlob = await snapshotCanvasJpeg();
+      if (!canvasBlob) {
+        toast.error("Nothing on the canvas");
+        return;
+      }
+    }
     if (includeWriting && fileId) {
       await updateFileNotes({ fileId, thinkingNotes: notes });
     }
@@ -101,15 +197,35 @@ export function Chat({
           }))
         : undefined;
 
+    let imageStorageIds: Id<"_storage">[] = [];
+    try {
+      imageStorageIds = await collectImageStorageIds(canvasBlob);
+    } catch (err) {
+      console.error("Image upload error:", err);
+      toast.error(
+        err instanceof Error ? err.message : "Couldn't upload image",
+      );
+      return;
+    }
+    const userContent =
+      resolvedContent.trim() ||
+      (imageStorageIds.length > 0 ? EMPTY_IMAGE_USER_CONTENT : "");
+    if (!userContent) return;
+    const imagePayload =
+      imageStorageIds.length > 0 ? imageStorageIds : undefined;
+
     if (sendLane === "chat") {
       if (sessionId && !canSend) return;
 
+      const savedImages = pendingImages;
       setPendingChatUser({
         role: "user",
-        content: resolvedContent,
+        content: userContent,
         mentions: mentionPayload,
+        imageUrls: savedImages.map((img) => img.previewUrl),
       });
       setInput("");
+      setPendingImages([]);
       let loadingForId = chatSessionId ?? null;
       if (loadingForId) setIsLoading(true, loadingForId);
       onConsumedConceptNumbers?.(
@@ -119,6 +235,7 @@ export function Chat({
       const restoreDraft = () => {
         setPendingChatUser(null);
         setInput(rawContent);
+        setPendingImages(savedImages);
         if (loadingForId) setIsLoading(false, loadingForId);
       };
 
@@ -146,9 +263,10 @@ export function Chat({
         }
         await sendChatMessage({
           chatSessionId: effectiveChatSessionId,
-          userContent: resolvedContent,
+          userContent,
           selectedNodeContext,
           mentions: mentionPayload,
+          imageStorageIds: imagePayload,
         });
         posthog.capture("message_sent", {
           session_id: effectiveSessionId,
@@ -159,6 +277,7 @@ export function Chat({
           is_new_session: !!createdViaCallback,
         });
         setIsLoading(false, effectiveChatSessionId);
+        for (const img of savedImages) URL.revokeObjectURL(img.previewUrl);
       } catch (err) {
         console.error("Chat error:", err);
         posthog.captureException(err);
@@ -180,11 +299,14 @@ export function Chat({
     try {
       await sendGraphMessage({
         sessionId: effectiveSessionId,
-        userContent: resolvedContent,
+        userContent,
         selectedNodeContext,
         mentions: mentionPayload,
+        imageStorageIds: imagePayload,
       });
       setInput("");
+      for (const img of pendingImages) URL.revokeObjectURL(img.previewUrl);
+      setPendingImages([]);
       posthog.capture("message_sent", {
         session_id: effectiveSessionId,
         lane: sendLane,
@@ -216,11 +338,11 @@ export function Chat({
     ? "Select a session to start"
     : sendLane === "chat"
       ? numberedConcepts.length > 0
-        ? "Type, @ ref writing, graph, concepts"
-        : "Type, @ ref writing, graph"
+        ? "Type, @ ref writing, graph, canvas, concepts"
+        : "Type, @ ref writing, graph, canvas"
       : numberedConcepts.length > 0
-        ? "Type, @ ref writing, concepts"
-        : "Type, @ ref writing";
+        ? "Type, @ ref writing, canvas, concepts"
+        : "Type, @ ref writing, canvas";
 
   if (lockedHistorical) {
     return (
@@ -249,6 +371,9 @@ export function Chat({
       autoFocus={autoFocus}
       listenForFocusEvent={listenForFocusEvent}
       allowGraphRef={sendLane === "chat"}
+      pendingImages={pendingImages}
+      onAddImageFiles={addImageFiles}
+      onRemoveImage={removeImage}
     />
   );
 }

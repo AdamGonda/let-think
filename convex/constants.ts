@@ -15,3 +15,9 @@ export const SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS = 50;
 
 /** Delay note re-embed so typing pauses don't each hit Google. */
 export const NOTE_SEARCH_EMBED_DEBOUNCE_MS = 10_000;
+
+/** Max images inlined to the model per send (current turn + recent history). */
+export const IMAGE_PROMPT_MAX = 4;
+
+/** Fallback user text so Gemini always gets a text part with images. */
+export const EMPTY_IMAGE_USER_CONTENT = "See attached image.";

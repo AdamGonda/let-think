@@ -162,6 +162,8 @@ export default defineSchema({
         })
       )
     ),
+    /** Convex file storage IDs for user-attached / @canvas JPEGs. */
+    imageStorageIds: v.optional(v.array(v.id("_storage"))),
   }).index("by_session", ["sessionId"]),
 
   /** Chat-lane messages. Listed by `chatSessionId`; `sessionId` may exist on old rows. */
@@ -181,6 +183,7 @@ export default defineSchema({
         })
       )
     ),
+    imageStorageIds: v.optional(v.array(v.id("_storage"))),
   })
     .index("by_session", ["sessionId"])
     .index("by_chat_session", ["chatSessionId"]),
