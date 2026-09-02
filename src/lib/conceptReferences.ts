@@ -1,15 +1,21 @@
-/** Match @1, @writing, @graph at word boundaries (same semantics as chat input parsing). */
-export const AT_REFERENCE_PATTERN = String.raw`@(\d+|writing|graph)\b`;
+/** Match @1, @writing, @graph, @canvas at word boundaries (same semantics as chat input parsing). */
+export const AT_REFERENCE_PATTERN = String.raw`@(\d+|writing|graph|canvas)\b`;
 
 export const WRITING_REF_TOKEN = "writing";
 export const GRAPH_REF_TOKEN = "graph";
+export const CANVAS_REF_TOKEN = "canvas";
 export const WRITING_REF_ID = "__writing__";
 export const GRAPH_REF_ID = "__graph__";
+export const CANVAS_REF_ID = "__canvas__";
 export const WRITING_REF_NAME = "Writing";
 export const GRAPH_REF_NAME = "Graph";
+export const CANVAS_REF_NAME = "Canvas";
 
 export type NamedAtRef = {
-  token: typeof WRITING_REF_TOKEN | typeof GRAPH_REF_TOKEN;
+  token:
+    | typeof WRITING_REF_TOKEN
+    | typeof GRAPH_REF_TOKEN
+    | typeof CANVAS_REF_TOKEN;
   id: string;
   name: string;
 };
@@ -21,13 +27,16 @@ export function namedAtRef(capture: string): NamedAtRef | null {
   if (capture === GRAPH_REF_TOKEN) {
     return { token: GRAPH_REF_TOKEN, id: GRAPH_REF_ID, name: GRAPH_REF_NAME };
   }
+  if (capture === CANVAS_REF_TOKEN) {
+    return { token: CANVAS_REF_TOKEN, id: CANVAS_REF_ID, name: CANVAS_REF_NAME };
+  }
   return null;
 }
 
 export type AtMentionOption = {
   token: string;
   label: string;
-  kind: "writing" | "graph" | "concept";
+  kind: "writing" | "graph" | "canvas" | "concept";
 };
 
 /** Open `@query` at the caret, or null if not in a mention. */
@@ -74,6 +83,7 @@ export function atMentionOptions(args: {
   query: string;
   numberedConcepts: NumberedConcept[];
   allowGraphRef: boolean;
+  allowCanvasRef?: boolean;
   value?: string;
   queryStart?: number;
 }): AtMentionOption[] {
@@ -90,6 +100,13 @@ export function atMentionOptions(args: {
       token: GRAPH_REF_TOKEN,
       label: GRAPH_REF_NAME,
       kind: "graph",
+    });
+  }
+  if (args.allowCanvasRef) {
+    items.push({
+      token: CANVAS_REF_TOKEN,
+      label: CANVAS_REF_NAME,
+      kind: "canvas",
     });
   }
   for (const c of args.numberedConcepts) {

@@ -13,6 +13,8 @@ import {
   isUndoHotkey,
   rectFromPoints,
   screenToWorld,
+  strokeBounds,
+  strokesHaveInk,
   strokeWidthForPointer,
   worldToScreen,
 } from "./SessionCanvas";
@@ -207,5 +209,31 @@ describe("canvas viewport", () => {
     expect(
       applyPointerGesture(identityViewport(), prev, next, "pinch").scale,
     ).toBe(1);
+  });
+});
+
+describe("canvas snapshot bounds", () => {
+  it("treats only non-erase strokes as ink", () => {
+    expect(
+      strokesHaveInk([{ kind: "erase", points: [{ x: 0, y: 0, width: 8 }] }]),
+    ).toBe(false);
+    expect(
+      strokesHaveInk([{ kind: "draw", points: [{ x: 0, y: 0, width: 2 }] }]),
+    ).toBe(true);
+  });
+
+  it("pads the bounding box around ink", () => {
+    const bounds = strokeBounds([
+      { kind: "draw", points: [{ x: 10, y: 20, width: 2 }] },
+    ]);
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x).toBe(10 - 1 - 32);
+    expect(bounds!.y).toBe(20 - 1 - 32);
+    expect(bounds!.w).toBeGreaterThan(1);
+    expect(bounds!.h).toBeGreaterThan(1);
+  });
+
+  it("returns null for empty strokes", () => {
+    expect(strokeBounds([])).toBeNull();
   });
 });

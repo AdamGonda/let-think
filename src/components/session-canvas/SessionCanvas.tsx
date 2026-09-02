@@ -5,6 +5,15 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { CanvasToolbar, type CanvasTool } from "./CanvasToolbar";
+import {
+  IMAGE_JPEG_QUALITY,
+  IMAGE_MAX_BYTES,
+  IMAGE_MAX_EDGE,
+} from "../../lib/imageAttach";
+import {
+  registerCanvasSnapshot,
+  setCanvasHasInk,
+} from "../../lib/canvasSnapshot";
 
 type Point = { x: number; y: number };
 type StrokePoint = { x: number; y: number; width: number };
@@ -12,8 +21,8 @@ type InkKind = "draw" | "erase";
 type ShapeKind = "rect" | "ellipse";
 type InkStroke = { kind: InkKind; points: StrokePoint[] };
 type ShapeStroke = { kind: ShapeKind; from: Point; to: Point; width: number };
-type TextStroke = { kind: "text"; x: number; y: number; text: string };
-type Stroke = InkStroke | ShapeStroke | TextStroke;
+export type TextStroke = { kind: "text"; x: number; y: number; text: string };
+export type Stroke = InkStroke | ShapeStroke | TextStroke;
 
 export type CanvasViewport = { x: number; y: number; scale: number };
 
@@ -31,6 +40,10 @@ export const CANVAS_MIN_SCALE = 0.25;
 export const CANVAS_MAX_SCALE = 8;
 export const CANVAS_TEXT_FONT =
   `${CANVAS_TEXT_SIZE}px "DM Sans", ui-sans-serif, system-ui, sans-serif`;
+const SNAPSHOT_PAD = 32;
+const DEFAULT_SNAPSHOT_BG = "#18181b";
+const TEXT_WIDTH_FALLBACK = 0.6;
+const TEXT_LINE_HEIGHT = 1.2;
 
 export function identityViewport(): CanvasViewport {
   return { x: 0, y: 0, scale: 1 };
@@ -205,6 +218,94 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke): void {
     setupInk(ctx);
     drawShape(ctx, stroke);
   }
+}
+
+export function strokesHaveInk(strokes: Stroke[]): boolean {
+  return strokes.some((stroke) => stroke.kind !== "erase");
+}
+
+export function strokeBounds(
+  strokes: Stroke[],
+): { x: number; y: number; w: number; h: number } | null {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  const include = (x: number, y: number, pad = 0) => {
+    minX = Math.min(minX, x - pad);
+    minY = Math.min(minY, y - pad);
+    maxX = Math.max(maxX, x + pad);
+    maxY = Math.max(maxY, y + pad);
+  };
+  for (const stroke of strokes) {
+    if (stroke.kind === "draw" || stroke.kind === "erase") {
+      for (const point of stroke.points) {
+        include(point.x, point.y, point.width / 2);
+      }
+      continue;
+    }
+    if (stroke.kind === "rect" || stroke.kind === "ellipse") {
+      const rect = rectFromPoints(stroke.from, stroke.to);
+      include(rect.x, rect.y, stroke.width / 2);
+      include(rect.x + rect.w, rect.y + rect.h, stroke.width / 2);
+      continue;
+    }
+    if (stroke.kind === "text") {
+      include(stroke.x, stroke.y);
+      include(
+        stroke.x + stroke.text.length * CANVAS_TEXT_SIZE * TEXT_WIDTH_FALLBACK,
+        stroke.y + CANVAS_TEXT_SIZE * TEXT_LINE_HEIGHT,
+      );
+    }
+  }
+  if (!Number.isFinite(minX)) return null;
+  return {
+    x: minX - SNAPSHOT_PAD,
+    y: minY - SNAPSHOT_PAD,
+    w: Math.max(1, maxX - minX + SNAPSHOT_PAD * 2),
+    h: Math.max(1, maxY - minY + SNAPSHOT_PAD * 2),
+  };
+}
+
+export function strokesToJpegBlob(
+  strokes: Stroke[],
+  background = DEFAULT_SNAPSHOT_BG,
+): Promise<Blob | null> {
+  if (!strokesHaveInk(strokes)) return Promise.resolve(null);
+  const bounds = strokeBounds(strokes);
+  if (!bounds) return Promise.resolve(null);
+  const scale = Math.min(
+    1,
+    IMAGE_MAX_EDGE / Math.max(bounds.w, bounds.h, 1),
+  );
+  const width = Math.max(1, Math.round(bounds.w * scale));
+  const height = Math.max(1, Math.round(bounds.h * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return Promise.resolve(null);
+  ctx.fillStyle = background || DEFAULT_SNAPSHOT_BG;
+  ctx.fillRect(0, 0, width, height);
+  ctx.scale(scale, scale);
+  ctx.translate(-bounds.x, -bounds.y);
+  setupInk(ctx);
+  for (const stroke of strokes) {
+    drawStroke(ctx, stroke);
+  }
+  return new Promise((resolve) => {
+    canvas.toBlob(
+      (blob) => {
+        if (!blob || blob.size > IMAGE_MAX_BYTES) {
+          resolve(null);
+          return;
+        }
+        resolve(blob);
+      },
+      "image/jpeg",
+      IMAGE_JPEG_QUALITY,
+    );
+  });
 }
 
 function canvasScreenPoint(
@@ -411,7 +512,22 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
     const observer = new ResizeObserver(redraw);
     observer.observe(wrap);
     redraw();
-    return () => observer.disconnect();
+    const snapshotBg = () => {
+      const bg = getComputedStyle(wrap).backgroundColor;
+      if (!bg || bg === "transparent" || bg === "rgba(0, 0, 0, 0)") {
+        return DEFAULT_SNAPSHOT_BG;
+      }
+      return bg;
+    };
+    registerCanvasSnapshot(() =>
+      strokesToJpegBlob(strokesRef.current, snapshotBg()),
+    );
+    setCanvasHasInk(strokesHaveInk(strokesRef.current));
+    return () => {
+      observer.disconnect();
+      registerCanvasSnapshot(null);
+      setCanvasHasInk(false);
+    };
   }, []);
 
   useEffect(() => {
@@ -461,6 +577,7 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
       } else if (strokesRef.current.length > 0) {
         strokesRef.current = strokesRef.current.slice(0, -1);
       }
+      setCanvasHasInk(strokesHaveInk(strokesRef.current));
       redrawRef.current();
     };
     const onKeyUp = (event: KeyboardEvent) => {
@@ -516,6 +633,7 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
     setTextDraft(null);
     if (!stroke) return;
     strokesRef.current.push(stroke);
+    setCanvasHasInk(strokesHaveInk(strokesRef.current));
     redrawRef.current();
   };
 
@@ -689,7 +807,11 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
     liveStrokeRef.current = null;
     if (!stroke) return;
     if (stroke.kind === "draw" || stroke.kind === "erase") {
-      if (stroke.points.length > 0) strokesRef.current.push(stroke);
+      if (stroke.points.length > 0) {
+        strokesRef.current.push(stroke);
+        setCanvasHasInk(strokesHaveInk(strokesRef.current));
+      }
+      redrawRef.current();
       return;
     }
     if (
@@ -697,6 +819,7 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
       !isEmptyShape(stroke.from, stroke.to)
     ) {
       strokesRef.current.push(stroke);
+      setCanvasHasInk(strokesHaveInk(strokesRef.current));
     }
     redrawRef.current();
   };

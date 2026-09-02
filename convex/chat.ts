@@ -23,15 +23,21 @@ import {
   type ConceptStreamEvent,
 } from "./chatPipeline";
 type ConceptNode = ConceptGraph["nodes"][number];
-import type { ModelMessage } from "ai";
 import {
   BATCH_PROMPT_SUMMARY_MAX_CHARS,
   CONCEPT_GRAPH_PROMPT_BATCH_WINDOW,
+  IMAGE_PROMPT_MAX,
   PROMPT_SUMMARY_INPUT_MAX_CHARS,
   PROMPT_SUMMARY_OUTPUT_MAX_CHARS,
 } from "./constants";
 import { modelConfig } from "./modelConfig";
 import { isConceptEmbeddingsSyncEnabled } from "./featureFlags";
+import type { Id } from "./_generated/dataModel";
+import {
+  imageIdsForPrompt,
+  toModelMessagesWithImages,
+  userTextForModel,
+} from "./lib/messageImages";
 
 type GenerationUsageMetrics = {
   inputTokens: number | null;
@@ -327,18 +333,29 @@ export const generateTopicForMessage = internalAction({
   },
 });
 
-function toModelMessages(
-  messages: Array<{ role: string; content?: string }>
-): ModelMessage[] {
-  return messages
-    .filter(
-      (m) =>
-        m.role === "user" || m.role === "assistant" || m.role === "system"
-    )
-    .map((m) => ({
-      role: m.role as "user" | "assistant" | "system",
-      content: m.content ?? "",
-    }));
+const imageStorageIdsValidator = v.optional(v.array(v.id("_storage")));
+
+function capImageStorageIds(
+  ids: Id<"_storage">[] | undefined,
+): Id<"_storage">[] {
+  return (ids ?? []).slice(0, IMAGE_PROMPT_MAX);
+}
+
+async function loadPromptImages(
+  ctx: { storage: { get: (id: Id<"_storage">) => Promise<Blob | null> } },
+  ids: Set<string>,
+): Promise<Map<string, { bytes: Uint8Array; mediaType: string }>> {
+  const images = new Map<string, { bytes: Uint8Array; mediaType: string }>();
+  for (const id of ids) {
+    const blob = await ctx.storage.get(id as Id<"_storage">);
+    if (!blob) continue;
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    images.set(id, {
+      bytes,
+      mediaType: blob.type || "image/jpeg",
+    });
+  }
+  return images;
 }
 
 /**
@@ -368,8 +385,9 @@ export const send = action({
         })
       )
     ),
+    imageStorageIds: imageStorageIdsValidator,
   },
-  handler: async (ctx, { sessionId, userContent, selectedNodeContext, mentions }): Promise<{ content: string; conceptGraph: ConceptGraph | null }> => {
+  handler: async (ctx, { sessionId, userContent, selectedNodeContext, mentions, imageStorageIds }): Promise<{ content: string; conceptGraph: ConceptGraph | null }> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Must be signed in");
 
@@ -383,16 +401,35 @@ export const send = action({
 
     const { existingGraph: loadedGraph, messages: storedMessages, thinkingNotes } = bundle;
     const existingGraph: ConceptGraph | null = loadedGraph;
+    const currentImageIds = capImageStorageIds(imageStorageIds);
+    const persistedContent = userTextForModel(
+      userContent,
+      currentImageIds.length > 0,
+    );
 
     const google = createGoogleGenerativeAI({
       apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
     });
 
     // 0–1. Build model messages from DB + this user turn (avoids huge client payloads)
-    let modelMessages = toModelMessages([
-      ...storedMessages.map((m) => ({ role: m.role, content: m.content })),
-      { role: "user" as const, content: userContent },
-    ]);
+    const includeImageIds = imageIdsForPrompt(storedMessages, currentImageIds);
+    const promptImages = await loadPromptImages(ctx, includeImageIds);
+    let modelMessages = toModelMessagesWithImages(
+      [
+        ...storedMessages.map((m) => ({
+          role: m.role,
+          content: m.content,
+          imageStorageIds: m.imageStorageIds,
+        })),
+        {
+          role: "user" as const,
+          content: persistedContent,
+          imageStorageIds: currentImageIds,
+        },
+      ],
+      promptImages,
+      includeImageIds,
+    );
     const promptConceptGraph = buildConceptGraphPromptWindow(
       existingGraph,
       CONCEPT_GRAPH_PROMPT_BATCH_WINDOW
@@ -427,10 +464,10 @@ export const send = action({
     const batchMeta: BatchMeta = {
       id: `batch-${Date.now()}`,
       promptSummary:
-        userContent.slice(0, BATCH_PROMPT_SUMMARY_MAX_CHARS).trim() +
-          (userContent.length > BATCH_PROMPT_SUMMARY_MAX_CHARS ? "…" : "") ||
+        persistedContent.slice(0, BATCH_PROMPT_SUMMARY_MAX_CHARS).trim() +
+          (persistedContent.length > BATCH_PROMPT_SUMMARY_MAX_CHARS ? "…" : "") ||
         undefined,
-      description: userContent.trim() || undefined,
+      description: persistedContent.trim() || undefined,
     };
     const streamParseState = createConceptStreamParseState();
     const globalIdRemap = new Map<string, string>();
@@ -539,9 +576,12 @@ export const send = action({
     // 5. Persist messages (addMessages schedules topic generation on insert)
     await ctx.runMutation(api.sessions.addMessages, {
       sessionId,
-      userContent,
+      userContent: persistedContent,
       assistantContent: processedContent,
       mentions,
+      ...(currentImageIds.length > 0
+        ? { imageStorageIds: currentImageIds }
+        : {}),
     });
 
     console.info(
@@ -610,11 +650,12 @@ export const sendChat = action({
     userContent: v.string(),
     selectedNodeContext: selectedNodeContextValidator,
     mentions: mentionSpanValidator,
+    imageStorageIds: imageStorageIdsValidator,
   },
   returns: v.object({ content: v.string() }),
   handler: async (
     ctx,
-    { chatSessionId, userContent, selectedNodeContext, mentions }
+    { chatSessionId, userContent, selectedNodeContext, mentions, imageStorageIds }
   ): Promise<{ content: string }> => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Must be signed in");
@@ -640,20 +681,43 @@ export const sendChat = action({
       includeGraph,
     );
     const conceptNote = buildReferencedConceptsSystemNote(selectedNodeContext);
+    const currentImageIds = capImageStorageIds(imageStorageIds);
+    const persistedContent = userTextForModel(
+      userContent,
+      currentImageIds.length > 0,
+    );
+    const includeImageIds = imageIdsForPrompt(bundle.messages, currentImageIds);
+    const promptImages = await loadPromptImages(ctx, includeImageIds);
     const extraNote = [writingNote, graphNote, conceptNote]
       .filter((n): n is string => !!n)
       .join("\n\n");
-    const modelMessages = toModelMessages([
-      ...(extraNote
-        ? [{ role: "system" as const, content: extraNote }]
-        : []),
-      ...bundle.messages,
-      { role: "user" as const, content: userContent },
-    ]);
+    const modelMessages = toModelMessagesWithImages(
+      [
+        ...(extraNote
+          ? [{ role: "system" as const, content: extraNote }]
+          : []),
+        ...bundle.messages,
+        {
+          role: "user" as const,
+          content: persistedContent,
+          imageStorageIds: currentImageIds,
+        },
+      ],
+      promptImages,
+      includeImageIds,
+    );
 
     const { assistantMessageId } = await ctx.runMutation(
       internal.chatSessions.startChatTurn,
-      { chatSessionId, userId, userContent, mentions },
+      {
+        chatSessionId,
+        userId,
+        userContent: persistedContent,
+        mentions,
+        ...(currentImageIds.length > 0
+          ? { imageStorageIds: currentImageIds }
+          : {}),
+      },
     );
 
     let generationUsage: GenerationUsageMetrics = {

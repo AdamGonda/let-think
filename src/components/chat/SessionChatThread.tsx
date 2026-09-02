@@ -9,6 +9,7 @@ import { renderChatMarkdown } from "@/lib/chatMarkdown";
 import { ConceptGraphEmptyState } from "@/components/concept-graph-overlay/ConceptGraphEmptyState";
 import { clsx } from "clsx";
 import { isNearBottom } from "./isNearBottom";
+import { MessageImageThumbs } from "./MessageImageThumbs";
 
 const PENDING_USER_KEY = "pending-user";
 
@@ -151,7 +152,14 @@ export function SessionChatThread({ isLoading }: SessionChatThreadProps) {
                       )}
                     >
                       {isUser ? (
-                        renderContentWithMentions(msg.content, msg.mentions)
+                        <>
+                          {renderContentWithMentions(msg.content, msg.mentions)}
+                          {msg.imageUrls?.length ? (
+                            <div className="mt-2">
+                              <MessageImageThumbs urls={msg.imageUrls} />
+                            </div>
+                          ) : null}
+                        </>
                       ) : (
                         <ChatMarkdown content={msg.content} />
                       )}

@@ -13,6 +13,8 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
 import { maybeTitleFileFromFirstGraphMessage } from "./files";
 import { syncIdeasForSession } from "./searchDocuments";
+import { imageUrlsForIds } from "./fileStorage";
+import { IMAGE_PROMPT_MAX } from "./constants";
 
 async function requireSessionOwner(ctx: MutationCtx, sessionId: Id<"sessions">) {
   const userId = await getAuthUserId(ctx);
@@ -44,11 +46,18 @@ export const listMessagesPaginated = query({
         continueCursor: "",
       };
     }
-    return await ctx.db
+    const result = await ctx.db
       .query("messages")
       .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
       .order("desc")
       .paginate(paginationOpts);
+    const page = await Promise.all(
+      result.page.map(async (m) => ({
+        ...m,
+        imageUrls: await imageUrlsForIds(ctx, m.imageStorageIds),
+      })),
+    );
+    return { ...result, page };
   },
 });
 
@@ -74,25 +83,32 @@ const mentionValidator = v.optional(
   )
 );
 
+const imageStorageIdsValidator = v.optional(v.array(v.id("_storage")));
+
 export const addMessages = mutation({
   args: {
     sessionId: v.id("sessions"),
     userContent: v.string(),
     assistantContent: v.string(),
     mentions: mentionValidator,
+    imageStorageIds: imageStorageIdsValidator,
   },
   handler: async (
     ctx,
-    { sessionId, userContent, assistantContent, mentions }
+    { sessionId, userContent, assistantContent, mentions, imageStorageIds }
   ): Promise<void> => {
     await requireSessionOwner(ctx, sessionId);
     const now = Date.now();
+    const storedImageIds = imageStorageIds?.slice(0, IMAGE_PROMPT_MAX);
     const userMessageId = await ctx.db.insert("messages", {
       sessionId,
       role: "user",
       content: userContent,
       createdAt: now,
       ...(mentions && mentions.length > 0 ? { mentions } : {}),
+      ...(storedImageIds && storedImageIds.length > 0
+        ? { imageStorageIds: storedImageIds }
+        : {}),
     });
     await ctx.db.insert("messages", {
       sessionId,
@@ -216,6 +232,7 @@ export const internalLoadSessionForChatSend = internalQuery({
         conceptId: string;
         name: string;
       }>;
+      imageStorageIds?: Array<Id<"_storage">>;
     }>;
   } | null> => {
     const session = await ctx.db.get(sessionId);
