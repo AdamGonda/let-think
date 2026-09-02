@@ -11,9 +11,13 @@ import {
   identityViewport,
   inkOverChrome,
   isErasePointer,
+  isSmoothedPointer,
   isUndoHotkey,
   moveWorldByScreenDelta,
+  PEN_POS_SMOOTH,
+  PEN_WIDTH_SMOOTH,
   screenToWorld,
+  smoothInkPoint,
   strokeWidthForPointer,
   textStrokeHits,
   scaleFontSize,
@@ -42,6 +46,39 @@ describe("strokeWidthForPointer", () => {
     expect(strokeWidthForPointer("pen", 1, "erase")).toBeGreaterThan(
       strokeWidthForPointer("pen", 1, "draw"),
     );
+  });
+});
+
+describe("smoothInkPoint", () => {
+  const prev = { x: 0, y: 0, width: 2 };
+
+  it("keeps the first point and chrome gap points raw", () => {
+    const next = { x: 10, y: 20, width: 8 };
+    expect(smoothInkPoint(null, next)).toEqual(next);
+    expect(smoothInkPoint(undefined, next)).toEqual(next);
+    const gap = { x: 10, y: 20, width: 8, gap: true as const };
+    expect(smoothInkPoint(prev, gap)).toEqual(gap);
+  });
+
+  it("lerps position and damps a width spike toward the previous sample", () => {
+    const next = { x: 10, y: 20, width: 12 };
+    const out = smoothInkPoint(prev, next);
+    expect(out.x).toBe(0 + (10 - 0) * PEN_POS_SMOOTH);
+    expect(out.y).toBe(0 + (20 - 0) * PEN_POS_SMOOTH);
+    expect(out.width).toBe(2 + (12 - 2) * PEN_WIDTH_SMOOTH);
+    expect(out.x).toBeGreaterThan(prev.x);
+    expect(out.x).toBeLessThan(next.x);
+    expect(out.width).toBeGreaterThan(prev.width);
+    expect(out.width).toBeLessThan(next.width);
+  });
+});
+
+describe("isSmoothedPointer", () => {
+  it("smooths pen and eraser, not mouse or touch", () => {
+    expect(isSmoothedPointer("pen")).toBe(true);
+    expect(isSmoothedPointer("eraser")).toBe(true);
+    expect(isSmoothedPointer("mouse")).toBe(false);
+    expect(isSmoothedPointer("touch")).toBe(false);
   });
 });
 

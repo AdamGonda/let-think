@@ -90,6 +90,9 @@ export function applyPinch(
   };
 }
 
+export const PEN_POS_SMOOTH = 0.35;
+export const PEN_WIDTH_SMOOTH = 0.2;
+
 export function strokeWidthForPointer(
   pointerType: string,
   pressure: number,
@@ -102,6 +105,26 @@ export function strokeWidthForPointer(
   // ponytail: stretch a typical Wacom contact band; slider is max width.
   const t = Math.min(1, Math.max(0, (pressure - 0.05) / 0.7));
   return Math.max(0.5, size * (0.12 + 0.88 * t));
+}
+
+export function isSmoothedPointer(pointerType: string): boolean {
+  return pointerType === "pen" || pointerType === "eraser";
+}
+
+// ponytail: causal EMA is O(1) per sample. Ceiling is constant lag;
+// upgrade to a 1€ filter in this helper if it feels drunk on fast strokes.
+export function smoothInkPoint(
+  prev: StrokePoint | null | undefined,
+  next: StrokePoint,
+  posAlpha = PEN_POS_SMOOTH,
+  widthAlpha = PEN_WIDTH_SMOOTH,
+): StrokePoint {
+  if (!prev || next.gap) return next;
+  return {
+    x: prev.x + (next.x - prev.x) * posAlpha,
+    y: prev.y + (next.y - prev.y) * posAlpha,
+    width: prev.width + (next.width - prev.width) * widthAlpha,
+  };
 }
 
 export function isUndoHotkey(event: {
@@ -936,7 +959,8 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
       );
       inkBrokenRef.current = action.broken;
       if (!action.accept) continue;
-      const point: StrokePoint = {
+      const prevPoint = stroke.points[stroke.points.length - 1];
+      const rawPoint: StrokePoint = {
         ...pointFromEvent(
           canvas,
           raw,
@@ -946,7 +970,9 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
         ),
         ...(wasBroken ? { gap: true } : {}),
       };
-      const prevPoint = stroke.points[stroke.points.length - 1];
+      const point = isSmoothedPointer(raw.pointerType)
+        ? smoothInkPoint(prevPoint, rawPoint)
+        : rawPoint;
       stroke.points.push(point);
       if (prevPoint && !point.gap) paintSegment(prevPoint, point, stroke.kind);
     }
@@ -962,11 +988,36 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
     if (pointersRef.current.size === 0) gesturingRef.current = false;
     if (drawingPointerIdRef.current !== id) return;
     drawingPointerIdRef.current = null;
+    const wasBroken = inkBrokenRef.current;
     inkBrokenRef.current = false;
     const stroke = liveStrokeRef.current;
     liveStrokeRef.current = null;
     if (!stroke) return;
     if (stroke.kind === "draw" || stroke.kind === "erase") {
+      if (
+        canvas &&
+        !wasBroken &&
+        isSmoothedPointer(event.nativeEvent.pointerType)
+      ) {
+        const userSize = stroke.kind === "erase" ? eraseSize : penSize;
+        const rawPoint = pointFromEvent(
+          canvas,
+          event.nativeEvent,
+          stroke.kind,
+          viewportRef.current,
+          userSize,
+        );
+        const last = stroke.points[stroke.points.length - 1];
+        if (
+          last &&
+          (rawPoint.x !== last.x ||
+            rawPoint.y !== last.y ||
+            rawPoint.width !== last.width)
+        ) {
+          stroke.points.push(rawPoint);
+          paintSegment(last, rawPoint, stroke.kind);
+        }
+      }
       if (stroke.points.length > 0) strokesRef.current.push(stroke);
     }
   };
