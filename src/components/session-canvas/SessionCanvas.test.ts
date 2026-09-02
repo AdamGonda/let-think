@@ -21,6 +21,7 @@ import {
   strokeBounds,
   strokesHaveInk,
   strokeWidthForPointer,
+  layeredStrokeOrder,
   textStrokeHits,
   scaleFontSize,
   estimatedTextWidth,
@@ -345,6 +346,23 @@ describe("canvas snapshot bounds", () => {
     expect(
       strokesHaveInk([{ kind: "draw", points: [{ x: 0, y: 0, width: 2 }] }]),
     ).toBe(true);
+  });
+
+  it("draws all text after ink so erase cannot punch labels", () => {
+    expect(
+      layeredStrokeOrder([
+        {
+          kind: "text",
+          x: 0,
+          y: 0,
+          text: "a",
+          fontSize: 12,
+          color: "#fff",
+        },
+        { kind: "erase", points: [{ x: 0, y: 0, width: 8 }] },
+        { kind: "draw", points: [{ x: 1, y: 1, width: 2 }] },
+      ]).map((s) => s.kind),
+    ).toEqual(["erase", "draw", "text"]);
   });
 
   it("pads the bounding box around ink", () => {

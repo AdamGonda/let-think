@@ -330,6 +330,31 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke): void {
   }
 }
 
+/** Ink (draw/erase) first, text last — erase must not punch through labels. */
+export function layeredStrokeOrder(strokes: Stroke[]): Stroke[] {
+  return [
+    ...strokes.filter((s) => s.kind !== "text"),
+    ...strokes.filter((s) => s.kind === "text"),
+  ];
+}
+
+function drawStrokesLayered(
+  ctx: CanvasRenderingContext2D,
+  strokes: Stroke[],
+  opts?: { hideIndex?: number | null; live?: Stroke | null },
+): void {
+  let live = opts?.live ?? null;
+  const visible = strokes.filter((_, i) => i !== opts?.hideIndex);
+  for (const stroke of layeredStrokeOrder(visible)) {
+    if (stroke.kind === "text" && live && live.kind !== "text") {
+      drawStroke(ctx, live);
+      live = null;
+    }
+    drawStroke(ctx, stroke);
+  }
+  if (live && live.kind !== "text") drawStroke(ctx, live);
+}
+
 export function strokesHaveInk(strokes: Stroke[]): boolean {
   return strokes.some((stroke) => stroke.kind !== "erase");
 }
@@ -394,9 +419,7 @@ export function strokesToJpegBlob(
   ctx.scale(scale, scale);
   ctx.translate(-bounds.x, -bounds.y);
   setupInk(ctx);
-  for (const stroke of strokes) {
-    drawStroke(ctx, stroke);
-  }
+  drawStrokesLayered(ctx, strokes);
   return new Promise((resolve) => {
     canvas.toBlob(
       (blob) => {
@@ -708,15 +731,10 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       applyCamera(ctx, viewportRef.current);
       setupInk(ctx);
-      const hideIndex = textDraftRef.current?.editIndex;
-      for (let i = 0; i < strokesRef.current.length; i++) {
-        if (i === hideIndex) continue;
-        const stroke = strokesRef.current[i];
-        if (stroke) drawStroke(ctx, stroke);
-      }
-      if (liveStrokeRef.current) {
-        drawStroke(ctx, liveStrokeRef.current);
-      }
+      drawStrokesLayered(ctx, strokesRef.current, {
+        hideIndex: textDraftRef.current?.editIndex,
+        live: liveStrokeRef.current,
+      });
     };
 
     redrawRef.current = redraw;
