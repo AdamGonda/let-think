@@ -36,6 +36,9 @@ const CANVAS_TEXT_SIZE = 48;
 const TEXT_LINE_HEIGHT = 1.2;
 const TEXT_WIDTH_FALLBACK = 0.55;
 const TEXT_MOVE_THRESHOLD = 5;
+/** Pointer events don't carry click count; time a second down as double-click. */
+const TEXT_DBLCLICK_MS = 400;
+const TEXT_DBLCLICK_PX = 8;
 export const CANVAS_MIN_SCALE = 0.25;
 export const CANVAS_MAX_SCALE = 8;
 export const CANVAS_TEXT_FONT =
@@ -265,7 +268,7 @@ function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke): void {
 
 function canvasScreenPoint(
   canvas: HTMLCanvasElement,
-  event: PointerEvent | WheelEvent,
+  event: { clientX: number; clientY: number },
 ): Point {
   const rect = canvas.getBoundingClientRect();
   return {
@@ -276,7 +279,7 @@ function canvasScreenPoint(
 
 function worldPoint(
   canvas: HTMLCanvasElement,
-  event: PointerEvent,
+  event: { clientX: number; clientY: number },
   vp: CanvasViewport,
 ): Point {
   return screenToWorld(vp, canvasScreenPoint(canvas, event));
@@ -444,6 +447,12 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
   const textDraftRef = useRef<TextDraft | null>(null);
   const textMoveRef = useRef<TextMove | null>(null);
   const textMovePendingRef = useRef<TextMove | null>(null);
+  const lastTextClickRef = useRef<{
+    at: number;
+    x: number;
+    y: number;
+    index: number;
+  } | null>(null);
   const redrawRef = useRef<() => void>(() => {});
   const [tool, setTool] = useState<CanvasTool>("pen");
   const [textDraft, setTextDraft] = useState<TextDraft | null>(null);
@@ -569,6 +578,12 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
     if (!el) return;
     if (textDraft.initialText) el.innerText = textDraft.initialText;
     el.focus();
+    const selection = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    range.collapse(false);
+    selection?.removeAllRanges();
+    selection?.addRange(range);
   }, [textDraft]);
 
   const commitViewport = (next: CanvasViewport) => {
@@ -639,7 +654,7 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
 
   const hitTextAt = (
     canvas: HTMLCanvasElement,
-    event: PointerEvent,
+    event: { clientX: number; clientY: number },
   ): number | null => {
     const point = worldPoint(canvas, event, viewportRef.current);
     return findTextStrokeAt(strokesRef.current, point, (text) =>
@@ -686,7 +701,17 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
       if (hit != null) {
         const existing = strokesRef.current[hit];
         if (existing?.kind !== "text") return;
-        if (event.detail >= 2) {
+        const now = performance.now();
+        const prev = lastTextClickRef.current;
+        if (
+          prev &&
+          prev.index === hit &&
+          now - prev.at <= TEXT_DBLCLICK_MS &&
+          Math.hypot(event.clientX - prev.x, event.clientY - prev.y) <=
+            TEXT_DBLCLICK_PX
+        ) {
+          lastTextClickRef.current = null;
+          clearTextMove();
           openTextDraft({
             x: existing.x,
             y: existing.y,
@@ -695,6 +720,12 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
           });
           return;
         }
+        lastTextClickRef.current = {
+          at: now,
+          x: event.clientX,
+          y: event.clientY,
+          index: hit,
+        };
         textMovePendingRef.current = {
           pointerId: event.pointerId,
           start: { x: event.clientX, y: event.clientY },
@@ -705,6 +736,7 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
         setTextHoverMove(true);
         return;
       }
+      lastTextClickRef.current = null;
       openTextDraft({
         x: point.x,
         y: point.y,
@@ -886,6 +918,9 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
       textMoveRef.current?.pointerId === id ||
       textMovePendingRef.current?.pointerId === id
     ) {
+      if (textMoveRef.current?.pointerId === id) {
+        lastTextClickRef.current = null;
+      }
       clearTextMove();
     }
     if (drawingPointerIdRef.current !== id) return;

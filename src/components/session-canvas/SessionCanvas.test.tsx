@@ -65,6 +65,17 @@ describe("SessionCanvas toolbar", () => {
   });
 });
 
+function doubleClickCanvas(
+  canvas: HTMLElement,
+  clientX: number,
+  clientY: number,
+) {
+  fireEvent.pointerDown(canvas, { pointerId: 2, clientX, clientY });
+  fireEvent.pointerUp(canvas, { pointerId: 2, clientX, clientY });
+  fireEvent.pointerDown(canvas, { pointerId: 3, clientX, clientY });
+  fireEvent.pointerUp(canvas, { pointerId: 3, clientX, clientY });
+}
+
 function placeHello(
   getByLabelText: (label: string) => HTMLElement,
   queryByLabelText: (label: string) => HTMLElement | null,
@@ -90,14 +101,22 @@ describe("SessionCanvas committed text", () => {
       <SessionCanvas active />,
     );
     const canvas = placeHello(getByLabelText, queryByLabelText);
-    fireEvent.pointerDown(canvas, {
-      pointerId: 2,
-      clientX: 24,
-      clientY: 24,
-      detail: 2,
-    });
-    fireEvent.pointerUp(canvas, { pointerId: 2, clientX: 24, clientY: 24 });
+    doubleClickCanvas(canvas, 24, 24);
     expect(getByLabelText("Canvas text").textContent).toBe("hello");
+  });
+
+  it("commits edited text after a double-click", () => {
+    const { getByLabelText, queryByLabelText } = render(
+      <SessionCanvas active />,
+    );
+    const canvas = placeHello(getByLabelText, queryByLabelText);
+    doubleClickCanvas(canvas, 24, 24);
+    const box = getByLabelText("Canvas text");
+    box.textContent = "hello world";
+    fireEvent.blur(box);
+    expect(queryByLabelText("Canvas text")).toBeNull();
+    doubleClickCanvas(canvas, 24, 24);
+    expect(getByLabelText("Canvas text").textContent).toBe("hello world");
   });
 
   it("does not reopen committed text on a single click", () => {
@@ -131,13 +150,7 @@ describe("SessionCanvas committed text", () => {
     });
     fireEvent.pointerUp(canvas, { pointerId: 8, clientX: 54, clientY: 34 });
     expect(queryByLabelText("Canvas text")).toBeNull();
-    fireEvent.pointerDown(canvas, {
-      pointerId: 9,
-      clientX: 54,
-      clientY: 34,
-      detail: 2,
-    });
-    fireEvent.pointerUp(canvas, { pointerId: 9, clientX: 54, clientY: 34 });
+    doubleClickCanvas(canvas, 54, 34);
     const box = getByLabelText("Canvas text");
     expect(box.textContent).toBe("hello");
     expect(box.style.left).toBe("50px");
