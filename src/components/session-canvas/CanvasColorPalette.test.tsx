@@ -1,10 +1,8 @@
 import { render, fireEvent, cleanup } from "@testing-library/react";
 import { useState } from "react";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  CanvasColorPalette,
-  DEFAULT_INK_COLOR,
-} from "./CanvasColorPalette";
+import { CanvasColorPalette } from "./CanvasColorPalette";
+import { DEFAULT_INK_COLOR } from "./canvasInkColors";
 
 function Harness({ initial = DEFAULT_INK_COLOR }) {
   const [color, setColor] = useState(initial);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { sizeSliderThumbTop, sizeTaperPolygon } from "./CanvasSizeSlider";
+import { sizeSliderThumbTop, sizeTaperPolygon } from "./canvasSizeSliderUtils";
 
 describe("sizeTaperPolygon", () => {
   it("is centered and wider at the top than the bottom", () => {

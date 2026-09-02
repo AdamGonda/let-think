@@ -198,10 +198,8 @@ describe("moveWorldByScreenDelta", () => {
 
 describe("inkOverChrome", () => {
   it("rejects points over chrome and reconnects after a gap", () => {
-    expect(inkOverChrome(true, false)).toEqual({ accept: false, broken: true });
-    expect(inkOverChrome(true, true)).toEqual({ accept: false, broken: true });
-    expect(inkOverChrome(false, true)).toEqual({ accept: true, broken: false });
-    expect(inkOverChrome(false, false)).toEqual({ accept: true, broken: false });
+    expect(inkOverChrome(true)).toEqual({ accept: false, broken: true });
+    expect(inkOverChrome(false)).toEqual({ accept: true, broken: false });
   });
 });
 

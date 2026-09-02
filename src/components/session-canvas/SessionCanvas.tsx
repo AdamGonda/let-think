@@ -6,10 +6,8 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import {
-  CanvasColorPalette,
-  DEFAULT_INK_COLOR,
-} from "./CanvasColorPalette";
+import { CanvasColorPalette } from "./CanvasColorPalette";
+import { DEFAULT_INK_COLOR } from "./canvasInkColors";
 import { CanvasSizeSlider } from "./CanvasSizeSlider";
 import { useMutation, useQuery } from "convex/react";
 import { timings } from "@/config";
@@ -251,10 +249,10 @@ export function moveWorldByScreenDelta(
   return { x: start.x + dx / s, y: start.y + dy / s };
 }
 
-export function inkOverChrome(
-  overChrome: boolean,
-  _broken: boolean,
-): { accept: boolean; broken: boolean } {
+export function inkOverChrome(overChrome: boolean): {
+  accept: boolean;
+  broken: boolean;
+} {
   if (overChrome) return { accept: false, broken: true };
   return { accept: true, broken: false };
 }
@@ -664,8 +662,10 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
   const viewport =
     viewportOverride ?? storedCanvas?.viewport ?? identityViewport();
 
-  textSizeRef.current = textSize;
-  inkColorRef.current = inkColor;
+  useEffect(() => {
+    textSizeRef.current = textSize;
+    inkColorRef.current = inkColor;
+  }, [textSize, inkColor]);
 
   const markDirty = useCallback(() => {
     revisionRef.current += 1;
@@ -754,7 +754,7 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
       .map((stroke) => normalizeStoredStroke(stroke as Stroke))
       .filter((stroke): stroke is Stroke => stroke != null);
     viewportRef.current = storedCanvas.viewport;
-    setCanvasHasInk(strokesHaveInk(storedCanvas.strokes));
+    setCanvasHasInk(strokesHaveInk(strokesRef.current));
     redrawRef.current();
   }, [sessionId, storedCanvas]);
 
@@ -1277,10 +1277,8 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
     const coalesced =
       event.nativeEvent.getCoalescedEvents?.() ?? [event.nativeEvent];
     for (const raw of coalesced) {
-      const wasBroken = inkBrokenRef.current;
       const action = inkOverChrome(
         isOverCanvasChrome(raw.clientX, raw.clientY),
-        wasBroken,
       );
       inkBrokenRef.current = action.broken;
       if (!action.accept) continue;
