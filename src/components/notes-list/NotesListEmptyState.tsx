@@ -17,7 +17,7 @@ export function NotesListEmptyState({
       </div>
       <p className="font-medium text-foreground">No files yet</p>
       <p className="text-sm max-w-[280px]">
-        Create a file to start thinking, or a folder to group related files.
+        Create a file to start thinking, or a space to group related files.
       </p>
       {onNewFile || onNewFolder ? (
         <div className="mt-2 flex flex-wrap items-center justify-center gap-2">
@@ -38,7 +38,7 @@ export function NotesListEmptyState({
               onClick={onNewFolder}
             >
               <FolderPlus className="size-4" />
-              New folder
+              New space
             </Button>
           ) : null}
         </div>

@@ -60,11 +60,11 @@ export function NotesListToolbar({
             variant="ghost"
             className="h-9 gap-2 px-3 ring-1 ring-border/50 shadow-sm"
             onClick={onNewFolder}
-            aria-label="New folder"
+            aria-label="New space"
             data-tour="new-project"
           >
             <FolderPlus className="size-4 stroke-[1.75]" />
-            New folder
+            New space
           </Button>
         ) : null}
         <div className="relative z-20 shrink-0">

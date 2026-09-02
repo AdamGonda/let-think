@@ -45,7 +45,7 @@ export function ExplorerCardActions({
           size="icon-xs"
           className="h-7 w-7"
           onClick={onNewFile}
-          aria-label="New file in folder"
+          aria-label="New file in space"
         >
           <Plus className="size-4" />
         </Button>

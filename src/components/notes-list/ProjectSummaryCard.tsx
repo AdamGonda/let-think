@@ -138,9 +138,9 @@ export function ProjectSummaryCard({
                       }
                     : undefined
                 }
-                renameLabel="Rename folder"
-                deleteLabel="Delete folder"
-                deleteTitle="Delete this folder?"
+                renameLabel="Rename space"
+                deleteLabel="Delete space"
+                deleteTitle="Delete this space?"
                 deleteDescription={`“${title}” and all files in it will be permanently deleted.`}
               />
             ) : null}

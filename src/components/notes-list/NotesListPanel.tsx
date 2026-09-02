@@ -92,7 +92,7 @@ export function NotesListPanel({
 
   const drilled = drill != null;
   const drillTitle = drillGroup ? groupDisplayName(drillGroup) : "";
-  const drillHeading = drilled && drillGroup ? drillTitle : "Folders";
+  const drillHeading = drilled && drillGroup ? drillTitle : "Spaces";
 
   const createFileInCurrentFolder = () => {
     const projectId =
@@ -173,7 +173,7 @@ export function NotesListPanel({
               <>
                 {rootFolders.length === 0 ? (
                   <p className="text-center text-sm text-muted-foreground py-12">
-                    No folders or files to show.
+                    No spaces or files to show.
                   </p>
                 ) : (
                   <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
