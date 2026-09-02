@@ -75,7 +75,7 @@ export function NotesListToolbar({
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none" />
         <Input
           type="search"
-          placeholder="Search notes, chats, and ideas…"
+          placeholder="Search by title…"
           value={searchQuery}
           onChange={(e) => onSearchQueryChange(e.target.value)}
           className="h-10 w-full pl-9 rounded-lg bg-muted/25 border-border/80 focus-visible:ring-2 focus-visible:ring-ring/40"

@@ -31,7 +31,6 @@ import {
   PROMPT_SUMMARY_OUTPUT_MAX_CHARS,
 } from "./constants";
 import { modelConfig } from "./modelConfig";
-import { isConceptEmbeddingsSyncEnabled } from "./featureFlags";
 import type { Id } from "./_generated/dataModel";
 import {
   imageIdsForPrompt,
@@ -471,7 +470,6 @@ export const send = action({
     };
     const streamParseState = createConceptStreamParseState();
     const globalIdRemap = new Map<string, string>();
-    const nodesAddedInThisTurn = new Map<string, ConceptNode>();
     let bufferedEvents: ConceptStreamEvent[] = [];
     let finalGraph: ConceptGraph | null = existingGraph;
     let rawModelText = "";
@@ -502,9 +500,6 @@ export const send = action({
         globalIdRemap
       );
       finalGraph = merged.graph;
-      for (const node of merged.addedNodes) {
-        nodesAddedInThisTurn.set(node.id, node);
-      }
       if (merged.changed) {
         await ctx.runMutation(api.sessions.updateConceptGraph, {
           sessionId,
@@ -541,30 +536,12 @@ export const send = action({
         globalIdRemap
       );
       finalGraph = merged.graph;
-      for (const node of merged.addedNodes) {
-        nodesAddedInThisTurn.set(node.id, node);
-      }
       if (merged.changed) {
         await ctx.runMutation(api.sessions.updateConceptGraph, {
           sessionId,
           conceptGraph: finalGraph,
         });
       }
-    }
-    const addedNodes = Array.from(nodesAddedInThisTurn.values());
-    if (addedNodes.length > 0 && isConceptEmbeddingsSyncEnabled()) {
-      await ctx.runMutation(internal.conceptEmbeddings.enqueueConceptNodesForEmbedding, {
-        sessionId,
-        userId,
-        batchId: batchMeta.id,
-        nodes: addedNodes,
-      });
-    } else if (addedNodes.length > 0) {
-      console.info("[concept-embeddings] enqueue.skipped.feature_flag_disabled", {
-        sessionId,
-        batchId: batchMeta.id,
-        skippedNodeCount: addedNodes.length,
-      });
     }
 
     // 4. Post-process visible assistant text
@@ -770,7 +747,6 @@ export const sendChat = action({
       messageId: assistantMessageId,
       userId,
       content,
-      indexForSearch: true,
     });
 
     console.info(

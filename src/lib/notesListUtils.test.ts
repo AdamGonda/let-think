@@ -14,12 +14,12 @@ function mkFile(id: string, title: string): ProjectWithSessions["files"][number]
 }
 
 describe("projectGroupMatchesQuery", () => {
-  it("matches Inbox by name or by a file title inside it", () => {
+  it("matches by file title only, not folder name", () => {
     const inbox: ProjectWithSessions = {
       project: null,
       files: [mkFile("f1", "Loose note")],
     };
-    expect(projectGroupMatchesQuery(inbox, "inbox")).toBe(true);
+    expect(projectGroupMatchesQuery(inbox, "inbox")).toBe(false);
     expect(projectGroupMatchesQuery(inbox, "loose")).toBe(true);
     expect(projectGroupMatchesQuery(inbox, "zzz")).toBe(false);
   });

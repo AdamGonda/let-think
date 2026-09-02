@@ -99,17 +99,17 @@ describe("useNotesListModel", () => {
     expect(result.current.rootFolders[0]?.project).toBeNull();
   });
 
-  it("filters groups by search query", () => {
+  it("does not match groups by folder name alone", () => {
     const p1 = "p1" as Id<"projects">;
     const workspace: ProjectWithSessions[] = [
       { project: null, files: [] },
       {
         project: mkProject(p1, "Alpha", 1),
-        files: [],
+        files: [mkFile("s1", "Other", 50)],
       },
       {
         project: mkProject("p2" as Id<"projects">, "Beta", 1),
-        files: [],
+        files: [mkFile("s2", "Alpha note", 40)],
       },
     ];
     const onDrill = vi.fn();
@@ -120,7 +120,10 @@ describe("useNotesListModel", () => {
       result.current.setSearchQuery("alp");
     });
     expect(result.current.filteredGroups).toHaveLength(1);
-    expect(result.current.filteredGroups[0]?.project?.name).toBe("Alpha");
+    expect(result.current.filteredGroups[0]?.project?.name).toBe("Beta");
+    expect(result.current.matchingFiles.map((f) => f.title)).toEqual([
+      "Alpha note",
+    ]);
   });
 
   it("clears drill when group missing", async () => {

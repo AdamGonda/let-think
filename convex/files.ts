@@ -7,18 +7,7 @@ import {
 import type { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { deleteSessionOwnedRows } from "./lib/sessionOwned";
-import { internal } from "./_generated/api";
-import {
-  NOTE_SEARCH_EMBED_DEBOUNCE_MS,
-  SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS,
-} from "./constants";
-import {
-  deleteSearchDocumentsByChatSession,
-  deleteSearchDocumentsByFile,
-  enqueueNoteSearch,
-  noteEmbeddingHash,
-  patchSearchDocumentTitlesForFile,
-} from "./searchDocuments";
+import { SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS } from "./constants";
 
 export async function requireFileOwner(ctx: MutationCtx, fileId: Id<"files">) {
   const userId = await getAuthUserId(ctx);
@@ -66,9 +55,6 @@ export async function createFileWithSession(
     title,
     createdAt: now,
   });
-  if (args.thinkingNotes?.trim()) {
-    await enqueueNoteSearch(ctx, fileId);
-  }
   return { fileId, sessionId };
 }
 
@@ -100,7 +86,6 @@ export const updateTitle = mutation({
   handler: async (ctx, { id, title }) => {
     await requireFileOwner(ctx, id);
     await ctx.db.patch(id, { title });
-    await patchSearchDocumentTitlesForFile(ctx, id, title);
     return null;
   },
 });
@@ -128,21 +113,11 @@ export const updateThinkingNotes = mutation({
   args: {
     fileId: v.id("files"),
     thinkingNotes: v.string(),
-    embedNow: v.optional(v.boolean()),
   },
   returns: v.null(),
-  handler: async (ctx, { fileId, thinkingNotes, embedNow }) => {
+  handler: async (ctx, { fileId, thinkingNotes }) => {
     await requireFileOwner(ctx, fileId);
     await ctx.db.patch(fileId, { thinkingNotes });
-    if (embedNow) {
-      await enqueueNoteSearch(ctx, fileId);
-      return null;
-    }
-    await ctx.scheduler.runAfter(
-      NOTE_SEARCH_EMBED_DEBOUNCE_MS,
-      internal.searchDocuments.enqueueNoteSearchIfCurrent,
-      { fileId, contentHash: noteEmbeddingHash(thinkingNotes) },
-    );
     return null;
   },
 });
@@ -176,7 +151,6 @@ async function deleteChatSessionRows(
   ctx: MutationCtx,
   chatSessionId: Id<"chatSessions">,
 ) {
-  await deleteSearchDocumentsByChatSession(ctx, chatSessionId);
   const msgs = await ctx.db
     .query("chatMessages")
     .withIndex("by_chat_session", (q) => q.eq("chatSessionId", chatSessionId))
@@ -191,7 +165,6 @@ export async function deleteFileCascade(
   ctx: MutationCtx,
   fileId: Id<"files">,
 ) {
-  await deleteSearchDocumentsByFile(ctx, fileId);
   const chatSessions = await ctx.db
     .query("chatSessions")
     .withIndex("by_file", (q) => q.eq("fileId", fileId))
@@ -235,6 +208,5 @@ export async function maybeTitleFileFromFirstGraphMessage(
   if (file && (file.title === "New file" || file.title === "New session")) {
     const title = titleFromFirstMessage(userContent);
     await ctx.db.patch(session.fileId, { title });
-    await patchSearchDocumentTitlesForFile(ctx, session.fileId, title);
   }
 }

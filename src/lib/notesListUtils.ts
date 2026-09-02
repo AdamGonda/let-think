@@ -34,7 +34,6 @@ export function projectGroupMatchesQuery(
   group: ProjectWithSessions,
   q: string,
 ): boolean {
-  if (groupDisplayName(group).toLowerCase().includes(q)) return true;
   return (group.files ?? []).some((s) => s.title.toLowerCase().includes(q));
 }
 

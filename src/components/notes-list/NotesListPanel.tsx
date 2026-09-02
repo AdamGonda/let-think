@@ -10,23 +10,13 @@ import { ProjectSummaryCard } from "./ProjectSummaryCard";
 import { NotesListLoading } from "./NotesListLoading";
 import { NotesListEmptyState } from "./NotesListEmptyState";
 import { NotesListSessionCard } from "./NotesListSessionCard";
-import { SearchResultCard } from "./SearchResultCard";
 import { useNotesListModel } from "@/hooks/useNotesListModel";
-import {
-  useWorkspaceSearch,
-  type WorkspaceSearchStatus,
-} from "@/hooks/useWorkspaceSearch";
 import { useWorkspaceActions } from "@/hooks/useWorkspaceActions";
 import { useAppUiActor } from "@/hooks/useAppUi";
 import {
   intentSelectSessionFromSidebar,
-  openSearchHit,
   setActiveProject,
 } from "@/lib/appUiCommands";
-import {
-  WORKSPACE_SEARCH_MIN_QUERY_LENGTH,
-  type WorkspaceSearchHit,
-} from "@/lib/searchHits";
 
 interface NotesListPanelProps {
   workspace: ProjectWithSessions[] | undefined;
@@ -55,11 +45,9 @@ export function NotesListPanel({
     rootFolders,
     drillGroup,
     filteredDrillSessions,
+    matchingFiles,
   } = useNotesListModel(workspace, drill, onDrillChange);
   const searchActive = searchQuery.trim().length > 0;
-  const { hits, status, errorMessage } = useWorkspaceSearch(
-    searchActive ? searchQuery : "",
-  );
 
   const {
     handleNewSession,
@@ -151,24 +139,41 @@ export function NotesListPanel({
             ) : null}
 
             {searchActive ? (
-              <SearchResultsBody
-                query={searchQuery.trim()}
-                hits={hits}
-                status={status}
-                errorMessage={errorMessage}
-                onOpen={(hit) => openSearchHit(actor, hit)}
-              />
+              matchingFiles.length === 0 ? (
+                <p className="py-12 text-center text-sm text-muted-foreground">
+                  Nothing matches &quot;{searchQuery.trim()}&quot;
+                </p>
+              ) : (
+                <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                  {matchingFiles.map((file) => (
+                    <li key={file._id}>
+                      <NotesListSessionCard
+                        session={file}
+                        isSelected={activeFileId === file._id}
+                        isEditing={editingSessionId === file._id}
+                        titleInputRef={sessionInputRef}
+                        onOpenNotesEditor={onOpenNotesEditor}
+                        onRename={(title) => {
+                          void handleRenameSession(file._id, title);
+                          setEditingSessionId(null);
+                        }}
+                        onCancelEdit={() => setEditingSessionId(null)}
+                        onStartEdit={() => setEditingSessionId(file._id)}
+                        onDelete={() => {
+                          void handleDeleteSession(file._id);
+                        }}
+                      />
+                    </li>
+                  ))}
+                </ul>
+              )
             ) : null}
 
             {!searchActive && !drilled && !isEmpty && (
               <>
                 {rootFolders.length === 0 ? (
                   <p className="text-center text-sm text-muted-foreground py-12">
-                    {searchQuery.trim() ? (
-                      <>Nothing matches &quot;{searchQuery}&quot;</>
-                    ) : (
-                      <>No folders or files to show.</>
-                    )}
+                    No folders or files to show.
                   </p>
                 ) : (
                   <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -293,64 +298,5 @@ export function NotesListPanel({
         </div>
       </div>
     </div>
-  );
-}
-
-function SearchResultsBody({
-  query,
-  hits,
-  status,
-  errorMessage,
-  onOpen,
-}: {
-  query: string;
-  hits: WorkspaceSearchHit[];
-  status: WorkspaceSearchStatus;
-  errorMessage: string | null;
-  onOpen: (hit: WorkspaceSearchHit) => void;
-}) {
-  if (query.length < WORKSPACE_SEARCH_MIN_QUERY_LENGTH) {
-    return (
-      <p className="py-12 text-center text-sm text-muted-foreground">
-        Type at least {WORKSPACE_SEARCH_MIN_QUERY_LENGTH} characters to search.
-      </p>
-    );
-  }
-  if (status === "loading" || status === "idle") {
-    return (
-      <p className="py-12 text-center text-sm text-muted-foreground">
-        Searching…
-      </p>
-    );
-  }
-  if (status === "error") {
-    return (
-      <p className="py-12 text-center text-sm text-muted-foreground">
-        {errorMessage ?? "Search failed. Try again."}
-      </p>
-    );
-  }
-  if (status === "indexing" && hits.length === 0) {
-    return (
-      <p className="py-12 text-center text-sm text-muted-foreground">
-        Indexing your workspace. Search again in a moment.
-      </p>
-    );
-  }
-  if (hits.length === 0) {
-    return (
-      <p className="py-12 text-center text-sm text-muted-foreground">
-        Nothing matches &quot;{query}&quot;
-      </p>
-    );
-  }
-  return (
-    <ul className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-      {hits.map((hit, i) => (
-        <li key={`${hit.kind}-${hit.fileId}-${hit.chatSessionId ?? ""}-${hit.nodeId ?? ""}-${i}`}>
-          <SearchResultCard hit={hit} onOpen={onOpen} />
-        </li>
-      ))}
-    </ul>
   );
 }

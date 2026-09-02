@@ -1,18 +1,17 @@
-import { createActor } from "xstate";
 import { describe, expect, it } from "vitest";
 import type { Id } from "../../convex/_generated/dataModel";
-import { openSearchHit } from "./appUiCommands";
-import type { WorkspaceSearchHit } from "./searchHits";
+import { openSessionInFilesWithEditor } from "./appUiCommands";
+import type { WorkspaceFile } from "@/components/session-sidebar/workspaceTypes";
 import {
   appUiMachine,
   selectSurface,
 } from "../machines/appUiMachine";
+import { createActor } from "xstate";
 import type { AppUiContext } from "../machines/appUiTypes";
 
 const fileId = "file_1" as Id<"files">;
 const sessionId = "sess_1" as Id<"sessions">;
 const projectId = "proj_1" as Id<"projects">;
-const chatSessionId = "chat_1" as Id<"chatSessions">;
 
 function baseInput(over: Partial<AppUiContext> = {}): Partial<AppUiContext> {
   return {
@@ -48,29 +47,23 @@ function baseInput(over: Partial<AppUiContext> = {}): Partial<AppUiContext> {
   };
 }
 
-function hit(over: Partial<WorkspaceSearchHit>): WorkspaceSearchHit {
+function mkFile(over: Partial<WorkspaceFile> = {}): WorkspaceFile {
   return {
-    kind: "note",
+    _id: fileId,
+    _creationTime: 1,
     title: "LET THINK",
-    snippet: "a remembered idea",
-    fileId,
+    createdAt: 1,
     sessionId,
     projectId,
-    chatSessionId: null,
-    nodeId: null,
-    batchIndex: null,
-    score: 0.9,
-    reason: "contains",
-    matchedTerms: [],
     ...over,
   };
 }
 
-describe("openSearchHit", () => {
-  it("opens a note in the files editor", () => {
+describe("openSessionInFilesWithEditor", () => {
+  it("opens a file in the files editor with project drill", () => {
     const actor = createActor(appUiMachine, { input: baseInput() });
     actor.start();
-    openSearchHit(actor, hit({ kind: "note" }));
+    openSessionInFilesWithEditor(actor, mkFile());
     const ctx = actor.getSnapshot().context;
     expect(selectSurface(actor.getSnapshot())).toBe("notesList");
     expect(ctx.activeFileId).toBe(fileId);
@@ -81,42 +74,10 @@ describe("openSearchHit", () => {
     actor.stop();
   });
 
-  it("opens a chat thread on the graph surface", () => {
-    const actor = createActor(appUiMachine, { input: baseInput() });
-    actor.start();
-    openSearchHit(
-      actor,
-      hit({ kind: "chat", chatSessionId }),
-    );
-    const ctx = actor.getSnapshot().context;
-    expect(selectSurface(actor.getSnapshot())).toBe("graph");
-    expect(ctx.sessionView).toBe("chat");
-    expect(ctx.activeFileId).toBe(fileId);
-    expect(ctx.activeSessionId).toBe(sessionId);
-    expect(ctx.activeChatSessionId).toBe(chatSessionId);
-    expect(ctx.editorOpen).toBe(false);
-    actor.stop();
-  });
-
-  it("opens an idea on the matching graph batch", () => {
-    const actor = createActor(appUiMachine, { input: baseInput() });
-    actor.start();
-    openSearchHit(
-      actor,
-      hit({ kind: "idea", nodeId: "n1", batchIndex: 2 }),
-    );
-    const ctx = actor.getSnapshot().context;
-    expect(selectSurface(actor.getSnapshot())).toBe("graph");
-    expect(ctx.sessionView).toBe("graph");
-    expect(ctx.selectedBatchIndex).toBe(2);
-    expect(ctx.editorOpen).toBe(false);
-    actor.stop();
-  });
-
   it("uses inbox drill when the file has no project", () => {
     const actor = createActor(appUiMachine, { input: baseInput() });
     actor.start();
-    openSearchHit(actor, hit({ kind: "note", projectId: null }));
+    openSessionInFilesWithEditor(actor, mkFile({ projectId: undefined }));
     expect(actor.getSnapshot().context.notesListDrill).toEqual({
       type: "inbox",
     });

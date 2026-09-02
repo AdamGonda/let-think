@@ -10,10 +10,6 @@ import {
 import type { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { requireFileOwner, titleFromFirstMessage } from "./files";
-import {
-  deleteSearchDocumentsByChatSession,
-  enqueueChatMessageSearch,
-} from "./searchDocuments";
 import { imageUrlsForIds } from "./fileStorage";
 import { IMAGE_PROMPT_MAX } from "./constants";
 
@@ -76,7 +72,6 @@ export const remove = mutation({
   returns: v.null(),
   handler: async (ctx, { id }) => {
     await requireChatSessionOwner(ctx, id);
-    await deleteSearchDocumentsByChatSession(ctx, id);
     const msgs = await ctx.db
       .query("chatMessages")
       .withIndex("by_chat_session", (q) => q.eq("chatSessionId", id))
@@ -234,14 +229,13 @@ export const startChatTurn = internalMutation({
     if (!chatSession || chatSession.userId !== userId) {
       throw new Error("Chat session not found or access denied");
     }
-    const { userMessageId, assistantMessageId } = await insertChatTurn(ctx, {
+    const { assistantMessageId } = await insertChatTurn(ctx, {
       chatSessionId,
       userContent,
       assistantContent: "",
       mentions,
       imageStorageIds,
     });
-    await enqueueChatMessageSearch(ctx, { userId, messageId: userMessageId });
     return { assistantMessageId };
   },
 });
@@ -251,10 +245,9 @@ export const patchChatMessage = internalMutation({
     messageId: v.id("chatMessages"),
     userId: v.id("users"),
     content: v.string(),
-    indexForSearch: v.optional(v.boolean()),
   },
   returns: v.null(),
-  handler: async (ctx, { messageId, userId, content, indexForSearch }) => {
+  handler: async (ctx, { messageId, userId, content }) => {
     const msg = await ctx.db.get(messageId);
     if (!msg || msg.role !== "assistant") {
       throw new Error("Assistant message not found");
@@ -267,9 +260,6 @@ export const patchChatMessage = internalMutation({
       throw new Error("Chat session not found or access denied");
     }
     await ctx.db.patch(messageId, { content });
-    if (indexForSearch) {
-      await enqueueChatMessageSearch(ctx, { userId, messageId });
-    }
     return null;
   },
 });

@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import type {
   ProjectRow,
   ProjectWithSessions,
+  WorkspaceFile,
 } from "@/components/session-sidebar/workspaceTypes";
 import {
   type NotesListDrill,
@@ -89,6 +90,18 @@ export function useNotesListModel(
     return files;
   }, [drillGroup, searchQuery]);
 
+  /** Flat title matches for the search results view. */
+  const matchingFiles = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [] as WorkspaceFile[];
+    const groups = drillGroup ? [drillGroup] : sortedGroups;
+    const files = groups.flatMap((g) =>
+      (g.files ?? []).filter((f) => f.title.toLowerCase().includes(q)),
+    );
+    files.sort((a, b) => b.createdAt - a.createdAt);
+    return files;
+  }, [searchQuery, drillGroup, sortedGroups]);
+
   return {
     searchQuery,
     setSearchQuery,
@@ -100,5 +113,6 @@ export function useNotesListModel(
     rootFolders,
     drillGroup,
     filteredDrillSessions,
+    matchingFiles,
   };
 }
