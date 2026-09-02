@@ -156,7 +156,7 @@ export function HistoricalBatchPrompt({
       className="flex flex-col items-center px-4 pt-4 shrink-0"
       data-tour="session-input"
     >
-      <div className={clsx("w-full", layout.mainColumnMaxWidthClass)}>
+      <div className={clsx("w-full", layout.sessionInputIslandMaxWidthClass)}>
         {!trimmed ? (
           <div
             className={clsx(chromeShellClass)}
@@ -187,7 +187,7 @@ export function HistoricalBatchPrompt({
                 className={clsx(
                   "pointer-events-auto w-full",
                   isCollapsing && "pointer-events-none",
-                  layout.mainColumnMaxWidthClass,
+                  layout.sessionInputIslandMaxWidthClass,
                 )}
               >
                 <div

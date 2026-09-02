@@ -509,7 +509,7 @@ export function ChatComposer({
       data-tour="session-input"
       data-composer-chrome="island"
     >
-      <div className={clsx("relative w-full", layout.mainColumnMaxWidthClass)}>
+      <div className={clsx("relative w-full", layout.sessionInputIslandMaxWidthClass)}>
         <div className="invisible pointer-events-none w-full" aria-hidden>
           <div
             className={clsx(

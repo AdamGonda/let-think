@@ -100,13 +100,17 @@ export function AppContentGraphSurface({
         />
       )}
       {chatOpen ? (
-        <div className="relative flex min-h-0 flex-1">
-          <FileChatList
-            chats={fileChats}
-            activeChatSessionId={activeChatSessionId}
-            onSelect={onSelectChatSession}
-            onNewChat={onNewChat}
-          />
+        <div className="relative flex min-h-0 flex-1  flex-col">
+          <div className="pointer-events-none absolute inset-y-0 left-4 z-30 flex items-start pt-[130px]">
+            <div className="pointer-events-auto">
+              <FileChatList
+                chats={fileChats}
+                activeChatSessionId={activeChatSessionId}
+                onSelect={onSelectChatSession}
+                onNewChat={onNewChat}
+              />
+            </div>
+          </div>
           <div className="flex min-h-0 min-w-0 flex-1 flex-col">
             <SessionChatThread
               key={activeChatSessionId ?? "empty"}

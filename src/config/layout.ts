@@ -11,6 +11,8 @@ export const layout = {
   mainColumnWidthDefaultPx: 960,
   mainColumnWidthMinPx: 640,
   mainColumnWidthMaxPx: 1200,
+  /** Bottom floating composer / historical prompt island. */
+  sessionInputIslandMaxWidthClass: "max-w-[600px]",
   /** Inner session input card (composer + historical dock): matches empty single-line textarea row + padding. */
   sessionInputChromeMinClass: "min-h-[4.75rem]",
   /**
