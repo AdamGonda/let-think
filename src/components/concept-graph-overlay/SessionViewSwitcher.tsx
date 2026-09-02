@@ -20,7 +20,7 @@ const VIEW_OPTIONS: ReadonlyArray<{
   { view: "canvas", label: "Canvas", Icon: Paintbrush },
   { view: "chat", label: "Chat", Icon: MessageSquare },
   { view: "graph", label: "Graph", Icon: LayoutGrid },
-  { view: "file", label: "Words", Icon: FileText, tour: "notes-btn" },
+  { view: "file", label: "Write", Icon: FileText, tour: "notes-btn" },
 ];
 
 const HIGHLIGHT_TRANSLATE = [
