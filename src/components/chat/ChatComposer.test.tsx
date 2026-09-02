@@ -1,6 +1,7 @@
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ChatComposer } from "./ChatComposer";
+import { setCanvasHasInk } from "@/lib/canvasSnapshot";
 
 const base = {
   input: "",
@@ -33,6 +34,7 @@ function mockComposerLayout() {
 describe("ChatComposer chrome", () => {
   afterEach(() => {
     cleanup();
+    setCanvasHasInk(false);
     vi.restoreAllMocks();
   });
 
@@ -90,6 +92,7 @@ describe("ChatComposer chrome", () => {
 describe("ChatComposer @ picker", () => {
   afterEach(() => {
     cleanup();
+    setCanvasHasInk(false);
     vi.restoreAllMocks();
   });
 
@@ -131,5 +134,54 @@ describe("ChatComposer @ picker", () => {
     );
     expect(queryByRole("option", { name: /Writing/ })).toBeNull();
     expect(getByRole("option", { name: /One/ })).toBeTruthy();
+  });
+
+  it("shows Canvas when the live canvas has ink", () => {
+    setCanvasHasInk(true);
+    const { getByRole, queryByRole, rerender } = render(
+      <ChatComposer {...base} input="@" />,
+    );
+    expect(getByRole("option", { name: /Canvas/ })).toBeTruthy();
+    setCanvasHasInk(false);
+    rerender(<ChatComposer {...base} input="@" />);
+    expect(queryByRole("option", { name: /Canvas/ })).toBeNull();
+  });
+
+  it("Escape dismisses the picker until the @ mention ends", () => {
+    const { container, getByRole, queryByRole, rerender } = render(
+      <ChatComposer {...base} input="@" />,
+    );
+    expect(getByRole("option", { name: /Writing/ })).toBeTruthy();
+    fireEvent.keyDown(container.querySelector("textarea")!, { key: "Escape" });
+    expect(queryByRole("option", { name: /Writing/ })).toBeNull();
+    rerender(<ChatComposer {...base} input="hello" />);
+    rerender(<ChatComposer {...base} input="@" />);
+    expect(getByRole("option", { name: /Writing/ })).toBeTruthy();
+  });
+});
+
+describe("ChatComposer images", () => {
+  afterEach(() => {
+    cleanup();
+    setCanvasHasInk(false);
+    vi.restoreAllMocks();
+  });
+
+  it("shows the attach control and enables send when a thumbnail is pending", () => {
+    const { getByLabelText, rerender, getByTestId } = render(
+      <ChatComposer {...base} onAddImageFiles={vi.fn()} />,
+    );
+    expect(getByTestId("composer-attach-image")).toBeTruthy();
+    expect(getByLabelText("Generate response")).toHaveProperty("disabled", true);
+
+    rerender(
+      <ChatComposer
+        {...base}
+        onAddImageFiles={vi.fn()}
+        pendingImages={[{ id: "1", previewUrl: "blob:preview" }]}
+      />,
+    );
+    expect(getByTestId("composer-image-chip")).toBeTruthy();
+    expect(getByLabelText("Generate response")).toHaveProperty("disabled", false);
   });
 });

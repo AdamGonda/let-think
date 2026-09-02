@@ -35,6 +35,7 @@ export type SessionMessage = {
     conceptId: string;
     name: string;
   }>;
+  imageUrls?: string[];
 };
 
 type SessionDataContextValue = {
@@ -82,6 +83,7 @@ function mapPageToSessionMessages(
     createdAt: number;
     topic?: string;
     mentions?: SessionMessage["mentions"];
+    imageUrls?: string[];
   }>,
 ): SessionMessage[] {
   return [...results].reverse().map((m) => ({
@@ -91,6 +93,7 @@ function mapPageToSessionMessages(
     createdAt: m.createdAt,
     topic: m.topic,
     mentions: m.mentions,
+    imageUrls: m.imageUrls,
   }));
 }
 

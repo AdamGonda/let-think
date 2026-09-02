@@ -26,11 +26,14 @@ describe("AT_REFERENCE_PATTERN", () => {
     expect("@12 ".match(new RegExp(AT_REFERENCE_PATTERN))?.[1]).toBe("12");
   });
 
-  it("matches @writing and @graph", () => {
+  it("matches @writing, @graph, and @canvas", () => {
     expect("@writing ".match(new RegExp(AT_REFERENCE_PATTERN))?.[1]).toBe(
       "writing",
     );
     expect("@graph ".match(new RegExp(AT_REFERENCE_PATTERN))?.[1]).toBe("graph");
+    expect("@canvas ".match(new RegExp(AT_REFERENCE_PATTERN))?.[1]).toBe(
+      "canvas",
+    );
     expect("@foo ".match(new RegExp(AT_REFERENCE_PATTERN))).toBeNull();
   });
 });
@@ -53,6 +56,14 @@ describe("atQueryAtCaret / atMentionOptions / insertAtMentionToken", () => {
         (o) => o.token,
       ),
     ).toEqual(["writing", "graph"]);
+    expect(
+      atMentionOptions({
+        query: "",
+        numberedConcepts: [],
+        allowGraphRef: false,
+        allowCanvasRef: true,
+      }).map((o) => o.token),
+    ).toEqual(["writing", "canvas"]);
   });
 
   it("filters by token prefix or label", () => {
