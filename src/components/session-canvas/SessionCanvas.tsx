@@ -4,33 +4,48 @@ import {
   useState,
   type PointerEvent as ReactPointerEvent,
 } from "react";
+import { CanvasSizeSlider } from "./CanvasSizeSlider";
 import { CanvasToolbar, type CanvasTool } from "./CanvasToolbar";
 
 type Point = { x: number; y: number };
 type StrokePoint = { x: number; y: number; width: number };
 type InkKind = "draw" | "erase";
-type ShapeKind = "rect" | "ellipse";
 type InkStroke = { kind: InkKind; points: StrokePoint[] };
-type ShapeStroke = { kind: ShapeKind; from: Point; to: Point; width: number };
-type TextStroke = { kind: "text"; x: number; y: number; text: string };
-type Stroke = InkStroke | ShapeStroke | TextStroke;
+export type TextStroke = {
+  kind: "text";
+  x: number;
+  y: number;
+  text: string;
+  fontSize: number;
+};
+type Stroke = InkStroke | TextStroke;
+type TextDraft = {
+  x: number;
+  y: number;
+  editIndex: number | null;
+  initialText: string;
+};
 
 export type CanvasViewport = { x: number; y: number; scale: number };
 
 const INK = "#ffffff";
-const MOUSE_WIDTH = 2;
-const PEN_MIN_WIDTH = 1.25;
-const PEN_PRESSURE_RANGE = 5;
-const ERASE_WIDTH_MULTIPLIER = 6;
-const ERASE_MIN_WIDTH = 40;
 /** Pointer Events: eraser contact is button 5 / buttons bit 5 (32). */
 const ERASER_BUTTON = 5;
 const ERASER_BUTTONS_MASK = 32;
-const CANVAS_TEXT_SIZE = 48;
+const TEXT_LINE_HEIGHT = 1.2;
+const TEXT_WIDTH_FALLBACK = 0.55;
+
 export const CANVAS_MIN_SCALE = 0.25;
 export const CANVAS_MAX_SCALE = 8;
-export const CANVAS_TEXT_FONT =
-  `${CANVAS_TEXT_SIZE}px "DM Sans", ui-sans-serif, system-ui, sans-serif`;
+export const DEFAULT_PEN_SIZE = 2;
+export const DEFAULT_ERASE_SIZE = 40;
+export const DEFAULT_TEXT_SIZE = 48;
+export const PEN_SIZE_MIN = 1;
+export const PEN_SIZE_MAX = 40;
+export const ERASE_SIZE_MIN = 8;
+export const ERASE_SIZE_MAX = 120;
+export const TEXT_SIZE_MIN = 12;
+export const TEXT_SIZE_MAX = 128;
 
 export function identityViewport(): CanvasViewport {
   return { x: 0, y: 0, scale: 1 };
@@ -79,13 +94,13 @@ export function strokeWidthForPointer(
   pointerType: string,
   pressure: number,
   kind: InkKind = "draw",
+  userSize?: number,
 ): number {
-  const base =
-    pointerType !== "pen"
-      ? MOUSE_WIDTH
-      : PEN_MIN_WIDTH + (pressure > 0 ? pressure : 0.5) * PEN_PRESSURE_RANGE;
-  if (kind === "erase") return Math.max(ERASE_MIN_WIDTH, base * ERASE_WIDTH_MULTIPLIER);
-  return base;
+  const size =
+    userSize ?? (kind === "erase" ? DEFAULT_ERASE_SIZE : DEFAULT_PEN_SIZE);
+  if (pointerType !== "pen") return size;
+  const amount = pressure > 0 ? pressure : 0.5;
+  return Math.max(1, size * (0.5 + amount));
 }
 
 export function isUndoHotkey(event: {
@@ -112,32 +127,54 @@ export function isErasePointer(event: {
   );
 }
 
-export function rectFromPoints(from: Point, to: Point): {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-} {
-  return {
-    x: Math.min(from.x, to.x),
-    y: Math.min(from.y, to.y),
-    w: Math.abs(to.x - from.x),
-    h: Math.abs(to.y - from.y),
-  };
-}
-
-export function isEmptyShape(from: Point, to: Point): boolean {
-  return Math.abs(to.x - from.x) < 1 && Math.abs(to.y - from.y) < 1;
+export function canvasTextFont(fontSize: number): string {
+  return `${fontSize}px "DM Sans", ui-sans-serif, system-ui, sans-serif`;
 }
 
 export function canvasTextStroke(
   x: number,
   y: number,
   raw: string,
+  fontSize: number = DEFAULT_TEXT_SIZE,
 ): TextStroke | null {
   const text = raw.replace(/\u00a0/g, " ").trim();
   if (text === "") return null;
-  return { kind: "text", x, y, text };
+  return { kind: "text", x, y, text, fontSize };
+}
+
+export function estimatedTextWidth(text: string, fontSize: number): number {
+  return fontSize * TEXT_WIDTH_FALLBACK * Math.max(text.length, 1);
+}
+
+export function textStrokeHits(
+  stroke: TextStroke,
+  point: Point,
+  measureWidth?: (text: string, fontSize: number) => number,
+): boolean {
+  const measured = measureWidth?.(stroke.text, stroke.fontSize) ?? 0;
+  const w =
+    measured > 0 ? measured : estimatedTextWidth(stroke.text, stroke.fontSize);
+  const h = stroke.fontSize * TEXT_LINE_HEIGHT;
+  return (
+    point.x >= stroke.x &&
+    point.x <= stroke.x + w &&
+    point.y >= stroke.y &&
+    point.y <= stroke.y + h
+  );
+}
+
+export function findTextStrokeAt(
+  strokes: ReadonlyArray<Stroke>,
+  point: Point,
+  measureWidth?: (text: string, fontSize: number) => number,
+): number | null {
+  for (let i = strokes.length - 1; i >= 0; i--) {
+    const stroke = strokes[i];
+    if (stroke?.kind === "text" && textStrokeHits(stroke, point, measureWidth)) {
+      return i;
+    }
+  }
+  return null;
 }
 
 function isTypingTarget(target: EventTarget | null): boolean {
@@ -149,61 +186,35 @@ function isTypingTarget(target: EventTarget | null): boolean {
   );
 }
 
-function isShapeTool(tool: CanvasTool): tool is ShapeKind {
-  return tool === "rect" || tool === "ellipse";
-}
-
-function drawShape(ctx: CanvasRenderingContext2D, stroke: ShapeStroke): void {
-  ctx.lineWidth = stroke.width;
-  const { x, y, w, h } = rectFromPoints(stroke.from, stroke.to);
-  if (stroke.kind === "rect") {
-    ctx.strokeRect(x, y, w, h);
-    return;
-  }
-  const rx = Math.max(w / 2, 0.5);
-  const ry = Math.max(h / 2, 0.5);
-  ctx.beginPath();
-  ctx.ellipse(x + w / 2, y + h / 2, rx, ry, 0, 0, Math.PI * 2);
-  ctx.stroke();
-}
-
 function drawStroke(ctx: CanvasRenderingContext2D, stroke: Stroke): void {
   if (stroke.kind === "text") {
     ctx.globalCompositeOperation = "source-over";
     setupInk(ctx);
-    ctx.font = CANVAS_TEXT_FONT;
+    ctx.font = canvasTextFont(stroke.fontSize);
     ctx.textBaseline = "top";
     ctx.fillText(stroke.text, stroke.x, stroke.y);
     return;
   }
-  if (stroke.kind === "draw" || stroke.kind === "erase") {
-    applyKind(ctx, stroke.kind);
-    const points = stroke.points;
-    if (points.length === 0) return;
-    if (points.length === 1) {
-      const p = points[0];
-      if (!p) return;
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.width / 2, 0, Math.PI * 2);
-      ctx.fill();
-      return;
-    }
-    for (let i = 1; i < points.length; i++) {
-      const from = points[i - 1];
-      const to = points[i];
-      if (!from || !to) continue;
-      ctx.beginPath();
-      ctx.moveTo(from.x, from.y);
-      ctx.lineTo(to.x, to.y);
-      ctx.lineWidth = to.width;
-      ctx.stroke();
-    }
+  applyKind(ctx, stroke.kind);
+  const points = stroke.points;
+  if (points.length === 0) return;
+  if (points.length === 1) {
+    const p = points[0];
+    if (!p) return;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.width / 2, 0, Math.PI * 2);
+    ctx.fill();
     return;
   }
-  if (stroke.kind === "rect" || stroke.kind === "ellipse") {
-    ctx.globalCompositeOperation = "source-over";
-    setupInk(ctx);
-    drawShape(ctx, stroke);
+  for (let i = 1; i < points.length; i++) {
+    const from = points[i - 1];
+    const to = points[i];
+    if (!from || !to) continue;
+    ctx.beginPath();
+    ctx.moveTo(from.x, from.y);
+    ctx.lineTo(to.x, to.y);
+    ctx.lineWidth = to.width;
+    ctx.stroke();
   }
 }
 
@@ -231,12 +242,13 @@ function pointFromEvent(
   event: PointerEvent,
   kind: InkKind,
   vp: CanvasViewport,
+  userSize: number,
 ): StrokePoint {
   const { x, y } = worldPoint(canvas, event, vp);
   return {
     x,
     y,
-    width: strokeWidthForPointer(event.pointerType, event.pressure, kind),
+    width: strokeWidthForPointer(event.pointerType, event.pressure, kind, userSize),
   };
 }
 
@@ -355,6 +367,17 @@ export function applyPointerGesture(
   return applyPan(vp, to.x - from.x, to.y - from.y);
 }
 
+function measureTextWidth(
+  canvas: HTMLCanvasElement | null,
+  text: string,
+  fontSize: number,
+): number {
+  const ctx = canvas?.getContext("2d");
+  if (!ctx) return 0;
+  ctx.font = canvasTextFont(fontSize);
+  return ctx.measureText(text).width;
+}
+
 type SessionCanvasProps = {
   active: boolean;
 };
@@ -370,12 +393,18 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
   const gesturingRef = useRef(false);
   const commandHeldRef = useRef(false);
   const viewportRef = useRef<CanvasViewport>(identityViewport());
-  const textDraftRef = useRef<Point | null>(null);
+  const textDraftRef = useRef<TextDraft | null>(null);
+  const textSizeRef = useRef(DEFAULT_TEXT_SIZE);
   const redrawRef = useRef<() => void>(() => {});
   const [tool, setTool] = useState<CanvasTool>("pen");
-  const [textDraft, setTextDraft] = useState<Point | null>(null);
+  const [textDraft, setTextDraft] = useState<TextDraft | null>(null);
   const [eraseCursor, setEraseCursor] = useState<Point | null>(null);
   const [viewport, setViewport] = useState<CanvasViewport>(identityViewport);
+  const [penSize, setPenSize] = useState(DEFAULT_PEN_SIZE);
+  const [eraseSize, setEraseSize] = useState(DEFAULT_ERASE_SIZE);
+  const [textSize, setTextSize] = useState(DEFAULT_TEXT_SIZE);
+
+  textSizeRef.current = textSize;
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -399,8 +428,11 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       applyCamera(ctx, viewportRef.current);
       setupInk(ctx);
-      for (const stroke of strokesRef.current) {
-        drawStroke(ctx, stroke);
+      const hideIndex = textDraftRef.current?.editIndex;
+      for (let i = 0; i < strokesRef.current.length; i++) {
+        if (i === hideIndex) continue;
+        const stroke = strokesRef.current[i];
+        if (stroke) drawStroke(ctx, stroke);
       }
       if (liveStrokeRef.current) {
         drawStroke(ctx, liveStrokeRef.current);
@@ -488,7 +520,10 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
 
   useEffect(() => {
     if (!textDraft) return;
-    textElRef.current?.focus();
+    const el = textElRef.current;
+    if (!el) return;
+    if (textDraft.initialText) el.innerText = textDraft.initialText;
+    el.focus();
   }, [textDraft]);
 
   const commitViewport = (next: CanvasViewport) => {
@@ -504,18 +539,44 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
     redrawRef.current();
   };
 
+  const openTextDraft = (draft: TextDraft) => {
+    textDraftRef.current = draft;
+    setTextDraft(draft);
+    redrawRef.current();
+  };
+
   const commitTextDraft = () => {
     const draft = textDraftRef.current;
     if (!draft) return;
+    const raw =
+      textElRef.current?.innerText || textElRef.current?.textContent || "";
     const stroke = canvasTextStroke(
       draft.x,
       draft.y,
-      textElRef.current?.innerText ?? "",
+      raw,
+      textSizeRef.current,
     );
+    const editIndex = draft.editIndex;
     textDraftRef.current = null;
     setTextDraft(null);
-    if (!stroke) return;
-    strokesRef.current.push(stroke);
+    if (editIndex != null) {
+      if (!stroke) {
+        strokesRef.current = strokesRef.current.filter((_, i) => i !== editIndex);
+      } else {
+        strokesRef.current = strokesRef.current.map((item, i) =>
+          i === editIndex ? stroke : item,
+        );
+      }
+    } else if (stroke) {
+      strokesRef.current.push(stroke);
+    }
+    redrawRef.current();
+  };
+
+  const cancelTextDraft = () => {
+    if (!textDraftRef.current) return;
+    textDraftRef.current = null;
+    setTextDraft(null);
     redrawRef.current();
   };
 
@@ -557,17 +618,38 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
       tool === "erase" || isErasePointer(event.nativeEvent);
 
     if (!erase && tool === "text") {
-      if (textDraftRef.current) {
-        commitTextDraft();
+      const hadDraft = textDraftRef.current != null;
+      if (hadDraft) commitTextDraft();
+      const point = worldPoint(canvas, event.nativeEvent, viewportRef.current);
+      const hit = findTextStrokeAt(strokesRef.current, point, (text, fontSize) =>
+        measureTextWidth(canvas, text, fontSize),
+      );
+      if (hit != null) {
+        const existing = strokesRef.current[hit];
+        if (existing?.kind === "text") {
+          setTextSize(existing.fontSize);
+          textSizeRef.current = existing.fontSize;
+          openTextDraft({
+            x: existing.x,
+            y: existing.y,
+            editIndex: hit,
+            initialText: existing.text,
+          });
+        }
         return;
       }
-      const point = worldPoint(canvas, event.nativeEvent, viewportRef.current);
-      textDraftRef.current = point;
-      setTextDraft(point);
+      if (hadDraft) return;
+      openTextDraft({
+        x: point.x,
+        y: point.y,
+        editIndex: null,
+        initialText: "",
+      });
       return;
     }
 
     drawingPointerIdRef.current = event.nativeEvent.pointerId;
+    const userSize = erase ? eraseSize : penSize;
 
     if (erase) {
       trackEraseCursor(event.nativeEvent);
@@ -576,6 +658,7 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
         event.nativeEvent,
         "erase",
         viewportRef.current,
+        userSize,
       );
       liveStrokeRef.current = { kind: "erase", points: [point] };
       const ctx = inkContext(canvas, "erase", viewportRef.current);
@@ -586,26 +669,12 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
       return;
     }
 
-    if (isShapeTool(tool)) {
-      const from = worldPoint(canvas, event.nativeEvent, viewportRef.current);
-      liveStrokeRef.current = {
-        kind: tool,
-        from,
-        to: from,
-        width: strokeWidthForPointer(
-          event.nativeEvent.pointerType,
-          event.nativeEvent.pressure,
-        ),
-      };
-      redrawRef.current();
-      return;
-    }
-
     const point = pointFromEvent(
       canvas,
       event.nativeEvent,
       "draw",
       viewportRef.current,
+      userSize,
     );
     liveStrokeRef.current = { kind: "draw", points: [point] };
     const ctx = inkContext(canvas, "draw", viewportRef.current);
@@ -654,12 +723,8 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
     const stroke = liveStrokeRef.current;
     if (!stroke) return;
     event.preventDefault();
-    if (stroke.kind === "rect" || stroke.kind === "ellipse") {
-      stroke.to = worldPoint(canvas, event.nativeEvent, viewportRef.current);
-      redrawRef.current();
-      return;
-    }
     if (stroke.kind !== "draw" && stroke.kind !== "erase") return;
+    const userSize = stroke.kind === "erase" ? eraseSize : penSize;
     const coalesced =
       event.nativeEvent.getCoalescedEvents?.() ?? [event.nativeEvent];
     for (const raw of coalesced) {
@@ -668,6 +733,7 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
         raw,
         stroke.kind,
         viewportRef.current,
+        userSize,
       );
       const prevPoint = stroke.points[stroke.points.length - 1];
       stroke.points.push(point);
@@ -690,15 +756,7 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
     if (!stroke) return;
     if (stroke.kind === "draw" || stroke.kind === "erase") {
       if (stroke.points.length > 0) strokesRef.current.push(stroke);
-      return;
     }
-    if (
-      (stroke.kind === "rect" || stroke.kind === "ellipse") &&
-      !isEmptyShape(stroke.from, stroke.to)
-    ) {
-      strokesRef.current.push(stroke);
-    }
-    redrawRef.current();
   };
 
   const cursorClass =
@@ -707,9 +765,34 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
       : tool === "erase"
         ? "cursor-none"
         : "cursor-crosshair";
-  const eraseSize = strokeWidthForPointer("mouse", 0.5, "erase") * viewport.scale;
+  const eraseRingSize =
+    strokeWidthForPointer("mouse", 0.5, "erase", eraseSize) * viewport.scale;
   const eraseScreen = eraseCursor ? worldToScreen(viewport, eraseCursor) : null;
   const textScreen = textDraft ? worldToScreen(viewport, textDraft) : null;
+  const sizeSlider =
+    tool === "pen"
+      ? {
+          value: penSize,
+          min: PEN_SIZE_MIN,
+          max: PEN_SIZE_MAX,
+          label: "Pen size",
+          onChange: setPenSize,
+        }
+      : tool === "erase"
+        ? {
+            value: eraseSize,
+            min: ERASE_SIZE_MIN,
+            max: ERASE_SIZE_MAX,
+            label: "Eraser size",
+            onChange: setEraseSize,
+          }
+        : {
+            value: textSize,
+            min: TEXT_SIZE_MIN,
+            max: TEXT_SIZE_MAX,
+            label: "Text size",
+            onChange: setTextSize,
+          };
 
   return (
     <div ref={wrapRef} className="relative min-h-0 flex-1">
@@ -735,14 +818,21 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
           aria-hidden
           className="pointer-events-none absolute z-10 rounded-full border border-white/70"
           style={{
-            width: eraseSize,
-            height: eraseSize,
+            width: eraseRingSize,
+            height: eraseRingSize,
             left: eraseScreen.x,
             top: eraseScreen.y,
             transform: "translate(-50%, -50%)",
           }}
         />
       ) : null}
+      <CanvasSizeSlider
+        value={sizeSlider.value}
+        min={sizeSlider.min}
+        max={sizeSlider.max}
+        label={sizeSlider.label}
+        onChange={sizeSlider.onChange}
+      />
       <CanvasToolbar
         tool={tool}
         onToolChange={(next) => {
@@ -762,21 +852,24 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
           style={{
             left: textScreen.x,
             top: textScreen.y,
-            font: `${CANVAS_TEXT_SIZE * viewport.scale}px "DM Sans", ui-sans-serif, system-ui, sans-serif`,
+            font: `${textSize * viewport.scale}px "DM Sans", ui-sans-serif, system-ui, sans-serif`,
             caretColor: INK,
             whiteSpace: "pre",
-            lineHeight: 1.2,
-            minHeight: "1.2em",
+            lineHeight: TEXT_LINE_HEIGHT,
+            minHeight: `${TEXT_LINE_HEIGHT}em`,
           }}
-          onBlur={commitTextDraft}
+          onBlur={(event) => {
+            const next = event.relatedTarget;
+            if (next instanceof Node && wrapRef.current?.contains(next)) return;
+            commitTextDraft();
+          }}
           onKeyDown={(event) => {
             if (event.key === "Enter") {
               event.preventDefault();
               commitTextDraft();
             } else if (event.key === "Escape") {
               event.preventDefault();
-              textDraftRef.current = null;
-              setTextDraft(null);
+              cancelTextDraft();
             }
           }}
         />

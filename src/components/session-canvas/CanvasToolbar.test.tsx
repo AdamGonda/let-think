@@ -16,6 +16,8 @@ describe("CanvasToolbar", () => {
     expect(getByLabelText("Pen").getAttribute("aria-checked")).toBe("true");
     expect(getByLabelText("Eraser").getAttribute("aria-checked")).toBe("false");
     expect(queryByLabelText("Line")).toBeNull();
+    expect(queryByLabelText("Rectangle")).toBeNull();
+    expect(queryByLabelText("Ellipse")).toBeNull();
 
     fireEvent.click(getByLabelText("Eraser"));
     expect(getByLabelText("Eraser").getAttribute("aria-checked")).toBe("true");
@@ -23,14 +25,6 @@ describe("CanvasToolbar", () => {
 
     fireEvent.click(getByLabelText("Text"));
     expect(getByLabelText("Text").getAttribute("aria-checked")).toBe("true");
-
-    fireEvent.click(getByLabelText("Rectangle"));
-    expect(getByLabelText("Rectangle").getAttribute("aria-checked")).toBe(
-      "true",
-    );
-
-    fireEvent.click(getByLabelText("Ellipse"));
-    expect(getByLabelText("Ellipse").getAttribute("aria-checked")).toBe("true");
     expect(getByLabelText("Pen").getAttribute("aria-checked")).toBe("false");
   });
 });

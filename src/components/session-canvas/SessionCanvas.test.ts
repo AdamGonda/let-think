@@ -7,26 +7,29 @@ import {
   canvasTextStroke,
   CANVAS_MAX_SCALE,
   CANVAS_MIN_SCALE,
+  findTextStrokeAt,
   identityViewport,
-  isEmptyShape,
   isErasePointer,
   isUndoHotkey,
-  rectFromPoints,
   screenToWorld,
   strokeWidthForPointer,
+  textStrokeHits,
   worldToScreen,
 } from "./SessionCanvas";
 
 describe("strokeWidthForPointer", () => {
-  it("keeps mouse and touch thin, and scales pen pressure", () => {
+  it("uses the slider size for mouse and touch, and scales pen pressure around it", () => {
     expect(strokeWidthForPointer("mouse", 0.5)).toBe(2);
     expect(strokeWidthForPointer("touch", 1)).toBe(2);
-    expect(strokeWidthForPointer("pen", 0)).toBe(1.25 + 0.5 * 5);
-    expect(strokeWidthForPointer("pen", 1)).toBe(1.25 + 5);
+    expect(strokeWidthForPointer("pen", 0)).toBe(2);
+    expect(strokeWidthForPointer("pen", 1)).toBe(3);
+    expect(strokeWidthForPointer("mouse", 0.5, "draw", 10)).toBe(10);
+    expect(strokeWidthForPointer("pen", 1, "draw", 10)).toBe(15);
   });
 
   it("uses a thicker stroke for the eraser", () => {
     expect(strokeWidthForPointer("mouse", 0.5, "erase")).toBe(40);
+    expect(strokeWidthForPointer("mouse", 0.5, "erase", 80)).toBe(80);
     expect(strokeWidthForPointer("pen", 1, "erase")).toBeGreaterThan(
       strokeWidthForPointer("pen", 1, "draw"),
     );
@@ -88,33 +91,36 @@ describe("isErasePointer", () => {
   });
 });
 
-describe("rectFromPoints", () => {
-  it("normalizes a dragged rectangle regardless of drag direction", () => {
-    expect(rectFromPoints({ x: 10, y: 40 }, { x: 4, y: 8 })).toEqual({
-      x: 4,
-      y: 8,
-      w: 6,
-      h: 32,
-    });
-  });
-});
-
-describe("isEmptyShape", () => {
-  it("treats sub-pixel drags as empty", () => {
-    expect(isEmptyShape({ x: 1, y: 1 }, { x: 1.2, y: 1.4 })).toBe(true);
-    expect(isEmptyShape({ x: 0, y: 0 }, { x: 8, y: 0 })).toBe(false);
-  });
-});
-
 describe("canvasTextStroke", () => {
-  it("bakes trimmed text and drops empty input", () => {
-    expect(canvasTextStroke(12, 24, "  hello  ")).toEqual({
+  it("keeps trimmed text and font size, and drops empty input", () => {
+    expect(canvasTextStroke(12, 24, "  hello  ", 32)).toEqual({
       kind: "text",
       x: 12,
       y: 24,
       text: "hello",
+      fontSize: 32,
     });
-    expect(canvasTextStroke(0, 0, "   ")).toBeNull();
+    expect(canvasTextStroke(0, 0, "   ", 48)).toBeNull();
+  });
+});
+
+describe("textStrokeHits", () => {
+  it("hits inside the measured box and misses outside", () => {
+    const stroke = canvasTextStroke(10, 20, "hi", 20);
+    expect(stroke).not.toBeNull();
+    if (!stroke) return;
+    expect(textStrokeHits(stroke, { x: 12, y: 22 }, () => 40)).toBe(true);
+    expect(textStrokeHits(stroke, { x: 60, y: 22 }, () => 40)).toBe(false);
+    expect(textStrokeHits(stroke, { x: 12, y: 50 }, () => 40)).toBe(false);
+  });
+
+  it("falls back to an estimated width when measure returns 0", () => {
+    const stroke = canvasTextStroke(0, 0, "hello", 40);
+    expect(stroke).not.toBeNull();
+    if (!stroke) return;
+    expect(textStrokeHits(stroke, { x: 10, y: 10 })).toBe(true);
+    expect(findTextStrokeAt([stroke], { x: 10, y: 10 })).toBe(0);
+    expect(findTextStrokeAt([stroke], { x: 400, y: 10 })).toBeNull();
   });
 });
 
