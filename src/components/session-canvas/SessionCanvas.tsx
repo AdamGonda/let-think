@@ -1,15 +1,10 @@
 import {
-  useCallback,
   useEffect,
   useLayoutEffect,
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
 } from "react";
-import { useMutation, useQuery } from "convex/react";
-import { timings } from "@/config";
-import { api } from "../../../convex/_generated/api";
-import type { Id } from "../../../convex/_generated/dataModel";
 import { CanvasToolbar, type CanvasTool } from "./CanvasToolbar";
 import {
   IMAGE_JPEG_QUALITY,
@@ -536,10 +531,9 @@ export function applyPointerGesture(
 
 type SessionCanvasProps = {
   active: boolean;
-  sessionId?: Id<"sessions"> | null;
 };
 
-export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) {
+export function SessionCanvas({ active }: SessionCanvasProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textElRef = useRef<HTMLDivElement>(null);
@@ -560,37 +554,15 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
     index: number;
   } | null>(null);
   const redrawRef = useRef<() => void>(() => {});
-  const revisionRef = useRef(0);
-  const hydratedRef = useRef(false);
   const [tool, setTool] = useState<CanvasTool>("pen");
   const [textDraft, setTextDraft] = useState<TextDraft | null>(null);
   const [textHoverMove, setTextHoverMove] = useState(false);
   const [eraseCursor, setEraseCursor] = useState<Point | null>(null);
-  const [viewportOverride, setViewport] = useState<CanvasViewport | null>(null);
-  const [revision, setRevision] = useState(0);
+  const [viewport, setViewport] = useState<CanvasViewport>(identityViewport);
 
-  const storedCanvas = useQuery(
-    api.sessions.getCanvas,
-    sessionId ? { sessionId } : "skip",
-  );
-  const updateCanvas = useMutation(api.sessions.updateCanvas);
-  const viewport =
-    viewportOverride ?? storedCanvas?.viewport ?? identityViewport();
-
-  const markDirty = useCallback(() => {
-    revisionRef.current += 1;
-    setRevision(revisionRef.current);
-  }, []);
-
-  const persistCanvas = useCallback(() => {
-    if (!sessionId || revisionRef.current === 0) return;
-    void updateCanvas({
-      sessionId,
-      strokes: strokesRef.current,
-      viewport: viewportRef.current,
-    });
-  }, [sessionId, updateCanvas]);
-  const persistCanvasRef = useRef(persistCanvas);
+  if (!active && textDraft != null) {
+    setTextDraft(null);
+  }
 
   useLayoutEffect(() => {
     if (!active) textDraftRef.current = null;
@@ -652,36 +624,6 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
   }, []);
 
   useEffect(() => {
-    persistCanvasRef.current = persistCanvas;
-  }, [persistCanvas]);
-
-  useLayoutEffect(() => {
-    if (!sessionId || storedCanvas === undefined || hydratedRef.current) return;
-    hydratedRef.current = true;
-    if (revisionRef.current > 0) return;
-    if (!storedCanvas) return;
-    strokesRef.current = storedCanvas.strokes;
-    viewportRef.current = storedCanvas.viewport;
-    setCanvasHasInk(strokesHaveInk(storedCanvas.strokes));
-    redrawRef.current();
-  }, [sessionId, storedCanvas]);
-
-  useEffect(() => {
-    return () => {
-      persistCanvasRef.current();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!sessionId || revision === 0) return;
-    const timer = window.setTimeout(
-      persistCanvas,
-      timings.draftSaveDebounceMs,
-    );
-    return () => window.clearTimeout(timer);
-  }, [sessionId, revision, persistCanvas]);
-
-  useEffect(() => {
     if (!active) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -695,12 +637,11 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
       );
       viewportRef.current = next;
       setViewport(next);
-      markDirty();
       redrawRef.current();
     };
     canvas.addEventListener("wheel", onWheel, { passive: false });
     return () => canvas.removeEventListener("wheel", onWheel);
-  }, [active, markDirty]);
+  }, [active]);
 
   useEffect(() => {
     if (!active) return;
@@ -728,7 +669,6 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
         liveStrokeRef.current = null;
       } else if (strokesRef.current.length > 0) {
         strokesRef.current = strokesRef.current.slice(0, -1);
-        markDirty();
       }
       setCanvasHasInk(strokesHaveInk(strokesRef.current));
       redrawRef.current();
@@ -747,7 +687,7 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("blur", onBlur);
     };
-  }, [active, markDirty]);
+  }, [active]);
 
   useEffect(() => {
     if (!textDraft) return;
@@ -773,14 +713,9 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
     };
   }, [textDraft]);
 
-  if (!active && textDraft !== null) {
-    setTextDraft(null);
-  }
-
   const commitViewport = (next: CanvasViewport) => {
     viewportRef.current = next;
     setViewport(next);
-    markDirty();
     redrawRef.current();
   };
 
@@ -818,7 +753,6 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
     } else if (stroke) {
       strokesRef.current.push(stroke);
     }
-    if (editIndex != null || stroke) markDirty();
     setCanvasHasInk(strokesHaveInk(strokesRef.current));
     if (stroke) setTextHoverMove(true);
     redrawRef.current();
@@ -1114,7 +1048,6 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
     ) {
       if (textMoveRef.current?.pointerId === id) {
         lastTextClickRef.current = null;
-        markDirty();
       }
       clearTextMove();
     }
@@ -1126,7 +1059,6 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
     if (stroke.kind === "draw" || stroke.kind === "erase") {
       if (stroke.points.length > 0) {
         strokesRef.current.push(stroke);
-        markDirty();
         setCanvasHasInk(strokesHaveInk(strokesRef.current));
       }
       redrawRef.current();
@@ -1137,7 +1069,6 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
       !isEmptyShape(stroke.from, stroke.to)
     ) {
       strokesRef.current.push(stroke);
-      markDirty();
       setCanvasHasInk(strokesHaveInk(strokesRef.current));
     }
     redrawRef.current();
@@ -1216,10 +1147,7 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
             lineHeight: TEXT_LINE_HEIGHT,
             minHeight: `${TEXT_LINE_HEIGHT}em`,
           }}
-          onBlur={() => {
-            if (!active) return;
-            commitTextDraft();
-          }}
+          onBlur={commitTextDraft}
           onDoubleClick={(event) => event.preventDefault()}
           onKeyDown={(event) => {
             if (event.key === "Enter") {

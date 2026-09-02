@@ -2,37 +2,6 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { authTables } from "@convex-dev/auth/server";
 
-const canvasPointValue = v.object({ x: v.number(), y: v.number() });
-const canvasStrokePointValue = v.object({
-  x: v.number(),
-  y: v.number(),
-  width: v.number(),
-});
-export const canvasViewportValue = v.object({
-  x: v.number(),
-  y: v.number(),
-  scale: v.number(),
-});
-/** Drawing strokes for `sessionCanvases`. */
-export const canvasStrokeValue = v.union(
-  v.object({
-    kind: v.union(v.literal("draw"), v.literal("erase")),
-    points: v.array(canvasStrokePointValue),
-  }),
-  v.object({
-    kind: v.union(v.literal("rect"), v.literal("ellipse")),
-    from: canvasPointValue,
-    to: canvasPointValue,
-    width: v.number(),
-  }),
-  v.object({
-    kind: v.literal("text"),
-    x: v.number(),
-    y: v.number(),
-    text: v.string(),
-  }),
-);
-
 /** Concept graph document shape for `sessionConceptGraphs.graph`. */
 const conceptGraphValue = v.object({
   nodes: v.array(
@@ -122,16 +91,6 @@ export default defineSchema({
   sessionConceptGraphs: defineTable({
     sessionId: v.id("sessions"),
     graph: conceptGraphValue,
-  }).index("by_session", ["sessionId"]),
-
-  /**
-   * Per-session drawing surface. Sidecar so listing sessions stays light.
-   * ponytail: stroke JSON until Convex's 1MB doc cap; then downsample or file storage.
-   */
-  sessionCanvases: defineTable({
-    sessionId: v.id("sessions"),
-    strokes: v.array(canvasStrokeValue),
-    viewport: canvasViewportValue,
   }).index("by_session", ["sessionId"]),
 
   /** Embedding/sync state for concept nodes sent to vector DB. */
