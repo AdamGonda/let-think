@@ -54,6 +54,25 @@ export function CommandPalettePanel({
   commands: AppCommand[];
   context: CommandContext;
 }) {
+  if (!open) return null;
+  return (
+    <CommandPaletteOpen
+      onOpenChange={onOpenChange}
+      commands={commands}
+      context={context}
+    />
+  );
+}
+
+function CommandPaletteOpen({
+  onOpenChange,
+  commands,
+  context,
+}: {
+  onOpenChange: (open: boolean) => void;
+  commands: AppCommand[];
+  context: CommandContext;
+}) {
   const listId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
@@ -72,7 +91,6 @@ export function CommandPalettePanel({
   const active = items[safeIndex];
 
   useEffect(() => {
-    if (!open) return;
     inputRef.current?.focus();
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Escape") return;
@@ -82,22 +100,13 @@ export function CommandPalettePanel({
     };
     window.addEventListener("keydown", onKeyDown, true);
     return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [open, onOpenChange]);
-
-  if (!open && query !== "") {
-    setQuery("");
-  }
-  if (!open && selectedIndex !== 0) {
-    setSelectedIndex(0);
-  }
+  }, [onOpenChange]);
 
   const runSelected = (command: AppCommand | undefined) => {
     if (!command) return;
     command.run(context);
     onOpenChange(false);
   };
-
-  if (!open) return null;
 
   return createPortal(
     <div className={cn("fixed inset-0", layout.commandPaletteZIndexClass)}>

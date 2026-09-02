@@ -1,7 +1,7 @@
-import { useRef, useLayoutEffect, useState } from "react";
+import { useRef, useLayoutEffect, useState, useEffect } from "react";
 import { clsx } from "clsx";
 import { layout } from "@/config";
-import { ArrowUp, Loader2 } from "lucide-react";
+import { ArrowUp, Loader2, Paperclip } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { parseInputTokens } from "@/lib/chatMentions";
 import {
@@ -13,6 +13,12 @@ import {
   insertAtMentionToken,
   type NumberedConcept,
 } from "@/lib/conceptReferences";
+import {
+  getCanvasHasInk,
+  subscribeCanvasHasInk,
+} from "@/lib/canvasSnapshot";
+import { IMAGE_PROMPT_MAX, imageFilesFromClipboard } from "@/lib/imageAttach";
+import { MessageImageThumbs } from "./MessageImageThumbs";
 
 const FOCUS_COMPOSER_EVENT = "let-think:focus-composer";
 
@@ -52,6 +58,9 @@ type ChatComposerProps = {
   chrome?: "island" | "dock";
   /** Chat lane can attach the whole concept graph; graph lane already has it. */
   allowGraphRef?: boolean;
+  pendingImages?: Array<{ id: string; previewUrl: string }>;
+  onAddImageFiles?: (files: File[]) => void;
+  onRemoveImage?: (id: string) => void;
 };
 
 export function ChatComposer({
@@ -68,24 +77,44 @@ export function ChatComposer({
   listenForFocusEvent = true,
   chrome = "island",
   allowGraphRef = false,
+  pendingImages = [],
+  onAddImageFiles,
+  onRemoveImage,
 }: ChatComposerProps) {
-  const canSubmit = !isDisabled && input.trim().length > 0;
+  const canSubmit =
+    !isDisabled && (input.trim().length > 0 || pendingImages.length > 0);
   const compact = chrome === "dock";
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const mirrorRef = useRef<HTMLDivElement>(null);
   const pendingSelectionRef = useRef<number | null>(null);
   const pendingExternalFocusRef = useRef(false);
   const [caret, setCaret] = useState(input.length);
   const [highlight, setHighlight] = useState(0);
-  const [pickerDismissed, setPickerDismissed] = useState(false);
+  const [dismissedQueryStart, setDismissedQueryStart] = useState<number | null>(
+    null,
+  );
+  const [canvasHasInk, setCanvasHasInk] = useState(getCanvasHasInk);
+
+  useEffect(() => subscribeCanvasHasInk(() => setCanvasHasInk(getCanvasHasInk())), []);
+
+  const mentionArgs = {
+    numberedConcepts,
+    allowGraphRef,
+    allowCanvasRef: canvasHasInk,
+  };
 
   const atQuery = isDisabled ? null : atQueryAtCaret(input, caret);
+  if (atQuery == null && dismissedQueryStart != null) {
+    setDismissedQueryStart(null);
+  }
+  const pickerDismissed =
+    atQuery != null && dismissedQueryStart === atQuery.start;
   const mentionOptions =
     atQuery && !pickerDismissed
       ? atMentionOptions({
+          ...mentionArgs,
           query: atQuery.query,
-          numberedConcepts,
-          allowGraphRef,
           value: input,
           queryStart: atQuery.start,
         })
@@ -178,9 +207,8 @@ export function ChatComposer({
     const liveOptions =
       liveQuery && !pickerDismissed
         ? atMentionOptions({
+            ...mentionArgs,
             query: liveQuery.query,
-            numberedConcepts,
-            allowGraphRef,
             value: ta.value,
             queryStart: liveQuery.start,
           })
@@ -199,7 +227,7 @@ export function ChatComposer({
       }
       if (e.key === "Escape") {
         e.preventDefault();
-        setPickerDismissed(true);
+        setDismissedQueryStart(liveQuery!.start);
         setHighlight(0);
         return;
       }
@@ -280,8 +308,20 @@ export function ChatComposer({
   const fieldMinH = compact ? "min-h-10" : "min-h-[48px]";
   const fieldMaxH = compact ? "max-h-48" : "max-h-[450px]";
   const fieldPad = compact
-    ? "pt-2 pb-2.5 px-3 pr-12 scroll-pb-2.5"
-    : "pt-3 pb-2.5 px-4 pr-14 scroll-pb-2.5";
+    ? "pt-2 pb-2.5 px-3 pr-[4.75rem] scroll-pb-2.5"
+    : "pt-3 pb-2.5 px-4 pr-[5.25rem] scroll-pb-2.5";
+  const canAttach =
+    !isDisabled &&
+    pendingImages.length < IMAGE_PROMPT_MAX &&
+    !!onAddImageFiles;
+
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    if (!onAddImageFiles || isDisabled) return;
+    const files = imageFilesFromClipboard(e.clipboardData);
+    if (files.length === 0) return;
+    e.preventDefault();
+    onAddImageFiles(files);
+  };
 
   const form = (
     <form
@@ -289,6 +329,19 @@ export function ChatComposer({
       onSubmit={onSubmit}
       aria-busy={isLoading}
     >
+      {pendingImages.length > 0 ? (
+        <MessageImageThumbs
+          urls={pendingImages.map((img) => img.previewUrl)}
+          onRemove={
+            onRemoveImage
+              ? (index) => {
+                  const id = pendingImages[index]?.id;
+                  if (id) onRemoveImage(id);
+                }
+              : undefined
+          }
+        />
+      ) : null}
       <div className="flex gap-2 items-end relative">
         {pickerOpen ? (
           <ul
@@ -377,10 +430,36 @@ export function ChatComposer({
             onKeyDown={handleKeyDown}
             onClick={(e) => setCaret(e.currentTarget.selectionStart ?? 0)}
             onSelect={(e) => setCaret(e.currentTarget.selectionStart ?? 0)}
+            onPaste={handlePaste}
             placeholder={placeholder}
             disabled={isDisabled}
           />
           <div className="absolute right-1.5 top-1/2 -translate-y-1/2 z-20 flex items-center">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              multiple
+              className="hidden"
+              onChange={(e) => {
+                const files = [...(e.target.files ?? [])];
+                e.target.value = "";
+                if (files.length > 0) onAddImageFiles?.(files);
+              }}
+            />
+            <Button
+              type="button"
+              size="icon"
+              variant="ghost"
+              className="rounded-full text-muted-foreground hover:text-foreground"
+              disabled={!canAttach}
+              aria-label="Attach image"
+              title="Attach image"
+              data-testid="composer-attach-image"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Paperclip size={16} strokeWidth={2} aria-hidden />
+            </Button>
             <Button
               type="submit"
               size="icon"

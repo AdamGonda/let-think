@@ -7,13 +7,19 @@ import {
   canvasTextStroke,
   CANVAS_MAX_SCALE,
   CANVAS_MIN_SCALE,
+  estimatedTextWidth,
+  findTextStrokeAt,
   identityViewport,
   isEmptyShape,
   isErasePointer,
   isUndoHotkey,
+  moveWorldByScreenDelta,
   rectFromPoints,
   screenToWorld,
+  strokeBounds,
+  strokesHaveInk,
   strokeWidthForPointer,
+  textStrokeHits,
   worldToScreen,
 } from "./SessionCanvas";
 
@@ -118,6 +124,41 @@ describe("canvasTextStroke", () => {
   });
 });
 
+describe("text stroke hit testing", () => {
+  const hello = { kind: "text" as const, x: 12, y: 24, text: "hello" };
+
+  it("hits inside the estimated glyph box and misses outside", () => {
+    const width = estimatedTextWidth("hello");
+    expect(textStrokeHits(hello, { x: 12, y: 24 })).toBe(true);
+    expect(textStrokeHits(hello, { x: 12 + width, y: 24 })).toBe(true);
+    expect(textStrokeHits(hello, { x: 11, y: 24 })).toBe(false);
+    expect(textStrokeHits(hello, { x: 12, y: 23 })).toBe(false);
+  });
+
+  it("prefers later text strokes and skips ink", () => {
+    const strokes = [
+      { kind: "draw" as const, points: [{ x: 12, y: 24, width: 2 }] },
+      hello,
+      { kind: "text" as const, x: 12, y: 24, text: "on top" },
+    ];
+    expect(findTextStrokeAt(strokes, { x: 13, y: 25 })).toBe(2);
+    expect(findTextStrokeAt(strokes, { x: 0, y: 0 })).toBeNull();
+  });
+});
+
+describe("moveWorldByScreenDelta", () => {
+  it("converts a screen drag into world space", () => {
+    expect(moveWorldByScreenDelta({ x: 20, y: 20 }, 30, 10, 1)).toEqual({
+      x: 50,
+      y: 30,
+    });
+    expect(moveWorldByScreenDelta({ x: 20, y: 20 }, 30, 10, 2)).toEqual({
+      x: 35,
+      y: 25,
+    });
+  });
+});
+
 describe("canvas viewport", () => {
   it("applyPan translates the camera", () => {
     expect(applyPan({ x: 10, y: 20, scale: 2 }, 5, -8)).toEqual({
@@ -207,5 +248,31 @@ describe("canvas viewport", () => {
     expect(
       applyPointerGesture(identityViewport(), prev, next, "pinch").scale,
     ).toBe(1);
+  });
+});
+
+describe("canvas snapshot bounds", () => {
+  it("treats only non-erase strokes as ink", () => {
+    expect(
+      strokesHaveInk([{ kind: "erase", points: [{ x: 0, y: 0, width: 8 }] }]),
+    ).toBe(false);
+    expect(
+      strokesHaveInk([{ kind: "draw", points: [{ x: 0, y: 0, width: 2 }] }]),
+    ).toBe(true);
+  });
+
+  it("pads the bounding box around ink", () => {
+    const bounds = strokeBounds([
+      { kind: "draw", points: [{ x: 10, y: 20, width: 2 }] },
+    ]);
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x).toBe(10 - 1 - 32);
+    expect(bounds!.y).toBe(20 - 1 - 32);
+    expect(bounds!.w).toBeGreaterThan(1);
+    expect(bounds!.h).toBeGreaterThan(1);
+  });
+
+  it("returns null for empty strokes", () => {
+    expect(strokeBounds([])).toBeNull();
   });
 });

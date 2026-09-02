@@ -59,6 +59,7 @@ export function resolveAtReferences(
   mentions: Mention[];
   includeWriting: boolean;
   includeGraph: boolean;
+  includeCanvas: boolean;
 } {
   const conceptByNumber = conceptByNumberMap(numberedConcepts);
   const refRegex = new RegExp(AT_REFERENCE_PATTERN, "g");
@@ -66,6 +67,7 @@ export function resolveAtReferences(
   const mentions: Mention[] = [];
   let includeWriting = false;
   let includeGraph = false;
+  let includeCanvas = false;
   let lastIndex = 0;
   let m: RegExpExecArray | null;
 
@@ -82,6 +84,7 @@ export function resolveAtReferences(
     }
     if (named?.token === "writing") includeWriting = true;
     if (named?.token === "graph") includeGraph = true;
+    if (named?.token === "canvas") includeCanvas = true;
     resolvedContent += rawContent.slice(lastIndex, m.index);
     const start = resolvedContent.length;
     resolvedContent += concept.name;
@@ -105,5 +108,6 @@ export function resolveAtReferences(
     mentions,
     includeWriting,
     includeGraph,
+    includeCanvas,
   };
 }

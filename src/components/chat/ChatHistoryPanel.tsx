@@ -24,6 +24,7 @@ import {
 } from "@/lib/chatHistoryRender";
 import { timings } from "@/config";
 import { userMessageChronoIndexForBatch } from "@/lib/batchUserInput";
+import { MessageImageThumbs } from "./MessageImageThumbs";
 
 interface UserMessage {
   _id?: string;
@@ -33,6 +34,7 @@ interface UserMessage {
   topic?: string;
   subject?: string;
   mentions?: HistoryMention[];
+  imageUrls?: string[];
 }
 
 type Batch = {
@@ -370,6 +372,11 @@ export function ChatHistoryPanel({
                                       />
                                     )}
                                   </Button>
+                                </div>
+                              ) : null}
+                              {msg.imageUrls?.length ? (
+                                <div className="mt-2">
+                                  <MessageImageThumbs urls={msg.imageUrls} />
                                 </div>
                               ) : null}
                             </div>

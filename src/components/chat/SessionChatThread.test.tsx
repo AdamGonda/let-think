@@ -61,6 +61,29 @@ describe("SessionChatThread markdown", () => {
     expect(screen.getByText("send this instantly")).toBeTruthy();
     mockSessionData.pendingChatUser = null;
   });
+
+  it("shows attached image thumbnails on user bubbles", () => {
+    mockSessionData.chatMessages = [
+      {
+        _id: "u1",
+        role: "user" as const,
+        content: "see this",
+        imageUrls: ["https://example.com/a.jpg"],
+      },
+    ];
+    const { container } = render(<SessionChatThread isLoading={false} />);
+    const img = container.querySelector('img[src="https://example.com/a.jpg"]');
+    expect(img).toBeTruthy();
+    mockSessionData.chatMessages = [
+      { _id: "u1", role: "user" as const, content: "tell me about murmurations" },
+      {
+        _id: "a1",
+        role: "assistant" as const,
+        content:
+          "### Why do they disappear?\n\n**Emergence** is the point.\n\n- Fish\n- Insects\n\n| Feature | Now | Next |\n| --- | --- | --- |\n| Device | Phone | AR |\n",
+      },
+    ];
+  });
 });
 
 describe("isNearBottom", () => {

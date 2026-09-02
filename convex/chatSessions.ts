@@ -14,6 +14,8 @@ import {
   deleteSearchDocumentsByChatSession,
   enqueueChatMessageSearch,
 } from "./searchDocuments";
+import { imageUrlsForIds } from "./fileStorage";
+import { IMAGE_PROMPT_MAX } from "./constants";
 
 async function requireChatSessionOwner(
   ctx: MutationCtx,
@@ -128,11 +130,18 @@ export const listMessagesPaginated = query({
     if (!userId) return emptyMessagePage;
     const chatSession = await ctx.db.get(chatSessionId);
     if (!chatSession || chatSession.userId !== userId) return emptyMessagePage;
-    return await ctx.db
+    const result = await ctx.db
       .query("chatMessages")
       .withIndex("by_chat_session", (q) => q.eq("chatSessionId", chatSessionId))
       .order("desc")
       .paginate(paginationOpts);
+    const page = await Promise.all(
+      result.page.map(async (m) => ({
+        ...m,
+        imageUrls: await imageUrlsForIds(ctx, m.imageStorageIds),
+      })),
+    );
+    return { ...result, page };
   },
 });
 
@@ -146,6 +155,8 @@ const mentionValidator = v.optional(
     }),
   ),
 );
+
+const imageStorageIdsValidator = v.optional(v.array(v.id("_storage")));
 
 async function maybeTitleChatSession(
   ctx: MutationCtx,
@@ -176,12 +187,14 @@ async function insertChatTurn(
       conceptId: string;
       name: string;
     }>;
+    imageStorageIds?: Array<Id<"_storage">>;
   },
 ): Promise<{
   userMessageId: Id<"chatMessages">;
   assistantMessageId: Id<"chatMessages">;
 }> {
   const now = Date.now();
+  const storedImageIds = args.imageStorageIds?.slice(0, IMAGE_PROMPT_MAX);
   const userMessageId = await ctx.db.insert("chatMessages", {
     chatSessionId: args.chatSessionId,
     role: "user",
@@ -189,6 +202,9 @@ async function insertChatTurn(
     createdAt: now,
     ...(args.mentions && args.mentions.length > 0
       ? { mentions: args.mentions }
+      : {}),
+    ...(storedImageIds && storedImageIds.length > 0
+      ? { imageStorageIds: storedImageIds }
       : {}),
   });
   const assistantMessageId = await ctx.db.insert("chatMessages", {
@@ -207,9 +223,13 @@ export const startChatTurn = internalMutation({
     userId: v.id("users"),
     userContent: v.string(),
     mentions: mentionValidator,
+    imageStorageIds: imageStorageIdsValidator,
   },
   returns: v.object({ assistantMessageId: v.id("chatMessages") }),
-  handler: async (ctx, { chatSessionId, userId, userContent, mentions }) => {
+  handler: async (
+    ctx,
+    { chatSessionId, userId, userContent, mentions, imageStorageIds },
+  ) => {
     const chatSession = await ctx.db.get(chatSessionId);
     if (!chatSession || chatSession.userId !== userId) {
       throw new Error("Chat session not found or access denied");
@@ -219,6 +239,7 @@ export const startChatTurn = internalMutation({
       userContent,
       assistantContent: "",
       mentions,
+      imageStorageIds,
     });
     await enqueueChatMessageSearch(ctx, { userId, messageId: userMessageId });
     return { assistantMessageId };
@@ -264,7 +285,11 @@ export const internalLoadForSend = internalQuery({
     ctx,
     { chatSessionId, userId, includeWriting, includeGraph },
   ): Promise<{
-    messages: Array<{ role: "user" | "assistant"; content: string }>;
+    messages: Array<{
+      role: "user" | "assistant";
+      content: string;
+      imageStorageIds?: Array<Id<"_storage">>;
+    }>;
     thinkingNotes: string | null;
     conceptGraph: {
       nodes: Array<{ id: string; name: string; description?: string }>;
@@ -313,7 +338,13 @@ export const internalLoadForSend = internalQuery({
       }
     }
     return {
-      messages: messages.map((m) => ({ role: m.role, content: m.content })),
+      messages: messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+        ...(m.imageStorageIds && m.imageStorageIds.length > 0
+          ? { imageStorageIds: m.imageStorageIds }
+          : {}),
+      })),
       thinkingNotes,
       conceptGraph,
     };

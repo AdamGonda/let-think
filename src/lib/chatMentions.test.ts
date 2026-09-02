@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  CANVAS_REF_ID,
   GRAPH_REF_ID,
   WRITING_REF_ID,
   type NumberedConcept,
@@ -39,15 +40,22 @@ describe("resolveAtReferences", () => {
     expect(resolvedContent).toBe("see @9");
   });
 
-  it("resolves @writing and @graph to display names", () => {
-    const { resolvedContent, mentions, includeWriting, includeGraph } =
-      resolveAtReferences("use @writing and @graph", concepts);
-    expect(resolvedContent).toBe("use Writing and Graph");
+  it("resolves @writing, @graph, and @canvas to display names", () => {
+    const {
+      resolvedContent,
+      mentions,
+      includeWriting,
+      includeGraph,
+      includeCanvas,
+    } = resolveAtReferences("use @writing and @graph and @canvas", concepts);
+    expect(resolvedContent).toBe("use Writing and Graph and Canvas");
     expect(includeWriting).toBe(true);
     expect(includeGraph).toBe(true);
+    expect(includeCanvas).toBe(true);
     expect(mentions.map((m) => m.conceptId)).toEqual([
       WRITING_REF_ID,
       GRAPH_REF_ID,
+      CANVAS_REF_ID,
     ]);
   });
 
