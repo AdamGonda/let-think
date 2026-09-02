@@ -7,33 +7,79 @@ import {
   canvasTextStroke,
   CANVAS_MAX_SCALE,
   CANVAS_MIN_SCALE,
-  estimatedTextWidth,
   findTextStrokeAt,
   identityViewport,
-  isEmptyShape,
+  inkOverChrome,
   isErasePointer,
+  isSmoothedPointer,
   isUndoHotkey,
   moveWorldByScreenDelta,
-  rectFromPoints,
+  PEN_POS_SMOOTH,
+  PEN_WIDTH_SMOOTH,
   screenToWorld,
+  smoothInkPoint,
   strokeWidthForPointer,
   textStrokeHits,
+  scaleFontSize,
+  estimatedTextWidth,
   worldToScreen,
 } from "./SessionCanvas";
 
 describe("strokeWidthForPointer", () => {
-  it("keeps mouse and touch thin, and scales pen pressure", () => {
+  it("uses the slider size for mouse and touch", () => {
     expect(strokeWidthForPointer("mouse", 0.5)).toBe(2);
     expect(strokeWidthForPointer("touch", 1)).toBe(2);
-    expect(strokeWidthForPointer("pen", 0)).toBe(1.25 + 0.5 * 5);
-    expect(strokeWidthForPointer("pen", 1)).toBe(1.25 + 5);
+    expect(strokeWidthForPointer("mouse", 0.5, "draw", 10)).toBe(10);
+  });
+
+  it("maps light pen pressure to a hairline and firm press to the slider", () => {
+    expect(strokeWidthForPointer("pen", 0)).toBe(0.5);
+    expect(strokeWidthForPointer("pen", 0.04, "draw", 10)).toBe(1.2);
+    expect(strokeWidthForPointer("pen", 0)).toBeLessThan(2);
+    expect(strokeWidthForPointer("pen", 0.75)).toBe(2);
+    expect(strokeWidthForPointer("pen", 1, "draw", 10)).toBe(10);
+    expect(strokeWidthForPointer("pen", 1, "draw", 10)).not.toBe(15);
   });
 
   it("uses a thicker stroke for the eraser", () => {
     expect(strokeWidthForPointer("mouse", 0.5, "erase")).toBe(40);
+    expect(strokeWidthForPointer("mouse", 0.5, "erase", 80)).toBe(80);
     expect(strokeWidthForPointer("pen", 1, "erase")).toBeGreaterThan(
       strokeWidthForPointer("pen", 1, "draw"),
     );
+  });
+});
+
+describe("smoothInkPoint", () => {
+  const prev = { x: 0, y: 0, width: 2 };
+
+  it("keeps the first point and chrome gap points raw", () => {
+    const next = { x: 10, y: 20, width: 8 };
+    expect(smoothInkPoint(null, next)).toEqual(next);
+    expect(smoothInkPoint(undefined, next)).toEqual(next);
+    const gap = { x: 10, y: 20, width: 8, gap: true as const };
+    expect(smoothInkPoint(prev, gap)).toEqual(gap);
+  });
+
+  it("lerps position and damps a width spike toward the previous sample", () => {
+    const next = { x: 10, y: 20, width: 12 };
+    const out = smoothInkPoint(prev, next);
+    expect(out.x).toBe(0 + (10 - 0) * PEN_POS_SMOOTH);
+    expect(out.y).toBe(0 + (20 - 0) * PEN_POS_SMOOTH);
+    expect(out.width).toBe(2 + (12 - 2) * PEN_WIDTH_SMOOTH);
+    expect(out.x).toBeGreaterThan(prev.x);
+    expect(out.x).toBeLessThan(next.x);
+    expect(out.width).toBeGreaterThan(prev.width);
+    expect(out.width).toBeLessThan(next.width);
+  });
+});
+
+describe("isSmoothedPointer", () => {
+  it("smooths pen and eraser, not mouse or touch", () => {
+    expect(isSmoothedPointer("pen")).toBe(true);
+    expect(isSmoothedPointer("eraser")).toBe(true);
+    expect(isSmoothedPointer("mouse")).toBe(false);
+    expect(isSmoothedPointer("touch")).toBe(false);
   });
 });
 
@@ -92,41 +138,83 @@ describe("isErasePointer", () => {
   });
 });
 
-describe("rectFromPoints", () => {
-  it("normalizes a dragged rectangle regardless of drag direction", () => {
-    expect(rectFromPoints({ x: 10, y: 40 }, { x: 4, y: 8 })).toEqual({
-      x: 4,
-      y: 8,
-      w: 6,
-      h: 32,
-    });
-  });
-});
-
-describe("isEmptyShape", () => {
-  it("treats sub-pixel drags as empty", () => {
-    expect(isEmptyShape({ x: 1, y: 1 }, { x: 1.2, y: 1.4 })).toBe(true);
-    expect(isEmptyShape({ x: 0, y: 0 }, { x: 8, y: 0 })).toBe(false);
-  });
-});
-
 describe("canvasTextStroke", () => {
-  it("bakes trimmed text and drops empty input", () => {
-    expect(canvasTextStroke(12, 24, "  hello  ")).toEqual({
+  it("keeps trimmed text and font size, and drops empty input", () => {
+    expect(canvasTextStroke(12, 24, "  hello  ", 32)).toEqual({
       kind: "text",
       x: 12,
       y: 24,
       text: "hello",
+      fontSize: 32,
+      color: "#ffffff",
     });
-    expect(canvasTextStroke(0, 0, "   ")).toBeNull();
+    expect(canvasTextStroke(0, 0, "   ", 48)).toBeNull();
+  });
+});
+
+describe("textStrokeHits", () => {
+  it("hits inside the measured box and misses outside", () => {
+    const stroke = canvasTextStroke(10, 20, "hi", 20);
+    expect(stroke).not.toBeNull();
+    if (!stroke) return;
+    expect(textStrokeHits(stroke, { x: 12, y: 22 }, () => 40)).toBe(true);
+    expect(textStrokeHits(stroke, { x: 60, y: 22 }, () => 40)).toBe(false);
+    expect(textStrokeHits(stroke, { x: 12, y: 50 }, () => 40)).toBe(false);
+  });
+
+  it("falls back to an estimated width when measure returns 0", () => {
+    const stroke = canvasTextStroke(0, 0, "hello", 40);
+    expect(stroke).not.toBeNull();
+    if (!stroke) return;
+    expect(textStrokeHits(stroke, { x: 10, y: 10 })).toBe(true);
+    expect(findTextStrokeAt([stroke], { x: 10, y: 10 })).toBe(0);
+    expect(findTextStrokeAt([stroke], { x: 400, y: 10 })).toBeNull();
+  });
+});
+
+describe("scaleFontSize", () => {
+  it("scales from the drag distance and clamps to the text size range", () => {
+    expect(scaleFontSize(48, 10, 20)).toBe(96);
+    expect(scaleFontSize(48, 10, 2)).toBe(12);
+    expect(scaleFontSize(48, 10, 100)).toBe(128);
+    expect(scaleFontSize(48, 0, 20)).toBe(48);
+  });
+});
+
+describe("moveWorldByScreenDelta", () => {
+  it("divides screen delta by scale", () => {
+    expect(moveWorldByScreenDelta({ x: 10, y: 20 }, 8, -4, 2)).toEqual({
+      x: 14,
+      y: 18,
+    });
+    expect(moveWorldByScreenDelta({ x: 0, y: 0 }, 10, 5, 1)).toEqual({
+      x: 10,
+      y: 5,
+    });
+  });
+});
+
+describe("inkOverChrome", () => {
+  it("rejects points over chrome and reconnects after a gap", () => {
+    expect(inkOverChrome(true, false)).toEqual({ accept: false, broken: true });
+    expect(inkOverChrome(true, true)).toEqual({ accept: false, broken: true });
+    expect(inkOverChrome(false, true)).toEqual({ accept: true, broken: false });
+    expect(inkOverChrome(false, false)).toEqual({ accept: true, broken: false });
   });
 });
 
 describe("text stroke hit testing", () => {
-  const hello = { kind: "text" as const, x: 12, y: 24, text: "hello" };
+  const hello = {
+    kind: "text" as const,
+    x: 12,
+    y: 24,
+    text: "hello",
+    fontSize: 48,
+    color: "#ffffff",
+  };
 
   it("hits inside the estimated glyph box and misses outside", () => {
-    const width = estimatedTextWidth("hello");
+    const width = estimatedTextWidth("hello", hello.fontSize);
     expect(textStrokeHits(hello, { x: 12, y: 24 })).toBe(true);
     expect(textStrokeHits(hello, { x: 12 + width, y: 24 })).toBe(true);
     expect(textStrokeHits(hello, { x: 11, y: 24 })).toBe(false);
@@ -137,7 +225,7 @@ describe("text stroke hit testing", () => {
     const strokes = [
       { kind: "draw" as const, points: [{ x: 12, y: 24, width: 2 }] },
       hello,
-      { kind: "text" as const, x: 12, y: 24, text: "on top" },
+      { kind: "text" as const, x: 12, y: 24, text: "on top", fontSize: 48, color: "#ffffff" },
     ];
     expect(findTextStrokeAt(strokes, { x: 13, y: 25 })).toBe(2);
     expect(findTextStrokeAt(strokes, { x: 0, y: 0 })).toBeNull();
