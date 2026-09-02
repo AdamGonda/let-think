@@ -177,6 +177,42 @@ export function findTextStrokeAt(
   return null;
 }
 
+export function scaleFontSize(
+  startSize: number,
+  startDist: number,
+  nextDist: number,
+  min = TEXT_SIZE_MIN,
+  max = TEXT_SIZE_MAX,
+): number {
+  if (!(startDist > 0) || !Number.isFinite(startDist) || !Number.isFinite(nextDist)) {
+    return startSize;
+  }
+  return Math.min(max, Math.max(min, startSize * (nextDist / startDist)));
+}
+
+type TextHandle = "tl" | "tr" | "bl" | "br";
+
+const TEXT_HANDLES: ReadonlyArray<{
+  corner: TextHandle;
+  label: string;
+  className: string;
+}> = [
+  { corner: "tl", label: "Resize text top-left", className: "top-0 left-0 -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize" },
+  { corner: "tr", label: "Resize text top-right", className: "top-0 right-0 translate-x-1/2 -translate-y-1/2 cursor-nesw-resize" },
+  { corner: "bl", label: "Resize text bottom-left", className: "bottom-0 left-0 -translate-x-1/2 translate-y-1/2 cursor-nesw-resize" },
+  { corner: "br", label: "Resize text bottom-right", className: "bottom-0 right-0 translate-x-1/2 translate-y-1/2 cursor-nwse-resize" },
+];
+
+function oppositeCorner(
+  corner: TextHandle,
+  frame: { left: number; top: number; right: number; bottom: number },
+): Point {
+  if (corner === "tl") return { x: frame.right, y: frame.bottom };
+  if (corner === "tr") return { x: frame.left, y: frame.bottom };
+  if (corner === "bl") return { x: frame.right, y: frame.top };
+  return { x: frame.left, y: frame.top };
+}
+
 function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   return (
@@ -395,6 +431,13 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
   const viewportRef = useRef<CanvasViewport>(identityViewport());
   const textDraftRef = useRef<TextDraft | null>(null);
   const textSizeRef = useRef(DEFAULT_TEXT_SIZE);
+  const textFrameRef = useRef<HTMLDivElement>(null);
+  const textResizeRef = useRef<{
+    pointerId: number;
+    startSize: number;
+    origin: Point;
+    startDist: number;
+  } | null>(null);
   const redrawRef = useRef<() => void>(() => {});
   const [tool, setTool] = useState<CanvasTool>("pen");
   const [textDraft, setTextDraft] = useState<TextDraft | null>(null);
@@ -578,6 +621,47 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
     textDraftRef.current = null;
     setTextDraft(null);
     redrawRef.current();
+  };
+
+  const onTextHandleDown = (
+    corner: TextHandle,
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const frame = textFrameRef.current?.getBoundingClientRect();
+    if (!frame) return;
+    const origin = oppositeCorner(corner, frame);
+    const startDist = Math.hypot(event.clientX - origin.x, event.clientY - origin.y);
+    textResizeRef.current = {
+      pointerId: event.pointerId,
+      startSize: textSizeRef.current,
+      origin,
+      startDist,
+    };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+
+  const onTextHandleMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const resize = textResizeRef.current;
+    if (!resize || resize.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    const nextDist = Math.hypot(
+      event.clientX - resize.origin.x,
+      event.clientY - resize.origin.y,
+    );
+    const next = scaleFontSize(resize.startSize, resize.startDist, nextDist);
+    textSizeRef.current = next;
+    setTextSize(next);
+  };
+
+  const onTextHandleUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const resize = textResizeRef.current;
+    if (!resize || resize.pointerId !== event.pointerId) return;
+    textResizeRef.current = null;
+    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
   };
 
   const paintSegment = (
@@ -769,30 +853,22 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
     strokeWidthForPointer("mouse", 0.5, "erase", eraseSize) * viewport.scale;
   const eraseScreen = eraseCursor ? worldToScreen(viewport, eraseCursor) : null;
   const textScreen = textDraft ? worldToScreen(viewport, textDraft) : null;
-  const sizeSlider =
-    tool === "pen"
+  const inkSlider =
+    tool === "erase"
       ? {
+          value: eraseSize,
+          min: ERASE_SIZE_MIN,
+          max: ERASE_SIZE_MAX,
+          label: "Eraser size",
+          onChange: setEraseSize,
+        }
+      : {
           value: penSize,
           min: PEN_SIZE_MIN,
           max: PEN_SIZE_MAX,
           label: "Pen size",
           onChange: setPenSize,
-        }
-      : tool === "erase"
-        ? {
-            value: eraseSize,
-            min: ERASE_SIZE_MIN,
-            max: ERASE_SIZE_MAX,
-            label: "Eraser size",
-            onChange: setEraseSize,
-          }
-        : {
-            value: textSize,
-            min: TEXT_SIZE_MIN,
-            max: TEXT_SIZE_MAX,
-            label: "Text size",
-            onChange: setTextSize,
-          };
+        };
 
   return (
     <div ref={wrapRef} className="relative min-h-0 flex-1">
@@ -826,13 +902,15 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
           }}
         />
       ) : null}
-      <CanvasSizeSlider
-        value={sizeSlider.value}
-        min={sizeSlider.min}
-        max={sizeSlider.max}
-        label={sizeSlider.label}
-        onChange={sizeSlider.onChange}
-      />
+      {tool !== "text" ? (
+        <CanvasSizeSlider
+          value={inkSlider.value}
+          min={inkSlider.min}
+          max={inkSlider.max}
+          label={inkSlider.label}
+          onChange={inkSlider.onChange}
+        />
+      ) : null}
       <CanvasToolbar
         tool={tool}
         onToolChange={(next) => {
@@ -843,36 +921,63 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
       />
       {textDraft && textScreen ? (
         <div
-          ref={textElRef}
-          role="textbox"
-          aria-label="Canvas text"
-          contentEditable
-          suppressContentEditableWarning
-          className="absolute z-10 min-w-[1ch] bg-transparent text-white outline-none"
-          style={{
-            left: textScreen.x,
-            top: textScreen.y,
-            font: `${textSize * viewport.scale}px "DM Sans", ui-sans-serif, system-ui, sans-serif`,
-            caretColor: INK,
-            whiteSpace: "pre",
-            lineHeight: TEXT_LINE_HEIGHT,
-            minHeight: `${TEXT_LINE_HEIGHT}em`,
-          }}
-          onBlur={(event) => {
-            const next = event.relatedTarget;
-            if (next instanceof Node && wrapRef.current?.contains(next)) return;
-            commitTextDraft();
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              commitTextDraft();
-            } else if (event.key === "Escape") {
-              event.preventDefault();
-              cancelTextDraft();
-            }
-          }}
-        />
+          ref={textFrameRef}
+          data-testid="canvas-text-frame"
+          className="absolute z-10"
+          style={{ left: textScreen.x, top: textScreen.y }}
+        >
+          <div className="relative">
+            <div
+              ref={textElRef}
+              role="textbox"
+              aria-label="Canvas text"
+              contentEditable
+              suppressContentEditableWarning
+              className="min-w-[1ch] bg-transparent text-white outline-none"
+              style={{
+                font: `${textSize * viewport.scale}px "DM Sans", ui-sans-serif, system-ui, sans-serif`,
+                caretColor: INK,
+                whiteSpace: "pre",
+                lineHeight: TEXT_LINE_HEIGHT,
+                minHeight: `${TEXT_LINE_HEIGHT}em`,
+              }}
+              onBlur={(event) => {
+                if (textResizeRef.current) return;
+                const next = event.relatedTarget;
+                if (next instanceof Node && wrapRef.current?.contains(next)) return;
+                commitTextDraft();
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  commitTextDraft();
+                } else if (event.key === "Escape") {
+                  event.preventDefault();
+                  cancelTextDraft();
+                }
+              }}
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-0 border border-[#3b82f6]"
+            />
+            {TEXT_HANDLES.map(({ corner, label, className }) => (
+              <div
+                key={corner}
+                role="slider"
+                aria-label={label}
+                aria-valuemin={TEXT_SIZE_MIN}
+                aria-valuemax={TEXT_SIZE_MAX}
+                aria-valuenow={textSize}
+                className={`absolute z-10 size-[6px] border border-[#3b82f6] bg-background ${className}`}
+                onPointerDown={(event) => onTextHandleDown(corner, event)}
+                onPointerMove={onTextHandleMove}
+                onPointerUp={onTextHandleUp}
+                onPointerCancel={onTextHandleUp}
+              />
+            ))}
+          </div>
+        </div>
       ) : null}
     </div>
   );

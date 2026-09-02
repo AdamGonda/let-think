@@ -14,6 +14,7 @@ import {
   screenToWorld,
   strokeWidthForPointer,
   textStrokeHits,
+  scaleFontSize,
   worldToScreen,
 } from "./SessionCanvas";
 
@@ -121,6 +122,15 @@ describe("textStrokeHits", () => {
     expect(textStrokeHits(stroke, { x: 10, y: 10 })).toBe(true);
     expect(findTextStrokeAt([stroke], { x: 10, y: 10 })).toBe(0);
     expect(findTextStrokeAt([stroke], { x: 400, y: 10 })).toBeNull();
+  });
+});
+
+describe("scaleFontSize", () => {
+  it("scales from the drag distance and clamps to the text size range", () => {
+    expect(scaleFontSize(48, 10, 20)).toBe(96);
+    expect(scaleFontSize(48, 10, 2)).toBe(12);
+    expect(scaleFontSize(48, 10, 100)).toBe(128);
+    expect(scaleFontSize(48, 0, 20)).toBe(48);
   });
 });
 

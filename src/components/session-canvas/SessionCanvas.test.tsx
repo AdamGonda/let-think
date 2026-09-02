@@ -21,6 +21,14 @@ describe("SessionCanvas toolbar", () => {
     expect(queryByTestId("erase-radius")).toBeNull();
   });
 
+  it("hides the ink size slider while the text tool is selected", () => {
+    const { getByLabelText, queryByLabelText } = render(<SessionCanvas active />);
+    fireEvent.click(getByLabelText("Text"));
+    expect(queryByLabelText("Pen size")).toBeNull();
+    expect(queryByLabelText("Eraser size")).toBeNull();
+    expect(queryByLabelText("Text size")).toBeNull();
+  });
+
   it("shows a 40px radius ring while the eraser is selected", () => {
     const { getByLabelText, getByTestId } = render(<SessionCanvas active />);
     fireEvent.click(getByLabelText("Eraser"));
@@ -79,7 +87,9 @@ describe("SessionCanvas toolbar", () => {
   });
 
   it("reopens committed text for editing", () => {
-    const { getByLabelText, queryByLabelText } = render(<SessionCanvas active />);
+    const { getByLabelText, getByTestId, queryByLabelText } = render(
+      <SessionCanvas active />,
+    );
     fireEvent.click(getByLabelText("Text"));
     const canvas = getByLabelText("Drawing canvas");
     fireEvent.pointerDown(canvas, {
@@ -89,7 +99,13 @@ describe("SessionCanvas toolbar", () => {
     });
     fireEvent.pointerUp(canvas, { pointerId: 1, clientX: 20, clientY: 20 });
     const box = getByLabelText("Canvas text");
+    expect(getByTestId("canvas-text-frame")).toBeTruthy();
     box.textContent = "hello";
+    const handle = getByLabelText("Resize text bottom-right");
+    fireEvent.pointerDown(handle, { pointerId: 9, clientX: 40, clientY: 40 });
+    fireEvent.pointerMove(handle, { pointerId: 9, clientX: 80, clientY: 80 });
+    fireEvent.pointerUp(handle, { pointerId: 9, clientX: 80, clientY: 80 });
+    expect(box.style.font).toMatch(/^96px /);
     fireEvent.blur(box);
     expect(queryByLabelText("Canvas text")).toBeNull();
     fireEvent.pointerDown(canvas, {
