@@ -26,6 +26,7 @@ export default defineConfig([
       'src/components/Tutorial.tsx',
       'src/components/ui/button.tsx',
       'src/contexts/SessionDataContext.tsx',
+      'src/components/session-canvas/SessionCanvas.tsx',
     ],
     rules: {
       'react-refresh/only-export-components': 'off',
@@ -36,6 +37,9 @@ export default defineConfig([
     files: [
       'src/components/chat/HistoricalBatchPrompt.tsx',
       'src/components/session-sidebar/useSessionSidebarWorkspace.ts',
+      'src/components/chat/ChatComposer.tsx',
+      'src/components/command-palette/CommandPalette.tsx',
+      'src/components/session-canvas/SessionCanvas.tsx',
     ],
     rules: {
       'react-hooks/set-state-in-effect': 'off',

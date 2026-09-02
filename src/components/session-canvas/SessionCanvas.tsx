@@ -711,7 +711,7 @@ export function SessionCanvas({ active }: SessionCanvasProps) {
       if (hit != null) {
         const existing = strokesRef.current[hit];
         if (existing?.kind !== "text") return;
-        const now = performance.now();
+        const now = event.timeStamp;
         const prev = lastTextClickRef.current;
         if (
           prev &&
