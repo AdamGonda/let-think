@@ -1,8 +1,20 @@
 import { render, fireEvent, cleanup } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { SessionCanvas } from "./SessionCanvas";
+import type { Id } from "../../../convex/_generated/dataModel";
 
-afterEach(cleanup);
+const updateCanvas = vi.fn();
+
+vi.mock("convex/react", () => ({
+  useQuery: () => null,
+  useMutation: () => updateCanvas,
+}));
+
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+  updateCanvas.mockClear();
+});
 
 describe("SessionCanvas toolbar", () => {
   it("hosts the canvas tools overlay with pen selected", () => {
@@ -62,5 +74,42 @@ describe("SessionCanvas toolbar", () => {
       clientY: 0,
     });
     expect(canvas.getAttribute("data-viewport-x")).toBe("20");
+  });
+});
+
+describe("SessionCanvas persist", () => {
+  it("saves a committed stroke to the session", () => {
+    vi.useFakeTimers();
+    const sessionId = "jd7sessioncanvas" as Id<"sessions">;
+    const { getByLabelText } = render(
+      <SessionCanvas active sessionId={sessionId} />,
+    );
+    const canvas = getByLabelText("Drawing canvas");
+    fireEvent.pointerDown(canvas, {
+      pointerId: 1,
+      clientX: 10,
+      clientY: 10,
+    });
+    fireEvent.pointerMove(canvas, {
+      pointerId: 1,
+      clientX: 24,
+      clientY: 18,
+    });
+    fireEvent.pointerUp(canvas, {
+      pointerId: 1,
+      clientX: 24,
+      clientY: 18,
+    });
+    expect(updateCanvas).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(400);
+    expect(updateCanvas).toHaveBeenCalledTimes(1);
+    expect(updateCanvas).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sessionId,
+        strokes: expect.arrayContaining([
+          expect.objectContaining({ kind: "draw" }),
+        ]),
+      }),
+    );
   });
 });
