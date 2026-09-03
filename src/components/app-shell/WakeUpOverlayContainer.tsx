@@ -73,6 +73,7 @@ export function WakeUpOverlayContainer({
       chatLoading={overlay.chatLoading}
       isExitingOverlay={overlay.isExitingOverlay}
       editorOpen={overlay.editorOpen}
+      sessionView={overlay.sessionView}
       onChromeViewChange={handleChromeViewChange}
       activeSessionId={overlay.activeSessionId}
       activeSessionInWorkspace={activeFileInWorkspace}

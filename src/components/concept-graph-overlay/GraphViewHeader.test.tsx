@@ -96,6 +96,20 @@ describe("GraphViewHeader session view toggle", () => {
     );
   });
 
+  it("selects Text on the switcher while the editor is open even if sessionView is still canvas", () => {
+    const { getByLabelText } = render(
+      <GraphViewHeader
+        {...base}
+        sessionView="canvas"
+        editorOpen
+      />,
+    );
+    expect(getByLabelText("Text").getAttribute("aria-checked")).toBe("true");
+    expect(getByLabelText("Canvas").getAttribute("aria-checked")).toBe(
+      "false",
+    );
+  });
+
   it("shows the file title as a breadcrumb, not a chat switcher", () => {
     const { getByText, queryByLabelText } = render(
       <GraphViewHeader {...base} sessionView="chat" />,

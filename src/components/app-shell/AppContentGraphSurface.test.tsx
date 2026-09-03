@@ -30,6 +30,7 @@ const base = {
   graphLoadingStartBatchLength: 0,
   conceptGraph: null,
   chatVisible: true,
+  editorOpen: false,
   sessionPastFrame: false,
   referencedConceptIds: new Set<string>(),
   graphComposer: <div data-testid="graph-composer" />,

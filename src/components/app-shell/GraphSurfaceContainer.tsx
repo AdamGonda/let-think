@@ -248,6 +248,7 @@ export function GraphSurfaceContainer({
       conceptGraph={conceptGraph}
       chatVisible={chatComposerVisible}
       sessionView={graph.sessionView}
+      editorOpen={graph.editorOpen}
       sessionPastFrame={sessionPastFrame}
       referencedConceptIds={referencedConceptIds}
       graphComposer={graphComposer}

@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { layout } from "@/config";
 import { MarkdownEditor } from "@/components/editor/MarkdownEditor";
 import { MainColumnWidthHandle } from "@/components/editor/MainColumnWidthHandle";
@@ -7,12 +7,14 @@ import {
   SessionViewSwitcher,
   type WorkspaceChromeView,
 } from "@/components/concept-graph-overlay/SessionViewSwitcher";
+import type { SessionView } from "@/machines/appUiTypes";
 import type { Id } from "../../../convex/_generated/dataModel";
 
 type WakeUpOverlayProps = {
   chatLoading: boolean;
   isExitingOverlay: boolean;
   editorOpen: boolean;
+  sessionView: SessionView;
   activeSessionId: Id<"sessions"> | null;
   activeSessionInWorkspace:
     | {
@@ -32,10 +34,34 @@ type WakeUpOverlayProps = {
   onMainColumnWidthChange: (width: number) => void;
 };
 
+/** Slide highlight from the view under the editor into Text after first paint. */
+export function EditorOpenViewSwitcher({
+  fromView,
+  onChange,
+}: {
+  fromView: SessionView;
+  onChange: (view: WorkspaceChromeView) => void;
+}) {
+  const [selected, setSelected] = useState<WorkspaceChromeView>(fromView);
+  useEffect(() => {
+    // ponytail: double rAF so the fromView paint commits before transitioning to file
+    let inner = 0;
+    const outer = requestAnimationFrame(() => {
+      inner = requestAnimationFrame(() => setSelected("file"));
+    });
+    return () => {
+      cancelAnimationFrame(outer);
+      cancelAnimationFrame(inner);
+    };
+  }, []);
+  return <SessionViewSwitcher selected={selected} onChange={onChange} />;
+}
+
 export function WakeUpOverlay({
   chatLoading,
   isExitingOverlay,
   editorOpen,
+  sessionView,
   activeSessionId,
   activeSessionInWorkspace,
   notes,
@@ -87,8 +113,8 @@ export function WakeUpOverlay({
             <div />
             <div className="flex h-7 items-center justify-end">
               {showViewSwitcher ? (
-                <SessionViewSwitcher
-                  selected="file"
+                <EditorOpenViewSwitcher
+                  fromView={sessionView}
                   onChange={onChromeViewChange}
                 />
               ) : null}

@@ -24,6 +24,7 @@ type AppContentGraphSurfaceProps = {
   conceptGraph: ConceptGraphData | null | undefined;
   chatVisible: boolean;
   sessionView: SessionView;
+  editorOpen: boolean;
   sessionPastFrame: boolean;
   referencedConceptIds: Set<string>;
   graphComposer: ReactNode;
@@ -56,6 +57,7 @@ export function AppContentGraphSurface({
   conceptGraph,
   chatVisible,
   sessionView,
+  editorOpen,
   sessionPastFrame,
   referencedConceptIds,
   graphComposer,
@@ -90,6 +92,7 @@ export function AppContentGraphSurface({
           isHistoryButtonDisabled={chatLoading}
           hasChatHistory={hasChatHistory}
           sessionView={sessionView}
+          editorOpen={editorOpen}
           onSessionViewChange={onSessionViewChange}
           onHistoryOpen={onHistoryOpen}
           onEditorOpen={onEditorOpen}

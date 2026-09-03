@@ -18,6 +18,7 @@ type GraphViewHeaderProps = {
   isHistoryButtonDisabled?: boolean;
   hasChatHistory: boolean;
   sessionView: SessionView;
+  editorOpen?: boolean;
   onSessionViewChange: (view: SessionView) => void;
   onHistoryOpen: () => void;
   onEditorOpen: () => void;
@@ -35,6 +36,7 @@ export function GraphViewHeader({
   isHistoryButtonDisabled = false,
   hasChatHistory,
   sessionView,
+  editorOpen = false,
   onSessionViewChange,
   onHistoryOpen,
   onEditorOpen,
@@ -46,6 +48,7 @@ export function GraphViewHeader({
       : "Loading…";
   const graphChromeHidden = sessionView !== "graph";
   const historyDisabled = !hasChatHistory || isHistoryButtonDisabled;
+  const chromeSelected = editorOpen ? "file" : sessionView;
 
   return (
     <header className={layout.workspaceTopBarClass}>
@@ -98,7 +101,7 @@ export function GraphViewHeader({
           </div>
         )}
         <SessionViewSwitcher
-          selected={sessionView}
+          selected={chromeSelected}
           onChange={(view) => {
             if (view === "file") onEditorOpen();
             else onSessionViewChange(view);

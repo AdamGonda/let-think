@@ -68,6 +68,7 @@ export type WakeUpOverlaySelectors = {
   notes: AppSnapshot["context"]["notes"];
   activeFileId: AppSnapshot["context"]["activeFileId"];
   activeSessionId: AppSnapshot["context"]["activeSessionId"];
+  sessionView: ReturnType<typeof selectSessionView>;
 };
 
 function shallowEqualWakeUp(a: WakeUpOverlaySelectors, b: WakeUpOverlaySelectors): boolean {
@@ -78,7 +79,8 @@ function shallowEqualWakeUp(a: WakeUpOverlaySelectors, b: WakeUpOverlaySelectors
     a.overlayActionReturnsToGraph === b.overlayActionReturnsToGraph &&
     a.notes === b.notes &&
     a.activeFileId === b.activeFileId &&
-    a.activeSessionId === b.activeSessionId
+    a.activeSessionId === b.activeSessionId &&
+    a.sessionView === b.sessionView
   );
 }
 
@@ -92,6 +94,7 @@ export function selectWakeUpOverlayModel(s: AppSnapshot): WakeUpOverlaySelectors
     notes: s.context.notes,
     activeFileId: s.context.activeFileId,
     activeSessionId: s.context.activeSessionId,
+    sessionView: selectSessionView(s),
   };
 }
 
@@ -105,6 +108,7 @@ export type GraphSurfaceMachineSelectors = {
   draftInput: AppSnapshot["context"]["draftInput"];
   selectedBatchIndex: AppSnapshot["context"]["selectedBatchIndex"];
   chatLoading: AppSnapshot["context"]["chatLoading"];
+  editorOpen: AppSnapshot["context"]["editorOpen"];
   graphShowLoadingCards: ReturnType<typeof selectGraphShowLoadingCards>;
   graphInteractionBlocked: ReturnType<typeof selectGraphInteractionBlocked>;
   graphLoadingStartBatchLength: ReturnType<typeof selectGraphLoadingStartBatchLength>;
@@ -122,6 +126,7 @@ function shallowEqualGraphSurface(
     a.draftInput === b.draftInput &&
     a.selectedBatchIndex === b.selectedBatchIndex &&
     a.chatLoading === b.chatLoading &&
+    a.editorOpen === b.editorOpen &&
     a.graphShowLoadingCards === b.graphShowLoadingCards &&
     a.graphInteractionBlocked === b.graphInteractionBlocked &&
     a.graphLoadingStartBatchLength === b.graphLoadingStartBatchLength &&
@@ -140,6 +145,7 @@ export function selectGraphSurfaceMachineModel(
     draftInput: s.context.draftInput,
     selectedBatchIndex: s.context.selectedBatchIndex,
     chatLoading: s.context.chatLoading,
+    editorOpen: s.context.editorOpen,
     graphShowLoadingCards: selectGraphShowLoadingCards(s),
     graphInteractionBlocked: selectGraphInteractionBlocked(s),
     graphLoadingStartBatchLength: selectGraphLoadingStartBatchLength(s),
