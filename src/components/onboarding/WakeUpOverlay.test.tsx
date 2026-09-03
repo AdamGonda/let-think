@@ -5,7 +5,7 @@ import { EditorOpenViewSwitcher } from "./WakeUpOverlay";
 afterEach(cleanup);
 
 describe("EditorOpenViewSwitcher", () => {
-  it("starts on fromView then selects Text after paint", async () => {
+  it("starts on fromView then selects Write after paint", async () => {
     vi.stubGlobal(
       "requestAnimationFrame",
       (cb: FrameRequestCallback) => window.setTimeout(() => cb(0), 0),
@@ -17,16 +17,16 @@ describe("EditorOpenViewSwitcher", () => {
     const { getByLabelText } = render(
       <EditorOpenViewSwitcher fromView="canvas" onChange={() => {}} />,
     );
-    expect(getByLabelText("Canvas").getAttribute("aria-checked")).toBe("true");
-    expect(getByLabelText("Text").getAttribute("aria-checked")).toBe("false");
+    expect(getByLabelText("Draw").getAttribute("aria-checked")).toBe("true");
+    expect(getByLabelText("Write").getAttribute("aria-checked")).toBe("false");
 
     await act(async () => {
       await new Promise((r) => setTimeout(r, 0));
       await new Promise((r) => setTimeout(r, 0));
     });
 
-    expect(getByLabelText("Text").getAttribute("aria-checked")).toBe("true");
-    expect(getByLabelText("Canvas").getAttribute("aria-checked")).toBe(
+    expect(getByLabelText("Write").getAttribute("aria-checked")).toBe("true");
+    expect(getByLabelText("Draw").getAttribute("aria-checked")).toBe(
       "false",
     );
 

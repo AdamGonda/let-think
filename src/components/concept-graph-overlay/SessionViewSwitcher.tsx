@@ -17,10 +17,10 @@ const VIEW_OPTIONS: ReadonlyArray<{
   Icon: LucideIcon;
   tour?: string;
 }> = [
-  { view: "canvas", label: "Canvas", Icon: Paintbrush },
+  { view: "canvas", label: "Draw", Icon: Paintbrush },
   { view: "chat", label: "Chat", Icon: MessageSquare },
-  { view: "graph", label: "Graph", Icon: LayoutGrid },
-  { view: "file", label: "Text", Icon: FileText, tour: "notes-btn" },
+  { view: "graph", label: "Ideate", Icon: LayoutGrid },
+  { view: "file", label: "Write", Icon: FileText, tour: "notes-btn" },
 ];
 
 const HIGHLIGHT_TRANSLATE = [
