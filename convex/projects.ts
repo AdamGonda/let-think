@@ -44,8 +44,33 @@ export const updateName = mutation({
   },
 });
 
+/** Lean workspace file — omit thinkingNotes / userId so list fan-out stays light. */
+const workspaceFileValidator = v.object({
+  _id: v.id("files"),
+  _creationTime: v.number(),
+  title: v.string(),
+  createdAt: v.number(),
+  projectId: v.optional(v.id("projects")),
+  sessionId: v.union(v.id("sessions"), v.null()),
+});
+
 export const listWithSessions = query({
   args: {},
+  returns: v.array(
+    v.object({
+      project: v.union(
+        v.object({
+          _id: v.id("projects"),
+          _creationTime: v.number(),
+          userId: v.optional(v.id("users")),
+          name: v.string(),
+          createdAt: v.number(),
+        }),
+        v.null(),
+      ),
+      files: v.array(workspaceFileValidator),
+    }),
+  ),
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return [];
@@ -66,8 +91,14 @@ export const listWithSessions = query({
     for (const s of allSessions) {
       if (s.fileId) sessionByFileId.set(s.fileId, s);
     }
+    // ponytail: still reads full file docs (incl. thinkingNotes) server-side; lean
+    // return cuts subscriber payload. Split notes table if DB read bytes stay hot.
     const toWorkspaceFile = (file: (typeof allFiles)[0]) => ({
-      ...file,
+      _id: file._id,
+      _creationTime: file._creationTime,
+      title: file.title,
+      createdAt: file.createdAt,
+      ...(file.projectId !== undefined ? { projectId: file.projectId } : {}),
       sessionId: sessionByFileId.get(file._id)?._id ?? null,
     });
     const inboxFiles = allFiles

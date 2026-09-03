@@ -475,9 +475,9 @@ export const send = action({
     let rawModelText = "";
     let displayText = "";
     let lastFlushAt = Date.now();
-    // Flush each parsed concept event right away so tail cards don't lag.
-    const STREAM_FLUSH_EVENT_COUNT = 1;
-    const STREAM_FLUSH_MS = 100;
+    // Coalesce stream patches — every-node flushes hammered DB I/O (Sep 2 spike).
+    const STREAM_FLUSH_EVENT_COUNT = 8;
+    const STREAM_FLUSH_MS = 200;
 
     const flushBufferedEvents = async () => {
       if (bufferedEvents.length === 0) return;
@@ -718,7 +718,7 @@ export const sendChat = action({
 
     let displayText = "";
     let lastFlushAt = 0;
-    const STREAM_FLUSH_MS = 50;
+    const STREAM_FLUSH_MS = 200;
     const flushAssistant = async () => {
       await ctx.runMutation(internal.chatSessions.patchChatMessage, {
         messageId: assistantMessageId,

@@ -240,6 +240,32 @@ export const updateCanvas = mutation({
   },
 });
 
+/** Viewport-only persist — avoids rewriting the full strokes array on pan/zoom. */
+export const updateCanvasViewport = mutation({
+  args: {
+    sessionId: v.id("sessions"),
+    viewport: canvasViewportValue,
+  },
+  returns: v.null(),
+  handler: async (ctx, { sessionId, viewport }) => {
+    await requireSessionOwner(ctx, sessionId);
+    const existing = await ctx.db
+      .query("sessionCanvases")
+      .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
+      .first();
+    if (existing) {
+      await ctx.db.patch(existing._id, { viewport });
+    } else {
+      await ctx.db.insert("sessionCanvases", {
+        sessionId,
+        strokes: [],
+        viewport,
+      });
+    }
+    return null;
+  },
+});
+
 /**
  * Loads graph + full message history for chat.send after verifying session ownership.
  * Actions should call with userId from getAuthUserId(ctx).

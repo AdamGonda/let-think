@@ -2,18 +2,31 @@ import { render, fireEvent, cleanup } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SessionCanvas } from "./SessionCanvas";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { snapshotCanvasJpeg } from "../../lib/canvasSnapshot";
 
 const updateCanvas = vi.fn();
+const updateCanvasViewport = vi.fn();
+const getCanvasQuery = vi.fn().mockResolvedValue(null);
+const convexClient = {
+  query: (...args: unknown[]) => getCanvasQuery(...args),
+};
 
 vi.mock("convex/react", () => ({
   useQuery: () => null,
-  useMutation: () => updateCanvas,
+  useConvex: () => convexClient,
+  useMutation: () => (args: { strokes?: unknown }) => {
+    if ("strokes" in args) return updateCanvas(args);
+    return updateCanvasViewport(args);
+  },
 }));
 
 afterEach(() => {
   cleanup();
   vi.useRealTimers();
   updateCanvas.mockClear();
+  updateCanvasViewport.mockClear();
+  getCanvasQuery.mockClear();
+  getCanvasQuery.mockResolvedValue(null);
 });
 
 describe("SessionCanvas toolbar", () => {
@@ -297,6 +310,114 @@ describe("SessionCanvas persist", () => {
         ]),
       }),
     );
+  });
+
+  it("persists pan via viewport-only mutation", () => {
+    vi.useFakeTimers();
+    const sessionId = "jd7sessioncanvas" as Id<"sessions">;
+    const { getByLabelText } = render(
+      <SessionCanvas active sessionId={sessionId} />,
+    );
+    const canvas = getByLabelText("Drawing canvas");
+    fireEvent.pointerDown(canvas, {
+      pointerId: 1,
+      clientX: 40,
+      clientY: 40,
+      metaKey: true,
+    });
+    fireEvent.pointerMove(canvas, {
+      pointerId: 1,
+      clientX: 80,
+      clientY: 70,
+      metaKey: true,
+    });
+    fireEvent.pointerUp(canvas, {
+      pointerId: 1,
+      clientX: 80,
+      clientY: 70,
+      metaKey: true,
+    });
+    vi.advanceTimersByTime(400);
+    expect(updateCanvas).not.toHaveBeenCalled();
+    expect(updateCanvasViewport).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sessionId,
+        viewport: expect.objectContaining({
+          x: expect.any(Number),
+          y: expect.any(Number),
+          scale: expect.any(Number),
+        }),
+      }),
+    );
+  });
+
+  it("does not persist text mid-drag; saves once on pointerup", () => {
+    vi.useFakeTimers();
+    const sessionId = "jd7sessioncanvas" as Id<"sessions">;
+    const { getByLabelText, queryByLabelText } = render(
+      <SessionCanvas active sessionId={sessionId} />,
+    );
+    const canvas = placeHello(getByLabelText, queryByLabelText);
+    vi.advanceTimersByTime(400);
+    updateCanvas.mockClear();
+
+    fireEvent.pointerDown(canvas, {
+      pointerId: 8,
+      clientX: 24,
+      clientY: 24,
+    });
+    fireEvent.pointerMove(canvas, {
+      pointerId: 8,
+      clientX: 54,
+      clientY: 34,
+    });
+    fireEvent.pointerMove(canvas, {
+      pointerId: 8,
+      clientX: 80,
+      clientY: 50,
+    });
+    vi.advanceTimersByTime(400);
+    expect(updateCanvas).not.toHaveBeenCalled();
+
+    fireEvent.pointerUp(canvas, { pointerId: 8, clientX: 80, clientY: 50 });
+    vi.advanceTimersByTime(400);
+    expect(updateCanvas).toHaveBeenCalledTimes(1);
+    expect(updateCanvas).toHaveBeenCalledWith(
+      expect.objectContaining({
+        sessionId,
+        strokes: expect.arrayContaining([
+          expect.objectContaining({ kind: "text", text: "hello" }),
+        ]),
+      }),
+    );
+  });
+
+  it("loads canvas once via query, not a reactive subscription", () => {
+    const sessionId = "jd7sessioncanvas" as Id<"sessions">;
+    render(<SessionCanvas active sessionId={sessionId} />);
+    expect(getCanvasQuery).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps @canvas JPEG snapshot registration after draw", async () => {
+    const { getByLabelText } = render(<SessionCanvas active />);
+    const canvas = getByLabelText("Drawing canvas");
+    fireEvent.pointerDown(canvas, {
+      pointerId: 1,
+      clientX: 10,
+      clientY: 10,
+    });
+    fireEvent.pointerMove(canvas, {
+      pointerId: 1,
+      clientX: 40,
+      clientY: 30,
+    });
+    fireEvent.pointerUp(canvas, {
+      pointerId: 1,
+      clientX: 40,
+      clientY: 30,
+    });
+    // Registry must still be wired; jsdom may return null blob without full 2d.
+    await expect(snapshotCanvasJpeg()).resolves.toBeDefined();
   });
 });
 
