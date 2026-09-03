@@ -12,7 +12,7 @@ describe("SessionViewSwitcher", () => {
     );
     expect(
       getAllByRole("radio").map((button) => button.getAttribute("aria-label")),
-    ).toEqual(["Canvas", "Chat", "Graph", "Write"]);
+    ).toEqual(["Canvas", "Chat", "Graph", "Text"]);
     expect(getByLabelText("Graph").getAttribute("aria-checked")).toBe(
       "true",
     );
@@ -22,7 +22,7 @@ describe("SessionViewSwitcher", () => {
     expect(getByLabelText("Canvas").getAttribute("aria-checked")).toBe(
       "false",
     );
-    expect(getByLabelText("Write").getAttribute("aria-checked")).toBe(
+    expect(getByLabelText("Text").getAttribute("aria-checked")).toBe(
       "false",
     );
 
@@ -33,11 +33,11 @@ describe("SessionViewSwitcher", () => {
     expect(onChange).toHaveBeenCalledWith("chat");
     fireEvent.click(getByLabelText("Canvas"));
     expect(onChange).toHaveBeenCalledWith("canvas");
-    fireEvent.click(getByLabelText("Write"));
+    fireEvent.click(getByLabelText("Text"));
     expect(onChange).toHaveBeenCalledWith("file");
 
     rerender(<SessionViewSwitcher selected="file" onChange={onChange} />);
-    expect(getByLabelText("Write").getAttribute("aria-checked")).toBe(
+    expect(getByLabelText("Text").getAttribute("aria-checked")).toBe(
       "true",
     );
     expect(getByLabelText("Graph").getAttribute("aria-checked")).toBe(
@@ -45,7 +45,7 @@ describe("SessionViewSwitcher", () => {
     );
 
     onChange.mockClear();
-    fireEvent.click(getByLabelText("Write"));
+    fireEvent.click(getByLabelText("Text"));
     expect(onChange).not.toHaveBeenCalled();
     fireEvent.click(getByLabelText("Graph"));
     expect(onChange).toHaveBeenCalledWith("graph");
@@ -63,10 +63,10 @@ describe("SessionViewSwitcher", () => {
     expect(canvas.querySelector("[role='tooltip']")?.className).toContain(
       "block",
     );
-    const file = getByLabelText("Write");
+    const file = getByLabelText("Text");
     fireEvent.mouseEnter(file);
     expect(file.querySelector("[role='tooltip']")?.textContent).toBe(
-      "Write",
+      "Text",
     );
     expect(canvas.querySelector("[role='tooltip']")?.className).toContain(
       "hidden",

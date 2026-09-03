@@ -32,7 +32,7 @@ describe("GraphViewHeader session view toggle", () => {
     expect(getByLabelText("Canvas").getAttribute("aria-checked")).toBe(
       "false",
     );
-    expect(getByLabelText("Write").getAttribute("aria-checked")).toBe(
+    expect(getByLabelText("Text").getAttribute("aria-checked")).toBe(
       "false",
     );
     const history = getByLabelText("Session history");
@@ -58,7 +58,7 @@ describe("GraphViewHeader session view toggle", () => {
         onEditorOpen={onEditorOpen}
       />,
     );
-    fireEvent.click(getByLabelText("Write"));
+    fireEvent.click(getByLabelText("Text"));
     expect(onEditorOpen).toHaveBeenCalled();
     expect(onSessionViewChange).toHaveBeenCalledTimes(2);
 
@@ -74,7 +74,7 @@ describe("GraphViewHeader session view toggle", () => {
     );
     expect(getByLabelText("Session history").closest(".opacity-0")).toBeTruthy();
     expect(queryByLabelText("Previous step")).toBeNull();
-    expect(getByLabelText("Write").getAttribute("aria-checked")).toBe(
+    expect(getByLabelText("Text").getAttribute("aria-checked")).toBe(
       "false",
     );
 
@@ -91,7 +91,7 @@ describe("GraphViewHeader session view toggle", () => {
     expect(queryByLabelText("Eraser")).toBeNull();
     expect(queryByLabelText("Session history")).toBeNull();
     expect(queryByLabelText("Previous step")).toBeNull();
-    expect(getByLabelText("Write").getAttribute("aria-checked")).toBe(
+    expect(getByLabelText("Text").getAttribute("aria-checked")).toBe(
       "false",
     );
   });
