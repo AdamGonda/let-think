@@ -89,6 +89,7 @@ export function ChatComposer({
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mirrorRef = useRef<HTMLDivElement>(null);
+  const pickerRef = useRef<HTMLUListElement>(null);
   const pendingSelectionRef = useRef<number | null>(null);
   const pendingExternalFocusRef = useRef(false);
   const [caret, setCaret] = useState(input.length);
@@ -132,6 +133,13 @@ export function ChatComposer({
   const highlightIndex = pickerOpen
     ? Math.min(highlight, mentionOptions.length - 1)
     : 0;
+
+  useLayoutEffect(() => {
+    if (!pickerOpen) return;
+    pickerRef.current
+      ?.querySelector('[aria-selected="true"]')
+      ?.scrollIntoView({ block: "nearest" });
+  }, [highlightIndex, pickerOpen]);
 
   const applyMention = (token: string, queryStart: number, caretNow: number, value: string) => {
     const next = insertAtMentionToken(value, queryStart, caretNow, token);
@@ -354,6 +362,7 @@ export function ChatComposer({
       <div className="flex gap-2 items-end relative">
         {pickerOpen ? (
           <ul
+            ref={pickerRef}
             role="listbox"
             data-testid="at-mention-picker"
             className="absolute bottom-full left-0 right-10 z-30 mb-1 max-h-48 overflow-y-auto rounded-lg border border-border bg-background py-1 shadow-md"

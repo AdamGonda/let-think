@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { ChatComposer } from "./ChatComposer";
-import { setCanvasHasInk } from "@/lib/canvasSnapshot";
+import { setCanvasFrames, setCanvasHasInk } from "@/lib/canvasSnapshot";
 
 const base = {
   input: "",
@@ -93,6 +93,7 @@ describe("ChatComposer @ picker", () => {
   afterEach(() => {
     cleanup();
     setCanvasHasInk(false);
+    setCanvasFrames([]);
     vi.restoreAllMocks();
   });
 
@@ -145,6 +146,27 @@ describe("ChatComposer @ picker", () => {
     setCanvasHasInk(false);
     rerender(<ChatComposer {...base} input="@" />);
     expect(queryByRole("option", { name: /Canvas/ })).toBeNull();
+  });
+
+  it("scrolls the highlighted option into view on ArrowDown", () => {
+    const scrollIntoView = vi.fn();
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
+    setCanvasHasInk(true);
+    setCanvasFrames(
+      Array.from({ length: 8 }, (_, i) => ({
+        id: `f${i}`,
+        slug: `frame-${i + 1}`,
+        name: `frame ${i + 1}`,
+      })),
+    );
+    const { container, getByRole } = render(
+      <ChatComposer {...base} input="@" allowGraphRef />,
+    );
+    const ta = container.querySelector("textarea")!;
+    scrollIntoView.mockClear();
+    fireEvent.keyDown(ta, { key: "ArrowDown" });
+    expect(getByRole("option", { selected: true }).textContent).toMatch(/Graph/);
+    expect(scrollIntoView).toHaveBeenCalled();
   });
 
   it("Escape dismisses the picker until the @ mention ends", () => {
