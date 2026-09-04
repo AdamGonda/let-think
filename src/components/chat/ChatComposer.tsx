@@ -1,4 +1,5 @@
 import { useRef, useLayoutEffect, useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { clsx } from "clsx";
 import { layout } from "@/config";
 import { ArrowUp, Loader2, Paperclip } from "lucide-react";
@@ -19,10 +20,19 @@ import {
   subscribeCanvasFrames,
   subscribeCanvasHasInk,
 } from "@/lib/canvasSnapshot";
-import { IMAGE_PROMPT_MAX, imageFilesFromClipboard } from "@/lib/imageAttach";
+import {
+  IMAGE_PROMPT_MAX,
+  imageFilesFromDataTransfer,
+} from "@/lib/imageAttach";
 import { MessageImageThumbs } from "./MessageImageThumbs";
 
 const FOCUS_COMPOSER_EVENT = "let-think:focus-composer";
+
+function dataTransferHasFiles(
+  data: DataTransfer | null | undefined,
+): data is DataTransfer {
+  return !!data?.types.includes("Files");
+}
 
 /** Shared so the caret (textarea) and glyphs (mirror) wrap on the same metrics. */
 const COMPOSER_TEXT_LAYOUT =
@@ -90,8 +100,13 @@ export function ChatComposer({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const mirrorRef = useRef<HTMLDivElement>(null);
   const pickerRef = useRef<HTMLUListElement>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const dropRootRef = useRef<HTMLElement | null>(null);
+  const addImageFilesRef = useRef(onAddImageFiles);
+  const isDisabledRef = useRef(isDisabled);
   const pendingSelectionRef = useRef<number | null>(null);
   const pendingExternalFocusRef = useRef(false);
+  const [dropActive, setDropActive] = useState(false);
   const [caret, setCaret] = useState(input.length);
   const [highlight, setHighlight] = useState(0);
   const [dismissedQueryStart, setDismissedQueryStart] = useState<number | null>(
@@ -100,11 +115,67 @@ export function ChatComposer({
   const [canvasHasInk, setCanvasHasInk] = useState(getCanvasHasInk);
   const [canvasFrames, setCanvasFramesState] = useState(getCanvasFrames);
 
+  addImageFilesRef.current = onAddImageFiles;
+  isDisabledRef.current = isDisabled;
+
   useEffect(() => subscribeCanvasHasInk(() => setCanvasHasInk(getCanvasHasInk())), []);
   useEffect(
     () => subscribeCanvasFrames(() => setCanvasFramesState(getCanvasFrames())),
     [],
   );
+
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const root = el.closest("[data-image-drop-root]") ?? el;
+    dropRootRef.current = root;
+    let depth = 0;
+
+    const reset = () => {
+      depth = 0;
+      setDropActive(false);
+    };
+
+    const onDragEnter = (e: DragEvent) => {
+      if (!dataTransferHasFiles(e.dataTransfer)) return;
+      e.preventDefault();
+      depth += 1;
+      setDropActive(true);
+    };
+    const onDragLeave = () => {
+      depth -= 1;
+      if (depth <= 0) reset();
+    };
+    const onDropFiles = (e: DragEvent) => {
+      const data = e.dataTransfer;
+      if (!dataTransferHasFiles(data)) return;
+      e.preventDefault();
+      reset();
+      const add = addImageFilesRef.current;
+      if (!add || isDisabledRef.current) return;
+      const files = [...data.files];
+      if (files.length > 0) add(files);
+    };
+    const onDragOver = (e: DragEvent) => {
+      const data = e.dataTransfer;
+      if (!dataTransferHasFiles(data)) return;
+      e.preventDefault();
+      data.dropEffect = "copy";
+    };
+
+    root.addEventListener("dragenter", onDragEnter);
+    root.addEventListener("dragleave", onDragLeave);
+    root.addEventListener("dragover", onDragOver);
+    root.addEventListener("drop", onDropFiles);
+    return () => {
+      root.removeEventListener("dragenter", onDragEnter);
+      root.removeEventListener("dragleave", onDragLeave);
+      root.removeEventListener("dragover", onDragOver);
+      root.removeEventListener("drop", onDropFiles);
+      dropRootRef.current = null;
+      setDropActive(false);
+    };
+  }, []);
 
   const frameSlugs = canvasFrames.map((f) => f.slug);
   const mentionArgs = {
@@ -334,11 +405,27 @@ export function ChatComposer({
 
   const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
     if (!onAddImageFiles || isDisabled) return;
-    const files = imageFilesFromClipboard(e.clipboardData);
+    const files = imageFilesFromDataTransfer(e.clipboardData);
     if (files.length === 0) return;
     e.preventDefault();
     onAddImageFiles(files);
   };
+
+  const dropOverlay =
+    dropActive && dropRootRef.current
+      ? createPortal(
+          <div
+            className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center rounded-md border-2 border-dashed border-foreground/40 bg-background/70"
+            data-testid="composer-image-dropzone"
+            aria-hidden
+          >
+            <span className="text-sm text-foreground">
+              Drop images to attach
+            </span>
+          </div>,
+          dropRootRef.current,
+        )
+      : null;
 
   const form = (
     <form
@@ -511,8 +598,9 @@ export function ChatComposer({
   if (compact) {
     return (
       <div
+        ref={rootRef}
         className={clsx(
-          "shrink-0 border-t bg-background px-3 py-2",
+          "relative shrink-0 border-t bg-background px-3 py-2",
           sessionLoadingFrame
             ? "border-t-2 border-(--session-accent) session-loading-chat-chrome-pulse"
             : "border-border",
@@ -521,16 +609,19 @@ export function ChatComposer({
         data-composer-chrome="dock"
       >
         {form}
+        {dropOverlay}
       </div>
     );
   }
 
   return (
     <div
-      className="flex flex-col items-center px-4 pt-4 shrink-0"
+      ref={rootRef}
+      className="relative flex flex-col items-center px-4 pt-4 shrink-0"
       data-tour="session-input"
       data-composer-chrome="island"
     >
+      {dropOverlay}
       <div className={clsx("relative w-full", layout.sessionInputIslandMaxWidthClass)}>
         <div className="invisible pointer-events-none w-full" aria-hidden>
           <div

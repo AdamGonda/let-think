@@ -26,7 +26,9 @@ export function imageFilesToAdd(
   return files.filter((file) => isAcceptedImageType(file.type)).slice(0, room);
 }
 
-export function imageFilesFromClipboard(data: DataTransfer | null): File[] {
+export function imageFilesFromDataTransfer(
+  data: DataTransfer | null,
+): File[] {
   if (!data) return [];
   const fromFiles = [...data.files].filter((file) =>
     isAcceptedImageType(file.type),
@@ -40,6 +42,8 @@ export function imageFilesFromClipboard(data: DataTransfer | null): File[] {
   }
   return fromItems;
 }
+
+export const imageFilesFromClipboard = imageFilesFromDataTransfer;
 
 export async function prepareImageBlob(source: Blob): Promise<Blob> {
   const bitmap = await createImageBitmap(source);

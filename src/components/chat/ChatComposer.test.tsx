@@ -206,4 +206,52 @@ describe("ChatComposer images", () => {
     expect(getByTestId("composer-image-chip")).toBeTruthy();
     expect(getByLabelText("Generate response")).toHaveProperty("disabled", false);
   });
+
+  it("appends dropped image files from the drop root", () => {
+    const onAddImageFiles = vi.fn();
+    const file = new File(["x"], "shot.png", { type: "image/png" });
+    const { getByTestId } = render(
+      <div data-image-drop-root data-testid="drop-root">
+        <ChatComposer {...base} onAddImageFiles={onAddImageFiles} />
+      </div>,
+    );
+    const dataTransfer = {
+      files: [file],
+      types: ["Files"],
+      items: [],
+      dropEffect: "none",
+    };
+    fireEvent.dragEnter(getByTestId("drop-root"), { dataTransfer });
+    expect(getByTestId("composer-image-dropzone")).toBeTruthy();
+    fireEvent.drop(getByTestId("drop-root"), { dataTransfer });
+    expect(onAddImageFiles).toHaveBeenCalledTimes(1);
+    expect(onAddImageFiles.mock.calls[0]?.[0]).toEqual([file]);
+  });
+
+  it("does not throw on drop when attach is unavailable", () => {
+    const file = new File(["x"], "shot.png", { type: "image/png" });
+    const dataTransfer = {
+      files: [file],
+      types: ["Files"],
+      items: [],
+      dropEffect: "none",
+    };
+    const { getByTestId, rerender } = render(
+      <div data-image-drop-root data-testid="drop-root">
+        <ChatComposer {...base} />
+      </div>,
+    );
+    expect(() =>
+      fireEvent.drop(getByTestId("drop-root"), { dataTransfer }),
+    ).not.toThrow();
+
+    rerender(
+      <div data-image-drop-root data-testid="drop-root">
+        <ChatComposer {...base} onAddImageFiles={vi.fn()} isDisabled />
+      </div>,
+    );
+    expect(() =>
+      fireEvent.drop(getByTestId("drop-root"), { dataTransfer }),
+    ).not.toThrow();
+  });
 });

@@ -100,7 +100,10 @@ export function AppContentGraphSurface({
         />
       )}
       {chatOpen ? (
-        <div className="relative flex min-h-0 flex-1  flex-col">
+        <div
+          className="relative flex min-h-0 flex-1  flex-col"
+          data-image-drop-root
+        >
           <div className="pointer-events-none absolute inset-y-0 left-4 z-30 flex items-start pt-[130px]">
             <div className="pointer-events-auto">
               <FileChatList
@@ -126,6 +129,7 @@ export function AppContentGraphSurface({
           graphOpen ? "flex" : "hidden",
         )}
         inert={!graphOpen ? true : undefined}
+        data-image-drop-root
       >
         {sessionPastFrame ? (
           <div
