@@ -1614,13 +1614,15 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
         data-canvas-chrome
         className="absolute top-1/2 left-3 z-10 flex -translate-y-1/2 flex-col items-center gap-2"
       >
-        <CanvasColorPalette
-          color={inkColor}
-          onColorChange={(next) => {
-            inkColorRef.current = next;
-            setInkColor(next);
-          }}
-        />
+        {tool !== "erase" ? (
+          <CanvasColorPalette
+            color={inkColor}
+            onColorChange={(next) => {
+              inkColorRef.current = next;
+              setInkColor(next);
+            }}
+          />
+        ) : null}
         {tool === "erase" ? (
           <CanvasSizeSlider
             value={eraseSize}
