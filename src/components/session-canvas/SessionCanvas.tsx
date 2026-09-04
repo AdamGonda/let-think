@@ -860,18 +860,21 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
   const [textSize, setTextSize] = useState(DEFAULT_TEXT_SIZE);
   const [inkColor, setInkColor] = useState<string>(DEFAULT_INK_COLOR);
   const [selectedFrameId, setSelectedFrameId] = useState<string | null>(null);
-  const [framesTick, setFramesTick] = useState(0);
+  const [frames, setFrames] = useState<CanvasFrame[]>([]);
   /** One-shot hydrate viewport; local viewportOverride wins after pan/zoom. */
   const [hydratedViewport, setHydratedViewport] =
     useState<CanvasViewport | null>(null);
 
   const convex = useConvex();
   const convexRef = useRef(convex);
-  convexRef.current = convex;
   const updateCanvas = useMutation(api.sessions.updateCanvas);
   const updateCanvasViewport = useMutation(api.sessions.updateCanvasViewport);
   const viewport =
     viewportOverride ?? hydratedViewport ?? identityViewport();
+
+  useEffect(() => {
+    convexRef.current = convex;
+  }, [convex]);
 
   useEffect(() => {
     textSizeRef.current = textSize;
@@ -887,12 +890,16 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
     bumpPersist();
   }, [bumpPersist]);
 
+  const syncFramesUi = useCallback(() => {
+    setFrames(cloneFrames(framesRef.current));
+  }, []);
+
   const publishFrames = useCallback(() => {
     setCanvasFrames(
       framesRef.current.map(({ id, name, slug }) => ({ id, name, slug })),
     );
-    setFramesTick((n) => n + 1);
-  }, []);
+    syncFramesUi();
+  }, [syncFramesUi]);
 
   const pushHistory = useCallback(() => {
     pushStrokeHistory(
@@ -1029,6 +1036,7 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
     framesRef.current = [];
     selectedFrameIdRef.current = null;
     setSelectedFrameId(null);
+    setFrames([]);
     clearStrokeHistory(historyPastRef.current, historyFutureRef.current);
     framesPastRef.current.length = 0;
     framesFutureRef.current.length = 0;
@@ -1704,7 +1712,7 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
       framesRef.current = framesRef.current.map((f) =>
         f.id === frameMove.id ? { ...f, x: next.x, y: next.y } : f,
       );
-      setFramesTick((n) => n + 1);
+      syncFramesUi();
       redrawRef.current();
       return;
     }
@@ -1731,7 +1739,7 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
         framesRef.current = framesRef.current.map((f) =>
           f.id === o.id ? { ...f, ...rect } : f,
         );
-        setFramesTick((n) => n + 1);
+        syncFramesUi();
         redrawRef.current();
       }
       return;
@@ -1921,11 +1929,10 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
     ) * viewport.scale;
   const eraseScreen = eraseCursor ? worldToScreen(viewport, eraseCursor) : null;
   const textScreen = textDraft ? worldToScreen(viewport, textDraft) : null;
-  void framesTick;
   const selectedFrame =
     selectedFrameId == null
       ? null
-      : framesRef.current.find((f) => f.id === selectedFrameId) ?? null;
+      : frames.find((f) => f.id === selectedFrameId) ?? null;
   const selectedFrameScreen = selectedFrame
     ? {
         ...worldToScreen(viewport, { x: selectedFrame.x, y: selectedFrame.y }),
@@ -1999,7 +2006,7 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
       framesRef.current = framesRef.current.map((f) =>
         f.id === o.id ? { ...f, ...rect } : f,
       );
-      setFramesTick((n) => n + 1);
+      syncFramesUi();
       redrawRef.current();
     }
   };
