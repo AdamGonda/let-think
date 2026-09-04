@@ -44,7 +44,7 @@ export const updateName = mutation({
   },
 });
 
-/** Lean workspace file — omit thinkingNotes / userId so list fan-out stays light. */
+/** Lean workspace file for the sidebar (title + ids only). */
 const workspaceFileValidator = v.object({
   _id: v.id("files"),
   _creationTime: v.number(),
@@ -91,8 +91,6 @@ export const listWithSessions = query({
     for (const s of allSessions) {
       if (s.fileId) sessionByFileId.set(s.fileId, s);
     }
-    // ponytail: still reads full file docs (incl. thinkingNotes) server-side; lean
-    // return cuts subscriber payload. Split notes table if DB read bytes stay hot.
     const toWorkspaceFile = (file: (typeof allFiles)[0]) => ({
       _id: file._id,
       _creationTime: file._creationTime,

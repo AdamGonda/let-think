@@ -7,7 +7,8 @@ async function deleteRowsBySession(
     | "messages"
     | "chatMessages"
     | "sessionConceptGraphs"
-    | "sessionCanvases",
+    | "sessionCanvases"
+    | "sessionDrafts",
   sessionId: Id<"sessions">,
 ) {
   const rows = await ctx.db
@@ -28,4 +29,5 @@ export async function deleteSessionOwnedRows(
   await deleteRowsBySession(ctx, "chatMessages", sessionId);
   await deleteRowsBySession(ctx, "sessionConceptGraphs", sessionId);
   await deleteRowsBySession(ctx, "sessionCanvases", sessionId);
+  await deleteRowsBySession(ctx, "sessionDrafts", sessionId);
 }

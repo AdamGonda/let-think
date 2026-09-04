@@ -12,6 +12,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { requireFileOwner, titleFromFirstMessage } from "./files";
 import { imageUrlsForIds } from "./fileStorage";
 import { IMAGE_PROMPT_MAX } from "./constants";
+import { loadFileNotes } from "./lib/editorSidecars";
 
 async function requireChatSessionOwner(
   ctx: MutationCtx,
@@ -302,7 +303,11 @@ export const internalLoadForSend = internalQuery({
     let thinkingNotes: string | null = null;
     if (includeWriting) {
       const file = await ctx.db.get(chatSession.fileId);
-      thinkingNotes = file?.thinkingNotes ?? "";
+      thinkingNotes = await loadFileNotes(
+        ctx,
+        chatSession.fileId,
+        file?.thinkingNotes,
+      );
     }
     let conceptGraph: {
       nodes: Array<{ id: string; name: string; description?: string }>;

@@ -7,6 +7,12 @@ import {
 import type { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { deleteSessionOwnedRows } from "./lib/sessionOwned";
+import {
+  deleteFileNotes,
+  loadFileNotes,
+  loadSessionDraft,
+  upsertFileNotes,
+} from "./lib/editorSidecars";
 import { SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS } from "./constants";
 
 export async function requireFileOwner(ctx: MutationCtx, fileId: Id<"files">) {
@@ -46,7 +52,6 @@ export async function createFileWithSession(
     projectId: args.projectId,
     title,
     createdAt: now,
-    ...(args.thinkingNotes ? { thinkingNotes: args.thinkingNotes } : {}),
   });
   const sessionId = await ctx.db.insert("sessions", {
     userId: args.userId,
@@ -55,6 +60,9 @@ export async function createFileWithSession(
     title,
     createdAt: now,
   });
+  if (args.thinkingNotes) {
+    await upsertFileNotes(ctx, fileId, args.thinkingNotes);
+  }
   return { fileId, sessionId };
 }
 
@@ -117,7 +125,7 @@ export const updateThinkingNotes = mutation({
   returns: v.null(),
   handler: async (ctx, { fileId, thinkingNotes }) => {
     await requireFileOwner(ctx, fileId);
-    await ctx.db.patch(fileId, { thinkingNotes });
+    await upsertFileNotes(ctx, fileId, thinkingNotes);
     return null;
   },
 });
@@ -141,8 +149,15 @@ export const getEditorFields = query({
       .withIndex("by_file", (q) => q.eq("fileId", fileId))
       .first();
     return {
-      draftInput: session?.draftInput ?? "",
-      thinkingNotes: file.thinkingNotes ?? session?.thinkingNotes ?? "",
+      draftInput: session
+        ? await loadSessionDraft(ctx, session._id, session.draftInput)
+        : "",
+      thinkingNotes: await loadFileNotes(
+        ctx,
+        fileId,
+        file.thinkingNotes,
+        session?.thinkingNotes,
+      ),
     };
   },
 });
@@ -177,6 +192,7 @@ export async function deleteFileCascade(
     await deleteSessionOwnedRows(ctx, session._id);
     await ctx.db.delete(session._id);
   }
+  await deleteFileNotes(ctx, fileId);
   await ctx.db.delete(fileId);
 }
 

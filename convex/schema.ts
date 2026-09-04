@@ -96,6 +96,7 @@ export default defineSchema({
     userId: v.optional(v.id("users")),
     projectId: v.optional(v.id("projects")),
     title: v.string(),
+    // leftover; do not write. Notes live on fileNotes.
     thinkingNotes: v.optional(v.string()),
     createdAt: v.number(),
   })
@@ -109,7 +110,7 @@ export default defineSchema({
     fileId: v.optional(v.id("files")),
     title: v.string(),
     createdAt: v.number(),
-    /** Graph composer draft */
+    // leftover; do not write. Graph draft lives on sessionDrafts.
     draftInput: v.optional(v.string()),
     // ponytail: leftover on pre-files session rows; do not write. Strip then drop.
     chatDraftInput: v.optional(v.string()),
@@ -131,6 +132,18 @@ export default defineSchema({
   })
     .index("by_file", ["fileId", "createdAt"])
     .index("by_user", ["userId", "createdAt"]),
+
+  /** Graph composer draft. Sidecar so typing does not invalidate session-scoped queries. */
+  sessionDrafts: defineTable({
+    sessionId: v.id("sessions"),
+    draftInput: v.string(),
+  }).index("by_session", ["sessionId"]),
+
+  /** Thinking notes. Sidecar so listing files stays light. */
+  fileNotes: defineTable({
+    fileId: v.id("files"),
+    thinkingNotes: v.string(),
+  }).index("by_file", ["fileId"]),
 
   /** Concept graph per session — kept separate so listing sessions stays bandwidth-light. */
   sessionConceptGraphs: defineTable({

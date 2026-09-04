@@ -18,6 +18,7 @@ import type * as fileStorage from "../fileStorage.js";
 import type * as files from "../files.js";
 import type * as http from "../http.js";
 import type * as lib_access from "../lib/access.js";
+import type * as lib_editorSidecars from "../lib/editorSidecars.js";
 import type * as lib_messageImages from "../lib/messageImages.js";
 import type * as lib_sessionOwned from "../lib/sessionOwned.js";
 import type * as lib_transactionalEmails_resend from "../lib/transactionalEmails/resend.js";
@@ -45,6 +46,7 @@ declare const fullApi: ApiFromModules<{
   files: typeof files;
   http: typeof http;
   "lib/access": typeof lib_access;
+  "lib/editorSidecars": typeof lib_editorSidecars;
   "lib/messageImages": typeof lib_messageImages;
   "lib/sessionOwned": typeof lib_sessionOwned;
   "lib/transactionalEmails/resend": typeof lib_transactionalEmails_resend;

@@ -18,6 +18,7 @@ import {
   canvasViewportValue,
 } from "./schema";
 import { imageUrlsForIds } from "./fileStorage";
+import { loadFileNotes, upsertSessionDraft } from "./lib/editorSidecars";
 import { IMAGE_PROMPT_MAX } from "./constants";
 
 async function requireSessionOwner(ctx: MutationCtx, sessionId: Id<"sessions">) {
@@ -340,7 +341,12 @@ export const internalLoadSessionForChatSend = internalQuery({
     if (includeWriting) {
       if (session.fileId) {
         const file = await ctx.db.get(session.fileId);
-        thinkingNotes = file?.thinkingNotes ?? session.thinkingNotes ?? "";
+        thinkingNotes = await loadFileNotes(
+          ctx,
+          session.fileId,
+          file?.thinkingNotes,
+          session.thinkingNotes,
+        );
       } else {
         thinkingNotes = session.thinkingNotes ?? "";
       }
@@ -365,11 +371,13 @@ export const updateDraft = mutation({
     sessionId: v.id("sessions"),
     draftInput: v.string(),
   },
+  returns: v.null(),
   handler: async (ctx, { sessionId, draftInput }) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) return;
+    if (!userId) return null;
     const session = await ctx.db.get(sessionId);
-    if (!session || session.userId !== userId) return;
-    await ctx.db.patch(sessionId, { draftInput });
+    if (!session || session.userId !== userId) return null;
+    await upsertSessionDraft(ctx, sessionId, draftInput);
+    return null;
   },
 });
