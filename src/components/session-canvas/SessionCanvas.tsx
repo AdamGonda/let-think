@@ -21,8 +21,17 @@ import {
 } from "../../lib/imageAttach";
 import {
   registerCanvasSnapshot,
+  registerFrameSnapshot,
+  setCanvasFrames,
   setCanvasHasInk,
 } from "../../lib/canvasSnapshot";
+import {
+  newFrameId,
+  normalizeFrameRect,
+  slugifyFrameName,
+  validateFrameName,
+  type CanvasFrame,
+} from "../../lib/canvasFrames";
 import { thinStrokePoints } from "./thinStrokePoints";
 
 type Point = { x: number; y: number };
@@ -485,9 +494,17 @@ export function strokeBounds(
 export function strokesToJpegBlob(
   strokes: Stroke[],
   background = DEFAULT_SNAPSHOT_BG,
+  clipBounds?: { x: number; y: number; w: number; h: number } | null,
 ): Promise<Blob | null> {
   if (!strokesHaveInk(strokes)) return Promise.resolve(null);
-  const bounds = strokeBounds(strokes);
+  const bounds = clipBounds
+    ? {
+        x: clipBounds.x,
+        y: clipBounds.y,
+        w: Math.max(1, clipBounds.w),
+        h: Math.max(1, clipBounds.h),
+      }
+    : strokeBounds(strokes);
   if (!bounds) return Promise.resolve(null);
   const scale = Math.min(
     1,
@@ -504,6 +521,11 @@ export function strokesToJpegBlob(
   ctx.fillRect(0, 0, width, height);
   ctx.scale(scale, scale);
   ctx.translate(-bounds.x, -bounds.y);
+  if (clipBounds) {
+    ctx.beginPath();
+    ctx.rect(bounds.x, bounds.y, bounds.w, bounds.h);
+    ctx.clip();
+  }
   setupInk(ctx);
   drawStrokesLayered(ctx, strokes);
   return new Promise((resolve) => {
@@ -519,6 +541,55 @@ export function strokesToJpegBlob(
       IMAGE_JPEG_QUALITY,
     );
   });
+}
+
+export function drawCanvasFrames(
+  ctx: CanvasRenderingContext2D,
+  frames: ReadonlyArray<CanvasFrame>,
+  selectedId: string | null,
+  draft: { x: number; y: number; w: number; h: number } | null,
+): void {
+  ctx.save();
+  ctx.globalCompositeOperation = "source-over";
+  ctx.setLineDash([6, 4]);
+  ctx.lineWidth = 1.5;
+  ctx.font = '12px "DM Sans", ui-sans-serif, system-ui, sans-serif';
+  ctx.textBaseline = "bottom";
+  for (const frame of frames) {
+    const selected = frame.id === selectedId;
+    ctx.strokeStyle = selected ? "#3b82f6" : "rgba(255,255,255,0.45)";
+    ctx.fillStyle = selected ? "#3b82f6" : "rgba(255,255,255,0.55)";
+    ctx.strokeRect(frame.x, frame.y, frame.w, frame.h);
+    const label = `@${frame.slug}`;
+    ctx.fillText(label, frame.x, frame.y - 4);
+  }
+  if (draft) {
+    ctx.strokeStyle = "rgba(59,130,246,0.8)";
+    ctx.strokeRect(draft.x, draft.y, draft.w, draft.h);
+  }
+  ctx.restore();
+}
+
+export function findFrameAt(
+  frames: ReadonlyArray<CanvasFrame>,
+  point: Point,
+): number | null {
+  for (let i = frames.length - 1; i >= 0; i--) {
+    const f = frames[i]!;
+    if (
+      point.x >= f.x &&
+      point.x <= f.x + f.w &&
+      point.y >= f.y &&
+      point.y <= f.y + f.h
+    ) {
+      return i;
+    }
+  }
+  return null;
+}
+
+export function cloneFrames(frames: ReadonlyArray<CanvasFrame>): CanvasFrame[] {
+  return structuredClone(frames as CanvasFrame[]);
 }
 
 function canvasScreenPoint(
@@ -724,9 +795,33 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const textElRef = useRef<HTMLDivElement>(null);
   const strokesRef = useRef<Stroke[]>([]);
+  const framesRef = useRef<CanvasFrame[]>([]);
   const historyPastRef = useRef<Stroke[][]>([]);
   const historyFutureRef = useRef<Stroke[][]>([]);
+  const framesPastRef = useRef<CanvasFrame[][]>([]);
+  const framesFutureRef = useRef<CanvasFrame[][]>([]);
   const liveStrokeRef = useRef<Stroke | null>(null);
+  const frameDraftRef = useRef<{
+    pointerId: number;
+    origin: Point;
+    current: Point;
+  } | null>(null);
+  const selectedFrameIdRef = useRef<string | null>(null);
+  const frameMoveRef = useRef<{
+    pointerId: number;
+    start: Point;
+    originX: number;
+    originY: number;
+    id: string;
+    historyPushed?: boolean;
+  } | null>(null);
+  const frameResizeRef = useRef<{
+    pointerId: number;
+    start: Point;
+    origin: CanvasFrame;
+    corner: "nw" | "ne" | "sw" | "se";
+    historyPushed?: boolean;
+  } | null>(null);
   const pointersRef = useRef(new Map<number, Point>());
   const drawingPointerIdRef = useRef<number | null>(null);
   const gesturingRef = useRef(false);
@@ -764,6 +859,8 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
   const [eraseSize, setEraseSize] = useState(DEFAULT_ERASE_SIZE);
   const [textSize, setTextSize] = useState(DEFAULT_TEXT_SIZE);
   const [inkColor, setInkColor] = useState<string>(DEFAULT_INK_COLOR);
+  const [selectedFrameId, setSelectedFrameId] = useState<string | null>(null);
+  const [framesTick, setFramesTick] = useState(0);
   /** One-shot hydrate viewport; local viewportOverride wins after pan/zoom. */
   const [hydratedViewport, setHydratedViewport] =
     useState<CanvasViewport | null>(null);
@@ -790,6 +887,23 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
     bumpPersist();
   }, [bumpPersist]);
 
+  const publishFrames = useCallback(() => {
+    setCanvasFrames(
+      framesRef.current.map(({ id, name, slug }) => ({ id, name, slug })),
+    );
+    setFramesTick((n) => n + 1);
+  }, []);
+
+  const pushHistory = useCallback(() => {
+    pushStrokeHistory(
+      historyPastRef.current,
+      historyFutureRef.current,
+      strokesRef.current,
+    );
+    framesPastRef.current.push(cloneFrames(framesRef.current));
+    framesFutureRef.current.length = 0;
+  }, []);
+
   const markViewportDirty = useCallback(() => {
     viewportDirtyRef.current = true;
     bumpPersist();
@@ -807,6 +921,7 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
         sessionId,
         strokes: strokesRef.current,
         viewport: viewportRef.current,
+        frames: framesRef.current,
       });
     } else {
       void updateCanvasViewport({
@@ -847,6 +962,22 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
         hideIndex: textDraftRef.current?.editIndex,
         live: liveStrokeRef.current,
       });
+      const draft = frameDraftRef.current;
+      const draftRect = draft
+        ? normalizeFrameRect(
+            draft.origin.x,
+            draft.origin.y,
+            draft.current.x,
+            draft.current.y,
+            0,
+          )
+        : null;
+      drawCanvasFrames(
+        ctx,
+        framesRef.current,
+        selectedFrameIdRef.current,
+        draftRect,
+      );
     };
 
     redrawRef.current = redraw;
@@ -863,13 +994,26 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
     registerCanvasSnapshot(() =>
       strokesToJpegBlob(strokesRef.current, snapshotBg()),
     );
+    registerFrameSnapshot((slug) => {
+      const frame = framesRef.current.find((f) => f.slug === slug);
+      if (!frame) return Promise.resolve(null);
+      return strokesToJpegBlob(strokesRef.current, snapshotBg(), {
+        x: frame.x,
+        y: frame.y,
+        w: frame.w,
+        h: frame.h,
+      });
+    });
     setCanvasHasInk(strokesHaveInk(strokesRef.current));
+    publishFrames();
     return () => {
       observer.disconnect();
       registerCanvasSnapshot(null);
+      registerFrameSnapshot(null);
       setCanvasHasInk(false);
+      setCanvasFrames([]);
     };
-  }, []);
+  }, [publishFrames]);
 
   useEffect(() => {
     persistCanvasRef.current = persistCanvas;
@@ -882,9 +1026,15 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
     setViewport(null);
     setHydratedViewport(null);
     strokesRef.current = [];
+    framesRef.current = [];
+    selectedFrameIdRef.current = null;
+    setSelectedFrameId(null);
     clearStrokeHistory(historyPastRef.current, historyFutureRef.current);
+    framesPastRef.current.length = 0;
+    framesFutureRef.current.length = 0;
     viewportRef.current = identityViewport();
     setCanvasHasInk(false);
+    setCanvasFrames([]);
     redrawRef.current();
 
     if (!sessionId) return;
@@ -903,17 +1053,23 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
         strokesRef.current = storedCanvas.strokes
           .map((stroke) => normalizeStoredStroke(stroke as Stroke))
           .filter((stroke): stroke is Stroke => stroke != null);
+        framesRef.current = cloneFrames(
+          (storedCanvas.frames ?? []) as CanvasFrame[],
+        );
         clearStrokeHistory(historyPastRef.current, historyFutureRef.current);
+        framesPastRef.current.length = 0;
+        framesFutureRef.current.length = 0;
         viewportRef.current = storedCanvas.viewport;
         setHydratedViewport(storedCanvas.viewport);
         setCanvasHasInk(strokesHaveInk(strokesRef.current));
+        publishFrames();
         redrawRef.current();
       });
 
     return () => {
       cancelled = true;
     };
-  }, [sessionId]);
+  }, [sessionId, publishFrames]);
 
   useEffect(() => {
     return () => {
@@ -965,6 +1121,23 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
           gesturingRef.current = true;
         }
       }
+      if (
+        (event.key === "Delete" || event.key === "Backspace") &&
+        selectedFrameIdRef.current &&
+        !isTypingTarget(event.target) &&
+        tool === "frame"
+      ) {
+        event.preventDefault();
+        const id = selectedFrameIdRef.current;
+        pushHistory();
+        framesRef.current = framesRef.current.filter((f) => f.id !== id);
+        selectedFrameIdRef.current = null;
+        setSelectedFrameId(null);
+        markStrokesDirty();
+        publishFrames();
+        redrawRef.current();
+        return;
+      }
       const undo = isUndoHotkey(event);
       const redo = isRedoHotkey(event);
       if ((!undo && !redo) || isTypingTarget(event.target)) return;
@@ -983,9 +1156,21 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
           historyFutureRef.current,
           strokesRef.current,
         );
-        if (restored) {
+        const restoredFrames = framesPastRef.current.pop();
+        if (restored && restoredFrames) {
+          framesFutureRef.current.push(cloneFrames(framesRef.current));
+          strokesRef.current = restored;
+          framesRef.current = restoredFrames;
+          markStrokesDirty();
+          publishFrames();
+          selectedFrameIdRef.current = null;
+          setSelectedFrameId(null);
+        } else if (restored) {
+          // Stroke-only history entry (should not happen after frames land).
           strokesRef.current = restored;
           markStrokesDirty();
+        } else if (restoredFrames) {
+          framesPastRef.current.push(restoredFrames);
         }
       } else {
         const restored = redoStrokeHistory(
@@ -993,9 +1178,20 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
           historyFutureRef.current,
           strokesRef.current,
         );
-        if (restored) {
+        const restoredFrames = framesFutureRef.current.pop();
+        if (restored && restoredFrames) {
+          framesPastRef.current.push(cloneFrames(framesRef.current));
+          strokesRef.current = restored;
+          framesRef.current = restoredFrames;
+          markStrokesDirty();
+          publishFrames();
+          selectedFrameIdRef.current = null;
+          setSelectedFrameId(null);
+        } else if (restored) {
           strokesRef.current = restored;
           markStrokesDirty();
+        } else if (restoredFrames) {
+          framesFutureRef.current.push(restoredFrames);
         }
       }
       setCanvasHasInk(strokesHaveInk(strokesRef.current));
@@ -1015,7 +1211,7 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
       window.removeEventListener("keyup", onKeyUp);
       window.removeEventListener("blur", onBlur);
     };
-  }, [active, markStrokesDirty]);
+  }, [active, markStrokesDirty, publishFrames, pushHistory, tool]);
 
   const textDraftOpen = textDraft != null;
   const textDraftEditIndex = textDraft?.editIndex ?? null;
@@ -1069,11 +1265,7 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
     textDraftRef.current = null;
     setTextDraft(null);
     if (editIndex != null) {
-      pushStrokeHistory(
-        historyPastRef.current,
-        historyFutureRef.current,
-        strokesRef.current,
-      );
+      pushHistory();
       if (!stroke) {
         strokesRef.current = strokesRef.current.filter((_, i) => i !== editIndex);
       } else {
@@ -1082,11 +1274,7 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
         );
       }
     } else if (stroke) {
-      pushStrokeHistory(
-        historyPastRef.current,
-        historyFutureRef.current,
-        strokesRef.current,
-      );
+      pushHistory();
       strokesRef.current.push(stroke);
     }
     if (editIndex != null || stroke) markStrokesDirty();
@@ -1324,6 +1512,34 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
       return;
     }
 
+    if (!erase && tool === "frame") {
+      const point = worldPoint(canvas, event.nativeEvent, viewportRef.current);
+      const hit = findFrameAt(framesRef.current, point);
+      if (hit != null) {
+        const frame = framesRef.current[hit]!;
+        selectedFrameIdRef.current = frame.id;
+        setSelectedFrameId(frame.id);
+        frameMoveRef.current = {
+          pointerId: event.pointerId,
+          start: { x: event.clientX, y: event.clientY },
+          originX: frame.x,
+          originY: frame.y,
+          id: frame.id,
+        };
+        redrawRef.current();
+        return;
+      }
+      selectedFrameIdRef.current = null;
+      setSelectedFrameId(null);
+      frameDraftRef.current = {
+        pointerId: event.pointerId,
+        origin: point,
+        current: point,
+      };
+      redrawRef.current();
+      return;
+    }
+
     drawingPointerIdRef.current = event.nativeEvent.pointerId;
     inkBrokenRef.current = false;
     const userSize = erase ? eraseSize : DEFAULT_PEN_SIZE;
@@ -1400,11 +1616,7 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
         event.clientY - pending.start.y,
       );
       if (dist < TEXT_MOVE_THRESHOLD) return true;
-      pushStrokeHistory(
-        historyPastRef.current,
-        historyFutureRef.current,
-        strokesRef.current,
-      );
+      pushHistory();
       textMoveRef.current = pending;
     }
     const move = textMoveRef.current;
@@ -1458,6 +1670,72 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
     }
 
     if (applyCommittedTextMove(event)) return;
+
+    const frameDraft = frameDraftRef.current;
+    if (frameDraft && frameDraft.pointerId === id) {
+      event.preventDefault();
+      frameDraft.current = worldPoint(
+        canvas,
+        event.nativeEvent,
+        viewportRef.current,
+      );
+      redrawRef.current();
+      return;
+    }
+
+    const frameMove = frameMoveRef.current;
+    if (frameMove && frameMove.pointerId === id) {
+      event.preventDefault();
+      if (!frameMove.historyPushed) {
+        const dist = Math.hypot(
+          event.clientX - frameMove.start.x,
+          event.clientY - frameMove.start.y,
+        );
+        if (dist < TEXT_MOVE_THRESHOLD) return;
+        pushHistory();
+        frameMove.historyPushed = true;
+      }
+      const next = moveWorldByScreenDelta(
+        { x: frameMove.originX, y: frameMove.originY },
+        event.clientX - frameMove.start.x,
+        event.clientY - frameMove.start.y,
+        viewportRef.current.scale,
+      );
+      framesRef.current = framesRef.current.map((f) =>
+        f.id === frameMove.id ? { ...f, x: next.x, y: next.y } : f,
+      );
+      setFramesTick((n) => n + 1);
+      redrawRef.current();
+      return;
+    }
+
+    const frameResize = frameResizeRef.current;
+    if (frameResize && frameResize.pointerId === id) {
+      event.preventDefault();
+      if (!frameResize.historyPushed) {
+        pushHistory();
+        frameResize.historyPushed = true;
+      }
+      const world = worldPoint(canvas, event.nativeEvent, viewportRef.current);
+      const o = frameResize.origin;
+      let x0 = o.x;
+      let y0 = o.y;
+      let x1 = o.x + o.w;
+      let y1 = o.y + o.h;
+      if (frameResize.corner.includes("w")) x0 = world.x;
+      if (frameResize.corner.includes("e")) x1 = world.x;
+      if (frameResize.corner.includes("n")) y0 = world.y;
+      if (frameResize.corner.includes("s")) y1 = world.y;
+      const rect = normalizeFrameRect(x0, y0, x1, y1, 8);
+      if (rect) {
+        framesRef.current = framesRef.current.map((f) =>
+          f.id === o.id ? { ...f, ...rect } : f,
+        );
+        setFramesTick((n) => n + 1);
+        redrawRef.current();
+      }
+      return;
+    }
 
     if (drawingPointerIdRef.current !== id) return;
     const stroke = liveStrokeRef.current;
@@ -1513,6 +1791,74 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
       }
       clearTextMove();
     }
+
+    const frameDraft = frameDraftRef.current;
+    if (frameDraft && frameDraft.pointerId === id) {
+      frameDraftRef.current = null;
+      const rect = normalizeFrameRect(
+        frameDraft.origin.x,
+        frameDraft.origin.y,
+        frameDraft.current.x,
+        frameDraft.current.y,
+      );
+      if (!rect) {
+        redrawRef.current();
+        return;
+      }
+      const rawName = window.prompt("Frame name (used as @mention)");
+      if (rawName == null) {
+        redrawRef.current();
+        return;
+      }
+      const error = validateFrameName(
+        rawName,
+        framesRef.current.map((f) => f.slug),
+      );
+      if (error) {
+        window.alert(error);
+        redrawRef.current();
+        return;
+      }
+      const name = rawName.trim();
+      const slug = slugifyFrameName(name);
+      const frame: CanvasFrame = {
+        id: newFrameId(),
+        name,
+        slug,
+        ...rect,
+      };
+      pushHistory();
+      framesRef.current = [...framesRef.current, frame];
+      selectedFrameIdRef.current = frame.id;
+      setSelectedFrameId(frame.id);
+      markStrokesDirty();
+      publishFrames();
+      redrawRef.current();
+      return;
+    }
+
+    if (frameMoveRef.current?.pointerId === id) {
+      const moved = frameMoveRef.current;
+      frameMoveRef.current = null;
+      if (moved.historyPushed) {
+        markStrokesDirty();
+        publishFrames();
+      }
+      redrawRef.current();
+      return;
+    }
+
+    if (frameResizeRef.current?.pointerId === id) {
+      const resize = frameResizeRef.current;
+      frameResizeRef.current = null;
+      if (resize.historyPushed) {
+        markStrokesDirty();
+        publishFrames();
+      }
+      redrawRef.current();
+      return;
+    }
+
     if (drawingPointerIdRef.current !== id) return;
     drawingPointerIdRef.current = null;
     const wasBroken = inkBrokenRef.current;
@@ -1546,11 +1892,7 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
         }
       }
       if (stroke.points.length > 0) {
-        pushStrokeHistory(
-          historyPastRef.current,
-          historyFutureRef.current,
-          strokesRef.current,
-        );
+        pushHistory();
         stroke.points = thinStrokePoints(stroke.points);
         strokesRef.current.push(stroke);
         markStrokesDirty();
@@ -1567,7 +1909,9 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
       ? textHoverMove
         ? "cursor-move"
         : "cursor-text"
-      : "cursor-none";
+      : tool === "frame"
+        ? "cursor-crosshair"
+        : "cursor-none";
   const inkRingSize =
     strokeWidthForPointer(
       "mouse",
@@ -1577,6 +1921,102 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
     ) * viewport.scale;
   const eraseScreen = eraseCursor ? worldToScreen(viewport, eraseCursor) : null;
   const textScreen = textDraft ? worldToScreen(viewport, textDraft) : null;
+  void framesTick;
+  const selectedFrame =
+    selectedFrameId == null
+      ? null
+      : framesRef.current.find((f) => f.id === selectedFrameId) ?? null;
+  const selectedFrameScreen = selectedFrame
+    ? {
+        ...worldToScreen(viewport, { x: selectedFrame.x, y: selectedFrame.y }),
+        w: selectedFrame.w * viewport.scale,
+        h: selectedFrame.h * viewport.scale,
+      }
+    : null;
+
+  const renameSelectedFrame = () => {
+    if (!selectedFrame) return;
+    const rawName = window.prompt("Rename frame", selectedFrame.name);
+    if (rawName == null) return;
+    const error = validateFrameName(
+      rawName,
+      framesRef.current.map((f) => f.slug),
+      selectedFrame.slug,
+    );
+    if (error) {
+      window.alert(error);
+      return;
+    }
+    const name = rawName.trim();
+    const slug = slugifyFrameName(name);
+    pushHistory();
+    framesRef.current = framesRef.current.map((f) =>
+      f.id === selectedFrame.id ? { ...f, name, slug } : f,
+    );
+    markStrokesDirty();
+    publishFrames();
+    redrawRef.current();
+  };
+
+  const onFrameHandleDown = (
+    corner: "nw" | "ne" | "sw" | "se",
+    event: ReactPointerEvent<HTMLDivElement>,
+  ) => {
+    if (!selectedFrame) return;
+    event.preventDefault();
+    event.stopPropagation();
+    capturePointer(event.currentTarget, event.pointerId);
+    frameResizeRef.current = {
+      pointerId: event.pointerId,
+      start: { x: event.clientX, y: event.clientY },
+      origin: { ...selectedFrame },
+      corner,
+    };
+  };
+
+  const onFrameHandleMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const frameResize = frameResizeRef.current;
+    if (!frameResize || frameResize.pointerId !== event.pointerId) return;
+    event.preventDefault();
+    if (!frameResize.historyPushed) {
+      pushHistory();
+      frameResize.historyPushed = true;
+    }
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const world = worldPoint(canvas, event.nativeEvent, viewportRef.current);
+    const o = frameResize.origin;
+    let x0 = o.x;
+    let y0 = o.y;
+    let x1 = o.x + o.w;
+    let y1 = o.y + o.h;
+    if (frameResize.corner.includes("w")) x0 = world.x;
+    if (frameResize.corner.includes("e")) x1 = world.x;
+    if (frameResize.corner.includes("n")) y0 = world.y;
+    if (frameResize.corner.includes("s")) y1 = world.y;
+    const rect = normalizeFrameRect(x0, y0, x1, y1, 8);
+    if (rect) {
+      framesRef.current = framesRef.current.map((f) =>
+        f.id === o.id ? { ...f, ...rect } : f,
+      );
+      setFramesTick((n) => n + 1);
+      redrawRef.current();
+    }
+  };
+
+  const onFrameHandleUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const resize = frameResizeRef.current;
+    if (!resize || resize.pointerId !== event.pointerId) return;
+    frameResizeRef.current = null;
+    if (event.currentTarget.hasPointerCapture?.(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    if (resize.historyPushed) {
+      markStrokesDirty();
+      publishFrames();
+    }
+    redrawRef.current();
+  };
 
   return (
     <div ref={wrapRef} className="relative min-h-0 flex-1">
@@ -1636,9 +2076,83 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
         onToolChange={(next) => {
           if (textDraftRef.current) commitTextDraft();
           setEraseCursor(null);
+          if (next !== "frame") {
+            selectedFrameIdRef.current = null;
+            setSelectedFrameId(null);
+          }
           setTool(next);
         }}
       />
+      {tool === "frame" && selectedFrameScreen && selectedFrame ? (
+        <div
+          data-testid="canvas-frame-selection"
+          className="absolute z-10"
+          style={{
+            left: selectedFrameScreen.x,
+            top: selectedFrameScreen.y,
+            width: selectedFrameScreen.w,
+            height: selectedFrameScreen.h,
+          }}
+        >
+          <button
+            type="button"
+            aria-label={`Rename frame ${selectedFrame.slug}`}
+            className="absolute -top-6 left-0 rounded bg-foreground/90 px-1.5 py-0.5 text-[10px] leading-none text-background"
+            onDoubleClick={(event) => {
+              event.preventDefault();
+              renameSelectedFrame();
+            }}
+            onClick={(event) => {
+              event.preventDefault();
+              renameSelectedFrame();
+            }}
+          >
+            @{selectedFrame.slug}
+          </button>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-0 border border-[#3b82f6]"
+          />
+          {(
+            [
+              {
+                corner: "nw" as const,
+                label: "Resize frame top-left",
+                className:
+                  "top-0 left-0 -translate-x-1/2 -translate-y-1/2 cursor-nwse-resize",
+              },
+              {
+                corner: "ne" as const,
+                label: "Resize frame top-right",
+                className:
+                  "top-0 right-0 translate-x-1/2 -translate-y-1/2 cursor-nesw-resize",
+              },
+              {
+                corner: "sw" as const,
+                label: "Resize frame bottom-left",
+                className:
+                  "bottom-0 left-0 -translate-x-1/2 translate-y-1/2 cursor-nesw-resize",
+              },
+              {
+                corner: "se" as const,
+                label: "Resize frame bottom-right",
+                className:
+                  "bottom-0 right-0 translate-x-1/2 translate-y-1/2 cursor-nwse-resize",
+              },
+            ] as const
+          ).map(({ corner, label, className }) => (
+            <div
+              key={corner}
+              aria-label={label}
+              className={`absolute z-10 size-2 border border-[#3b82f6] bg-background ${className}`}
+              onPointerDown={(event) => onFrameHandleDown(corner, event)}
+              onPointerMove={onFrameHandleMove}
+              onPointerUp={onFrameHandleUp}
+              onPointerCancel={onFrameHandleUp}
+            />
+          ))}
+        </div>
+      ) : null}
       {textDraft && textScreen ? (
         <div
           ref={textFrameRef}

@@ -1,8 +1,8 @@
-import { Eraser, Pencil, Type, type LucideIcon } from "lucide-react";
+import { Eraser, Pencil, SquareDashed, Type, type LucideIcon } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
-export type CanvasTool = "pen" | "erase" | "text";
+export type CanvasTool = "pen" | "erase" | "text" | "frame";
 
 const CANVAS_TOOL_OPTIONS: ReadonlyArray<{
   tool: CanvasTool;
@@ -12,12 +12,14 @@ const CANVAS_TOOL_OPTIONS: ReadonlyArray<{
   { tool: "pen", label: "Pen", Icon: Pencil },
   { tool: "erase", label: "Eraser", Icon: Eraser },
   { tool: "text", label: "Text", Icon: Type },
+  { tool: "frame", label: "Frame", Icon: SquareDashed },
 ];
 
 const HIGHLIGHT_TRANSLATE = [
   "translate-x-0",
   "translate-x-full",
   "translate-x-[200%]",
+  "translate-x-[300%]",
 ] as const;
 
 type CanvasToolbarProps = {
@@ -37,7 +39,7 @@ export function CanvasToolbar({ tool, onToolChange }: CanvasToolbarProps) {
       role="radiogroup"
       aria-label="Canvas tools"
       data-canvas-chrome
-      className="absolute top-3 left-1/2 z-10 flex h-7 w-[5.25rem] -translate-x-1/2 overflow-visible rounded-[min(var(--radius-md),12px)] border border-border bg-background dark:border-input"
+      className="absolute top-3 left-1/2 z-10 flex h-7 w-28 -translate-x-1/2 overflow-visible rounded-[min(var(--radius-md),12px)] border border-border bg-background dark:border-input"
     >
       <span
         aria-hidden
@@ -45,7 +47,7 @@ export function CanvasToolbar({ tool, onToolChange }: CanvasToolbarProps) {
       >
         <span
           className={cn(
-            "absolute inset-0 w-1/3 rounded-[inherit] bg-foreground/15 shadow-[inset_0_0_0_1px] shadow-foreground/40 transition-transform duration-75 ease-out motion-reduce:transition-none",
+            "absolute inset-0 w-1/4 rounded-[inherit] bg-foreground/15 shadow-[inset_0_0_0_1px] shadow-foreground/40 transition-transform duration-75 ease-out motion-reduce:transition-none",
             highlightTranslate,
           )}
         />

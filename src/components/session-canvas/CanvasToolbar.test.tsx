@@ -26,6 +26,10 @@ describe("CanvasToolbar", () => {
     fireEvent.click(getByLabelText("Text"));
     expect(getByLabelText("Text").getAttribute("aria-checked")).toBe("true");
     expect(getByLabelText("Pen").getAttribute("aria-checked")).toBe("false");
+
+    fireEvent.click(getByLabelText("Frame"));
+    expect(getByLabelText("Frame").getAttribute("aria-checked")).toBe("true");
+    expect(getByLabelText("Text").getAttribute("aria-checked")).toBe("false");
   });
 
   it("keeps each hover label on its own button", () => {

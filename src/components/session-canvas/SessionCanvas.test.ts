@@ -9,6 +9,7 @@ import {
   CANVAS_MIN_SCALE,
   clearStrokeHistory,
   cloneStrokes,
+  findFrameAt,
   findTextStrokeAt,
   identityViewport,
   inkOverChrome,
@@ -535,5 +536,17 @@ describe("canvas snapshot bounds", () => {
 
   it("returns null for empty strokes", () => {
     expect(strokeBounds([])).toBeNull();
+  });
+});
+
+describe("findFrameAt / normalize via SessionCanvas helpers", () => {
+  it("hits the topmost frame containing the point", () => {
+    const frames = [
+      { id: "a", name: "A", slug: "a", x: 0, y: 0, w: 100, h: 100 },
+      { id: "b", name: "B", slug: "b", x: 50, y: 50, w: 100, h: 100 },
+    ];
+    expect(findFrameAt(frames, { x: 60, y: 60 })).toBe(1);
+    expect(findFrameAt(frames, { x: 10, y: 10 })).toBe(0);
+    expect(findFrameAt(frames, { x: 200, y: 200 })).toBeNull();
   });
 });
