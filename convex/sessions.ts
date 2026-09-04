@@ -12,7 +12,11 @@ import type { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
 import { maybeTitleFileFromFirstGraphMessage } from "./files";
-import { canvasStrokeValue, canvasViewportValue } from "./schema";
+import {
+  canvasFrameValue,
+  canvasStrokeValue,
+  canvasViewportValue,
+} from "./schema";
 import { imageUrlsForIds } from "./fileStorage";
 import { IMAGE_PROMPT_MAX } from "./constants";
 
@@ -195,6 +199,7 @@ export const getConceptGraph = query({
 const canvasDocument = v.object({
   strokes: v.array(canvasStrokeValue),
   viewport: canvasViewportValue,
+  frames: v.array(canvasFrameValue),
 });
 
 export const getCanvas = query({
@@ -210,7 +215,11 @@ export const getCanvas = query({
       .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
       .first();
     if (!row) return null;
-    return { strokes: row.strokes, viewport: row.viewport };
+    return {
+      strokes: row.strokes,
+      viewport: row.viewport,
+      frames: row.frames ?? [],
+    };
   },
 });
 
@@ -219,21 +228,28 @@ export const updateCanvas = mutation({
     sessionId: v.id("sessions"),
     strokes: v.array(canvasStrokeValue),
     viewport: canvasViewportValue,
+    frames: v.optional(v.array(canvasFrameValue)),
   },
   returns: v.null(),
-  handler: async (ctx, { sessionId, strokes, viewport }) => {
+  handler: async (ctx, { sessionId, strokes, viewport, frames }) => {
     await requireSessionOwner(ctx, sessionId);
     const existing = await ctx.db
       .query("sessionCanvases")
       .withIndex("by_session", (q) => q.eq("sessionId", sessionId))
       .first();
+    const nextFrames = frames ?? [];
     if (existing) {
-      await ctx.db.patch(existing._id, { strokes, viewport });
+      await ctx.db.patch(existing._id, {
+        strokes,
+        viewport,
+        frames: nextFrames,
+      });
     } else {
       await ctx.db.insert("sessionCanvases", {
         sessionId,
         strokes,
         viewport,
+        frames: nextFrames,
       });
     }
     return null;

@@ -36,6 +36,17 @@ export const canvasStrokeValue = v.union(
   }),
 );
 
+/** Named crop regions for `@slug` chat/ideation refs. */
+export const canvasFrameValue = v.object({
+  id: v.string(),
+  name: v.string(),
+  slug: v.string(),
+  x: v.number(),
+  y: v.number(),
+  w: v.number(),
+  h: v.number(),
+});
+
 /** Concept graph document shape for `sessionConceptGraphs.graph`. */
 const conceptGraphValue = v.object({
   nodes: v.array(
@@ -135,6 +146,7 @@ export default defineSchema({
     sessionId: v.id("sessions"),
     strokes: v.array(canvasStrokeValue),
     viewport: canvasViewportValue,
+    frames: v.optional(v.array(canvasFrameValue)),
   }).index("by_session", ["sessionId"]),
 
   messages: defineTable({

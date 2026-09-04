@@ -14,7 +14,9 @@ import {
   type NumberedConcept,
 } from "@/lib/conceptReferences";
 import {
+  getCanvasFrames,
   getCanvasHasInk,
+  subscribeCanvasFrames,
   subscribeCanvasHasInk,
 } from "@/lib/canvasSnapshot";
 import { IMAGE_PROMPT_MAX, imageFilesFromClipboard } from "@/lib/imageAttach";
@@ -95,13 +97,20 @@ export function ChatComposer({
     null,
   );
   const [canvasHasInk, setCanvasHasInk] = useState(getCanvasHasInk);
+  const [canvasFrames, setCanvasFramesState] = useState(getCanvasFrames);
 
   useEffect(() => subscribeCanvasHasInk(() => setCanvasHasInk(getCanvasHasInk())), []);
+  useEffect(
+    () => subscribeCanvasFrames(() => setCanvasFramesState(getCanvasFrames())),
+    [],
+  );
 
+  const frameSlugs = canvasFrames.map((f) => f.slug);
   const mentionArgs = {
     numberedConcepts,
     allowGraphRef,
     allowCanvasRef: canvasHasInk,
+    canvasFrames,
   };
 
   const atQuery = isDisabled ? null : atQueryAtCaret(input, caret);
@@ -254,7 +263,7 @@ export function ChatComposer({
     const value = ta.value;
 
     if (e.key === "Backspace") {
-      const range = backspaceRemoveAtReferenceRange(value, start);
+      const range = backspaceRemoveAtReferenceRange(value, start, frameSlugs);
       if (range) {
         e.preventDefault();
         const newValue = value.slice(0, range.start) + value.slice(range.end);
@@ -266,7 +275,7 @@ export function ChatComposer({
     }
 
     if (e.key === "Delete") {
-      const range = deleteForwardRemoveAtReferenceRange(value, start);
+      const range = deleteForwardRemoveAtReferenceRange(value, start, frameSlugs);
       if (range) {
         e.preventDefault();
         const newValue = value.slice(0, range.start) + value.slice(range.end);
@@ -288,7 +297,11 @@ export function ChatComposer({
       return;
     }
 
-    const next = ensureSpaceAfterValidAtReferences(v, numberedConcepts);
+    const next = ensureSpaceAfterValidAtReferences(
+      v,
+      numberedConcepts,
+      canvasFrames,
+    );
     if (next === v) {
       setCaret(sel);
       setInput(v);
@@ -388,7 +401,7 @@ export function ChatComposer({
           >
             {input ? (
               <>
-                {parseInputTokens(input, numberedConcepts).map((seg, i) =>
+                {parseInputTokens(input, numberedConcepts, canvasFrames).map((seg, i) =>
                   seg.type === "token" && seg.name ? (
                     <span
                       key={i}

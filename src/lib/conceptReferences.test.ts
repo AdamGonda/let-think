@@ -3,6 +3,7 @@ import {
   appendAtReferenceToDraft,
   AT_REFERENCE_PATTERN,
   atMentionOptions,
+  buildAtReferencePattern,
   atQueryAtCaret,
   ensureSpaceAfterValidAtReferences,
   formatConceptPlainForClipboard,
@@ -36,6 +37,13 @@ describe("AT_REFERENCE_PATTERN", () => {
     );
     expect("@foo ".match(new RegExp(AT_REFERENCE_PATTERN))).toBeNull();
   });
+
+  it("buildAtReferencePattern includes frame slugs", () => {
+    const pattern = buildAtReferencePattern(["eyes", "sketch-a"]);
+    expect("@eyes ".match(new RegExp(pattern))?.[1]).toBe("eyes");
+    expect("@sketch-a ".match(new RegExp(pattern))?.[1]).toBe("sketch-a");
+    expect("@foo ".match(new RegExp(pattern))).toBeNull();
+  });
 });
 
 describe("atQueryAtCaret / atMentionOptions / insertAtMentionToken", () => {
@@ -66,6 +74,16 @@ describe("atQueryAtCaret / atMentionOptions / insertAtMentionToken", () => {
     ).toEqual(["writing", "canvas"]);
   });
 
+  it("lists canvas frames when provided", () => {
+    expect(
+      atMentionOptions({
+        query: "",
+        numberedConcepts: [],
+        allowGraphRef: false,
+        canvasFrames: [{ id: "f1", name: "Eyes", slug: "eyes" }],
+      }).map((o) => o.token),
+    ).toEqual(["writing", "eyes"]);
+  });
   it("filters by token prefix or label", () => {
     expect(
       atMentionOptions({

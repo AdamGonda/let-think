@@ -47,11 +47,13 @@ describe("resolveAtReferences", () => {
       includeWriting,
       includeGraph,
       includeCanvas,
+      includeFrameSlugs,
     } = resolveAtReferences("use @writing and @graph and @canvas", concepts);
     expect(resolvedContent).toBe("use Writing and Graph and Canvas");
     expect(includeWriting).toBe(true);
     expect(includeGraph).toBe(true);
     expect(includeCanvas).toBe(true);
+    expect(includeFrameSlugs).toEqual([]);
     expect(mentions.map((m) => m.conceptId)).toEqual([
       WRITING_REF_ID,
       GRAPH_REF_ID,
@@ -59,13 +61,26 @@ describe("resolveAtReferences", () => {
     ]);
   });
 
+  it("resolves canvas frame @slugs when frames are provided", () => {
+    const frames = [{ id: "f1", name: "Eyes", slug: "eyes" }];
+    const {
+      resolvedContent,
+      includeCanvas,
+      includeFrameSlugs,
+      mentions,
+    } = resolveAtReferences("look at @eyes", concepts, frames);
+    expect(resolvedContent).toBe("look at Eyes");
+    expect(includeCanvas).toBe(false);
+    expect(includeFrameSlugs).toEqual(["eyes"]);
+    expect(mentions[0]?.conceptId).toBe("__frame__:eyes");
+  });
+
   it("leaves unknown named @ tokens in place", () => {
-    const { resolvedContent, includeWriting } = resolveAtReferences(
-      "see @foo",
-      concepts,
-    );
+    const { resolvedContent, includeWriting, includeFrameSlugs } =
+      resolveAtReferences("see @foo", concepts);
     expect(resolvedContent).toBe("see @foo");
     expect(includeWriting).toBe(false);
+    expect(includeFrameSlugs).toEqual([]);
   });
 });
 
@@ -74,6 +89,15 @@ describe("parseInputTokens named refs", () => {
     expect(parseInputTokens("hi @writing", [])).toEqual([
       { type: "text", content: "hi " },
       { type: "token", content: "@writing", name: "Writing" },
+    ]);
+  });
+
+  it("styles frame slugs when frames are known", () => {
+    expect(
+      parseInputTokens("hi @eyes", [], [{ id: "f1", name: "Eyes", slug: "eyes" }]),
+    ).toEqual([
+      { type: "text", content: "hi " },
+      { type: "token", content: "@eyes", name: "Eyes" },
     ]);
   });
 });

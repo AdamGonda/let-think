@@ -15,7 +15,7 @@ import type { NumberedConcept } from "../../lib/conceptReferences";
 import { useAppUiSelector } from "../../hooks/useAppUi";
 import { ChatComposer } from "./ChatComposer";
 import { HistoricalBatchPrompt } from "./HistoricalBatchPrompt";
-import { snapshotCanvasJpeg } from "../../lib/canvasSnapshot";
+import { snapshotCanvasJpeg, snapshotFrameJpeg, getCanvasFrames } from "../../lib/canvasSnapshot";
 import {
   EMPTY_IMAGE_USER_CONTENT,
   IMAGE_PROMPT_MAX,
@@ -142,11 +142,11 @@ export function Chat({
   };
 
   const collectImageStorageIds = async (
-    extraBlob: Blob | null,
+    extraBlobs: Blob[],
   ): Promise<Id<"_storage">[]> => {
     const blobs = [
       ...pendingImages.map((img) => img.blob),
-      ...(extraBlob ? [extraBlob] : []),
+      ...extraBlobs,
     ];
     if (blobs.length > IMAGE_PROMPT_MAX) {
       throw new Error("You can attach up to 4 images");
@@ -165,25 +165,38 @@ export function Chat({
     if (!input.trim() && pendingImages.length === 0) return;
 
     const rawContent = input.trim();
+    const canvasFrames = getCanvasFrames();
     const {
       resolvedContent,
       referencedConcepts,
       mentions,
       includeWriting,
       includeCanvas,
-    } = resolveAtReferences(rawContent, numberedConcepts);
+      includeFrameSlugs,
+    } = resolveAtReferences(rawContent, numberedConcepts, canvasFrames);
     const mentionPayload = mentions.length > 0 ? mentions : undefined;
-    if (includeCanvas && pendingImages.length >= IMAGE_PROMPT_MAX) {
+    const neededSlots =
+      (includeCanvas ? 1 : 0) + includeFrameSlugs.length;
+    if (pendingImages.length + neededSlots > IMAGE_PROMPT_MAX) {
       toast.error("You can attach up to 4 images");
       return;
     }
-    let canvasBlob: Blob | null = null;
+    const extraBlobs: Blob[] = [];
     if (includeCanvas) {
-      canvasBlob = await snapshotCanvasJpeg();
+      const canvasBlob = await snapshotCanvasJpeg();
       if (!canvasBlob) {
         toast.error("Nothing on the canvas");
         return;
       }
+      extraBlobs.push(canvasBlob);
+    }
+    for (const slug of includeFrameSlugs) {
+      const frameBlob = await snapshotFrameJpeg(slug);
+      if (!frameBlob) {
+        toast.error(`Nothing in @${slug}`);
+        return;
+      }
+      extraBlobs.push(frameBlob);
     }
     if (includeWriting && fileId) {
       await updateFileNotes({ fileId, thinkingNotes: notes });
@@ -199,7 +212,7 @@ export function Chat({
 
     let imageStorageIds: Id<"_storage">[] = [];
     try {
-      imageStorageIds = await collectImageStorageIds(canvasBlob);
+      imageStorageIds = await collectImageStorageIds(extraBlobs);
     } catch (err) {
       console.error("Image upload error:", err);
       toast.error(

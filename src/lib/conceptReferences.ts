@@ -1,5 +1,23 @@
-/** Match @1, @writing, @graph, @canvas at word boundaries (same semantics as chat input parsing). */
+/** Match @1, @writing, @graph, @canvas, and optional frame slugs at word boundaries. */
 export const AT_REFERENCE_PATTERN = String.raw`@(\d+|writing|graph|canvas)\b`;
+
+export function escapeAtRefToken(token: string): string {
+  return token.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Build an @-ref regex that also matches known canvas frame slugs. */
+export function buildAtReferencePattern(
+  frameSlugs: ReadonlyArray<string> = [],
+): string {
+  const unique = [
+    ...new Set(
+      frameSlugs.filter((s) => /^[a-z][a-z0-9-]{0,31}$/.test(s)),
+    ),
+  ];
+  if (unique.length === 0) return AT_REFERENCE_PATTERN;
+  const alt = unique.map(escapeAtRefToken).join("|");
+  return String.raw`@(\d+|writing|graph|canvas|${alt})\b`;
+}
 
 export const WRITING_REF_TOKEN = "writing";
 export const GRAPH_REF_TOKEN = "graph";
@@ -33,10 +51,26 @@ export function namedAtRef(capture: string): NamedAtRef | null {
   return null;
 }
 
+export type CanvasFrameMention = {
+  id: string;
+  name: string;
+  slug: string;
+};
+
+export function frameBySlugMap(
+  frames: CanvasFrameMention[],
+): Map<string, CanvasFrameMention> {
+  return new Map(frames.map((f) => [f.slug, f]));
+}
+
+export function frameRefId(slug: string): string {
+  return `__frame__:${slug}`;
+}
+
 export type AtMentionOption = {
   token: string;
   label: string;
-  kind: "writing" | "graph" | "canvas" | "concept";
+  kind: "writing" | "graph" | "canvas" | "frame" | "concept";
 };
 
 /** Open `@query` at the caret, or null if not in a mention. */
@@ -68,9 +102,10 @@ export function insertAtMentionToken(
 function usedAtReferenceTokens(
   value: string,
   excludeStart?: number,
+  frameSlugs: ReadonlyArray<string> = [],
 ): Set<string> {
   const tokens = new Set<string>();
-  const refRegex = new RegExp(AT_REFERENCE_PATTERN, "g");
+  const refRegex = new RegExp(buildAtReferencePattern(frameSlugs), "g");
   let m: RegExpExecArray | null;
   while ((m = refRegex.exec(value)) !== null) {
     if (m.index === excludeStart) continue;
@@ -84,14 +119,20 @@ export function atMentionOptions(args: {
   numberedConcepts: NumberedConcept[];
   allowGraphRef: boolean;
   allowCanvasRef?: boolean;
+  canvasFrames?: CanvasFrameMention[];
   value?: string;
   queryStart?: number;
 }): AtMentionOption[] {
+  const frames = args.canvasFrames ?? [];
   const q = args.query.toLowerCase();
   const used =
     args.value === undefined
       ? new Set<string>()
-      : usedAtReferenceTokens(args.value, args.queryStart);
+      : usedAtReferenceTokens(
+          args.value,
+          args.queryStart,
+          frames.map((f) => f.slug),
+        );
   const items: AtMentionOption[] = [
     { token: WRITING_REF_TOKEN, label: WRITING_REF_NAME, kind: "writing" },
   ];
@@ -107,6 +148,13 @@ export function atMentionOptions(args: {
       token: CANVAS_REF_TOKEN,
       label: CANVAS_REF_NAME,
       kind: "canvas",
+    });
+  }
+  for (const frame of frames) {
+    items.push({
+      token: frame.slug,
+      label: frame.name,
+      kind: "frame",
     });
   }
   for (const c of args.numberedConcepts) {
@@ -134,19 +182,21 @@ export function atMentionOptions(args: {
 export function backspaceRemoveAtReferenceRange(
   value: string,
   cursor: number,
+  frameSlugs: ReadonlyArray<string> = [],
 ): { start: number; end: number } | null {
   if (cursor <= 0) return null;
+  const pattern = buildAtReferencePattern(frameSlugs);
 
   if (value[cursor - 1] === " ") {
     const beforeSpace = value.slice(0, cursor - 1);
-    const m = beforeSpace.match(new RegExp(AT_REFERENCE_PATTERN + "$"));
+    const m = beforeSpace.match(new RegExp(pattern + "$"));
     if (m) {
       const tokenStart = beforeSpace.length - m[0].length;
       return { start: tokenStart, end: cursor };
     }
   }
 
-  const refRegex = new RegExp(AT_REFERENCE_PATTERN, "g");
+  const refRegex = new RegExp(pattern, "g");
   let match: RegExpExecArray | null;
   while ((match = refRegex.exec(value)) !== null) {
     const matchEnd = match.index + match[0].length;
@@ -161,10 +211,11 @@ export function backspaceRemoveAtReferenceRange(
 export function deleteForwardRemoveAtReferenceRange(
   value: string,
   cursor: number,
+  frameSlugs: ReadonlyArray<string> = [],
 ): { start: number; end: number } | null {
   if (cursor >= value.length) return null;
   const rest = value.slice(cursor);
-  const m = rest.match(new RegExp("^" + AT_REFERENCE_PATTERN));
+  const m = rest.match(new RegExp("^" + buildAtReferencePattern(frameSlugs)));
   if (!m) return null;
   return { start: cursor, end: cursor + m[0].length };
 }
@@ -295,10 +346,15 @@ function couldBePrefixOfLongerConceptNumber(
 export function ensureSpaceAfterValidAtReferences(
   value: string,
   numberedConcepts: NumberedConcept[],
+  canvasFrames: CanvasFrameMention[] = [],
 ): string {
   const conceptByNumber = conceptByNumberMap(numberedConcepts);
   const conceptNumbers = [...conceptByNumber.keys()];
-  const refRegex = new RegExp(AT_REFERENCE_PATTERN, "g");
+  const framesBySlug = frameBySlugMap(canvasFrames);
+  const refRegex = new RegExp(
+    buildAtReferencePattern(canvasFrames.map((f) => f.slug)),
+    "g",
+  );
   let out = "";
   let lastIndex = 0;
   let m: RegExpExecArray | null;
@@ -308,7 +364,7 @@ export function ensureSpaceAfterValidAtReferences(
     out += value.slice(lastIndex, end);
     lastIndex = end;
     const named = namedAtRef(capture);
-    if (named) {
+    if (named || framesBySlug.has(capture)) {
       const after = value[end];
       if (after === undefined || !/\s/.test(after)) {
         out += " ";

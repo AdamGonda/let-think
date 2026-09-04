@@ -1,8 +1,11 @@
 import {
+  buildAtReferencePattern,
   conceptByNumberMap,
+  frameBySlugMap,
+  frameRefId,
   namedAtRef,
+  type CanvasFrameMention,
   type NumberedConcept,
-  AT_REFERENCE_PATTERN,
 } from "./conceptReferences";
 
 type Mention = {
@@ -16,9 +19,14 @@ type Mention = {
 export function parseInputTokens(
   raw: string,
   numberedConcepts: NumberedConcept[],
+  canvasFrames: CanvasFrameMention[] = [],
 ): Array<{ type: "text" | "token"; content: string; name?: string }> {
   const conceptByNumber = conceptByNumberMap(numberedConcepts);
-  const refRegex = new RegExp(AT_REFERENCE_PATTERN, "g");
+  const framesBySlug = frameBySlugMap(canvasFrames);
+  const refRegex = new RegExp(
+    buildAtReferencePattern(canvasFrames.map((f) => f.slug)),
+    "g",
+  );
   const segments: Array<{
     type: "text" | "token";
     content: string;
@@ -29,10 +37,11 @@ export function parseInputTokens(
   while ((m = refRegex.exec(raw)) !== null) {
     const capture = m[1]!;
     const named = namedAtRef(capture);
-    const concept = named
+    const frame = named ? null : framesBySlug.get(capture);
+    const concept = named || frame
       ? null
       : conceptByNumber.get(parseInt(capture, 10));
-    const name = named?.name ?? concept?.name;
+    const name = named?.name ?? frame?.name ?? concept?.name;
     if (lastIndex < m.index) {
       segments.push({ type: "text", content: raw.slice(lastIndex, m.index) });
     }
@@ -53,6 +62,7 @@ export function parseInputTokens(
 export function resolveAtReferences(
   rawContent: string,
   numberedConcepts: NumberedConcept[],
+  canvasFrames: CanvasFrameMention[] = [],
 ): {
   resolvedContent: string;
   referencedConcepts: NumberedConcept[];
@@ -60,23 +70,32 @@ export function resolveAtReferences(
   includeWriting: boolean;
   includeGraph: boolean;
   includeCanvas: boolean;
+  includeFrameSlugs: string[];
 } {
   const conceptByNumber = conceptByNumberMap(numberedConcepts);
-  const refRegex = new RegExp(AT_REFERENCE_PATTERN, "g");
+  const framesBySlug = frameBySlugMap(canvasFrames);
+  const refRegex = new RegExp(
+    buildAtReferencePattern(canvasFrames.map((f) => f.slug)),
+    "g",
+  );
   let resolvedContent = "";
   const mentions: Mention[] = [];
   let includeWriting = false;
   let includeGraph = false;
   let includeCanvas = false;
+  const includeFrameSlugs: string[] = [];
   let lastIndex = 0;
   let m: RegExpExecArray | null;
 
   while ((m = refRegex.exec(rawContent)) !== null) {
     const capture = m[1]!;
     const named = namedAtRef(capture);
+    const frame = named ? null : framesBySlug.get(capture);
     const concept = named
       ? { id: named.id, name: named.name }
-      : conceptByNumber.get(parseInt(capture, 10));
+      : frame
+        ? { id: frameRefId(frame.slug), name: frame.name }
+        : conceptByNumber.get(parseInt(capture, 10));
     if (!concept) {
       resolvedContent += rawContent.slice(lastIndex, m.index + m[0]!.length);
       lastIndex = m.index + m[0]!.length;
@@ -85,6 +104,9 @@ export function resolveAtReferences(
     if (named?.token === "writing") includeWriting = true;
     if (named?.token === "graph") includeGraph = true;
     if (named?.token === "canvas") includeCanvas = true;
+    if (frame && !includeFrameSlugs.includes(frame.slug)) {
+      includeFrameSlugs.push(frame.slug);
+    }
     resolvedContent += rawContent.slice(lastIndex, m.index);
     const start = resolvedContent.length;
     resolvedContent += concept.name;
@@ -109,5 +131,6 @@ export function resolveAtReferences(
     includeWriting,
     includeGraph,
     includeCanvas,
+    includeFrameSlugs,
   };
 }
