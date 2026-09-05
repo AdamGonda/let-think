@@ -17,6 +17,7 @@ import {
   buildReferencedConceptsSystemNote,
   buildReferencedWritingSystemNote,
   buildReferencedGraphSystemNote,
+  chatLaneSystemPrompt,
   mentionsIncludeWriting,
   mentionsIncludeGraph,
   type ConceptGraph,
@@ -704,8 +705,7 @@ export const sendChat = action({
     };
     const streamResult = streamText({
       model: google(modelConfig.mainContextGraphModel),
-      system:
-        "You are a helpful assistant. Format replies in Markdown (headings, lists, bold, and code when useful).",
+      system: chatLaneSystemPrompt(includeGraph),
       messages: modelMessages,
       onFinish: ({ usage }) => {
         generationUsage = {

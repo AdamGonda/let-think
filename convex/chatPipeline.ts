@@ -1,4 +1,5 @@
 import type { ModelMessage } from "ai";
+import { CONCEPT_GRAPH_PROMPT_BATCH_WINDOW } from "./constants";
 
 export type ConceptGraph = {
   nodes: Array< { id: string; name: string; description?: string } >;
@@ -386,14 +387,45 @@ export function buildReferencedWritingSystemNote(
   return `The user referenced their current writing:\n${trimmed}`;
 }
 
+const CHAT_LANE_SYSTEM_BASE =
+  "You are a helpful assistant. Format replies in Markdown (headings, lists, bold, and code when useful).";
+
+const CHAT_LANE_GRAPH_PRIVACY =
+  " Prior ideas in context are private background. Write a normal answer; do not mention a graph, map, nodes, edges, or lines, and do not tell the user to look at or walk their graph.";
+
+export function chatLaneSystemPrompt(includeGraph: boolean): string {
+  return includeGraph
+    ? `${CHAT_LANE_SYSTEM_BASE}${CHAT_LANE_GRAPH_PRIVACY}`
+    : CHAT_LANE_SYSTEM_BASE;
+}
+
 export function buildReferencedGraphSystemNote(
   graph: ConceptGraph | null | undefined,
   referenced: boolean,
 ): string | null {
   if (!referenced) return null;
-  if (!graph || graph.nodes.length === 0) {
-    return "The user referenced the current concept graph. It has no concepts yet.";
+  const windowed = buildConceptGraphPromptWindow(
+    graph ?? null,
+    CONCEPT_GRAPH_PROMPT_BATCH_WINDOW,
+  );
+  if (!windowed) {
+    return "The user referenced their prior ideas. There are none yet.";
   }
-  // ponytail: full graph; if this blows the context window, reuse buildConceptGraphPromptWindow
-  return `The user referenced the current concept graph:\n${JSON.stringify(graph)}`;
+  const nameById = new Map(windowed.nodes.map((n) => [n.id, n.name]));
+  const conceptLines = windowed.nodes.map((n) =>
+    n.description ? `- ${n.name}: ${n.description}` : `- ${n.name}`,
+  );
+  const linkLines = windowed.edges.flatMap((e) => {
+    const from = nameById.get(e.source);
+    const to = nameById.get(e.target);
+    return from && to ? [`- ${from} → ${to}`] : [];
+  });
+  const parts = [
+    "Prior ideas (private background). Absorb these as knowledge you already have. Write a normal answer — do not mention a graph, map, nodes, edges, or lines; do not dump JSON or ids; do not tell the user to look at the graph; do not structure the reply as commentary on it.",
+    conceptLines.join("\n"),
+  ];
+  if (linkLines.length > 0) {
+    parts.push(`Related:\n${linkLines.join("\n")}`);
+  }
+  return parts.join("\n\n");
 }

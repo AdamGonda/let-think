@@ -8,6 +8,7 @@ import {
   buildReferencedConceptsSystemNote,
   buildReferencedWritingSystemNote,
   buildReferencedGraphSystemNote,
+  chatLaneSystemPrompt,
   WRITING_PROMPT_MAX_CHARS,
 } from "./chatPipeline";
 import { CONCEPT_GRAPH_PROMPT_BATCH_WINDOW } from "./constants";
@@ -212,17 +213,77 @@ describe("buildReferencedGraphSystemNote", () => {
 
   it("says empty when the graph has no nodes", () => {
     expect(buildReferencedGraphSystemNote(null, true)).toBe(
-      "The user referenced the current concept graph. It has no concepts yet.",
+      "The user referenced their prior ideas. There are none yet.",
+    );
+    expect(buildReferencedGraphSystemNote({ nodes: [], edges: [] }, true)).toBe(
+      "The user referenced their prior ideas. There are none yet.",
     );
   });
 
-  it("serializes the full graph when referenced", () => {
+  it("outlines names, descriptions, and named links without JSON or ids", () => {
     const graph = {
-      nodes: [{ id: "a", name: "Alpha" }],
-      edges: [],
+      nodes: [
+        { id: "node-a", name: "Alpha", description: "first idea" },
+        { id: "node-b", name: "Beta", description: "second idea" },
+      ],
+      edges: [{ source: "node-a", target: "node-b" }],
     };
-    expect(buildReferencedGraphSystemNote(graph, true)).toBe(
-      `The user referenced the current concept graph:\n${JSON.stringify(graph)}`,
+    const note = buildReferencedGraphSystemNote(graph, true);
+    expect(note).toContain("private background");
+    expect(note).toContain("do not mention a graph");
+    expect(note).toContain("do not tell the user to look at the graph");
+    expect(note).toContain("- Alpha: first idea");
+    expect(note).toContain("- Beta: second idea");
+    expect(note).toContain("- Alpha → Beta");
+    expect(note).not.toContain('"nodes"');
+    expect(note).not.toContain("node-a");
+    expect(note).not.toContain("node-b");
+  });
+
+  it("omits older batches outside the prompt window", () => {
+    const graph = {
+      nodes: [
+        { id: "old", name: "Ancient" },
+        { id: "a", name: "Alpha" },
+        { id: "b", name: "Beta" },
+        { id: "c", name: "Gamma" },
+      ],
+      edges: [
+        { source: "old", target: "a" },
+        { source: "b", target: "c" },
+      ],
+      batches: [
+        { id: "b0", nodeIds: ["old"] },
+        { id: "b1", nodeIds: ["a"] },
+        { id: "b2", nodeIds: ["b"] },
+        { id: "b3", nodeIds: ["c"] },
+      ],
+    };
+    const note = buildReferencedGraphSystemNote(graph, true);
+    expect(note).toContain("- Alpha");
+    expect(note).toContain("- Beta");
+    expect(note).toContain("- Gamma");
+    expect(note).toContain("- Beta → Gamma");
+    expect(note).not.toContain("Ancient");
+    expect(note).not.toContain("Alpha →");
+  });
+
+  it("omits the related section when there are no edges", () => {
+    const note = buildReferencedGraphSystemNote(
+      { nodes: [{ id: "a", name: "Alpha" }], edges: [] },
+      true,
+    );
+    expect(note).toContain("- Alpha");
+    expect(note).not.toContain("Related:");
+  });
+});
+
+describe("chatLaneSystemPrompt", () => {
+  it("forbids graph-talk only when the graph was referenced", () => {
+    expect(chatLaneSystemPrompt(false)).not.toContain("graph");
+    expect(chatLaneSystemPrompt(true)).toContain("do not mention a graph");
+    expect(chatLaneSystemPrompt(true)).toContain(
+      "do not tell the user to look at or walk their graph",
     );
   });
 });
