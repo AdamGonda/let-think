@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type PointerEvent as ReactPointerEvent,
+  type WheelEvent as ReactWheelEvent,
 } from "react";
 import { CanvasColorPalette } from "./CanvasColorPalette";
 import { DEFAULT_INK_COLOR } from "./canvasInkColors";
@@ -558,10 +559,10 @@ export function drawCanvasFrames(
   for (const frame of frames) {
     const selected = frame.id === selectedId;
     ctx.strokeStyle = selected ? "#3b82f6" : "rgba(255,255,255,0.45)";
-    ctx.fillStyle = selected ? "#3b82f6" : "rgba(255,255,255,0.55)";
     ctx.strokeRect(frame.x, frame.y, frame.w, frame.h);
-    const label = `@${frame.slug}`;
-    ctx.fillText(label, frame.x, frame.y - 4);
+    if (selected) continue;
+    ctx.fillStyle = "rgba(255,255,255,0.55)";
+    ctx.fillText(`@${frame.slug}`, frame.x, frame.y - 4);
   }
   if (draft) {
     ctx.strokeStyle = "rgba(59,130,246,0.8)";
@@ -1096,24 +1097,18 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
 
   useEffect(() => {
     if (!active) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const onWheel = (event: WheelEvent) => {
-      if (!event.ctrlKey) return;
-      event.preventDefault();
-      const next = applyPinch(
-        viewportRef.current,
-        canvasScreenPoint(canvas, event),
-        Math.exp(-event.deltaY * 0.01),
-      );
-      viewportRef.current = next;
-      setViewport(next);
-      markViewportDirty();
-      redrawRef.current();
+    const wrap = wrapRef.current;
+    if (!wrap) return;
+    const preventBrowserZoom = (event: WheelEvent) => {
+      if (event.ctrlKey) event.preventDefault();
     };
-    canvas.addEventListener("wheel", onWheel, { passive: false });
-    return () => canvas.removeEventListener("wheel", onWheel);
-  }, [active, markViewportDirty]);
+    wrap.addEventListener("wheel", preventBrowserZoom, {
+      passive: false,
+      capture: true,
+    });
+    return () =>
+      wrap.removeEventListener("wheel", preventBrowserZoom, { capture: true });
+  }, [active]);
 
   useEffect(() => {
     if (!active) return;
@@ -1941,6 +1936,22 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
       }
     : null;
 
+  const onWrapWheel = (event: ReactWheelEvent<HTMLDivElement>) => {
+    if (!event.ctrlKey) return;
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    event.preventDefault();
+    const next = applyPinch(
+      viewportRef.current,
+      canvasScreenPoint(canvas, event.nativeEvent),
+      Math.exp(-event.deltaY * 0.01),
+    );
+    viewportRef.current = next;
+    setViewport(next);
+    markViewportDirty();
+    redrawRef.current();
+  };
+
   const renameSelectedFrame = () => {
     if (!selectedFrame) return;
     const rawName = window.prompt("Rename frame", selectedFrame.name);
@@ -2026,7 +2037,11 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
   };
 
   return (
-    <div ref={wrapRef} className="relative min-h-0 flex-1">
+    <div
+      ref={wrapRef}
+      className="relative min-h-0 flex-1"
+      onWheel={onWrapWheel}
+    >
       <canvas
         ref={canvasRef}
         className={`absolute inset-0 size-full touch-none ${cursorClass}`}
@@ -2095,7 +2110,7 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
       {tool === "frame" && selectedFrameScreen && selectedFrame ? (
         <div
           data-testid="canvas-frame-selection"
-          className="absolute z-10"
+          className="pointer-events-none absolute z-10 touch-none"
           style={{
             left: selectedFrameScreen.x,
             top: selectedFrameScreen.y,
@@ -2106,7 +2121,7 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
           <button
             type="button"
             aria-label={`Rename frame ${selectedFrame.slug}`}
-            className="absolute -top-6 left-0 rounded bg-foreground/90 px-1.5 py-0.5 text-[10px] leading-none text-background"
+            className="pointer-events-auto absolute -top-6 left-0 rounded bg-foreground/90 px-1.5 py-0.5 text-[10px] leading-none text-background"
             onDoubleClick={(event) => {
               event.preventDefault();
               renameSelectedFrame();
@@ -2153,7 +2168,7 @@ export function SessionCanvas({ active, sessionId = null }: SessionCanvasProps) 
             <div
               key={corner}
               aria-label={label}
-              className={`absolute z-10 size-2 border border-[#3b82f6] bg-background ${className}`}
+              className={`pointer-events-auto absolute z-10 size-2 border border-[#3b82f6] bg-background ${className}`}
               onPointerDown={(event) => onFrameHandleDown(corner, event)}
               onPointerMove={onFrameHandleMove}
               onPointerUp={onFrameHandleUp}

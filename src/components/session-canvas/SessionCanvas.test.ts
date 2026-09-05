@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   applyPan,
   applyPinch,
@@ -9,6 +9,7 @@ import {
   CANVAS_MIN_SCALE,
   clearStrokeHistory,
   cloneStrokes,
+  drawCanvasFrames,
   findFrameAt,
   findTextStrokeAt,
   identityViewport,
@@ -548,5 +549,29 @@ describe("findFrameAt / normalize via SessionCanvas helpers", () => {
     expect(findFrameAt(frames, { x: 60, y: 60 })).toBe(1);
     expect(findFrameAt(frames, { x: 10, y: 10 })).toBe(0);
     expect(findFrameAt(frames, { x: 200, y: 200 })).toBeNull();
+  });
+});
+
+describe("drawCanvasFrames", () => {
+  it("skips the @slug title on the selected frame", () => {
+    const fillText = vi.fn();
+    const ctx = {
+      save: vi.fn(),
+      restore: vi.fn(),
+      setLineDash: vi.fn(),
+      strokeRect: vi.fn(),
+      fillText,
+    } as unknown as CanvasRenderingContext2D;
+    drawCanvasFrames(
+      ctx,
+      [
+        { id: "a", name: "A", slug: "a", x: 0, y: 0, w: 10, h: 10 },
+        { id: "b", name: "B", slug: "b", x: 20, y: 20, w: 10, h: 10 },
+      ],
+      "b",
+      null,
+    );
+    expect(fillText).toHaveBeenCalledTimes(1);
+    expect(fillText).toHaveBeenCalledWith("@a", 0, -4);
   });
 });

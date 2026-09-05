@@ -1,4 +1,4 @@
-import { render, fireEvent, cleanup } from "@testing-library/react";
+import { render, fireEvent, createEvent, cleanup } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { SessionCanvas } from "./SessionCanvas";
 import type { Id } from "../../../convex/_generated/dataModel";
@@ -115,6 +115,29 @@ describe("SessionCanvas toolbar", () => {
     fireEvent.pointerMove(canvas, { clientX: 80, clientY: 40 });
     const ring = getByTestId("erase-radius");
     expect(ring.style.width).toBe("320px");
+  });
+
+  it("ctrl-wheel zooms the camera even over the selected frame overlay", () => {
+    vi.stubGlobal("prompt", () => "eyes");
+    const { getByLabelText, getByTestId } = render(<SessionCanvas active />);
+    fireEvent.click(getByLabelText("Frame"));
+    const canvas = getByLabelText("Drawing canvas");
+    fireEvent.pointerDown(canvas, { pointerId: 1, clientX: 0, clientY: 0 });
+    fireEvent.pointerMove(canvas, { pointerId: 1, clientX: 80, clientY: 80 });
+    fireEvent.pointerUp(canvas, { pointerId: 1, clientX: 80, clientY: 80 });
+    const overlay = getByTestId("canvas-frame-selection");
+    expect(overlay.className).toContain("pointer-events-none");
+    const wheel = createEvent.wheel(overlay, {
+      deltaY: -100,
+      clientX: 40,
+      clientY: 40,
+    });
+    Object.defineProperty(wheel, "ctrlKey", { value: true });
+    fireEvent(overlay, wheel);
+    expect(Number(canvas.getAttribute("data-viewport-scale"))).toBeGreaterThan(
+      4,
+    );
+    vi.unstubAllGlobals();
   });
 
   it("cmd-drag pans the camera so the eraser ring shifts", () => {
