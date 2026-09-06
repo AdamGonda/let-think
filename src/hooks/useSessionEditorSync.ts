@@ -59,7 +59,11 @@ export function useSessionEditorSync(
   useEffect(() => {
     const prevSession = prevSessionIdRef.current;
     const sessionChanged = prevSession !== activeSessionId;
-    if (sessionChanged && prevSession != null) {
+    if (
+      sessionChanged &&
+      prevSession != null &&
+      appliedStoredForSessionRef.current === prevSession
+    ) {
       void updateDraft({
         sessionId: prevSession,
         draftInput: draftInputRef.current,
@@ -90,7 +94,11 @@ export function useSessionEditorSync(
   useEffect(() => {
     const prevFile = prevFileIdRef.current;
     const fileChanged = prevFile !== activeFileId;
-    if (fileChanged && prevFile != null) {
+    if (
+      fileChanged &&
+      prevFile != null &&
+      appliedStoredForFileRef.current === prevFile
+    ) {
       void updateFileNotes({
         fileId: prevFile,
         thinkingNotes: notesRef.current,
@@ -118,7 +126,11 @@ export function useSessionEditorSync(
   useEffect(() => {
     const prevChat = prevChatSessionIdRef.current;
     const chatChanged = prevChat !== activeChatSessionId;
-    if (chatChanged && prevChat != null) {
+    if (
+      chatChanged &&
+      prevChat != null &&
+      appliedStoredForChatRef.current === prevChat
+    ) {
       void updateChatDraft({
         chatSessionId: prevChat,
         draftInput: chatDraftInputRef.current,
@@ -193,6 +205,7 @@ export function useSessionEditorSync(
   );
   useEffect(() => {
     if (!activeFileId) return;
+    // Empty machine state before hydrate is not a user clear.
     if (appliedStoredForFileRef.current !== activeFileId) return;
     const timer = setTimeout(() => {
       saveThinkingNotes(notes);

@@ -18,12 +18,7 @@ import {
   canvasViewportValue,
 } from "./schema";
 import { imageUrlsForIds } from "./fileStorage";
-import {
-  loadFileNotes,
-  loadSessionDraft,
-  skipEmptyOverwrite,
-  upsertSessionDraft,
-} from "./lib/editorSidecars";
+import { loadFileNotes, upsertSessionDraft } from "./lib/editorSidecars";
 import { IMAGE_PROMPT_MAX } from "./constants";
 
 async function requireSessionOwner(ctx: MutationCtx, sessionId: Id<"sessions">) {
@@ -382,8 +377,6 @@ export const updateDraft = mutation({
     if (!userId) return null;
     const session = await ctx.db.get(sessionId);
     if (!session || session.userId !== userId) return null;
-    const existing = await loadSessionDraft(ctx, sessionId, session.draftInput);
-    if (skipEmptyOverwrite(draftInput, existing)) return null;
     await upsertSessionDraft(ctx, sessionId, draftInput);
     return null;
   },

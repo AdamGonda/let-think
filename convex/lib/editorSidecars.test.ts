@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveSidecarText, skipEmptyOverwrite } from "./editorSidecars";
+import { resolveSidecarText } from "./editorSidecars";
 
 describe("resolveSidecarText", () => {
   it("prefers sidecar draft, including empty, over leftover session.draftInput", () => {
@@ -21,15 +21,6 @@ describe("resolveSidecarText", () => {
     expect(resolveSidecarText(undefined, undefined, "session notes")).toBe(
       "session notes",
     );
-  });
-});
-
-describe("skipEmptyOverwrite", () => {
-  it("blocks empty writes over stored text", () => {
-    expect(skipEmptyOverwrite("", "kept")).toBe(true);
-    expect(skipEmptyOverwrite("kept", "kept")).toBe(false);
-    expect(skipEmptyOverwrite("edit", "kept")).toBe(false);
-    expect(skipEmptyOverwrite("", "")).toBe(false);
   });
 });
 
