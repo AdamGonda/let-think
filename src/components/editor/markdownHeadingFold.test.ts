@@ -4,11 +4,14 @@ import {
   ensureSyntaxTree,
   foldable,
   foldedRanges,
+  foldEffect,
 } from "@codemirror/language";
 import { EditorView } from "@codemirror/view";
 import { describe, expect, it } from "vitest";
 import {
   foldAllHeadingSections,
+  foldHeadingsByKeys,
+  foldedHeadingKeys,
   headingFoldRanges,
   unfoldAllSections,
 } from "./headingFold";
@@ -136,6 +139,63 @@ describe("fold all headings", () => {
       remaining += 1;
     });
     expect(remaining).toBe(0);
+    view.destroy();
+  });
+});
+
+describe("persist folded headings by key", () => {
+  function viewFor(doc: string): EditorView {
+    const view = new EditorView({
+      state: EditorState.create({
+        doc,
+        extensions: [markdownEditorLanguage, codeFolding()],
+      }),
+    });
+    ensureSyntaxTree(view.state, view.state.doc.length, 5000);
+    return view;
+  }
+
+  it("names folded headings by text and duplicate occurrence", () => {
+    const view = viewFor(
+      ["# One", "a", "# Two", "b", "# One", "c"].join("\n"),
+    );
+    const ranges = headingFoldRanges(view.state);
+    view.dispatch({
+      effects: [ranges[0], ranges[1]].map((range) =>
+        foldEffect.of(range!),
+      ),
+    });
+    expect(foldedHeadingKeys(view.state)).toEqual(["0:# One", "0:# Two"]);
+    view.destroy();
+  });
+
+  it("restores the same headings after a full unfold", () => {
+    const doc = ["# One", "a", "# Two", "b", "# Three", "c"].join("\n");
+    const view = viewFor(doc);
+    const ranges = headingFoldRanges(view.state);
+    view.dispatch({
+      effects: [ranges[0], ranges[2]].map((range) =>
+        foldEffect.of(range!),
+      ),
+    });
+    const keys = foldedHeadingKeys(view.state);
+    expect(unfoldAllSections(view)).toBe(true);
+    expect(foldedHeadingKeys(view.state)).toEqual([]);
+    expect(foldHeadingsByKeys(view, keys)).toBe(true);
+    expect(foldedHeadingKeys(view.state)).toEqual(keys);
+    view.destroy();
+  });
+
+  it("restores folds after the document is replaced", () => {
+    const doc = ["# One", "a", "# Two", "b"].join("\n");
+    const view = viewFor(doc);
+    expect(foldAllHeadingSections(view)).toBe(true);
+    const keys = foldedHeadingKeys(view.state);
+    view.dispatch({
+      changes: { from: 0, to: view.state.doc.length, insert: doc },
+    });
+    expect(foldHeadingsByKeys(view, keys)).toBe(true);
+    expect(foldedHeadingKeys(view.state)).toEqual(keys);
     view.destroy();
   });
 });

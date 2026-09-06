@@ -11,6 +11,7 @@ import {
   deleteFileNotes,
   loadFileNotes,
   loadSessionDraft,
+  skipEmptyOverwrite,
   upsertFileNotes,
 } from "./lib/editorSidecars";
 import { SESSION_TITLE_FROM_FIRST_MESSAGE_MAX_CHARS } from "./constants";
@@ -124,7 +125,15 @@ export const updateThinkingNotes = mutation({
   },
   returns: v.null(),
   handler: async (ctx, { fileId, thinkingNotes }) => {
-    await requireFileOwner(ctx, fileId);
+    const { file } = await requireFileOwner(ctx, fileId);
+    const session = await ideationSessionForFile(ctx, fileId);
+    const existing = await loadFileNotes(
+      ctx,
+      fileId,
+      file.thinkingNotes,
+      session?.thinkingNotes,
+    );
+    if (skipEmptyOverwrite(thinkingNotes, existing)) return null;
     await upsertFileNotes(ctx, fileId, thinkingNotes);
     return null;
   },

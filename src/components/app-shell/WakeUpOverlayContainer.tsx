@@ -76,6 +76,7 @@ export function WakeUpOverlayContainer({
       sessionView={overlay.sessionView}
       onChromeViewChange={handleChromeViewChange}
       activeSessionId={overlay.activeSessionId}
+      activeFileId={overlay.activeFileId}
       activeSessionInWorkspace={activeFileInWorkspace}
       notes={overlay.notes}
       notesSelectionRange={null}

@@ -15,6 +15,11 @@ export function resolveSidecarText(
   return "";
 }
 
+/** Hydration race: empty local state must not wipe stored text. */
+export function skipEmptyOverwrite(next: string, existing: string): boolean {
+  return next === "" && existing !== "";
+}
+
 export async function loadSessionDraft(
   ctx: DbCtx,
   sessionId: Id<"sessions">,

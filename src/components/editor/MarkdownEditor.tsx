@@ -1,4 +1,5 @@
 import { memo, useEffect, useRef } from "react";
+import { foldEffect, unfoldEffect } from "@codemirror/language";
 import {
   EditorSelection,
   EditorState,
@@ -7,19 +8,35 @@ import {
 } from "@codemirror/state";
 import { EditorView, placeholder as cmPlaceholder } from "@codemirror/view";
 import { timings } from "@/config";
+import {
+  getStoredHeadingFolds,
+  setStoredHeadingFolds,
+} from "@/lib/headingFoldStorage";
 import { scrollViewCaretToEyeLevel } from "./editorCaretScroll";
 import { editorScrollThumbLayout } from "./editorScrollThumbLayout";
 import {
   EDITOR_FOLD_ALL_HEADINGS_EVENT,
   EDITOR_UNFOLD_ALL_EVENT,
   foldAllHeadingSections,
+  foldHeadingsByKeys,
+  foldedHeadingKeys,
   unfoldAllSections,
 } from "./headingFold";
 import { markdownEditorExtensions } from "./markdownEditorExtensions";
 
+function restoreStoredHeadingFolds(
+  view: EditorView,
+  documentId: string | null | undefined,
+): void {
+  if (!documentId) return;
+  foldHeadingsByKeys(view, getStoredHeadingFolds(documentId));
+}
+
 interface MarkdownEditorProps {
   value: string;
   onChange: (value: string | undefined) => void;
+  /** Persist fold state per file so reopening restores collapsed headings. */
+  documentId?: string | null;
   selectionRange?: { start: number; end: number } | null;
   placeholder?: string;
   className?: string;
@@ -46,6 +63,7 @@ function selectionRangeEqual(
 function MarkdownEditorComponent({
   value,
   onChange,
+  documentId = null,
   selectionRange = null,
   placeholder = "Write in markdown…",
   className = "",
@@ -62,6 +80,9 @@ function MarkdownEditorComponent({
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  const documentIdRef = useRef(documentId);
+  documentIdRef.current = documentId;
+  const appliedFoldDocumentIdRef = useRef<string | null>(null);
   const initialDocRef = useRef(value);
   const placeholderCompartmentRef = useRef(new Compartment());
   const endCursorAppliedRef = useRef(false);
@@ -85,6 +106,19 @@ function MarkdownEditorComponent({
             if (update.docChanged) {
               onChangeRef.current(update.state.doc.toString());
             }
+            const id = documentIdRef.current;
+            if (
+              !id ||
+              !update.transactions.some((tr) =>
+                tr.effects.some(
+                  (effect) =>
+                    effect.is(foldEffect) || effect.is(unfoldEffect),
+                ),
+              )
+            ) {
+              return;
+            }
+            setStoredHeadingFolds(id, foldedHeadingKeys(update.state));
           }),
         ],
       }),
@@ -163,12 +197,19 @@ function MarkdownEditorComponent({
     const view = viewRef.current;
     if (!view) return;
     const current = view.state.doc.toString();
-    if (current === value) return;
-    view.dispatch({
-      changes: { from: 0, to: current.length, insert: value },
-      annotations: [Transaction.addToHistory.of(false)],
-    });
-  }, [value]);
+    const replaced = current !== value;
+    if (replaced) {
+      view.dispatch({
+        changes: { from: 0, to: current.length, insert: value },
+        annotations: [Transaction.addToHistory.of(false)],
+      });
+    }
+    const fileId = documentId ?? null;
+    if (replaced || appliedFoldDocumentIdRef.current !== fileId) {
+      restoreStoredHeadingFolds(view, documentId);
+      appliedFoldDocumentIdRef.current = fileId;
+    }
+  }, [value, documentId]);
 
   useEffect(() => {
     if (!autoFocusEnd) return;
@@ -258,6 +299,7 @@ export const MarkdownEditor = memo(
   (prev, next) =>
     prev.value === next.value &&
     prev.onChange === next.onChange &&
+    prev.documentId === next.documentId &&
     selectionRangeEqual(prev.selectionRange, next.selectionRange) &&
     prev.placeholder === next.placeholder &&
     prev.className === next.className &&

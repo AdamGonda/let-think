@@ -16,6 +16,7 @@ type WakeUpOverlayProps = {
   editorOpen: boolean;
   sessionView: SessionView;
   activeSessionId: Id<"sessions"> | null;
+  activeFileId: Id<"files"> | null;
   activeSessionInWorkspace:
     | {
         file: { title: string };
@@ -63,6 +64,7 @@ export function WakeUpOverlay({
   editorOpen,
   sessionView,
   activeSessionId,
+  activeFileId,
   activeSessionInWorkspace,
   notes,
   notesSelectionRange,
@@ -127,6 +129,7 @@ export function WakeUpOverlay({
               className={`relative mx-auto flex w-full min-h-0 flex-1 flex-col justify-start ${layout.mainColumnMaxWidthClass}`}
             >
               <MarkdownEditor
+                documentId={activeFileId}
                 value={notes}
                 onChange={handleEditorChange}
                 selectionRange={notesSelectionRange}

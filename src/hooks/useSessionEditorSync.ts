@@ -156,6 +156,7 @@ export function useSessionEditorSync(
   );
   useEffect(() => {
     if (!activeSessionId) return;
+    if (appliedStoredForSessionRef.current !== activeSessionId) return;
     const timer = setTimeout(() => {
       saveDraft(draftInput);
     }, timings.draftSaveDebounceMs);
@@ -175,6 +176,7 @@ export function useSessionEditorSync(
   );
   useEffect(() => {
     if (!activeChatSessionId) return;
+    if (appliedStoredForChatRef.current !== activeChatSessionId) return;
     const timer = setTimeout(() => {
       saveChatDraft(chatDraftInput);
     }, timings.draftSaveDebounceMs);
@@ -191,6 +193,7 @@ export function useSessionEditorSync(
   );
   useEffect(() => {
     if (!activeFileId) return;
+    if (appliedStoredForFileRef.current !== activeFileId) return;
     const timer = setTimeout(() => {
       saveThinkingNotes(notes);
     }, timings.draftSaveDebounceMs);
