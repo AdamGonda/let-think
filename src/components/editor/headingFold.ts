@@ -55,8 +55,8 @@ export function foldedHeadingKeys(state: EditorState): string[] {
   const keys: string[] = [];
   eachFoldableHeading(state, (range, lineText, occurrence) => {
     let isFolded = false;
-    folded.between(range.from, range.to, (from, to) => {
-      if (from === range.from && to === range.to) isFolded = true;
+    folded.between(range.from, range.from, (from) => {
+      if (from === range.from) isFolded = true;
     });
     if (isFolded) keys.push(headingFoldKey(lineText, occurrence));
   });

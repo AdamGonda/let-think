@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef } from "react";
-import { foldEffect, unfoldEffect } from "@codemirror/language";
+import { foldState } from "@codemirror/language";
 import {
   EditorSelection,
   EditorState,
@@ -23,14 +23,6 @@ import {
   unfoldAllSections,
 } from "./headingFold";
 import { markdownEditorExtensions } from "./markdownEditorExtensions";
-
-function restoreStoredHeadingFolds(
-  view: EditorView,
-  documentId: string | null | undefined,
-): void {
-  if (!documentId) return;
-  foldHeadingsByKeys(view, getStoredHeadingFolds(documentId));
-}
 
 interface MarkdownEditorProps {
   value: string;
@@ -107,14 +99,12 @@ function MarkdownEditorComponent({
               onChangeRef.current(update.state.doc.toString());
             }
             const id = documentIdRef.current;
+            // ponytail: skip docChanged so a full notes replace cannot persist
+            // empty folds and wipe storage before restore runs.
+            if (!id || update.docChanged) return;
             if (
-              !id ||
-              !update.transactions.some((tr) =>
-                tr.effects.some(
-                  (effect) =>
-                    effect.is(foldEffect) || effect.is(unfoldEffect),
-                ),
-              )
+              update.startState.field(foldState, false) ===
+              update.state.field(foldState, false)
             ) {
               return;
             }
@@ -159,6 +149,12 @@ function MarkdownEditorComponent({
     return () => {
       window.clearTimeout(hideTimer);
       scroller.removeEventListener("scroll", onScroll);
+      const id = documentIdRef.current;
+      if (id) {
+        const keys = foldedHeadingKeys(view.state);
+        // Empty editor on a loading remount must not wipe real folds.
+        if (keys.length > 0) setStoredHeadingFolds(id, keys);
+      }
       view.destroy();
       viewRef.current = null;
     };
@@ -196,6 +192,8 @@ function MarkdownEditorComponent({
   useEffect(() => {
     const view = viewRef.current;
     if (!view) return;
+    const fileId = documentId ?? null;
+    const storedKeys = fileId ? getStoredHeadingFolds(fileId) : [];
     const current = view.state.doc.toString();
     const replaced = current !== value;
     if (replaced) {
@@ -204,10 +202,15 @@ function MarkdownEditorComponent({
         annotations: [Transaction.addToHistory.of(false)],
       });
     }
-    const fileId = documentId ?? null;
     if (replaced || appliedFoldDocumentIdRef.current !== fileId) {
-      restoreStoredHeadingFolds(view, documentId);
+      foldHeadingsByKeys(view, storedKeys);
       appliedFoldDocumentIdRef.current = fileId;
+      if (storedKeys.length === 0) return;
+      const frame = requestAnimationFrame(() => {
+        const latest = viewRef.current;
+        if (latest) foldHeadingsByKeys(latest, storedKeys);
+      });
+      return () => cancelAnimationFrame(frame);
     }
   }, [value, documentId]);
 

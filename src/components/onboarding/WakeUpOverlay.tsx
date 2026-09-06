@@ -19,7 +19,7 @@ type WakeUpOverlayProps = {
   activeFileId: Id<"files"> | null;
   activeSessionInWorkspace:
     | {
-        file: { title: string };
+        file: { _id: Id<"files">; title: string };
         projectName: string;
         projectId: Id<"projects"> | null;
       }
@@ -76,6 +76,9 @@ export function WakeUpOverlay({
   mainColumnWidthMax,
   onMainColumnWidthChange,
 }: WakeUpOverlayProps) {
+  const foldDocumentId =
+    activeFileId ?? activeSessionInWorkspace?.file._id ?? null;
+  const showEditor = !!(activeSessionId || activeFileId || foldDocumentId);
   const showFileNavBreadcrumb =
     editorOpen && !!activeSessionInWorkspace;
   const showViewSwitcher = editorOpen && !!activeSessionId;
@@ -123,13 +126,13 @@ export function WakeUpOverlay({
             </div>
           </header>
         ) : null}
-        {activeSessionId && (
+        {showEditor && (
           <div className="flex-1 min-h-0 flex flex-col items-stretch justify-start overflow-hidden px-6 pb-8">
             <div
               className={`relative mx-auto flex w-full min-h-0 flex-1 flex-col justify-start ${layout.mainColumnMaxWidthClass}`}
             >
               <MarkdownEditor
-                documentId={activeFileId}
+                documentId={foldDocumentId}
                 value={notes}
                 onChange={handleEditorChange}
                 selectionRange={notesSelectionRange}
