@@ -1,187 +1,99 @@
-# let-think
+<p align="center">
+  <img src="public/lt-logo.png" width="88" alt="LET THINK" />
+</p>
 
-let-think is a focused thinking workspace.  
-Instead of only generating chat text, it turns each exchange into an evolving concept graph so you can branch ideas, revisit prior steps, and continue from specific concepts.
+<h1 align="center">LET THINK</h1>
 
-## Quick Start
+<p align="center"><strong>Pure ideas from AI — no sycophantic flattery.</strong></p>
 
-1. **Install dependencies**
-  ```bash
-   npm install
-  ```
-2. **Initialize Convex** (creates `.env.local` with `VITE_CONVEX_URL`)
-  ```bash
-   npx convex dev
-  ```
-   This prompts sign-in, creates/selects a Convex project, and generates `convex/_generated`.
-3. **Set Convex environment variables** (Dashboard → Project → Settings → Environment Variables, or `npx convex env set`)
-  - `GOOGLE_GENERATIVE_AI_API_KEY` — Gemini for chat and concept graph generation
-  - `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET` — Google OAuth (from [Google Cloud Console](https://console.cloud.google.com/apis/credentials))
-  - `CONVEX_SITE_URL` — your app origin (e.g. `http://localhost:5173` locally, production site URL in prod); must match what you use in the browser for auth callbacks
-  - `RESEND_API_KEY` and `RESEND_FROM_EMAIL` — required for transactional emails (allowlist approval)
-  - `RESEND_REPLY_TO` — optional reply-to address for transactional emails
-4. **Run the app**
-  ```bash
-   npm run dev
-  ```
-   `npm run dev` starts both Vite and `npx convex dev` concurrently.
+<p align="center">
+  <a href="https://letthink.co">letthink.co</a>
+  ·
+  <a href="https://tally.so/r/D4v9jE">Apply for beta</a>
+  ·
+  <a href="https://discord.gg/FkKQDdRf">Discord</a>
+</p>
 
-> **Agents / headless dev:** to reach the authenticated workspace without Google OAuth, see
-> [docs/agent-local-login.md](docs/agent-local-login.md) (mints a real Convex Auth session on
-> the local anonymous backend).
+---
 
-## Environment Variables
+LET THINK started as **Ideator**: a thinking workspace that refused to dump ideas into a linear chat log. Each exchange became an evolving concept graph. You could see the ideas, step back through them, and continue from a specific one with `@1`.
 
+That graph-first loop is still the heart of the product. The idea just outgrew a single surface.
 
-| Variable                       | Where                                                    | Description                                                                                                                                                         |
-| ------------------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `VITE_CONVEX_URL`              | `.env.local` (local); **Netlify build env** (production) | Convex deployment URL. Set automatically by `npx convex dev` locally. For static hosting, must be present **at build time** so Vite embeds it in the client bundle. |
-| `CONVEX_SITE_URL`              | Convex Dashboard (per deployment)                        | Public origin of your app (`http://localhost:5173` in dev, production URL in prod). Used by `convex/auth.config.ts` for Convex Auth.                                |
-| `GOOGLE_GENERATIVE_AI_API_KEY` | Convex Dashboard                                         | Server-side Gemini API key for chat actions and topic summaries.                                                                                                    |
-| `AUTH_GOOGLE_ID`               | Convex Dashboard                                         | Google OAuth client ID.                                                                                                                                             |
-| `AUTH_GOOGLE_SECRET`           | Convex Dashboard                                         | Google OAuth client secret.                                                                                                                                         |
-| `RESEND_API_KEY`               | Convex Dashboard                                         | Resend API key used by backend transactional emails.                                                                                                                |
-| `RESEND_FROM_EMAIL`            | Convex Dashboard                                         | Verified sender for transactional emails (e.g. `Let Think <noreply@yourdomain.com>`).                                                                              |
-| `RESEND_REPLY_TO`              | Convex Dashboard (optional)                              | Optional reply-to for transactional emails.                                                                                                                         |
+Thinking is not one mode. You sketch, you talk, you generate, you write. Forcing all of that through Ideate made less and less sense — so the workspace split.
 
+## Four views, one thought
 
-Use the `VITE_` prefix only for client-safe values in `.env.local`. Secrets (`AUTH_*`, `GOOGLE_*`, `CONVEX_SITE_URL` for server) belong in Convex, not in the frontend env.
+Every file now has four dedicated views. Switch between them; the thought stays one file.
 
-## Deployment (Netlify)
+- **Draw** — infinite canvas (pen, text, frames). For marks that are not sentences yet. Frame a region and it becomes a named `@slug` you can hand to the model.
+- **Chat** — ordinary conversation, many threads per file. Linear on purpose. Talking without rewriting the graph. Reference the graph, the writing, or the canvas when you need them; otherwise it stays out of the way.
+- **Ideate** — the original concept graph. Each turn still grows a batch of concept cards. Step through prior batches. Continue from a card with `@1`. History is inspectable; new input stays anchored to the latest step so you do not accidentally fork the past.
+- **Write** — long-form markdown for the same file. Notes used to live in the margin of the graph. They grew into their own editor — headings, folds, the actual artifact you are trying to finish.
 
-The repo includes `[netlify.toml](netlify.toml)`: build command `npm run build`, publish directory `dist`.
-
-1. **Connect the repo** in Netlify and use the default settings from `netlify.toml` (or equivalent).
-2. **Set `VITE_CONVEX_URL` in Netlify** under Site configuration → Environment variables → **Build** (or “All scopes” including builds). Use the Convex deployment URL for that environment:
-  - **Production branch:** URL of your **production** Convex deployment (from the Convex dashboard).
-  - **Deploy previews / branch deploys:** Either point at a **dev** Convex deployment used for previews, or add per-branch values if you use [Netlify’s multiple deploy contexts](https://docs.netlify.com/environment-variables/get-started/#scopes) so preview builds don’t call production Convex by mistake.
-3. **Convex:** For each Convex deployment (dev/prod), set `CONVEX_SITE_URL` to the matching site origin (e.g. preview URL vs production domain) so OAuth redirects stay consistent.
-
-If `VITE_CONVEX_URL` is missing at build time, the SPA will bundle an empty URL and fail to connect to Convex in the browser.
-
-## App Tutorial (In-Product)
-
-The onboarding tutorial is implemented in `src/components/onboarding/Tutorial.tsx` and launched automatically for first-time users.
-
-It currently covers:
-
-- Main workspace and graph-first flow
-- Creating sessions and projects from the sidebar
-- Switching between graph and project-notes list views
-- Chat input with `@` concept references
-- Wake-up note-taking and history navigation
-
-You can replay it from the sidebar ("Run tutorial"), which dispatches the `let-think:run-tutorial` event.
-
-## Architecture (Current)
-
-### Frontend
-
-- `src/main.tsx` wraps the app in `ConvexAuthProvider` and mounts TanStack Router (`src/router.tsx`).
-- **Auth and public routes** live in `router.tsx`: root layout waits on Convex auth loading; `/` is landing vs redirect to `/app`; `/app` renders `src/components/auth/SignIn.tsx` or the authenticated workspace.
-- `**src/App.tsx`** exports `AuthenticatedApp` only: the workspace shell (not the public/auth gate). It composes `AppUiProvider`, `SessionDataProvider`, `AppUiSessionBridge`, and `AppContentBody`.
-- `AppUiProvider` runs an **XState** machine (`src/machines/appUiMachine.ts`); `useAppUi` / selectors coordinate view state (graph/list mode, overlays, selected batch, loading frames, history panel, editor state).
-- `SessionDataProvider` (exported from `src/contexts/SessionDataContext.tsx`) loads session-bound data (messages, graph, interaction caps, timers, pagination).
-- `src/bridge/AppUiSessionBridge.tsx` (with `sessionBridgeHooks.ts`) connects workspace/session data to the UI actor where needed.
-- `src/components/app-shell/AppContentBody.tsx` composes the shell:
-  - `src/components/session-sidebar/SessionSidebar.tsx` for projects/sessions/navigation actions
-  - Graph/list surface (`AppContentGraphSurface` or `NotesListPanel` under `components/notes-list/`)
-  - `components/chat/Chat.tsx` (or `HistoricalBatchPrompt` when browsing earlier graph batches)
-  - Overlays (`onboarding/WakeUpOverlay`, walkthrough, `onboarding/Tutorial`)
-
-Shared UI and feature code also live under grouped folders (for example `concept-graph-overlay/`, `user/`, `editor/`, `navigation/`, `marketing/`, `docs/`). Constants for layout, chat, and timings sit in `src/config/`.
-
-### Backend (Convex)
-
-- `convex/schema.ts` models:
-  - `projects`, `sessions`, `messages`
-  - `sessionConceptGraphs` (graph stored separate from session row)
-  - interaction tracking tables for think/work mode
-- `convex/sessions.ts` handles secure session/message CRUD, draft/notes persistence, paginated message history, and concept graph persistence.
-- `convex/projects.ts`, `convex/users.ts` — projects listing and user-facing helpers.
-- `convex/chat.ts` — chat actions (send, topic generation).
-- `convex/chatPipeline.ts` defines LLM pre/post processing:
-  - injects system prompt and optional selected-concept context
-  - extracts concept graph JSON from assistant output
-  - strips graph block from user-visible assistant text
-- `convex/transactionalEmails.ts`, `convex/lib/transactionalEmails/` — internal action + templates/sender helpers for transactional email delivery.
-- `convex/auth.ts`, `convex/auth.config.ts`, `convex/http.ts` — Convex Auth and HTTP routes.
-- `convex/admin.ts`, `convex/modelConfig.ts`, `convex/constants.ts`, `convex/lib/access.ts` — admin, model configuration, shared constants, and access helpers.
-
-### Runtime Flow
-
-1. User sends prompt in `Chat`.
-2. Backend action runs chat pipeline and persists user/assistant messages.
-3. Extracted concept graph is merged/persisted per session.
-4. UI re-renders graph + batch navigation; users can reference concept nodes via `@N` in the next prompt.
-
-### Workspace composition (authenticated)
-
-After `/app` resolves to the signed-in workspace, providers nest as below. The UI machine drives navigation and layout mode; `SessionDataProvider` loads Convex data for the active session; the bridge keeps the actor and session layer aligned.
-
-```mermaid
-flowchart TD
-  routerApp["router /app"]
-  authApp[AuthenticatedApp]
-  appUi[AppUiProvider XState]
-  sessionData[SessionDataProvider]
-  bridge[AppUiSessionBridge]
-  shell[AppContentBody]
-  convexClient[Convex queries]
-
-  routerApp --> authApp
-  authApp --> appUi
-  appUi --> sessionData
-  sessionData --> bridge
-  bridge --> shell
-  sessionData --> convexClient
-  authApp --> convexClient
-```
-
-
-
-## High-Level Structure
+The views are separate so each one can be itself. They stay connected so you are not copy-pasting between four apps:
 
 ```
-├── convex/
-│   ├── schema.ts              # Data model + indexes
-│   ├── sessions.ts            # Session/message queries and mutations
-│   ├── projects.ts          # Projects and session grouping
-│   ├── users.ts             # User helpers
-│   ├── chat.ts              # Chat actions (send, topic generation)
-│   ├── chatPipeline.ts      # LLM pre/post processing and graph extraction
-│   ├── auth.ts              # Convex Auth functions
-│   ├── auth.config.ts       # Auth configuration
-│   ├── http.ts              # HTTP router (auth callbacks, etc.)
-│   ├── admin.ts             # Admin / allowlist
-│   ├── modelConfig.ts       # Model configuration
-│   ├── constants.ts         # Shared backend constants
-│   └── lib/access.ts        # Access control helpers
-├── src/
-│   ├── main.tsx               # ConvexAuthProvider + AppRouter
-│   ├── router.tsx             # TanStack Router: public vs /app workspace
-│   ├── App.tsx                # AuthenticatedApp (workspace providers only)
-│   ├── bridge/                # AppUiSessionBridge, session bridge hooks
-│   ├── machines/              # appUiMachine (XState) + types/reducers
-│   ├── config/                # layout, chat, timings
-│   ├── pages/                 # Landing, legal, admin pages
-│   ├── components/
-│   │   ├── app-shell/         # AppShell, AppContentBody, AppContentGraphSurface
-│   │   ├── session-sidebar/   # SessionSidebar and sidebar pieces
-│   │   ├── concept-graph-overlay/
-│   │   ├── notes-list/
-│   │   ├── chat/              # Chat, composer, history, historical prompt
-│   │   ├── onboarding/        # Tutorial, WakeUpOverlay
-│   │   ├── auth/              # SignIn
-│   │   ├── user/              # User menu, cards, avatar
-│   │   ├── editor/            # MarkdownEditor
-│   │   ├── navigation/        # Breadcrumb, step navigator, pagination dots
-│   │   ├── marketing/         # SiteFooter
-│   │   ├── docs/              # LegalDocLayout
-│   │   └── ui/                # Shared primitives (button, dialog, …)
-│   ├── contexts/              # AppUiProvider, SessionDataContext, app UI actor
-│   ├── hooks/                 # UI selectors, handlers, sync hooks
-│   └── lib/                   # Storage, mentions, graph helpers, utilities
-└── package.json               # Scripts and dependencies
+@writing   @graph   @canvas   @1
 ```
 
+Type `@` in Chat or Ideate and attach the writing, the graph, the canvas, a framed sketch, or a numbered concept. The model sees what you pointed at. The other rooms stay intact.
+
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=IY2bOSbtwPE">
+    <img src="https://img.youtube.com/vi/IY2bOSbtwPE/maxresdefault.jpg" alt="LET THINK product demo" />
+  </a>
+</p>
+
+<p align="center"><em>Watch the demo →</em></p>
+
+## Why this exists
+
+Linear chat is a tape. Useful for talking. Bad for thinking. Ideas bury themselves, you cannot point at a concept without quoting a paragraph, and the model keeps flattering you instead of sharpening the work.
+
+LET THINK is built for the opposite: visible ideas, named references, and a model that is supposed to think with you — not agree with you.
+
+Beta is invite-only. We read every application.
+
+**[Apply for beta access](https://tally.so/r/D4v9jE)** · **[Open LET THINK](https://letthink.co)**
+
+## Stack
+
+React, Vite, TanStack Router, Convex, Gemini. Google sign-in. Hosted on Netlify.
+
+## Run locally
+
+```bash
+npm install
+npx convex dev          # creates .env.local with VITE_CONVEX_URL
+```
+
+Set these on the Convex deployment (Dashboard → Settings → Environment Variables, or `npx convex env set`):
+
+| Variable | Where | What |
+| --- | --- | --- |
+| `VITE_CONVEX_URL` | `.env.local` (local); Netlify **build** env (prod) | Convex URL. `npx convex dev` writes it locally. Must exist **at build time** for static hosting. |
+| `CONVEX_SITE_URL` | Convex | App origin (`http://localhost:5173` locally). Auth callbacks use this. |
+| `GOOGLE_GENERATIVE_AI_API_KEY` | Convex | Gemini for chat and concept graphs. |
+| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | Convex | [Google OAuth](https://console.cloud.google.com/apis/credentials) client. |
+| `RESEND_API_KEY` / `RESEND_FROM_EMAIL` | Convex | Transactional email (allowlist). `RESEND_REPLY_TO` is optional. |
+
+Then:
+
+```bash
+npm run dev             # Vite + convex dev
+```
+
+Put secrets in Convex, not in Vite. Only `VITE_*` values belong in `.env.local`.
+
+Headless / agent login (no Google OAuth): [docs/agent-local-login.md](docs/agent-local-login.md).
+
+### Deploy (Netlify)
+
+`netlify.toml` already sets `npm run build` → `dist`. Connect the repo, then set `VITE_CONVEX_URL` as a **build** env var to the matching Convex deployment (prod URL on the production branch; a separate dev deployment for previews). Set `CONVEX_SITE_URL` on each Convex deployment to the matching site origin so OAuth redirects stay consistent.
+
+If `VITE_CONVEX_URL` is missing at build time, the SPA ships with an empty URL and cannot talk to Convex.
+
+## License
+
+Source is public. The product is not open source. © let-think. All rights reserved.
