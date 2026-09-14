@@ -16,7 +16,7 @@
 
 ---
 
-LET THINK started as **Ideator**: a thinking workspace that refused to dump ideas into a linear chat log. Each exchange became an evolving concept graph. You could see the ideas, step back through them, and continue from a specific one with `@1`, `@2`, …
+LET THINK started as **Ideator**: a thinking workspace that refused to dump ideas into a linear chat log. Each exchange became an evolving concept graph. You could see the ideas, step back through them, and continue from a specific one with `@1`.
 
 That graph-first loop is still the heart of the product. The idea just outgrew a single surface.
 
@@ -26,17 +26,10 @@ Thinking is not one mode. You sketch, you talk, you generate, you write. Forcing
 
 Every file now has four dedicated views. Switch between them; the thought stays one file.
 
-| Draw | Chat | Ideate | Write |
-| --- | --- | --- | --- |
-| Infinite canvas — pen, text, frames | Ordinary conversation, many threads per file | The original concept graph | Long-form markdown for the same file |
-
-**Draw** is for marks that are not sentences yet. Frame a region and it becomes a named `@slug` you can hand to the model.
-
-**Chat** is for talking without rewriting the graph. Linear on purpose. Reference the graph, the writing, or the canvas when you need them; otherwise it stays out of the way.
-
-**Ideate** is the first product. Each turn still grows a batch of concept cards. Step through prior batches. Continue from a card with `@N`. History is inspectable; new input stays anchored to the latest step so you do not accidentally fork the past.
-
-**Write** is the document. Notes used to live in the margin of the graph. They grew into their own editor — headings, folds, the actual artifact you are trying to finish.
+- **Draw** — infinite canvas (pen, text, frames). For marks that are not sentences yet. Frame a region and it becomes a named `@slug` you can hand to the model.
+- **Chat** — ordinary conversation, many threads per file. Linear on purpose. Talking without rewriting the graph. Reference the graph, the writing, or the canvas when you need them; otherwise it stays out of the way.
+- **Ideate** — the original concept graph. Each turn still grows a batch of concept cards. Step through prior batches. Continue from a card with `@1`. History is inspectable; new input stays anchored to the latest step so you do not accidentally fork the past.
+- **Write** — long-form markdown for the same file. Notes used to live in the margin of the graph. They grew into their own editor — headings, folds, the actual artifact you are trying to finish.
 
 The views are separate so each one can be itself. They stay connected so you are not copy-pasting between four apps:
 
