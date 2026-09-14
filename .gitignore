@@ -13,6 +13,26 @@ dist-ssr
 coverage
 *.local
 
+# Env files — keep only the committed template
+.env
+.env.*
+!.env.example
+
+# Local Convex backend state (adminKey, instanceSecret, sqlite)
+.convex/
+
+# Throwaway seed from docs/agent-local-login.md — never commit
+convex/devSeed.ts
+
+# Agent/wizard artifacts with private dashboard links
+posthog-setup-report.md
+
+# Key material
+*.pem
+*.p12
+*.pfx
+*.key
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -23,4 +43,3 @@ coverage
 *.njsproj
 *.sln
 *.sw?
-.env
